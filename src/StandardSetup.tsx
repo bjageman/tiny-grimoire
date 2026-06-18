@@ -476,7 +476,7 @@ export default function StandardSetup() {
                     <button
                       onClick={() => togglePlayerDead(p.id)}
                       className={cn(
-                        "w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center transition-all shadow-md relative",
+                        "w-14 h-14 rounded-full border-2 flex flex-col items-center justify-center transition-all shadow-md relative",
                         p.isDead
                           ? "bg-black border-gray-800 text-gray-600 scale-95 opacity-50"
                           : "bg-gray-900 border-gray-700 text-clocktower-parchment hover:border-gray-500"
@@ -490,19 +490,22 @@ export default function StandardSetup() {
                         roleObj?.team === 'demon' && "bg-clocktower-demon",
                       )} />
 
-                      <span className={cn("text-xs font-bold font-sans tracking-tighter mt-1", p.isDead && "line-through text-gray-700")}>
-                        {p.name.substring(0, 3)}
+                      <span className={cn(
+                        "text-[10px] font-bold font-sans tracking-tighter mt-1 truncate max-w-[50px] text-center leading-tight",
+                        p.isDead && "line-through text-gray-700"
+                      )}>
+                        {p.name.substring(0, 8)}
                       </span>
 
                       <span className={cn(
-                        "text-[8px] font-semibold truncate max-w-[40px] leading-none text-gray-400 mt-0.5 px-0.5",
+                        "text-[8px] font-semibold truncate max-w-[50px] leading-none text-gray-400 mt-0.5 px-0.5 text-center",
                         roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk/80",
                         roleObj?.team === 'outsider' && "text-clocktower-outsider/80",
                         roleObj?.team === 'minion' && "text-clocktower-minion/80",
                         roleObj?.team === 'demon' && "text-clocktower-demon/80",
                         p.isDead && "text-gray-700"
                       )}>
-                        {roleObj?.name.substring(0, 4)}
+                        {roleObj?.name.substring(0, 8)}
                       </span>
                     </button>
 

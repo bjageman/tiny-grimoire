@@ -1050,11 +1050,11 @@ export default function WhaleBucket() {
             timeOfDay === 'day' ? "border-clocktower-night/10" : "border-gray-800/85"
           )}>
             <h2 className={cn("text-lg font-semibold", timeOfDay === 'day' ? "text-clocktower-night" : "text-gray-300")}>Circular Grimoire</h2>
-            <div className="flex gap-2 text-[9px] font-bold tracking-wider text-gray-500">
-              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-townsfolk" /> TS</span>
-              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-outsider" /> OUT</span>
-              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-minion" /> MIN</span>
-              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-demon" /> DEM</span>
+            <div className="flex gap-2.5 text-[9px] font-bold tracking-wider text-gray-500">
+              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-townsfolk" /> Townsfolk</span>
+              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-outsider" /> Outsider</span>
+              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-minion" /> Minion</span>
+              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-demon" /> Demon</span>
             </div>
           </div>
 

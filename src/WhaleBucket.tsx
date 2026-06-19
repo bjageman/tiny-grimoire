@@ -1040,7 +1040,15 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               {validationSummary.modifications.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {validationSummary.modifications.map((m, idx) => (
-                    <span key={idx} className="text-[9px] bg-clocktower-blood/10 border border-clocktower-blood/30 text-clocktower-parchment/80 px-1.5 py-0.5 rounded font-medium">
+                    <span
+                      key={idx}
+                      className={cn(
+                        "text-[9px] border px-1.5 py-0.5 rounded font-medium transition-colors duration-300",
+                        isLightModeActive
+                          ? "bg-clocktower-blood/5 border-clocktower-blood/20 text-clocktower-blood"
+                          : "bg-clocktower-blood/10 border-clocktower-blood/30 text-clocktower-parchment/80"
+                      )}
+                    >
                       {m}
                     </span>
                   ))}

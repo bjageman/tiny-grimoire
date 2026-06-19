@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, CheckCircle, Upload, Shuffle, ChevronLeft, ChevronRight } from 'lucide-react';
 import rolesData from './roles.json';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -54,6 +54,11 @@ export default function StandardSetup() {
   const [isSearchingRole, setIsSearchingRole] = useState(false);
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
+  // Script states
+  const [scriptName, setScriptName] = useState<string>("All Roles (Default)");
+  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
     setIsSearchingRole(false);
@@ -65,11 +70,13 @@ export default function StandardSetup() {
     const saved = localStorage.getItem('standard-botc-game');
     if (saved) {
       try {
-        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn } = JSON.parse(saved);
+        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, customScriptRoles: csr, scriptName: sn } = JSON.parse(saved);
         setPlayers(p || []);
         setPhase(ph || 'setup');
         setTimeOfDay(tod || 'night');
         setDayNumber(dn || 1);
+        if (csr) setCustomScriptRoles(csr);
+        if (sn) setScriptName(sn);
       } catch (e) {
         console.error(e);
       }
@@ -78,7 +85,14 @@ export default function StandardSetup() {
 
   // Save to localStorage and update document theme
   useEffect(() => {
-    localStorage.setItem('standard-botc-game', JSON.stringify({ players, phase, timeOfDay, dayNumber }));
+    localStorage.setItem('standard-botc-game', JSON.stringify({ 
+      players, 
+      phase, 
+      timeOfDay, 
+      dayNumber,
+      customScriptRoles,
+      scriptName
+    }));
     
     if (phase === 'game' && timeOfDay === 'day') {
       document.documentElement.classList.add('theme-day');
@@ -89,7 +103,7 @@ export default function StandardSetup() {
     return () => {
       document.documentElement.classList.remove('theme-day');
     };
-  }, [players, phase, timeOfDay, dayNumber]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -165,6 +179,180 @@ export default function StandardSetup() {
 
 
 
+  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (!Array.isArray(parsed)) {
+          alert("Invalid script format. Expected a JSON array of roles.");
+          return;
+        }
+
+        // Find metadata object
+        const metaObj = parsed.find((item: any) => item && typeof item === 'object' && item.id === '_meta');
+        const name = metaObj?.name || file.name.replace('.json', '');
+
+        // Map roles
+        const parsedRoles = parsed
+          .filter((item: any) => item && typeof item === 'object' && item.id && item.id !== '_meta')
+          .map((item: any) => {
+            const matched = (rolesData as Role[]).find(r => r.id.toLowerCase() === item.id.toLowerCase());
+            if (matched) return matched;
+            return {
+              id: item.id.toLowerCase(),
+              name: item.id.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+              team: 'townsfolk'
+            } as Role;
+          });
+
+        if (parsedRoles.length === 0) {
+          alert("No valid roles found in the uploaded script.");
+          return;
+        }
+
+        setCustomScriptRoles(parsedRoles);
+        setScriptName(name);
+      } catch (err) {
+        alert("Failed to parse JSON script file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const clearCustomScript = () => {
+    setCustomScriptRoles(null);
+    setScriptName("All Roles (Default)");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
+
+  const randomlyAssignRoles = () => {
+    const N = players.length;
+    if (N < 5) {
+      alert("Please add at least 5 players to assign roles.");
+      return;
+    }
+    const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+
+    const tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
+    const outs = currentScriptRoles.filter(r => r.team === 'outsider');
+    const mins = currentScriptRoles.filter(r => r.team === 'minion');
+    const dems = currentScriptRoles.filter(r => r.team === 'demon');
+
+    if (dems.length === 0 || mins.length === 0 || tfs.length === 0) {
+      alert("The active script must contain at least some Townsfolk, Minions, and Demons.");
+      return;
+    }
+
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+    let selectedDemons = shuffle(dems).slice(0, base.demon);
+    let selectedMinions = shuffle(mins).slice(0, base.minion);
+
+    const hasLilMonsta = selectedDemons.some(d => d.id === 'lilmonsta');
+    if (hasLilMonsta) {
+      // Lil' Monsta acts as the Demon but counts as a Minion in play, replacing the Demon player.
+      // So we filter Lil' Monsta out from normal Minions.
+      selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
+    }
+
+    let outsiderModifier = 0;
+    if (selectedMinions.some(m => m.id === 'baron')) {
+      outsiderModifier += 2;
+    }
+    if (selectedMinions.some(m => m.id === 'godfather')) {
+      outsiderModifier += Math.random() < 0.5 ? 1 : -1;
+    }
+    if (selectedDemons.some(d => d.id === 'fanggu')) {
+      outsiderModifier += 1;
+    }
+
+    let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
+    let targetTownsfolk = N - base.demon - base.minion - targetOutsiders;
+    if (targetTownsfolk < 0) {
+      targetTownsfolk = 0;
+      targetOutsiders = N - base.demon - base.minion;
+    }
+
+    let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
+    let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
+
+    // Check Balloonist
+    if (selectedTownsfolk.some(t => t.id === 'balloonist') && outs.length > selectedOutsiders.length) {
+      const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
+      if (remainingOuts.length > 0) {
+        selectedOutsiders.push(remainingOuts[Math.floor(Math.random() * remainingOuts.length)]);
+        const balloonistIdx = selectedTownsfolk.findIndex(t => t.id === 'balloonist');
+        const nonBalloonistTfs = selectedTownsfolk.filter((_, idx) => idx !== balloonistIdx);
+        if (nonBalloonistTfs.length > 0) {
+          const removedTf = nonBalloonistTfs[Math.floor(Math.random() * nonBalloonistTfs.length)];
+          selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== removedTf.id);
+        }
+      }
+    }
+
+    let finalRolesList = shuffle([
+      ...selectedDemons,
+      ...selectedMinions,
+      ...selectedOutsiders,
+      ...selectedTownsfolk
+    ]);
+
+    // Pad if script is too small (e.g. missing outsiders), fill with townsfolk
+    while (finalRolesList.length < N) {
+      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
+      if (unusedTfs.length > 0) {
+        finalRolesList.push(unusedTfs[0]);
+      } else {
+        finalRolesList.push(tfs[0] || outs[0] || mins[0] || dems[0]);
+      }
+    }
+
+    const roleIdsInPlay = finalRolesList.map(r => r.id);
+    const shuffledPlayers = shuffle(players);
+
+    const updatedPlayers = players.map(p => {
+      const playerIndex = shuffledPlayers.findIndex(sp => sp.id === p.id);
+      const role = finalRolesList[playerIndex];
+      let roleId = role.id;
+      let isTheDrunk = false;
+      let isTheMarionette = false;
+
+      if (role.id === 'drunk') {
+        isTheDrunk = true;
+        const availableFakeTfs = tfs.filter(r => !roleIdsInPlay.includes(r.id));
+        const chosenFake = availableFakeTfs.length > 0 
+          ? availableFakeTfs[Math.floor(Math.random() * availableFakeTfs.length)] 
+          : tfs[Math.floor(Math.random() * tfs.length)];
+        roleId = chosenFake?.id || 'washerwoman';
+      } else if (role.id === 'marionette') {
+        isTheMarionette = true;
+        const tfsAndOuts = [...tfs, ...outs];
+        const availableFakeRoles = tfsAndOuts.filter(r => !roleIdsInPlay.includes(r.id));
+        const chosenFake = availableFakeRoles.length > 0 
+          ? availableFakeRoles[Math.floor(Math.random() * availableFakeRoles.length)] 
+          : tfsAndOuts[Math.floor(Math.random() * tfsAndOuts.length)];
+        roleId = chosenFake?.id || 'washerwoman';
+      }
+
+      return {
+        ...p,
+        roleId,
+        isTheDrunk,
+        isTheMarionette
+      };
+    });
+
+    setPlayers(updatedPlayers);
+  };
+
   const resetGame = () => {
     if (confirm('Are you sure you want to reset the game? This clears all players and roles.')) {
       setPlayers([]);
@@ -189,6 +377,8 @@ export default function StandardSetup() {
           acc.minion++;
         } else if (p.isTheDrunk) {
           acc.outsider++;
+        } else if (p.roleId === 'lilmonsta') {
+          acc.minion++;
         } else {
           const role = (rolesData as Role[]).find(r => r.id === p.roleId);
           if (role) acc[role.team]++;
@@ -241,7 +431,8 @@ export default function StandardSetup() {
     } else {
       if (hasLilMonsta) {
         expectedMinion += 1;
-        modifications.push("Lil' Monsta (+1 Minion)");
+        expectedDemon -= 1;
+        modifications.push("Lil' Monsta (+1 Minion, -1 Demon)");
       }
       if (hasBaron) {
         expectedOutsider += 2;
@@ -384,6 +575,12 @@ export default function StandardSetup() {
         <div className="flex items-center gap-3">
           <a href="#/" className={cn("transition-colors text-sm", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300")}>← Home</a>
           <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide">Standard Setup</h1>
+          <div className="flex gap-2.5 text-[9px] font-bold tracking-wider text-gray-500">
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-townsfolk" /> Townsfolk</span>
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-outsider" /> Outsider</span>
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-minion" /> Minion</span>
+            <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-demon" /> Demon</span>
+          </div>
         </div>
         <button onClick={resetGame} className={cn("p-2 transition-colors", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")} title="Reset game">
           <RefreshCcw size={20} />
@@ -392,6 +589,64 @@ export default function StandardSetup() {
 
       {phase === 'setup' && (
         <div className="space-y-6">
+          {/* Script Upload & Randomization Panel */}
+          <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Setup Script</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={cn(
+                    "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1",
+                    customScriptRoles 
+                      ? "bg-clocktower-blood/10 border-clocktower-blood/40 text-clocktower-blood" 
+                      : "bg-gray-950 border-gray-800 text-gray-400"
+                  )}>
+                    {customScriptRoles ? "📜" : "🌐"} {scriptName}
+                  </span>
+                  {customScriptRoles && (
+                    <span className="text-[10px] text-gray-500 font-medium">
+                      ({customScriptRoles.length} roles loaded)
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleScriptUpload}
+                  accept=".json"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-gray-800 hover:bg-gray-700 border border-gray-750 text-gray-300 px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <Upload size={14} /> Upload Script
+                </button>
+                {customScriptRoles && (
+                  <button
+                    type="button"
+                    onClick={clearCustomScript}
+                    className="bg-transparent hover:bg-gray-800 border border-transparent text-gray-500 hover:text-gray-300 px-2.5 py-1.5 rounded text-xs font-semibold transition-all"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={randomlyAssignRoles}
+                  className="bg-clocktower-blood hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={players.length < 5}
+                  title="Randomly assign roles to all players based on the active script, keeping to standard distribution rules"
+                >
+                  <Shuffle size={14} /> Randomly Assign
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section>
             <h2 className="text-lg font-semibold text-gray-300 mb-4">Players & Roles ({players.length})</h2>
 
@@ -619,18 +874,6 @@ export default function StandardSetup() {
         <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-2 md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-2 landscape:gap-6 landscape:space-y-0 landscape:items-start">
           {/* Column 1: Board Visual & Header */}
           <div className="space-y-4">
-            <div className={cn(
-              "flex justify-between items-center border-b pb-2",
-              timeOfDay === 'day' ? "border-clocktower-night/10" : "border-gray-800/85"
-            )}>
-              <h2 className={cn("text-lg font-semibold", timeOfDay === 'day' ? "text-clocktower-night" : "text-gray-300")}>Circular Grimoire</h2>
-              <div className="flex gap-2.5 text-[9px] font-bold tracking-wider text-gray-500">
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-townsfolk" /> Townsfolk</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-outsider" /> Outsider</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-minion" /> Minion</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-demon" /> Demon</span>
-              </div>
-            </div>
 
             <div className={cn(
               "relative w-full aspect-square border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
@@ -777,50 +1020,6 @@ export default function StandardSetup() {
 
           {/* Column 2: Ledger & Controls */}
           <div className="space-y-6 md:pt-10 landscape:pt-10">
-            <div className={cn(
-              "rounded-lg border p-3 space-y-1.5 max-h-48 md:max-h-[380px] landscape:max-h-[250px] overflow-y-auto transition-colors duration-300",
-              timeOfDay === 'day'
-                ? "bg-white/50 border-gray-300 text-clocktower-night"
-                : "bg-gray-900/40 border-gray-800/80"
-            )}>
-              <h4 className={cn(
-                "text-[10px] uppercase font-bold tracking-wider",
-                timeOfDay === 'day' ? "text-gray-600" : "text-gray-500"
-              )}>Grimoire Ledger Reference</h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {players.map((p, index) => {
-                  const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
-                  return (
-                    <div key={p.id} className={cn(
-                      "flex items-center gap-1.5 py-0.5 px-1 rounded border transition-colors",
-                      p.isDead && "opacity-45",
-                      timeOfDay === 'day'
-                        ? "bg-white/40 border-gray-200"
-                        : "bg-gray-950/20 border-gray-900/40"
-                    )}>
-                      <span className={cn("text-[9px] font-mono w-4", timeOfDay === 'day' ? "text-gray-500" : "text-gray-600")}>{index + 1}</span>
-                      <span className={cn(
-                        "font-medium truncate flex-1",
-                        p.isDead && "line-through text-gray-500",
-                        timeOfDay === 'day' && !p.isDead ? "text-clocktower-night" : "text-gray-200"
-                      )}>{p.name}</span>
-                      <span className={cn(
-                        "font-semibold text-[10px] flex items-center gap-1",
-                        rObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
-                        rObj?.team === 'outsider' && "text-clocktower-outsider",
-                        rObj?.team === 'minion' && "text-clocktower-minion",
-                        rObj?.team === 'demon' && "text-clocktower-demon",
-                      )}>
-                        {rObj?.name.substring(0, 6)}..
-                        {p.isTheDrunk && <span className="text-[8px] bg-yellow-600 text-black px-0.5 rounded leading-none">DK</span>}
-                        {p.isTheMarionette && <span className="text-[8px] bg-clocktower-minion text-white px-0.5 rounded leading-none">MN</span>}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             <button
               onClick={() => setPhase('setup')}
               className={cn(
@@ -832,6 +1031,50 @@ export default function StandardSetup() {
             >
               Return to Setup
             </button>
+
+            <div className={cn(
+              "rounded-lg border p-3 space-y-1.5 transition-colors duration-300",
+              timeOfDay === 'day'
+                ? "bg-white/50 border-gray-300 text-clocktower-night"
+                : "bg-gray-900/40 border-gray-800/80"
+            )}>
+              <h4 className={cn(
+                "text-[10px] uppercase font-bold tracking-wider",
+                timeOfDay === 'day' ? "text-gray-600" : "text-gray-500"
+              )}>Grimoire Ledger Reference</h4>
+              <div className="grid grid-cols-1 gap-1.5 text-xs">
+                {players.map((p, index) => {
+                  const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+                  return (
+                    <div key={p.id} onClick={() => setSelectedPlayerId(p.id)} className={cn(
+                      "flex items-center gap-1.5 py-0.5 px-1.5 rounded border transition-colors min-w-0 cursor-pointer hover:ring-1 hover:ring-gray-500/50",
+                      p.isDead && "opacity-45",
+                      timeOfDay === 'day'
+                        ? "bg-white/40 border-gray-200 hover:bg-white/70"
+                        : "bg-gray-950/20 border-gray-900/40 hover:bg-gray-900/60"
+                    )}>
+                      <span className={cn("text-[9px] font-mono w-4 shrink-0", timeOfDay === 'day' ? "text-gray-500" : "text-gray-600")}>{index + 1}</span>
+                      <span className={cn(
+                        "font-medium truncate flex-1 min-w-0",
+                        p.isDead && "line-through text-gray-500",
+                        timeOfDay === 'day' && !p.isDead ? "text-clocktower-night" : "text-gray-200"
+                      )}>{p.name}</span>
+                      <span className={cn(
+                        "font-semibold text-[10px] flex items-center gap-1 shrink-0 max-w-[45%] min-w-0",
+                        rObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
+                        rObj?.team === 'outsider' && "text-clocktower-outsider",
+                        rObj?.team === 'minion' && "text-clocktower-minion",
+                        rObj?.team === 'demon' && "text-clocktower-demon",
+                      )}>
+                        <span className="truncate">{rObj?.name ?? '—'}</span>
+                        {p.isTheDrunk && <span className="text-[8px] bg-yellow-600 text-black px-0.5 rounded leading-none shrink-0">DK</span>}
+                        {p.isTheMarionette && <span className="text-[8px] bg-clocktower-minion text-white px-0.5 rounded leading-none shrink-0">MN</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -900,6 +1143,9 @@ export default function StandardSetup() {
         const filteredModalRoles = (rolesData as Role[]).filter(r =>
           r.name.toLowerCase().includes(modalRoleSearch.toLowerCase())
         );
+        const currentIndex = players.findIndex(x => x.id === selectedPlayerId);
+        const prevPlayer = players[(currentIndex - 1 + players.length) % players.length];
+        const nextPlayer = players[(currentIndex + 1) % players.length];
 
         return (
           <div 
@@ -915,25 +1161,55 @@ export default function StandardSetup() {
                   : "bg-gray-900 border-gray-800 text-clocktower-parchment"
               )}
             >
-              <div className="flex justify-between items-start">
-                <div>
+              <div className="flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlayerId(prevPlayer.id)}
+                  title={prevPlayer.name}
+                  className={cn(
+                    "p-1.5 rounded-lg border transition-colors",
+                    timeOfDay === 'day'
+                      ? "border-gray-300 text-gray-600 hover:bg-gray-100"
+                      : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                  )}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="text-center">
                   <h3 className={cn("font-bold text-xl", timeOfDay === 'day' ? "text-clocktower-night" : "text-white")}>
                     Player Details
                   </h3>
                   <p className={cn("text-xs", timeOfDay === 'day' ? "text-gray-600" : "text-gray-400")}>
-                    Grimoire status and role info
+                    {currentIndex + 1} of {players.length}
                   </p>
                 </div>
-                <button 
-                  type="button"
-                  onClick={closeDetailsModal} 
-                  className={cn(
-                    "text-sm font-semibold hover:underline",
-                    timeOfDay === 'day' ? "text-clocktower-blood" : "text-clocktower-townsfolk"
-                  )}
-                >
-                  Close
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlayerId(nextPlayer.id)}
+                    title={nextPlayer.name}
+                    className={cn(
+                      "p-1.5 rounded-lg border transition-colors",
+                      timeOfDay === 'day'
+                        ? "border-gray-300 text-gray-600 hover:bg-gray-100"
+                        : "border-gray-700 text-gray-400 hover:bg-gray-800"
+                    )}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeDetailsModal}
+                    className={cn(
+                      "text-sm font-semibold hover:underline",
+                      timeOfDay === 'day' ? "text-clocktower-blood" : "text-clocktower-townsfolk"
+                    )}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
 
               {/* Player Info Card */}
@@ -949,6 +1225,7 @@ export default function StandardSetup() {
                     type="text"
                     value={p.name}
                     onChange={(e) => updatePlayerName(p.id, e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && closeDetailsModal()}
                     className={cn(
                       "w-full font-semibold text-base px-2 py-1 rounded border focus:outline-none focus:border-clocktower-blood bg-transparent transition-colors",
                       timeOfDay === 'day'

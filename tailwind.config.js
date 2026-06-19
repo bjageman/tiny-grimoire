@@ -15,6 +15,7 @@ export default {
           outsider: '#10b981',
           minion: '#ef4444',
           demon: '#7f1d1d',
+          traveler: '#a855f7',
         }
       }
     },

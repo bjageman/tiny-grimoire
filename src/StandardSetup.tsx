@@ -3,7 +3,7 @@ import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, CheckCircle, Upload, S
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role } from './types';
-import { DISTRIBUTION } from './constants';
+import { DISTRIBUTION, getDistribution } from './constants';
 import GrimoireBoard from './components/GrimoireBoard';
 
 type Phase = 'setup' | 'game';
@@ -16,6 +16,10 @@ export default function StandardSetup() {
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
   const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>('night');
   const [dayNumber, setDayNumber] = useState<number>(1);
+
+  // Traveler states
+  const [newTravelerName, setNewTravelerName] = useState('');
+  const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Details modal states
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -84,7 +88,7 @@ export default function StandardSetup() {
   };
 
   const addPlayer = () => {
-    if (players.length >= 15) return;
+    if (players.length >= 20) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     const newPlayer: Player = {
       id: Math.random().toString(36).substr(2, 9),
@@ -95,6 +99,31 @@ export default function StandardSetup() {
     };
     setPlayers([...players, newPlayer]);
     setNewPlayerName('');
+  };
+
+  const addTravelerGamePhase = () => {
+    if (!newTravelerName.trim()) {
+      alert("Please enter a traveler name.");
+      return;
+    }
+    if (!newTravelerRoleId) {
+      alert("Please select a traveler role.");
+      return;
+    }
+    if (players.length >= 20) {
+      alert("Maximum players reached (20).");
+      return;
+    }
+    const newPlayer: Player = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newTravelerName.trim(),
+      roleId: newTravelerRoleId,
+      isDead: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+    };
+    setPlayers([...players, newPlayer]);
+    setNewTravelerName('');
   };
 
   const removePlayer = (id: string) => {
@@ -162,14 +191,24 @@ export default function StandardSetup() {
         }
 
         // Find metadata object
-        type ScriptItem = { id: string; name?: string };
-        const metaObj = parsed.find((item: ScriptItem) => item && typeof item === 'object' && item.id === '_meta');
+        const metaObj = parsed.find((item: unknown): item is { id: string; name?: string } => 
+          !!item && typeof item === 'object' && 'id' in item && item.id === '_meta'
+        ) as { id: string; name?: string } | undefined;
         const name = metaObj?.name || file.name.replace('.json', '');
 
-        // Map roles
+        // Map roles (supporting both string IDs and object items)
         const parsedRoles = parsed
-          .filter((item: ScriptItem) => item && typeof item === 'object' && item.id && item.id !== '_meta')
-          .map((item: ScriptItem) => {
+          .map((item: unknown) => {
+            if (typeof item === 'string') {
+              return { id: item };
+            }
+            if (item && typeof item === 'object' && 'id' in item && typeof (item as { id: unknown }).id === 'string') {
+              return item as { id: string };
+            }
+            return null;
+          })
+          .filter((item: { id: string } | null): item is { id: string } => !!item && item.id !== '_meta')
+          .map((item: { id: string }) => {
             const matched = (rolesData as Role[]).find(r => r.id.toLowerCase() === item.id.toLowerCase());
             if (matched) return matched;
             return {
@@ -203,13 +242,26 @@ export default function StandardSetup() {
 
   const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
 
+  const selectionRoles = useMemo(() => {
+    const roles = [...currentScriptRoles];
+    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    for (const traveler of allTravelers) {
+      if (!roles.some(r => r.id === traveler.id)) {
+        roles.push(traveler);
+      }
+    }
+    return roles;
+  }, [currentScriptRoles]);
+
   const randomlyAssignRoles = () => {
     const N = players.length;
     if (N < 5) {
       alert("Please add at least 5 players to assign roles.");
       return;
     }
-    const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+    const travelerCount = N > 15 ? N - 15 : 0;
+    const baseCount = N - travelerCount;
+    const base = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
 
     const tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
     const outs = currentScriptRoles.filter(r => r.team === 'outsider');
@@ -245,10 +297,10 @@ export default function StandardSetup() {
     }
 
     let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
-    let targetTownsfolk = N - base.demon - base.minion - targetOutsiders;
+    let targetTownsfolk = baseCount - base.demon - base.minion - targetOutsiders;
     if (targetTownsfolk < 0) {
       targetTownsfolk = 0;
-      targetOutsiders = N - base.demon - base.minion;
+      targetOutsiders = baseCount - base.demon - base.minion;
     }
 
     const selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
@@ -276,7 +328,7 @@ export default function StandardSetup() {
     ]);
 
     // Pad if script is too small (e.g. missing outsiders), fill with townsfolk
-    while (finalRolesList.length < N) {
+    while (finalRolesList.length < baseCount) {
       const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
       if (unusedTfs.length > 0) {
         finalRolesList.push(unusedTfs[0]);
@@ -287,9 +339,13 @@ export default function StandardSetup() {
 
     const roleIdsInPlay = finalRolesList.map(r => r.id);
     const shuffledPlayers = shuffle(players);
+    const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
+    const basePlayers = shuffledPlayers.slice(travelerCount);
 
-    const updatedPlayers = players.map(p => {
-      const playerIndex = shuffledPlayers.findIndex(sp => sp.id === p.id);
+    const shuffledBasePlayers = shuffle(basePlayers);
+
+    const updatedBasePlayers = basePlayers.map(p => {
+      const playerIndex = shuffledBasePlayers.findIndex(sp => sp.id === p.id);
       const role = finalRolesList[playerIndex];
       let roleId = role.id;
       let isTheDrunk = false;
@@ -320,6 +376,22 @@ export default function StandardSetup() {
       };
     });
 
+    const travelerRoles = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    const scriptTravelers = currentScriptRoles.filter(r => r.team === 'traveler');
+    const availableTravelers = scriptTravelers.length > 0 ? scriptTravelers : travelerRoles;
+    const shuffledTravelerRoles = shuffle(availableTravelers);
+
+    const travelerAssignments = travelerPlayers.map((p, idx) => {
+      const role = shuffledTravelerRoles[idx % shuffledTravelerRoles.length] || travelerRoles[0];
+      return {
+        ...p,
+        roleId: role.id,
+        isTheDrunk: false,
+        isTheMarionette: false,
+      };
+    });
+
+    const updatedPlayers = [...updatedBasePlayers, ...travelerAssignments];
     setPlayers(updatedPlayers);
   };
 
@@ -339,7 +411,13 @@ export default function StandardSetup() {
     if (players.length === 0) return null;
 
     const N = players.length;
-    const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+    const travelerCount = players.filter(p => {
+      if (!p.roleId) return false;
+      const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+      return r?.team === 'traveler';
+    }).length;
+    const baseCount = N - travelerCount;
+    const base = getDistribution(baseCount);
 
     const counts = players.reduce((acc, p) => {
       if (p.roleId) {
@@ -355,7 +433,7 @@ export default function StandardSetup() {
         }
       }
       return acc;
-    }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0 });
+    }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveler: 0 });
 
     const assignedRoles = players.map(p => {
       if (p.isTheMarionette) return (rolesData as Role[]).find(r => r.id === 'marionette');
@@ -378,7 +456,7 @@ export default function StandardSetup() {
     const modifications: string[] = [];
 
     if (hasLegion) {
-      const L = Math.round(N * 0.6);
+      const L = Math.round(baseCount * 0.6);
       expectedDemon = L;
       expectedMinion = 0;
       expectedOutsider = 0;
@@ -421,15 +499,15 @@ export default function StandardSetup() {
       }
     }
 
-    const expectedTownsfolk = N - expectedDemon - expectedMinion - expectedOutsider;
+    const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
 
     const isOutsiderValid = (hasGodfather && !hasLegion && !hasRiot)
       ? (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1)
       : counts.outsider === expectedOutsider;
 
     const isTownsfolkValid = (hasGodfather && !hasLegion && !hasRiot)
-      ? (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
-         counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1))
+      ? (counts.townsfolk === baseCount - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
+         counts.townsfolk === baseCount - expectedDemon - expectedMinion - (expectedOutsider - 1))
       : counts.townsfolk === expectedTownsfolk;
 
     const isDemonValid = counts.demon === expectedDemon;
@@ -454,7 +532,8 @@ export default function StandardSetup() {
         townsfolk: expectedTownsfolk,
         outsider: expectedOutsider,
         minion: expectedMinion,
-        demon: expectedDemon
+        demon: expectedDemon,
+        traveler: base.traveler
       },
       hasGodfather,
       modifications,
@@ -468,10 +547,10 @@ export default function StandardSetup() {
   }, [players]);
 
   const filteredRoles = useMemo(() => {
-    return currentScriptRoles.filter(r =>
+    return selectionRoles.filter(r =>
       r.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, currentScriptRoles]);
+  }, [searchTerm, selectionRoles]);
 
 
 
@@ -482,7 +561,7 @@ export default function StandardSetup() {
       "min-h-screen p-4 font-sans mx-auto transition-colors duration-300",
       phase === 'game' 
         ? "max-w-xl md:max-w-6xl landscape:max-w-6xl" 
-        : "max-w-xl",
+        : "max-w-xl md:max-w-4xl",
       phase === 'game' && timeOfDay === 'day'
         ? "bg-clocktower-parchment text-clocktower-night"
         : "bg-clocktower-night text-clocktower-parchment"
@@ -512,10 +591,11 @@ export default function StandardSetup() {
       </header>
 
       {phase === 'setup' && (
-        <div className="space-y-6">
-          {/* Script Upload & Randomization Panel */}
-          <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
+          {/* Section A: Script & Randomization */}
+          <div className="md:col-start-2 md:row-start-1 space-y-6 w-full">
+            {/* Script Upload & Randomization Panel */}
+            <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
               <div>
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Setup Script</h3>
                 <div className="flex items-center gap-2 mt-1">
@@ -523,7 +603,7 @@ export default function StandardSetup() {
                     "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1",
                     customScriptRoles 
                       ? "bg-clocktower-blood/10 border-clocktower-blood/40 text-clocktower-blood" 
-                      : "bg-gray-950 border-gray-800 text-gray-400"
+                      : "bg-gray-950 border-gray-800 text-gray-405"
                   )}>
                     {customScriptRoles ? "📜" : "🌐"} {scriptName}
                   </span>
@@ -534,7 +614,8 @@ export default function StandardSetup() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              
+              <div className="flex flex-col gap-2">
                 <input
                   id="script-upload-input"
                   type="file"
@@ -547,262 +628,304 @@ export default function StandardSetup() {
                   id="script-upload-button"
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-gray-800 hover:bg-gray-700 border border-gray-750 text-gray-300 px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5"
+                  className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-750 text-gray-300 py-2 rounded text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                 >
-                  <Upload size={14} /> Upload Script
+                  <Upload size={14} /> Upload Script (.json)
                 </button>
                 {customScriptRoles && (
                   <button
                     id="script-reset-button"
                     type="button"
                     onClick={clearCustomScript}
-                    className="bg-transparent hover:bg-gray-800 border border-transparent text-gray-500 hover:text-gray-300 px-2.5 py-1.5 rounded text-xs font-semibold transition-all"
+                    className="w-full text-center bg-transparent hover:bg-gray-800 border border-gray-800 text-gray-550 hover:text-gray-450 py-1.5 rounded text-xs font-semibold transition-all"
                   >
-                    Reset
+                    Reset to Default
                   </button>
                 )}
+                
+                <div className="border-t border-gray-800/60 my-1" />
+                
                 <button
                   id="random-assign-button"
                   type="button"
                   onClick={randomlyAssignRoles}
-                  className="bg-clocktower-blood hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-2.5 rounded text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={players.length < 5}
                   title="Randomly assign roles to all players based on the active script, keeping to standard distribution rules"
                 >
                   <Shuffle size={14} /> Randomly Assign
                 </button>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
 
-          <section>
-            <h2 className="text-lg font-semibold text-gray-300 mb-4">Players & Roles ({players.length})</h2>
+          {/* Section B: Seating & Players list */}
+          <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
+            <section>
+              <h2 className="text-lg font-semibold text-gray-300 mb-4">Players & Roles ({players.length})</h2>
 
-            <div className="flex gap-2 mb-4">
-              <input
-                id="new-player-input"
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-                disabled={players.length >= 15}
-                placeholder={players.length >= 15 ? "Maximum players reached (15)" : "Enter player name in seating order..."}
-                className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <button 
-                id="add-player-button"
-                onClick={addPlayer} 
-                disabled={players.length >= 15}
-                className={cn(
-                  "px-4 py-2 rounded transition-colors text-white",
-                  players.length >= 15 
-                    ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
-                    : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
-                )}
-              >
-                <Plus size={20} />
-              </button>
-            </div>            <div className="space-y-2.5">
-              {players.map((p, index) => {
-                const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
-                return (
-                  <div key={p.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 font-mono w-5">#{index + 1}</span>
-                      <input
-                        id={`player-name-input-${p.id}`}
-                        type="text"
-                        value={p.name}
-                        onChange={(e) => updatePlayerName(p.id, e.target.value)}
-                        className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
-                      />
-                      {p.isTheDrunk && (
-                        <span className="text-[8px] font-black text-black bg-yellow-600 border border-yellow-750 px-1 py-0.5 rounded uppercase">
-                          THE DRUNK
-                        </span>
-                      )}
-                      {p.isTheMarionette && (
-                        <span className="text-[8px] font-black text-white bg-clocktower-minion border border-clocktower-minion/30 px-1 py-0.5 rounded uppercase">
-                          THE MARIONETTE
-                        </span>
-                      )}
-                      <button id={`remove-player-${p.id}`} onClick={() => removePlayer(p.id)} className="text-gray-600 hover:text-red-500 p-1 transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+              <div className="flex gap-2 mb-4">
+                <input
+                  id="new-player-input"
+                  type="text"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
+                  disabled={players.length >= 20}
+                  placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+                  className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button 
+                  id="add-player-button"
+                  onClick={addPlayer} 
+                  disabled={players.length >= 20}
+                  className={cn(
+                    "px-4 py-2 rounded transition-colors text-white",
+                    players.length >= 20 
+                      ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
+                      : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
+                  )}
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
 
-                    {p.roleId ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between bg-gray-955/40 px-3 py-2 rounded border border-gray-855">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border",
-                              roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5",
-                              roleObj?.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
-                              roleObj?.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
-                              roleObj?.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
-                            )}>
-                              {roleObj?.team || 'N/A'}
-                            </span>
-                            <span className={cn(
-                              "font-semibold text-sm",
-                              roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
-                              roleObj?.team === 'outsider' && "text-clocktower-outsider",
-                              roleObj?.team === 'minion' && "text-clocktower-minion",
-                              roleObj?.team === 'demon' && "text-clocktower-demon",
-                            )}>
-                              {roleObj?.name}
-                            </span>
-                          </div>
-                          <button
-                            id={`change-role-button-${p.id}`}
-                            onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
-                            className="text-gray-500 hover:text-gray-300 text-xs underline font-medium"
-                          >
-                            Change
-                          </button>
-                        </div>
-
-                        {/* Secret Role Draft Toggles */}
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            id={`toggle-drunk-button-${p.id}`}
-                            type="button"
-                            onClick={() => togglePlayerTheDrunk(p.id)}
-                            className={cn(
-                              "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
-                              p.isTheDrunk
-                                ? "bg-yellow-600 border-yellow-755 text-black font-black"
-                                : "bg-gray-950 border-gray-855 text-gray-500 hover:text-gray-400"
-                            )}
-                          >
-                            🍺 The Drunk
-                          </button>
-                          <button
-                            id={`toggle-marionette-button-${p.id}`}
-                            type="button"
-                            onClick={() => togglePlayerTheMarionette(p.id)}
-                            className={cn(
-                              "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
-                              p.isTheMarionette
-                                ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
-                                : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                            )}
-                          >
-                            🎭 The Marionette
-                          </button>
-                        </div>
+              <div className="space-y-2.5">
+                {players.map((p, index) => {
+                  const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+                  return (
+                    <div key={p.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 font-mono w-5">#{index + 1}</span>
+                        <input
+                          id={`player-name-input-${p.id}`}
+                          type="text"
+                          value={p.name}
+                          onChange={(e) => updatePlayerName(p.id, e.target.value)}
+                          className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
+                        />
+                        {p.isTheDrunk && (
+                          <span className="text-[8px] font-black text-black bg-yellow-600 border border-yellow-750 px-1 py-0.5 rounded uppercase">
+                            THE DRUNK
+                          </span>
+                        )}
+                        {p.isTheMarionette && (
+                          <span className="text-[8px] font-black text-white bg-clocktower-minion border border-clocktower-minion/30 px-1 py-0.5 rounded uppercase">
+                            THE MARIONETTE
+                          </span>
+                        )}
+                        <button id={`remove-player-${p.id}`} onClick={() => removePlayer(p.id)} className="text-gray-600 hover:text-red-500 p-1 transition-colors">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                    ) : (
-                      <div
-                        id={`select-role-placeholder-${p.id}`}
-                        onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
-                        className="flex items-center bg-gray-800/50 rounded px-3 py-1.5 border border-gray-700/60 cursor-pointer text-sm text-gray-400 hover:border-gray-600 transition-colors"
-                      >
-                        <Search size={14} className="mr-2 text-gray-500" />
-                        Tap to select role...
+
+                      {p.roleId ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between bg-gray-955/40 px-3 py-2 rounded border border-gray-855">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border",
+                                roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5",
+                                roleObj?.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
+                                roleObj?.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
+                                roleObj?.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
+                                roleObj?.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5",
+                              )}>
+                                {roleObj?.team || 'N/A'}
+                              </span>
+                              <span className={cn(
+                                "font-semibold text-sm",
+                                roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
+                                roleObj?.team === 'outsider' && "text-clocktower-outsider",
+                                roleObj?.team === 'minion' && "text-clocktower-minion",
+                                roleObj?.team === 'demon' && "text-clocktower-demon",
+                                roleObj?.team === 'traveler' && "text-clocktower-traveler",
+                              )}>
+                                {roleObj?.name}
+                              </span>
+                            </div>
+                            <button
+                              id={`change-role-button-${p.id}`}
+                              onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
+                              className="text-gray-550 hover:text-gray-300 text-xs underline font-medium"
+                            >
+                              Change
+                            </button>
+                          </div>
+
+                          {/* Secret Role Draft Toggles */}
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              id={`toggle-drunk-button-${p.id}`}
+                              type="button"
+                              onClick={() => togglePlayerTheDrunk(p.id)}
+                              className={cn(
+                                "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                                p.isTheDrunk
+                                  ? "bg-yellow-600 border-yellow-755 text-black font-black"
+                                  : "bg-gray-950 border-gray-855 text-gray-500 hover:text-gray-400"
+                              )}
+                            >
+                              🍺 The Drunk
+                            </button>
+                            <button
+                              id={`toggle-marionette-button-${p.id}`}
+                              type="button"
+                              onClick={() => togglePlayerTheMarionette(p.id)}
+                              className={cn(
+                                "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                                p.isTheMarionette
+                                  ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
+                                  : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
+                              )}
+                            >
+                              🎭 The Marionette
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          id={`select-role-placeholder-${p.id}`}
+                          onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
+                          className="flex items-center bg-gray-800/50 rounded px-3 py-1.5 border border-gray-700/60 cursor-pointer text-sm text-gray-400 hover:border-gray-600 transition-colors"
+                        >
+                          <Search size={14} className="mr-2 text-gray-500" />
+                          Tap to select role...
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          {/* Section C: Distribution & Validation & Open Grimoire */}
+          <div className="md:col-start-2 md:row-start-2 space-y-6 w-full">
+            {/* Distribution Card */}
+            <section className="bg-gray-900 p-4 rounded-lg border border-gray-800">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Standard Base Distribution</h3>
+              {players.length >= 5 ? (() => {
+                const travelerCountInPlay = players.filter(p => {
+                  if (!p.roleId) return false;
+                  const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+                  return r?.team === 'traveler';
+                }).length;
+                const baseCount = players.length - travelerCountInPlay;
+                const dist = getDistribution(baseCount);
+                return (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-townsfolk">
+                        TF: {dist.townsfolk}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-outsider">
+                        O: {dist.outsider}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-minion">
+                        M: {dist.minion}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-demon">
+                        D: {dist.demon}
+                      </div>
+                    </div>
+                    {(dist.traveler > 0 || travelerCountInPlay > 0) && (
+                      <div className="text-center text-xs font-semibold p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-traveler">
+                        Travelers: {travelerCountInPlay > 0 ? travelerCountInPlay : dist.traveler}
                       </div>
                     )}
                   </div>
                 );
-              })}
-            </div>
-          </section>
+              })() : (
+                <p className="text-sm text-gray-500 italic">Add at least 5 players to view distribution.</p>
+              )}
+            </section>
 
-          {/* Distribution Card */}
-          <section className="bg-gray-900 p-4 rounded-lg border border-gray-800">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Standard Base Distribution</h3>
-            {players.length >= 5 ? (
-              <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-townsfolk">
-                  TF: {(DISTRIBUTION[players.length] || { townsfolk: 0 }).townsfolk}
+            {/* Validation Summary */}
+            {validationSummary && players.some(p => p.roleId) && (
+              <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-3 space-y-2.5">
+                <div className="flex items-center gap-1.5">
+                  {validationSummary.isValid ? (
+                    <CheckCircle size={16} className="text-clocktower-outsider" />
+                  ) : (
+                    <AlertTriangle size={16} className="text-clocktower-minion" />
+                  )}
+                  <span className="font-semibold text-xs tracking-wide uppercase text-gray-300">
+                    Grimoire Balance Verification
+                  </span>
                 </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-outsider">
-                  O: {(DISTRIBUTION[players.length] || { outsider: 0 }).outsider}
-                </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-minion">
-                  M: {(DISTRIBUTION[players.length] || { minion: 0 }).minion}
-                </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-demon">
-                  D: {(DISTRIBUTION[players.length] || { demon: 0 }).demon}
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">Add at least 5 players to view distribution.</p>
-            )}
-          </section>
 
-          {/* Validation Summary */}
-          {validationSummary && players.some(p => p.roleId) && (
-            <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-3 space-y-2.5">
-              <div className="flex items-center gap-1.5">
-                {validationSummary.isValid ? (
-                  <CheckCircle size={16} className="text-clocktower-outsider" />
-                ) : (
-                  <AlertTriangle size={16} className="text-clocktower-minion" />
+                {validationSummary.modifications.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {validationSummary.modifications.map((m, idx) => (
+                      <span key={idx} className="text-[9px] bg-clocktower-blood/10 border border-clocktower-blood/30 text-clocktower-parchment/80 px-1.5 py-0.5 rounded font-medium">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
                 )}
-                <span className="font-semibold text-xs tracking-wide uppercase text-gray-300">
-                  Grimoire Balance Verification
-                </span>
-              </div>
 
-              {validationSummary.modifications.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {validationSummary.modifications.map((m, idx) => (
-                    <span key={idx} className="text-[9px] bg-clocktower-blood/10 border border-clocktower-blood/30 text-clocktower-parchment/80 px-1.5 py-0.5 rounded font-medium">
-                      {m}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono border-t border-gray-800 pt-2.5">
-                <div>
-                  <div className="text-gray-500">TF</div>
-                  <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : "text-yellow-500")}>
-                    {validationSummary.counts.townsfolk} / {validationSummary.expected.townsfolk}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">OUT</div>
-                  <div className={cn("font-bold text-xs mt-0.5", validationSummary.isOutsiderValid ? "text-clocktower-outsider" : "text-yellow-500")}>
-                    {validationSummary.counts.outsider} / {validationSummary.hasGodfather ? `${validationSummary.expected.outsider - 1} or ${validationSummary.expected.outsider + 1}` : validationSummary.expected.outsider}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">MIN</div>
-                  <div className={cn("font-bold text-xs mt-0.5", validationSummary.isMinionValid ? "text-clocktower-minion" : "text-yellow-500")}>
-                    {validationSummary.counts.minion} / {validationSummary.expected.minion}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-gray-500">DEM</div>
-                  <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : "text-yellow-500")}>
-                    {validationSummary.counts.demon} / {validationSummary.expected.demon}
-                  </div>
-                </div>
-              </div>
-
-              {validationSummary.jinxWarnings.length > 0 && (
-                <div className="border-t border-gray-800 pt-2 space-y-1">
-                  {validationSummary.jinxWarnings.map((w, idx) => (
-                    <div key={idx} className="text-[10px] text-yellow-500 flex items-center gap-1 font-medium">
-                      <AlertTriangle size={10} /> {w}
+                <div className={cn(
+                  "grid text-center text-[10px] font-mono border-t border-gray-800 pt-2.5",
+                  validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
+                    ? "grid-cols-5 gap-1"
+                    : "grid-cols-4 gap-2"
+                )}>
+                  <div>
+                    <div className="text-gray-500">TF</div>
+                    <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : "text-yellow-500")}>
+                      {validationSummary.counts.townsfolk} / {validationSummary.expected.townsfolk}
                     </div>
-                  ))}
+                  </div>
+                  <div>
+                    <div className="text-gray-500">OUT</div>
+                    <div className={cn("font-bold text-xs mt-0.5", validationSummary.isOutsiderValid ? "text-clocktower-outsider" : "text-yellow-500")}>
+                      {validationSummary.counts.outsider} / {validationSummary.hasGodfather ? `${validationSummary.expected.outsider - 1} or ${validationSummary.expected.outsider + 1}` : validationSummary.expected.outsider}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">MIN</div>
+                    <div className={cn("font-bold text-xs mt-0.5", validationSummary.isMinionValid ? "text-clocktower-minion" : "text-yellow-500")}>
+                      {validationSummary.counts.minion} / {validationSummary.expected.minion}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">DEM</div>
+                    <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : "text-yellow-500")}>
+                      {validationSummary.counts.demon} / {validationSummary.expected.demon}
+                    </div>
+                  </div>
+                  {(validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0) && (
+                    <div>
+                      <div className="text-gray-500">TRV</div>
+                      <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
+                        {validationSummary.counts.traveler} / {validationSummary.expected.traveler}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
 
-          <button
-            id="open-grimoire-button"
-            disabled={!allAssigned}
-            onClick={() => setPhase('game')}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
-          >
-            Open Grimoire
-          </button>
+                {validationSummary.jinxWarnings.length > 0 && (
+                  <div className="border-t border-gray-800 pt-2 space-y-1">
+                    {validationSummary.jinxWarnings.map((w, idx) => (
+                      <div key={idx} className="text-[10px] text-yellow-500 flex items-center gap-1 font-medium">
+                        <AlertTriangle size={10} /> {w}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              id="open-grimoire-button"
+              disabled={!allAssigned}
+              onClick={() => setPhase('game')}
+              className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+            >
+              Open Grimoire
+            </button>
+          </div>
         </div>
       )}
 
@@ -817,7 +940,7 @@ export default function StandardSetup() {
               dayNumber={dayNumber}
               toggleTimeOfDay={toggleTimeOfDay}
               onSelectPlayer={setSelectedPlayerId}
-              rolesData={currentScriptRoles}
+              rolesData={selectionRoles}
             />
           </div>
 
@@ -855,7 +978,7 @@ export default function StandardSetup() {
                       p.isDead && "opacity-45",
                       timeOfDay === 'day'
                         ? "bg-white/40 border-gray-200 hover:bg-white/70"
-                        : "bg-gray-950/20 border-gray-900/40 hover:bg-gray-900/60"
+                        : "bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60"
                     )}>
                       <span className={cn("text-[9px] font-mono w-4 shrink-0", timeOfDay === 'day' ? "text-gray-500" : "text-gray-600")}>{index + 1}</span>
                       <span className={cn(
@@ -869,6 +992,7 @@ export default function StandardSetup() {
                         rObj?.team === 'outsider' && "text-clocktower-outsider",
                         rObj?.team === 'minion' && "text-clocktower-minion",
                         rObj?.team === 'demon' && "text-clocktower-demon",
+                        rObj?.team === 'traveler' && "text-clocktower-traveler",
                       )}>
                         <span className="truncate">{rObj?.name ?? '—'}</span>
                         {p.isTheDrunk && <span className="text-[8px] bg-yellow-600 text-black px-0.5 rounded leading-none shrink-0">DK</span>}
@@ -877,6 +1001,62 @@ export default function StandardSetup() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Add Traveler Card (Late Arrival) */}
+            <div className={cn(
+              "rounded-lg border p-3.5 space-y-3 transition-colors duration-300",
+              timeOfDay === 'day'
+                ? "bg-white/50 border-gray-300 text-clocktower-night"
+                : "bg-gray-900/40 border-gray-800/80"
+            )}>
+              <h4 className={cn(
+                "text-[10px] uppercase font-bold tracking-wider",
+                timeOfDay === 'day' ? "text-gray-600" : "text-gray-500"
+              )}>Add Traveler (Late Arrival)</h4>
+              
+              <div className="flex flex-col gap-2">
+                <input
+                  id="game-traveler-name-input"
+                  type="text"
+                  placeholder="Traveler name..."
+                  value={newTravelerName}
+                  onChange={(e) => setNewTravelerName(e.target.value)}
+                  className={cn(
+                    "w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors",
+                    timeOfDay === 'day'
+                      ? "bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood"
+                      : "bg-gray-950 border-gray-800 text-gray-250 focus:border-clocktower-blood"
+                  )}
+                />
+                
+                <div className="flex gap-2">
+                  <select
+                    id="game-traveler-role-select"
+                    value={newTravelerRoleId}
+                    onChange={(e) => setNewTravelerRoleId(e.target.value)}
+                    className={cn(
+                      "flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors",
+                      timeOfDay === 'day'
+                        ? "bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood"
+                        : "bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood"
+                    )}
+                  >
+                    {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  
+                  <button
+                    id="game-add-traveler-button"
+                    onClick={addTravelerGamePhase}
+                    disabled={players.length >= 20}
+                    className="bg-clocktower-traveler hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -946,7 +1126,7 @@ export default function StandardSetup() {
         const p = players.find(x => x.id === selectedPlayerId);
         if (!p) return null;
         const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
-        const filteredModalRoles = currentScriptRoles.filter(r =>
+        const filteredModalRoles = selectionRoles.filter(r =>
           r.name.toLowerCase().includes(modalRoleSearch.toLowerCase())
         );
         const currentIndex = players.findIndex(x => x.id === selectedPlayerId);
@@ -1097,6 +1277,7 @@ export default function StandardSetup() {
                               role.team === 'outsider' && "text-clocktower-outsider",
                               role.team === 'minion' && "text-clocktower-minion",
                               role.team === 'demon' && "text-clocktower-demon",
+                              role.team === 'traveler' && "text-clocktower-traveler",
                             )}>
                               {role.name}
                             </span>
@@ -1133,6 +1314,7 @@ export default function StandardSetup() {
                             roleObj.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
                             roleObj.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
                             roleObj.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
+                            roleObj.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5",
                           )}>
                             {roleObj.team}
                           </span>
@@ -1142,6 +1324,7 @@ export default function StandardSetup() {
                             roleObj.team === 'outsider' && "text-clocktower-outsider",
                             roleObj.team === 'minion' && "text-clocktower-minion",
                             roleObj.team === 'demon' && "text-clocktower-demon",
+                            roleObj.team === 'traveler' && "text-clocktower-traveler",
                           )}>
                             {roleObj.name}
                           </span>

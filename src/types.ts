@@ -1,7 +1,7 @@
 export interface Role {
   id: string;
   name: string;
-  team: 'townsfolk' | 'outsider' | 'minion' | 'demon';
+  team: 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler';
 }
 
 export interface PlayerPreferences {
@@ -9,6 +9,7 @@ export interface PlayerPreferences {
   outsider: string[];
   minion: string[];
   demon: string[];
+  traveler: string[];
 }
 
 export interface Player {

@@ -136,5 +136,19 @@
   {"id": "kazali", "name": "Kazali", "team": "demon"},
   {"id": "lordoftyphon", "name": "Lord of Typhon", "team": "demon"},
   {"id": "ojo", "name": "Ojo", "team": "demon"},
-  {"id": "yaggababble", "name": "Yaggababble", "team": "demon"}
+  {"id": "yaggababble", "name": "Yaggababble", "team": "demon"},
+  {"id": "beggar", "name": "Beggar", "team": "traveler"},
+  {"id": "thief", "name": "Thief", "team": "traveler"},
+  {"id": "bureaucrat", "name": "Bureaucrat", "team": "traveler"},
+  {"id": "gunslinger", "name": "Gunslinger", "team": "traveler"},
+  {"id": "scapegoat", "name": "Scapegoat", "team": "traveler"},
+  {"id": "harlot", "name": "Harlot", "team": "traveler"},
+  {"id": "barista", "name": "Barista", "team": "traveler"},
+  {"id": "bonecollector", "name": "Bone Collector", "team": "traveler"},
+  {"id": "butcher", "name": "Butcher", "team": "traveler"},
+  {"id": "deviant", "name": "Deviant", "team": "traveler"},
+  {"id": "apprentice", "name": "Apprentice", "team": "traveler"},
+  {"id": "vandal", "name": "Vandal", "team": "traveler"},
+  {"id": "judge", "name": "Judge", "team": "traveler"},
+  {"id": "bishop", "name": "Bishop", "team": "traveler"}
 ]

@@ -2,26 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, Sparkles, Shuffle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
-import type { Role } from './types';
-import { DISTRIBUTION } from './constants';
+import type { Role, Player as BasePlayer, PlayerPreferences } from './types';
+import { getDistribution } from './constants';
 import { assignCharacters, getPreferenceLabel } from './utils/assignment';
 import GrimoireBoard from './components/GrimoireBoard';
 
-export interface Player {
-  id: string;
-  name: string;
-  preferences: {
-    townsfolk: string[];
-    outsider: string[];
-    minion: string[];
-    demon: string[];
-  };
-  roleId?: string;
-  assignedFromPref?: boolean;
-  isDead: boolean;
-  isTheDrunk?: boolean;
-  isTheMarionette?: boolean;
-}
+export type Player = Omit<BasePlayer, 'preferences'> & {
+  preferences: PlayerPreferences;
+};
 
 type Phase = 'setup' | 'draft' | 'game';
 
@@ -34,6 +22,10 @@ export default function WhaleBucket() {
   const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>('night');
   const [dayNumber, setDayNumber] = useState<number>(1);
 
+  // Traveler states
+  const [allowTravelers, setAllowTravelers] = useState<boolean>(false);
+  const [newTravelerName, setNewTravelerName] = useState('');
+  const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Preference modal states
   const [activePrefModal, setActivePrefModal] = useState<{ playerId: string; team: Role['team'] } | null>(null);
@@ -47,17 +39,24 @@ export default function WhaleBucket() {
     const saved = localStorage.getItem('whale-bucket-game');
     if (saved) {
       try {
-        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn } = JSON.parse(saved);
-        type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Player['preferences'] };
+        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, allowTravelers: at } = JSON.parse(saved);
+        type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Partial<Player['preferences']> };
         const validatedPlayers = (p || []).map((player: SavedPlayer) => ({
           ...player,
-          preferences: player.preferences || { townsfolk: [], outsider: [], minion: [], demon: [] }
+          preferences: {
+            townsfolk: player.preferences?.townsfolk || [],
+            outsider: player.preferences?.outsider || [],
+            minion: player.preferences?.minion || [],
+            demon: player.preferences?.demon || [],
+            traveler: player.preferences?.traveler || []
+          }
         }));
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setPlayers(validatedPlayers);
         setPhase(ph || 'setup');
         setTimeOfDay(tod || 'night');
         setDayNumber(dn || 1);
+        if (at !== undefined) setAllowTravelers(!!at);
 
       } catch (e) {
         console.error(e);
@@ -67,7 +66,7 @@ export default function WhaleBucket() {
 
   // Save to localStorage and update document theme
   useEffect(() => {
-    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber }));
+    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber, allowTravelers }));
     
     if (phase === 'game' && timeOfDay === 'day') {
       document.documentElement.classList.add('theme-day');
@@ -78,7 +77,7 @@ export default function WhaleBucket() {
     return () => {
       document.documentElement.classList.remove('theme-day');
     };
-  }, [players, phase, timeOfDay, dayNumber]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -90,7 +89,7 @@ export default function WhaleBucket() {
   };
 
   const addPlayer = () => {
-    if (players.length >= 15) return;
+    if (players.length >= 20) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     const newPlayer: Player = {
       id: Math.random().toString(36).substr(2, 9),
@@ -99,7 +98,8 @@ export default function WhaleBucket() {
         townsfolk: [],
         outsider: [],
         minion: [],
-        demon: []
+        demon: [],
+        traveler: []
       },
       isDead: false,
       isTheDrunk: false,
@@ -107,6 +107,38 @@ export default function WhaleBucket() {
     };
     setPlayers([...players, newPlayer]);
     setNewPlayerName('');
+  };
+
+  const addTravelerGamePhase = () => {
+    if (!newTravelerName.trim()) {
+      alert("Please enter a traveler name.");
+      return;
+    }
+    if (!newTravelerRoleId) {
+      alert("Please select a traveler role.");
+      return;
+    }
+    if (players.length >= 20) {
+      alert("Maximum players reached (20).");
+      return;
+    }
+    const newPlayer: Player = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newTravelerName.trim(),
+      roleId: newTravelerRoleId,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: [],
+        demon: [],
+        traveler: []
+      },
+      isDead: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+    };
+    setPlayers([...players, newPlayer]);
+    setNewTravelerName('');
   };
 
   const removePlayer = (id: string) => {
@@ -140,10 +172,14 @@ export default function WhaleBucket() {
         townsfolk: p.preferences.townsfolk.length > 0 ? [...p.preferences.townsfolk] : [],
         outsider: p.preferences.outsider.length > 0 ? [...p.preferences.outsider] : [],
         minion: p.preferences.minion.length > 0 ? [...p.preferences.minion] : [],
-        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : []
+        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : [],
+        traveler: p.preferences.traveler?.length > 0 ? [...p.preferences.traveler] : []
       };
       
-      const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
+      const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
+      if (allowTravelers) {
+        teams.push('traveler');
+      }
       for (const team of teams) {
         if (newPrefs[team].length === 0) {
           const available = allRoles.filter(r => r.team === team);
@@ -165,10 +201,14 @@ export default function WhaleBucket() {
         townsfolk: p.preferences.townsfolk.length > 0 ? [...p.preferences.townsfolk] : [],
         outsider: p.preferences.outsider.length > 0 ? [...p.preferences.outsider] : [],
         minion: p.preferences.minion.length > 0 ? [...p.preferences.minion] : [],
-        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : []
+        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : [],
+        traveler: p.preferences.traveler?.length > 0 ? [...p.preferences.traveler] : []
       };
       
-      const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
+      const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
+      if (allowTravelers) {
+        teams.push('traveler');
+      }
       for (const team of teams) {
         if (newPrefs[team].length === 0) {
           const available = allRoles.filter(r => r.team === team);
@@ -187,13 +227,13 @@ export default function WhaleBucket() {
     if (confirm('Clear preferences for all players?')) {
       setPlayers(players.map(p => ({
         ...p,
-        preferences: { townsfolk: [], outsider: [], minion: [], demon: [] }
+        preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] }
       })));
     }
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, rolesData as Role[]);
+    const result = assignCharacters(players, rolesData as Role[], allowTravelers);
     if (!result) {
       alert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;
@@ -284,7 +324,13 @@ export default function WhaleBucket() {
     if (phase === 'setup' || players.length === 0) return null;
     
     const N = players.length;
-    const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+    const travelerCount = players.filter(p => {
+      if (!p.roleId) return false;
+      const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+      return r?.team === 'traveler';
+    }).length;
+    const baseCount = N - travelerCount;
+    const base = getDistribution(baseCount);
     
     const counts = players.reduce((acc, p) => {
       if (p.roleId) {
@@ -300,7 +346,7 @@ export default function WhaleBucket() {
         }
       }
       return acc;
-    }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0 });
+    }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveler: 0 });
     
     const assignedRoles = players.map(p => {
       if (p.isTheMarionette) return (rolesData as Role[]).find(r => r.id === 'marionette');
@@ -323,7 +369,7 @@ export default function WhaleBucket() {
     const modifications: string[] = [];
     
     if (hasLegion) {
-      const L = Math.round(N * 0.6);
+      const L = Math.round(baseCount * 0.6);
       expectedDemon = L;
       expectedMinion = 0;
       expectedOutsider = 0;
@@ -366,15 +412,15 @@ export default function WhaleBucket() {
       }
     }
     
-    const expectedTownsfolk = N - expectedDemon - expectedMinion - expectedOutsider;
+    const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
     
     const isOutsiderValid = (hasGodfather && !hasLegion && !hasRiot)
       ? (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1)
       : counts.outsider === expectedOutsider;
     
     const isTownsfolkValid = (hasGodfather && !hasLegion && !hasRiot)
-      ? (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
-         counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1))
+      ? (counts.townsfolk === baseCount - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
+         counts.townsfolk === baseCount - expectedDemon - expectedMinion - (expectedOutsider - 1))
       : counts.townsfolk === expectedTownsfolk;
     
     const isDemonValid = counts.demon === expectedDemon;
@@ -399,7 +445,8 @@ export default function WhaleBucket() {
         townsfolk: expectedTownsfolk,
         outsider: expectedOutsider,
         minion: expectedMinion,
-        demon: expectedDemon
+        demon: expectedDemon,
+        traveler: base.traveler
       },
       hasGodfather,
       modifications,
@@ -433,7 +480,7 @@ export default function WhaleBucket() {
       "min-h-screen p-4 font-sans mx-auto transition-colors duration-300",
       phase === 'game' 
         ? "max-w-xl md:max-w-6xl landscape:max-w-6xl" 
-        : "max-w-xl",
+        : "max-w-xl md:max-w-4xl",
       phase === 'game' && timeOfDay === 'day'
         ? "text-clocktower-night"
         : "text-clocktower-parchment"
@@ -460,181 +507,240 @@ export default function WhaleBucket() {
         <button id="reset-game-button-desktop" onClick={resetGame} className={cn("hidden sm:block p-2 transition-colors", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")} title="Reset game">
           <RefreshCcw size={20} />
         </button>
-      </header>
-
-      {phase === 'setup' && (
-        <div className="space-y-6">
-          <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-300">1. Seating & Preferences ({players.length})</h2>
-              {players.length > 0 && (
-                <div className="flex gap-2">
-                  <button 
-                    onClick={autoFillAllPreferences} 
-                    className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
-                  >
-                    Auto-Fill All
-                  </button>
-                  <button 
-                    onClick={clearAllPreferences} 
-                    className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-                disabled={players.length >= 15}
-                placeholder={players.length >= 15 ? "Maximum players reached (15)" : "Enter player name in seating order..."}
-                className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <button 
-                onClick={addPlayer} 
-                disabled={players.length >= 15}
-                className={cn(
-                  "px-4 py-2 rounded transition-colors text-white",
-                  players.length >= 15 
-                    ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
-                    : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
-                )}
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-
-
-            
-            <div className="space-y-3">
-              {players.map((p, index) => (
-                <div key={p.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 font-mono w-5">#{index + 1}</span>
-                    <input
-                      type="text"
-                      value={p.name}
-                      onChange={(e) => updatePlayerName(p.id, e.target.value)}
-                      className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
-                    />
-                    <button
-                      onClick={() => autoFillPlayerPreferences(p.id)}
-                      className="text-[10px] text-clocktower-townsfolk hover:underline flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-clocktower-townsfolk/5 border border-clocktower-townsfolk/20"
-                      title="Auto-fill random preferences for this player"
-                    >
-                      <Shuffle size={10} /> Auto
-                    </button>
-                    <button onClick={() => removePlayer(p.id)} className="text-gray-600 hover:text-red-500 p-1 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  
-                  {/* Preference buttons */}
-                  <div className="grid grid-cols-4 gap-1.5 pt-1">
-                    <button
-                      onClick={() => {
-                        setActivePrefModal({ playerId: p.id, team: 'townsfolk' });
-                        setPrefSearchTerm('');
-                      }}
-                      title={getPreferenceLabel(p.preferences.townsfolk, "No Townsfolk preference")}
-                      className={cn(
-                        "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
-                        p.preferences.townsfolk.length > 0
-                          ? "bg-clocktower-townsfolk/15 border-clocktower-townsfolk/40 text-clocktower-townsfolk"
-                          : "bg-gray-950/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                      )}
-                    >
-                      {getPreferenceLabel(p.preferences.townsfolk, "TF")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActivePrefModal({ playerId: p.id, team: 'outsider' });
-                        setPrefSearchTerm('');
-                      }}
-                      title={getPreferenceLabel(p.preferences.outsider, "No Outsider preference")}
-                      className={cn(
-                        "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
-                        p.preferences.outsider.length > 0
-                          ? "bg-clocktower-outsider/15 border-clocktower-outsider/40 text-clocktower-outsider"
-                          : "bg-gray-950/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                      )}
-                    >
-                      {getPreferenceLabel(p.preferences.outsider, "OUT")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActivePrefModal({ playerId: p.id, team: 'minion' });
-                        setPrefSearchTerm('');
-                      }}
-                      title={getPreferenceLabel(p.preferences.minion, "No Minion preference")}
-                      className={cn(
-                        "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
-                        p.preferences.minion.length > 0
-                          ? "bg-clocktower-minion/15 border-clocktower-minion/40 text-clocktower-minion"
-                          : "bg-gray-950/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                      )}
-                    >
-                      {getPreferenceLabel(p.preferences.minion, "MIN")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActivePrefModal({ playerId: p.id, team: 'demon' });
-                        setPrefSearchTerm('');
-                      }}
-                      title={getPreferenceLabel(p.preferences.demon, "No Demon preference")}
-                      className={cn(
-                        "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
-                        p.preferences.demon.length > 0
-                          ? "bg-clocktower-demon/15 border-clocktower-demon/40 text-clocktower-demon"
-                          : "bg-gray-950/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                      )}
-                    >
-                      {getPreferenceLabel(p.preferences.demon, "DEM")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="bg-gray-900 p-4 rounded-lg border border-gray-850">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Standard Base Distribution</h3>
-            {players.length >= 5 ? (
-              <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-townsfolk">
-                  TS: {(DISTRIBUTION[players.length] || { townsfolk: 0 }).townsfolk}
-                </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-outsider">
-                  O: {(DISTRIBUTION[players.length] || { outsider: 0 }).outsider}
-                </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-minion">
-                  M: {(DISTRIBUTION[players.length] || { minion: 0 }).minion}
-                </div>
-                <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-demon">
-                  D: {(DISTRIBUTION[players.length] || { demon: 0 }).demon}
-                </div>
+      </header>      {phase === 'setup' && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
+          {/* Section A: Draft Options */}
+          <div className="md:col-start-2 md:row-start-1 w-full">
+            {/* Draft Options Toggle */}
+            <div className="bg-gray-900/60 p-4 rounded-lg border border-gray-800/50 flex flex-col gap-3">
+              <div>
+                <span className="text-xs font-bold text-gray-300 block uppercase tracking-wider text-left">Draft Options</span>
+                <span className="text-[10px] text-gray-500 block text-left">Configure drafting setup rules</span>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">Add at least 5 players to view distribution.</p>
-            )}
-          </section>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  id="draft-traveler-toggle"
+                  type="checkbox"
+                  checked={allowTravelers}
+                  onChange={(e) => setAllowTravelers(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-clocktower-traveler"></div>
+                <span className="ml-2 text-xs font-semibold text-gray-300">Players will pick a traveler</span>
+              </label>
+            </div>
+          </div>
 
+          {/* Section B: Seating & Preferences */}
+          <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
+            <section>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-300">1. Seating & Preferences ({players.length})</h2>
+                {players.length > 0 && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={autoFillAllPreferences} 
+                      className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
+                    >
+                      Auto-Fill All
+                    </button>
+                    <button 
+                      onClick={clearAllPreferences} 
+                      className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
+              </div>
 
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
+                  disabled={players.length >= 20}
+                  placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+                  className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button 
+                  onClick={addPlayer} 
+                  disabled={players.length >= 20}
+                  className={cn(
+                    "px-4 py-2 rounded transition-colors text-white",
+                    players.length >= 20 
+                      ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
+                      : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
+                  )}
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
 
-          <button
-            disabled={players.length < 5}
-            onClick={runAssignment}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
-          >
-            <Sparkles size={16} /> Randomly Assign Characters
-          </button>
+              <div className="space-y-3">
+                {players.map((p, index) => (
+                  <div key={p.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 font-mono w-5">#{index + 1}</span>
+                      <input
+                        type="text"
+                        value={p.name}
+                        onChange={(e) => updatePlayerName(p.id, e.target.value)}
+                        className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
+                      />
+                      <button
+                        onClick={() => autoFillPlayerPreferences(p.id)}
+                        className="text-[10px] text-clocktower-townsfolk hover:underline flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-clocktower-townsfolk/5 border border-clocktower-townsfolk/20"
+                        title="Auto-fill random preferences for this player"
+                      >
+                        <Shuffle size={10} /> Auto
+                      </button>
+                      <button onClick={() => removePlayer(p.id)} className="text-gray-600 hover:text-red-500 p-1 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    
+                    {/* Preference buttons */}
+                    <div className={cn("grid gap-1.5 pt-1", allowTravelers ? "grid-cols-5" : "grid-cols-4")}>
+                      <button
+                        onClick={() => {
+                          setActivePrefModal({ playerId: p.id, team: 'townsfolk' });
+                          setPrefSearchTerm('');
+                        }}
+                        title={getPreferenceLabel(p.preferences.townsfolk, "No Townsfolk preference")}
+                        className={cn(
+                          "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
+                          p.preferences.townsfolk.length > 0
+                            ? "bg-clocktower-townsfolk/15 border-clocktower-townsfolk/40 text-clocktower-townsfolk"
+                            : "bg-gray-950/40 border-gray-800 text-gray-550 hover:border-gray-700"
+                        )}
+                      >
+                        {getPreferenceLabel(p.preferences.townsfolk, "TF")}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActivePrefModal({ playerId: p.id, team: 'outsider' });
+                          setPrefSearchTerm('');
+                        }}
+                        title={getPreferenceLabel(p.preferences.outsider, "No Outsider preference")}
+                        className={cn(
+                          "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
+                          p.preferences.outsider.length > 0
+                            ? "bg-clocktower-outsider/15 border-clocktower-outsider/40 text-clocktower-outsider"
+                            : "bg-gray-950/40 border-gray-800 text-gray-550 hover:border-gray-700"
+                        )}
+                      >
+                        {getPreferenceLabel(p.preferences.outsider, "OUT")}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActivePrefModal({ playerId: p.id, team: 'minion' });
+                          setPrefSearchTerm('');
+                        }}
+                        title={getPreferenceLabel(p.preferences.minion, "No Minion preference")}
+                        className={cn(
+                          "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
+                          p.preferences.minion.length > 0
+                            ? "bg-clocktower-minion/15 border-clocktower-minion/40 text-clocktower-minion"
+                            : "bg-gray-950/40 border-gray-800 text-gray-550 hover:border-gray-700"
+                        )}
+                      >
+                        {getPreferenceLabel(p.preferences.minion, "MIN")}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActivePrefModal({ playerId: p.id, team: 'demon' });
+                          setPrefSearchTerm('');
+                        }}
+                        title={getPreferenceLabel(p.preferences.demon, "No Demon preference")}
+                        className={cn(
+                          "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
+                          p.preferences.demon.length > 0
+                            ? "bg-clocktower-demon/15 border-clocktower-demon/40 text-clocktower-demon"
+                            : "bg-gray-950/40 border-gray-800 text-gray-550 hover:border-gray-700"
+                        )}
+                      >
+                        {getPreferenceLabel(p.preferences.demon, "DEM")}
+                      </button>
+                      {allowTravelers && (
+                        <button
+                          onClick={() => {
+                            setActivePrefModal({ playerId: p.id, team: 'traveler' });
+                            setPrefSearchTerm('');
+                          }}
+                          title={getPreferenceLabel(p.preferences.traveler || [], "No Traveler preference")}
+                          className={cn(
+                            "text-[10px] font-bold py-1.5 px-0.5 rounded border transition-all text-center truncate block w-full whitespace-nowrap",
+                            p.preferences.traveler && p.preferences.traveler.length > 0
+                              ? "bg-clocktower-traveler/15 border-clocktower-traveler/40 text-clocktower-traveler"
+                              : "bg-gray-950/40 border-gray-800 text-gray-550 hover:border-gray-700"
+                          )}
+                        >
+                          {getPreferenceLabel(p.preferences.traveler || [], "TRV")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          {/* Section C: Distribution & Assign Button */}
+          <div className="md:col-start-2 md:row-start-2 space-y-6 w-full">
+            <section className="bg-gray-900 p-4 rounded-lg border border-gray-855">
+              <h3 className="text-xs font-bold text-gray-550 uppercase tracking-wider mb-2.5 text-left">Standard Base Distribution</h3>
+              {players.length >= 5 ? (() => {
+                const travelerPlayersCount = players.filter(p => {
+                  if (allowTravelers && p.preferences.traveler && p.preferences.traveler.length > 0) {
+                    return true;
+                  }
+                  return false;
+                }).length;
+                const minTravelers = players.length > 15 ? players.length - 15 : 0;
+                const actualTravelers = Math.max(travelerPlayersCount, minTravelers);
+                const baseCount = players.length - actualTravelers;
+                const dist = getDistribution(baseCount);
+                return (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-townsfolk">
+                        TS: {dist.townsfolk}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-outsider">
+                        O: {dist.outsider}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-minion">
+                        M: {dist.minion}
+                      </div>
+                      <div className="p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-demon">
+                        D: {dist.demon}
+                      </div>
+                    </div>
+                    {(dist.traveler > 0 || actualTravelers > 0) && (
+                      <div className="text-center text-xs font-semibold p-2 rounded bg-gray-950/40 border border-gray-800 text-clocktower-traveler">
+                        Travelers: {actualTravelers > 0 ? actualTravelers : dist.traveler}
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <p className="text-xs text-gray-500 italic text-left">Add at least 5 players to view distribution.</p>
+              )}
+            </section>
+
+            <button
+              disabled={players.length < 5}
+              onClick={runAssignment}
+              className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+            >
+              <Sparkles size={16} /> Randomly Assign Characters
+            </button>
+          </div>
         </div>
-      )}      {phase === 'draft' && (
+      )}
+      {phase === 'draft' && (
         <div className="space-y-5">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-300">2. Character Draft Assignment</h2>
@@ -769,7 +875,12 @@ export default function WhaleBucket() {
                 </div>
               )}
 
-              <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono border-t border-gray-800 pt-2.5">
+              <div className={cn(
+                "grid text-center text-[10px] font-mono border-t border-gray-800 pt-2.5",
+                validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
+                  ? "grid-cols-5 gap-1"
+                  : "grid-cols-4 gap-2"
+              )}>
                 <div>
                   <div className="text-gray-500">TF</div>
                   <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : "text-yellow-500")}>
@@ -794,6 +905,14 @@ export default function WhaleBucket() {
                     {validationSummary.counts.demon} / {validationSummary.expected.demon}
                   </div>
                 </div>
+                {(validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0) && (
+                  <div>
+                    <div className="text-gray-500">TRV</div>
+                    <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
+                      {validationSummary.counts.traveler} / {validationSummary.expected.traveler}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {validationSummary.jinxWarnings.length > 0 && (
@@ -871,7 +990,7 @@ export default function WhaleBucket() {
                       p.isDead && "opacity-45",
                       timeOfDay === 'day'
                         ? "bg-white/40 border-gray-200 hover:bg-white/70"
-                        : "bg-gray-950/20 border-gray-900/40 hover:bg-gray-900/60"
+                        : "bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60"
                     )}>
                       <span className={cn("text-[9px] font-mono w-4 shrink-0", timeOfDay === 'day' ? "text-gray-500" : "text-gray-600")}>{index + 1}</span>
                       <span className={cn(
@@ -885,6 +1004,7 @@ export default function WhaleBucket() {
                         rObj?.team === 'outsider' && "text-clocktower-outsider",
                         rObj?.team === 'minion' && "text-clocktower-minion",
                         rObj?.team === 'demon' && "text-clocktower-demon",
+                        rObj?.team === 'traveler' && "text-clocktower-traveler",
                       )}>
                         <span className="truncate">{rObj?.name ?? '—'}</span>
                         {p.isTheDrunk && <span className="text-[8px] bg-yellow-600 text-black px-0.5 rounded leading-none shrink-0">DK</span>}
@@ -893,6 +1013,62 @@ export default function WhaleBucket() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Add Traveler Card (Late Arrival) */}
+            <div className={cn(
+              "rounded-lg border p-3.5 space-y-3 transition-colors duration-300",
+              timeOfDay === 'day'
+                ? "bg-white/50 border-gray-300 text-clocktower-night"
+                : "bg-gray-900/40 border-gray-800/80"
+            )}>
+              <h4 className={cn(
+                "text-[10px] uppercase font-bold tracking-wider",
+                timeOfDay === 'day' ? "text-gray-600" : "text-gray-500"
+              )}>Add Traveler (Late Arrival)</h4>
+              
+              <div className="flex flex-col gap-2">
+                <input
+                  id="game-traveler-name-input"
+                  type="text"
+                  placeholder="Traveler name..."
+                  value={newTravelerName}
+                  onChange={(e) => setNewTravelerName(e.target.value)}
+                  className={cn(
+                    "w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors",
+                    timeOfDay === 'day'
+                      ? "bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood"
+                      : "bg-gray-950 border-gray-800 text-gray-250 focus:border-clocktower-blood"
+                  )}
+                />
+                
+                <div className="flex gap-2">
+                  <select
+                    id="game-traveler-role-select"
+                    value={newTravelerRoleId}
+                    onChange={(e) => setNewTravelerRoleId(e.target.value)}
+                    className={cn(
+                      "flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors",
+                      timeOfDay === 'day'
+                        ? "bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood"
+                        : "bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood"
+                    )}
+                  >
+                    {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  
+                  <button
+                    id="game-add-traveler-button"
+                    onClick={addTravelerGamePhase}
+                    disabled={players.length >= 20}
+                    className="bg-clocktower-traveler hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -906,9 +1082,9 @@ export default function WhaleBucket() {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-base text-white">
-                  Select {activePrefModal.team === 'townsfolk' ? 'Townsfolk' : activePrefModal.team === 'outsider' ? 'Outsiders' : activePrefModal.team === 'minion' ? 'Minions' : 'Demons'}
+                  Select {activePrefModal.team === 'townsfolk' ? 'Townsfolk' : activePrefModal.team === 'outsider' ? 'Outsiders' : activePrefModal.team === 'minion' ? 'Minions' : activePrefModal.team === 'demon' ? 'Demons' : 'Travelers'}
                 </h3>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-550">
                   For {players.find(p => p.id === activePrefModal.playerId)?.name} (select 1)
                 </p>
               </div>
@@ -932,7 +1108,7 @@ export default function WhaleBucket() {
               {filteredPrefRoles.map(role => {
                 const isSelected = players
                   .find(p => p.id === activePrefModal.playerId)
-                  ?.preferences[activePrefModal.team].includes(role.id);
+                  ?.preferences[activePrefModal.team]?.includes(role.id);
                 
                 return (
                   <button
@@ -952,6 +1128,7 @@ export default function WhaleBucket() {
                       role.team === 'outsider' && "text-clocktower-outsider",
                       role.team === 'minion' && "text-clocktower-minion",
                       role.team === 'demon' && "text-clocktower-demon",
+                      role.team === 'traveler' && "text-clocktower-traveler",
                     )}>
                       {role.name}
                     </span>

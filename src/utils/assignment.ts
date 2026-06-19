@@ -2,12 +2,96 @@ import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import rolesData from '../roles.json';
 
-export function assignCharacters(players: Player[], allRoles: Role[]): AssignmentResult[] | null {
+export function assignCharacters(
+  players: Player[],
+  allRoles: Role[],
+  allowTravelers: boolean = false
+): AssignmentResult[] | null {
   const N = players.length;
   if (N < 5) return null;
 
-  const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+  const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
+  // 1. Identify traveler players
+  let travelerPlayers: Player[] = [];
+  if (allowTravelers) {
+    travelerPlayers = players.filter(p => p.preferences?.traveler && p.preferences.traveler.length > 0);
+  }
+
+  // If player count exceeds 15, we must allocate travelers
+  const minTravelersNeeded = N > 15 ? N - 15 : 0;
+  if (travelerPlayers.length < minTravelersNeeded) {
+    const remainingCandidates = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
+    const shuffledCandidates = shuffle(remainingCandidates);
+    const additionalNeeded = minTravelersNeeded - travelerPlayers.length;
+    travelerPlayers.push(...shuffledCandidates.slice(0, additionalNeeded));
+  }
+
+  // Ensure base setup has at least 5 players
+  const maxTravelers = N - 5;
+  if (travelerPlayers.length > maxTravelers) {
+    travelerPlayers = travelerPlayers.slice(0, maxTravelers);
+  }
+
+  const travelerIds = new Set(travelerPlayers.map(p => p.id));
+  const basePlayers = players.filter(p => !travelerIds.has(p.id));
+
+  // 2. Assign traveler roles
+  const travelerRoles = allRoles.filter(r => r.team === 'traveler');
+  const masterTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+  const availableTravelers = travelerRoles.length > 0 ? travelerRoles : masterTravelers;
+
+  const usedTravelerIds = new Set<string>();
+  const travelerAssignments: AssignmentResult[] = [];
+
+  for (const tp of travelerPlayers) {
+    const prefs = allowTravelers ? (tp.preferences?.traveler || []) : [];
+    const availablePrefs = prefs.filter(id => !usedTravelerIds.has(id));
+
+    let chosenRole: Role;
+    let fromPref = false;
+
+    if (availablePrefs.length > 0) {
+      const id = randomChoice(availablePrefs);
+      const role = allRoles.find(r => r.id === id) || masterTravelers.find(r => r.id === id);
+      if (role) {
+        chosenRole = role;
+        fromPref = true;
+      } else {
+        const fallbackList = availableTravelers.filter(r => !usedTravelerIds.has(r.id));
+        chosenRole = fallbackList.length > 0 ? randomChoice(fallbackList) : randomChoice(availableTravelers);
+      }
+    } else {
+      const fallbackList = availableTravelers.filter(r => !usedTravelerIds.has(r.id));
+      chosenRole = fallbackList.length > 0 ? randomChoice(fallbackList) : randomChoice(availableTravelers);
+    }
+
+    usedTravelerIds.add(chosenRole.id);
+    travelerAssignments.push({
+      player: tp,
+      role: chosenRole,
+      fromPref
+    });
+  }
+
+  // 3. Assign base players using standard logic
+  const baseCount = basePlayers.length;
+  if (baseCount < 5) return null;
+
+  const baseDist = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+  const baseAssignments = assignBaseCharacters(basePlayers, allRoles, baseDist);
+  if (!baseAssignments) return null;
+
+  return [...baseAssignments, ...travelerAssignments];
+}
+
+function assignBaseCharacters(
+  players: Player[],
+  allRoles: Role[],
+  base: { townsfolk: number; outsider: number; minion: number; demon: number }
+): AssignmentResult[] | null {
+  const N = players.length;
   const hasPref = (roleId: string) => players.some(p => 
     p.preferences?.townsfolk.includes(roleId) ||
     p.preferences?.outsider.includes(roleId) ||
@@ -20,7 +104,6 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
 
   const selectRoleForPlayer = (player: Player, team: Role['team'], usedRoleIds: Set<string>): { role: Role; fromPref: boolean } => {
     const prefs = player.preferences?.[team] || [];
-    // Exclude special setup roles from normal random assignment
     const availablePrefs = prefs.filter(id => 
       !usedRoleIds.has(id) && 
       id !== 'legion' && 
@@ -61,20 +144,16 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
     return { role: randomChoice(fallbackRoles), fromPref: false };
   };
 
-  // Perform a single initial shuffle to select candidate roles and modes based on the selected demon candidate
   const initialShuffledPlayers = shuffle(players);
   const demonCandidate = initialShuffledPlayers[0];
 
   const modes: ('normal' | 'legion' | 'riot' | 'atheist')[] = ['normal'];
-  
-  // Legion and Riot are only possible if the randomly selected demon candidate preferred them
   if (demonCandidate.preferences?.demon.includes('legion')) {
     modes.push('legion');
   }
   if (demonCandidate.preferences?.demon.includes('riot')) {
     modes.push('riot');
   }
-  // Atheist remains randomized globally based on Townsfolk preferences
   if (hasPref('atheist')) {
     modes.push('atheist');
   }
@@ -85,7 +164,6 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
     const L = Math.round(N * 0.6);
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
-    
     const legionRole = allRoles.find(r => r.id === 'legion')!;
     for (let i = 0; i < L; i++) {
       assignment.push({
@@ -94,14 +172,12 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
         fromPref: !!initialShuffledPlayers[i].preferences?.demon.includes('legion')
       });
     }
-    
     for (let i = L; i < N; i++) {
       const p = initialShuffledPlayers[i];
       const { role, fromPref } = selectRoleForPlayer(p, 'townsfolk', usedRoleIds);
       usedRoleIds.add(role.id);
       assignment.push({ player: p, role, fromPref });
     }
-    
     return assignment;
   }
 
@@ -109,7 +185,6 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
     const D = 1 + base.minion;
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
-    
     const riotRole = allRoles.find(r => r.id === 'riot')!;
     for (let i = 0; i < D; i++) {
       assignment.push({
@@ -118,14 +193,12 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
         fromPref: !!initialShuffledPlayers[i].preferences?.demon.includes('riot')
       });
     }
-    
     for (let i = D; i < N; i++) {
       const p = initialShuffledPlayers[i];
       const { role, fromPref } = selectRoleForPlayer(p, 'townsfolk', usedRoleIds);
       usedRoleIds.add(role.id);
       assignment.push({ player: p, role, fromPref });
     }
-    
     return assignment;
   }
 
@@ -133,19 +206,15 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
     const includeBalloonist = hasPref('balloonist') && Math.random() < 0.7;
     const O = base.outsider + (includeBalloonist ? 1 : 0);
     const T = N - O;
-    
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
-    
     const atheistRole = allRoles.find(r => r.id === 'atheist')!;
     usedRoleIds.add('atheist');
-    
     assignment.push({
       player: initialShuffledPlayers[0],
       role: atheistRole,
       fromPref: !!initialShuffledPlayers[0].preferences?.townsfolk.includes('atheist')
     });
-    
     let assignedT = 1;
     for (let i = 1; i < N; i++) {
       const p = initialShuffledPlayers[i];
@@ -166,7 +235,6 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
         assignment.push({ player: p, role, fromPref });
       }
     }
-    
     return assignment;
   }
 
@@ -307,7 +375,6 @@ export function assignCharacters(players: Player[], allRoles: Role[]): Assignmen
       }
     }
   }
-  
   return null;
 }
 

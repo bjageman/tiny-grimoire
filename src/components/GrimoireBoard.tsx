@@ -154,7 +154,8 @@ export default function GrimoireBoard({
                     roleObj?.team === 'townsfolk' && "bg-clocktower-townsfolk",
                     roleObj?.team === 'outsider' && "bg-clocktower-outsider",
                     roleObj?.team === 'minion' && "bg-clocktower-minion",
-                    roleObj?.team === 'demon' && "bg-clocktower-demon"
+                    roleObj?.team === 'demon' && "bg-clocktower-demon",
+                    roleObj?.team === 'traveler' && "bg-clocktower-traveler"
                   )}
                 />
 
@@ -183,6 +184,7 @@ export default function GrimoireBoard({
                     roleObj?.team === 'outsider' && "text-clocktower-outsider/85",
                     roleObj?.team === 'minion' && "text-clocktower-minion/85",
                     roleObj?.team === 'demon' && "text-clocktower-demon/85",
+                    roleObj?.team === 'traveler' && "text-clocktower-traveler/85",
                     p.isDead && "line-through opacity-50"
                   )}
                 >
@@ -213,7 +215,8 @@ export default function GrimoireBoard({
                     roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
                     roleObj?.team === 'outsider' && "text-clocktower-outsider",
                     roleObj?.team === 'minion' && "text-clocktower-minion",
-                    roleObj?.team === 'demon' && "text-clocktower-demon"
+                    roleObj?.team === 'demon' && "text-clocktower-demon",
+                    roleObj?.team === 'traveler' && "text-clocktower-traveler"
                   )}
                 >
                   {roleObj?.name || 'No Role Assigned'}

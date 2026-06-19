@@ -1017,14 +1017,22 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
           {/* Validation Summary Card */}
           {validationSummary && (
-            <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-3 space-y-2.5">
+            <div className={cn(
+              "border rounded-lg p-3 space-y-2.5 transition-colors duration-300",
+              isLightModeActive
+                ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
+                : "bg-gray-900/90 border-gray-800"
+            )}>
               <div className="flex items-center gap-1.5">
                 {validationSummary.isValid ? (
                   <CheckCircle size={16} className="text-clocktower-outsider" />
                 ) : (
                   <AlertTriangle size={16} className="text-clocktower-minion" />
                 )}
-                <span className="font-semibold text-xs tracking-wide uppercase text-gray-300">
+                <span className={cn(
+                  "font-semibold text-xs tracking-wide uppercase",
+                  isLightModeActive ? "text-gray-700" : "text-gray-300"
+                )}>
                   Grimoire Balance Verification
                 </span>
               </div>
@@ -1040,7 +1048,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               )}
 
               <div className={cn(
-                "grid text-center text-[10px] font-mono border-t border-gray-800 pt-2.5",
+                "grid text-center text-[10px] font-mono border-t pt-2.5",
+                isLightModeActive ? "border-gray-200" : "border-gray-800",
                 validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
                   ? "grid-cols-5 gap-1"
                   : "grid-cols-4 gap-2"
@@ -1080,7 +1089,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               </div>
 
               {validationSummary.jinxWarnings.length > 0 && (
-                <div className="border-t border-gray-800 pt-2 space-y-1">
+                <div className={cn("border-t pt-2 space-y-1", isLightModeActive ? "border-gray-200" : "border-gray-800")}>
                   {validationSummary.jinxWarnings.map((w, idx) => (
                     <div key={idx} className="text-[10px] text-yellow-500 flex items-center gap-1 font-medium">
                       <AlertTriangle size={10} /> {w}

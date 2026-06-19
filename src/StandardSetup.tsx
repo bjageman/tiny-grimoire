@@ -509,7 +509,7 @@ export default function StandardSetup() {
     const count = players.length;
     if (count <= 6) {
       return {
-        boardClass: "w-[92vw] h-[70vw] max-w-[420px] max-h-[320px] rounded-[28px]",
+        boardClass: "w-[92vw] h-[70vw] max-w-[560px] max-h-[340px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: { width: '22cqw', height: '22cqw' } as CSSProperties,
@@ -524,7 +524,7 @@ export default function StandardSetup() {
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[94vw] h-[72vw] max-w-[480px] max-h-[370px] rounded-[34px]",
+        boardClass: "w-[94vw] h-[72vw] max-w-[620px] max-h-[380px] rounded-[34px]",
         radiusX: 40,
         radiusY: 37,
         btnStyle: { width: '18cqw', height: '18cqw' } as CSSProperties,
@@ -539,7 +539,7 @@ export default function StandardSetup() {
       };
     } else {
       return {
-        boardClass: "w-[96vw] h-[74vw] max-w-[540px] max-h-[420px] rounded-[40px]",
+        boardClass: "w-[96vw] h-[74vw] max-w-[680px] max-h-[420px] rounded-[40px]",
         radiusX: 42,
         radiusY: 38,
         btnStyle: { width: '14.5cqw', height: '14.5cqw' } as CSSProperties,
@@ -561,7 +561,7 @@ export default function StandardSetup() {
     <div className={cn(
       "min-h-screen p-4 font-sans mx-auto transition-colors duration-300",
       phase === 'game' 
-        ? "max-w-xl md:max-w-4xl landscape:max-w-4xl" 
+        ? "max-w-xl md:max-w-6xl landscape:max-w-6xl" 
         : "max-w-xl",
       phase === 'game' && timeOfDay === 'day'
         ? "bg-clocktower-parchment text-clocktower-night"
@@ -870,7 +870,7 @@ export default function StandardSetup() {
       )}
 
       {phase === 'game' && (
-        <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-2 md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-2 landscape:gap-6 landscape:space-y-0 landscape:items-start">
+        <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
           {/* Column 1: Board Visual & Header */}
           <div className="space-y-4">
 

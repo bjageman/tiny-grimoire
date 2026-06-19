@@ -97,6 +97,8 @@ export default function StandardSetup() {
       id: Math.random().toString(36).substr(2, 9),
       name,
       isDead: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
     };
     setPlayers([...players, newPlayer]);
     setNewPlayerName('');
@@ -123,6 +125,34 @@ export default function StandardSetup() {
     setPlayers(players.map(p => p.id === id ? { ...p, isDead: !p.isDead } : p));
   };
 
+  const togglePlayerTheDrunk = (id: string) => {
+    setPlayers(players.map(p => {
+      if (p.id === id) {
+        const nextVal = !p.isTheDrunk;
+        return {
+          ...p,
+          isTheDrunk: nextVal,
+          isTheMarionette: nextVal ? false : p.isTheMarionette
+        };
+      }
+      return p;
+    }));
+  };
+
+  const togglePlayerTheMarionette = (id: string) => {
+    setPlayers(players.map(p => {
+      if (p.id === id) {
+        const nextVal = !p.isTheMarionette;
+        return {
+          ...p,
+          isTheMarionette: nextVal,
+          isTheDrunk: nextVal ? false : p.isTheDrunk
+        };
+      }
+      return p;
+    }));
+  };
+
 
 
   const resetGame = () => {
@@ -145,13 +175,23 @@ export default function StandardSetup() {
 
     const counts = players.reduce((acc, p) => {
       if (p.roleId) {
-        const role = (rolesData as Role[]).find(r => r.id === p.roleId);
-        if (role) acc[role.team]++;
+        if (p.isTheMarionette) {
+          acc.minion++;
+        } else if (p.isTheDrunk) {
+          acc.outsider++;
+        } else {
+          const role = (rolesData as Role[]).find(r => r.id === p.roleId);
+          if (role) acc[role.team]++;
+        }
       }
       return acc;
     }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0 });
 
-    const assignedRoles = players.map(p => (rolesData as Role[]).find(r => r.id === p.roleId)).filter(Boolean) as Role[];
+    const assignedRoles = players.map(p => {
+      if (p.isTheMarionette) return (rolesData as Role[]).find(r => r.id === 'marionette');
+      if (p.isTheDrunk) return (rolesData as Role[]).find(r => r.id === 'drunk');
+      return (rolesData as Role[]).find(r => r.id === p.roleId);
+    }).filter(Boolean) as Role[];
     const hasLegion = assignedRoles.some(r => r.id === 'legion');
     const hasRiot = assignedRoles.some(r => r.id === 'riot');
     const hasAtheist = assignedRoles.some(r => r.id === 'atheist');
@@ -367,9 +407,7 @@ export default function StandardSetup() {
               >
                 <Plus size={20} />
               </button>
-            </div>
-
-            <div className="space-y-2.5">
+            </div>            <div className="space-y-2.5">
               {players.map((p, index) => {
                 const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
                 return (
@@ -382,39 +420,79 @@ export default function StandardSetup() {
                         onChange={(e) => updatePlayerName(p.id, e.target.value)}
                         className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
                       />
+                      {p.isTheDrunk && (
+                        <span className="text-[8px] font-black text-black bg-yellow-600 border border-yellow-750 px-1 py-0.5 rounded uppercase">
+                          THE DRUNK
+                        </span>
+                      )}
+                      {p.isTheMarionette && (
+                        <span className="text-[8px] font-black text-white bg-clocktower-minion border border-clocktower-minion/30 px-1 py-0.5 rounded uppercase">
+                          THE MARIONETTE
+                        </span>
+                      )}
                       <button onClick={() => removePlayer(p.id)} className="text-gray-600 hover:text-red-500 p-1 transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </div>
 
                     {p.roleId ? (
-                      <div className="flex items-center justify-between bg-gray-950/40 px-3 py-2 rounded border border-gray-800">
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border",
-                            roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5",
-                            roleObj?.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
-                            roleObj?.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
-                            roleObj?.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
-                          )}>
-                            {roleObj?.team || 'N/A'}
-                          </span>
-                          <span className={cn(
-                            "font-semibold text-sm",
-                            roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
-                            roleObj?.team === 'outsider' && "text-clocktower-outsider",
-                            roleObj?.team === 'minion' && "text-clocktower-minion",
-                            roleObj?.team === 'demon' && "text-clocktower-demon",
-                          )}>
-                            {roleObj?.name}
-                          </span>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between bg-gray-955/40 px-3 py-2 rounded border border-gray-855">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border",
+                              roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5",
+                              roleObj?.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
+                              roleObj?.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
+                              roleObj?.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
+                            )}>
+                              {roleObj?.team || 'N/A'}
+                            </span>
+                            <span className={cn(
+                              "font-semibold text-sm",
+                              roleObj?.team === 'townsfolk' && "text-clocktower-townsfolk",
+                              roleObj?.team === 'outsider' && "text-clocktower-outsider",
+                              roleObj?.team === 'minion' && "text-clocktower-minion",
+                              roleObj?.team === 'demon' && "text-clocktower-demon",
+                            )}>
+                              {roleObj?.name}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
+                            className="text-gray-500 hover:text-gray-300 text-xs underline font-medium"
+                          >
+                            Change
+                          </button>
                         </div>
-                        <button
-                          onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
-                          className="text-gray-500 hover:text-gray-300 text-xs underline font-medium"
-                        >
-                          Change
-                        </button>
+
+                        {/* Secret Role Draft Toggles */}
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => togglePlayerTheDrunk(p.id)}
+                            className={cn(
+                              "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                              p.isTheDrunk
+                                ? "bg-yellow-600 border-yellow-755 text-black font-black"
+                                : "bg-gray-950 border-gray-855 text-gray-500 hover:text-gray-400"
+                            )}
+                          >
+                            🍺 The Drunk
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => togglePlayerTheMarionette(p.id)}
+                            className={cn(
+                              "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                              p.isTheMarionette
+                                ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
+                                : "bg-gray-950 border-gray-855 text-gray-500 hover:text-gray-400"
+                            )}
+                          >
+                            🎭 The Marionette
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div

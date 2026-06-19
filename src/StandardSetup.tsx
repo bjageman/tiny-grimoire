@@ -509,45 +509,48 @@ export default function StandardSetup() {
     const count = players.length;
     if (count <= 6) {
       return {
-        boardClass: "w-[76vmin] h-[76vmin] max-w-[340px] max-h-[340px] rounded-[32px]",
-        radiusPercent: 33,
+        boardClass: "w-[92vw] h-[70vw] max-w-[420px] max-h-[320px] rounded-[28px]",
+        radiusX: 38,
+        radiusY: 36,
         btnStyle: { width: '22cqw', height: '22cqw' } as CSSProperties,
-        dotStyle: { top: '7%', width: '1.8cqw', height: '1.8cqw' } as CSSProperties,
-        nameStyle: { fontSize: '3.3cqw', maxWidth: '19cqw', marginTop: '1.3cqw' } as CSSProperties,
-        roleStyle: { fontSize: '2.5cqw', maxWidth: '19cqw', marginTop: '0.1cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.8cqw', height: '1.8cqw' } as CSSProperties,
+        nameStyle: { fontSize: '3.8cqw', maxWidth: '20cqw', marginTop: '0.5cqw' } as CSSProperties,
+        roleStyle: { fontSize: '3.0cqw', maxWidth: '20cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 16,
         tooltipClass: "top-18",
-        centerBtnStyle: { width: '24cqw', height: '24cqw' } as CSSProperties,
+        centerBtnStyle: { width: '22cqw', height: '22cqw' } as CSSProperties,
         centerText1Style: { fontSize: '3cqw' } as CSSProperties,
-        centerText2Style: { fontSize: '2.4cqw', marginTop: '0.2cqw' } as CSSProperties,
+        centerText2Style: { fontSize: '2.4cqw', marginTop: '0.1cqw' } as CSSProperties,
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[78vmin] h-[78vmin] max-w-[390px] max-h-[390px] rounded-[38px]",
-        radiusPercent: 35,
+        boardClass: "w-[94vw] h-[72vw] max-w-[480px] max-h-[370px] rounded-[34px]",
+        radiusX: 40,
+        radiusY: 37,
         btnStyle: { width: '18cqw', height: '18cqw' } as CSSProperties,
-        dotStyle: { top: '7%', width: '1.5cqw', height: '1.5cqw' } as CSSProperties,
-        nameStyle: { fontSize: '2.8cqw', maxWidth: '16cqw', marginTop: '1.1cqw' } as CSSProperties,
-        roleStyle: { fontSize: '2.1cqw', maxWidth: '16cqw', marginTop: '0.1cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.5cqw', height: '1.5cqw' } as CSSProperties,
+        nameStyle: { fontSize: '3.2cqw', maxWidth: '17cqw', marginTop: '0.4cqw' } as CSSProperties,
+        roleStyle: { fontSize: '2.5cqw', maxWidth: '17cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 14,
         tooltipClass: "top-16",
-        centerBtnStyle: { width: '20cqw', height: '20cqw' } as CSSProperties,
+        centerBtnStyle: { width: '18cqw', height: '18cqw' } as CSSProperties,
         centerText1Style: { fontSize: '2.5cqw' } as CSSProperties,
-        centerText2Style: { fontSize: '2.0cqw', marginTop: '0.2cqw' } as CSSProperties,
+        centerText2Style: { fontSize: '2.0cqw', marginTop: '0.1cqw' } as CSSProperties,
       };
     } else {
       return {
-        boardClass: "w-[80vmin] h-[80vmin] max-w-[440px] max-h-[440px] rounded-[48px]",
-        radiusPercent: 37,
+        boardClass: "w-[96vw] h-[74vw] max-w-[540px] max-h-[420px] rounded-[40px]",
+        radiusX: 42,
+        radiusY: 38,
         btnStyle: { width: '14.5cqw', height: '14.5cqw' } as CSSProperties,
-        dotStyle: { top: '7%', width: '1.2cqw', height: '1.2cqw' } as CSSProperties,
-        nameStyle: { fontSize: '2.3cqw', maxWidth: '13cqw', marginTop: '0.9cqw' } as CSSProperties,
-        roleStyle: { fontSize: '1.8cqw', maxWidth: '13cqw', marginTop: '0.1cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.2cqw', height: '1.2cqw' } as CSSProperties,
+        nameStyle: { fontSize: '2.7cqw', maxWidth: '14cqw', marginTop: '0.3cqw' } as CSSProperties,
+        roleStyle: { fontSize: '2.1cqw', maxWidth: '14cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 12,
         tooltipClass: "top-14",
-        centerBtnStyle: { width: '17cqw', height: '17cqw' } as CSSProperties,
+        centerBtnStyle: { width: '15cqw', height: '15cqw' } as CSSProperties,
         centerText1Style: { fontSize: '2.1cqw' } as CSSProperties,
-        centerText2Style: { fontSize: '1.7cqw', marginTop: '0.2cqw' } as CSSProperties,
+        centerText2Style: { fontSize: '1.7cqw', marginTop: '0.1cqw' } as CSSProperties,
       };
     }
   }, [players.length]);
@@ -872,7 +875,7 @@ export default function StandardSetup() {
           <div className="space-y-4">
 
             <div className={cn(
-              "relative w-full aspect-square border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
+              "relative w-full border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
               timeOfDay === 'day'
                 ? "bg-white/50 border-gray-300 shadow-gray-200/50"
                 : "bg-gray-950/40 border-gray-900/60 shadow-black/45",
@@ -912,9 +915,8 @@ export default function StandardSetup() {
                 const total = players.length;
                 const angle = (index * (360 / total) - 90) * (Math.PI / 180);
                 
-                const radiusPercent = grimoireConfig.radiusPercent; 
-                const leftPos = 50 + radiusPercent * Math.cos(angle);
-                const topPos = 50 + radiusPercent * Math.sin(angle);
+                const leftPos = 50 + grimoireConfig.radiusX * Math.cos(angle);
+                const topPos = 50 + grimoireConfig.radiusY * Math.sin(angle);
 
                 const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
 

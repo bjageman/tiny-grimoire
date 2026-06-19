@@ -154,7 +154,7 @@ export default function WhaleBucketDraftPhase({
                   </div>
                   {/* Secret Role Draft Toggles */}
                   {(canBeDrunk || canBeMarionette || canBeLunatic) && (
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex flex-wrap gap-2 justify-end">
                       {canBeDrunk && (
                         <button
                           type="button"

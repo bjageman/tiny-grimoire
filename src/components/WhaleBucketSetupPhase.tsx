@@ -126,6 +126,7 @@ export default function WhaleBucketSetupPhase({
               onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
               disabled={players.length >= 20}
               placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+              autoCapitalize="words"
               className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button 
@@ -167,7 +168,9 @@ export default function WhaleBucketSetupPhase({
                     type="text"
                     value={p.name}
                     onChange={(e) => updatePlayerName(p.id, e.target.value)}
-                    className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
+                    onFocus={(e) => e.target.select()}
+                    autoCapitalize="words"
+                    className="flex-grow min-w-0 font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
                   />
                   <button
                     onClick={() => autoFillPlayerPreferences(p.id)}

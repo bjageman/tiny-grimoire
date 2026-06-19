@@ -129,7 +129,9 @@ export default function PlayerDetailsModal({
                 type="text"
                 value={p.name}
                 onChange={(e) => onUpdateName(p.id, e.target.value)}
+                onFocus={(e) => e.target.select()}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                autoCapitalize="words"
                 className={cn(
                   'font-bold text-xl bg-transparent border-b border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200',
                   isLightModeActive ? 'text-clocktower-night' : 'text-white'

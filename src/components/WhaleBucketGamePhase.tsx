@@ -166,6 +166,7 @@ export default function WhaleBucketGamePhase({
               placeholder="Traveler name..."
               value={newTravelerName}
               onChange={(e) => setNewTravelerName(e.target.value)}
+              autoCapitalize="words"
               className={cn(
                 "w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors",
                 isLightModeActive

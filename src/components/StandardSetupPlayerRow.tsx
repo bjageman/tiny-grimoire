@@ -99,7 +99,9 @@ export default function StandardSetupPlayerRow({
           type="text"
           value={p.name}
           onChange={(e) => updatePlayerName(p.id, e.target.value)}
-          className="flex-grow font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
+          onFocus={(e) => e.target.select()}
+          autoCapitalize="words"
+          className="flex-grow min-w-0 font-semibold text-gray-200 bg-transparent border-b border-transparent hover:border-gray-800/80 focus:border-clocktower-blood focus:outline-none px-1.5 py-0.5 rounded transition-all"
         />
         {p.isTheDrunk && (
           <span className="text-[8px] font-black text-black bg-yellow-600 border border-yellow-750 px-1 py-0.5 rounded uppercase leading-none">
@@ -185,7 +187,7 @@ export default function StandardSetupPlayerRow({
 
           {/* Secret Role Draft Toggles */}
           {(canBeDrunk || canBeMarionette || canBeLunatic) && (
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 justify-end">
               {canBeDrunk && (
                 <button
                   id={`toggle-drunk-button-${p.id}`}

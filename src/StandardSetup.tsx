@@ -76,9 +76,19 @@ export default function StandardSetup() {
     }
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage and update document theme
   useEffect(() => {
     localStorage.setItem('standard-botc-game', JSON.stringify({ players, phase, timeOfDay, dayNumber }));
+    
+    if (phase === 'game' && timeOfDay === 'day') {
+      document.documentElement.classList.add('theme-day');
+    } else {
+      document.documentElement.classList.remove('theme-day');
+    }
+    
+    return () => {
+      document.documentElement.classList.remove('theme-day');
+    };
   }, [players, phase, timeOfDay, dayNumber]);
 
   const toggleTimeOfDay = () => {

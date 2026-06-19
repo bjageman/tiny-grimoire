@@ -1458,7 +1458,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                         <img
                           src={`/icons/${role.id}.svg`}
                           alt={role.name}
-                          className="w-4.5 h-4.5 object-contain shrink-0"
+                          className="w-5 h-5 object-contain shrink-0"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                         <span className={cn(
@@ -1505,7 +1505,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                         <img
                           src={`/icons/${role.id}.svg`}
                           alt={role.name}
-                          className="w-4.5 h-4.5 object-contain shrink-0"
+                          className="w-5 h-5 object-contain shrink-0"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                         <span className={cn(
@@ -1691,7 +1691,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                                 <img
                                   src={`/icons/${role.id}.svg`}
                                   alt={role.name}
-                                  className="w-4.5 h-4.5 object-contain shrink-0"
+                                  className="w-5 h-5 object-contain shrink-0"
                                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                 />
                                 <span className={cn(

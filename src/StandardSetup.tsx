@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Search, RefreshCcw, AlertTriangle, CheckCircle, Upload, Shuffle } from 'lucide-react';
 import rolesData from './roles.json';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -54,6 +54,11 @@ export default function StandardSetup() {
   const [isSearchingRole, setIsSearchingRole] = useState(false);
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
+  // Script states
+  const [scriptName, setScriptName] = useState<string>("All Roles (Default)");
+  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
     setIsSearchingRole(false);
@@ -65,11 +70,13 @@ export default function StandardSetup() {
     const saved = localStorage.getItem('standard-botc-game');
     if (saved) {
       try {
-        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn } = JSON.parse(saved);
+        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, customScriptRoles: csr, scriptName: sn } = JSON.parse(saved);
         setPlayers(p || []);
         setPhase(ph || 'setup');
         setTimeOfDay(tod || 'night');
         setDayNumber(dn || 1);
+        if (csr) setCustomScriptRoles(csr);
+        if (sn) setScriptName(sn);
       } catch (e) {
         console.error(e);
       }
@@ -78,7 +85,14 @@ export default function StandardSetup() {
 
   // Save to localStorage and update document theme
   useEffect(() => {
-    localStorage.setItem('standard-botc-game', JSON.stringify({ players, phase, timeOfDay, dayNumber }));
+    localStorage.setItem('standard-botc-game', JSON.stringify({ 
+      players, 
+      phase, 
+      timeOfDay, 
+      dayNumber,
+      customScriptRoles,
+      scriptName
+    }));
     
     if (phase === 'game' && timeOfDay === 'day') {
       document.documentElement.classList.add('theme-day');
@@ -89,7 +103,7 @@ export default function StandardSetup() {
     return () => {
       document.documentElement.classList.remove('theme-day');
     };
-  }, [players, phase, timeOfDay, dayNumber]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -164,6 +178,173 @@ export default function StandardSetup() {
   };
 
 
+
+  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (!Array.isArray(parsed)) {
+          alert("Invalid script format. Expected a JSON array of roles.");
+          return;
+        }
+
+        // Find metadata object
+        const metaObj = parsed.find((item: any) => item && typeof item === 'object' && item.id === '_meta');
+        const name = metaObj?.name || file.name.replace('.json', '');
+
+        // Map roles
+        const parsedRoles = parsed
+          .filter((item: any) => item && typeof item === 'object' && item.id && item.id !== '_meta')
+          .map((item: any) => {
+            const matched = (rolesData as Role[]).find(r => r.id.toLowerCase() === item.id.toLowerCase());
+            if (matched) return matched;
+            return {
+              id: item.id.toLowerCase(),
+              name: item.id.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+              team: 'townsfolk'
+            } as Role;
+          });
+
+        if (parsedRoles.length === 0) {
+          alert("No valid roles found in the uploaded script.");
+          return;
+        }
+
+        setCustomScriptRoles(parsedRoles);
+        setScriptName(name);
+      } catch (err) {
+        alert("Failed to parse JSON script file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const clearCustomScript = () => {
+    setCustomScriptRoles(null);
+    setScriptName("All Roles (Default)");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
+
+  const randomlyAssignRoles = () => {
+    const N = players.length;
+    if (N < 5) {
+      alert("Please add at least 5 players to assign roles.");
+      return;
+    }
+    const base = DISTRIBUTION[N] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+
+    const tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
+    const outs = currentScriptRoles.filter(r => r.team === 'outsider');
+    const mins = currentScriptRoles.filter(r => r.team === 'minion');
+    const dems = currentScriptRoles.filter(r => r.team === 'demon');
+
+    if (dems.length === 0 || mins.length === 0 || tfs.length === 0) {
+      alert("The active script must contain at least some Townsfolk, Minions, and Demons.");
+      return;
+    }
+
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+    let selectedDemons = shuffle(dems).slice(0, base.demon);
+    let selectedMinions = shuffle(mins).slice(0, base.minion);
+
+    let outsiderModifier = 0;
+    if (selectedMinions.some(m => m.id === 'baron')) {
+      outsiderModifier += 2;
+    }
+    if (selectedMinions.some(m => m.id === 'godfather')) {
+      outsiderModifier += Math.random() < 0.5 ? 1 : -1;
+    }
+    if (selectedDemons.some(d => d.id === 'fanggu')) {
+      outsiderModifier += 1;
+    }
+
+    let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
+    let targetTownsfolk = N - base.demon - base.minion - targetOutsiders;
+    if (targetTownsfolk < 0) {
+      targetTownsfolk = 0;
+      targetOutsiders = N - base.demon - base.minion;
+    }
+
+    let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
+    let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
+
+    // Check Balloonist
+    if (selectedTownsfolk.some(t => t.id === 'balloonist') && outs.length > selectedOutsiders.length) {
+      const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
+      if (remainingOuts.length > 0) {
+        selectedOutsiders.push(remainingOuts[Math.floor(Math.random() * remainingOuts.length)]);
+        const balloonistIdx = selectedTownsfolk.findIndex(t => t.id === 'balloonist');
+        const nonBalloonistTfs = selectedTownsfolk.filter((_, idx) => idx !== balloonistIdx);
+        if (nonBalloonistTfs.length > 0) {
+          const removedTf = nonBalloonistTfs[Math.floor(Math.random() * nonBalloonistTfs.length)];
+          selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== removedTf.id);
+        }
+      }
+    }
+
+    let finalRolesList = shuffle([
+      ...selectedDemons,
+      ...selectedMinions,
+      ...selectedOutsiders,
+      ...selectedTownsfolk
+    ]);
+
+    // Pad if script is too small (e.g. missing outsiders), fill with townsfolk
+    while (finalRolesList.length < N) {
+      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
+      if (unusedTfs.length > 0) {
+        finalRolesList.push(unusedTfs[0]);
+      } else {
+        finalRolesList.push(tfs[0] || outs[0] || mins[0] || dems[0]);
+      }
+    }
+
+    const roleIdsInPlay = finalRolesList.map(r => r.id);
+    const shuffledPlayers = shuffle(players);
+
+    const updatedPlayers = players.map(p => {
+      const playerIndex = shuffledPlayers.findIndex(sp => sp.id === p.id);
+      const role = finalRolesList[playerIndex];
+      let roleId = role.id;
+      let isTheDrunk = false;
+      let isTheMarionette = false;
+
+      if (role.id === 'drunk') {
+        isTheDrunk = true;
+        const availableFakeTfs = tfs.filter(r => !roleIdsInPlay.includes(r.id));
+        const chosenFake = availableFakeTfs.length > 0 
+          ? availableFakeTfs[Math.floor(Math.random() * availableFakeTfs.length)] 
+          : tfs[Math.floor(Math.random() * tfs.length)];
+        roleId = chosenFake?.id || 'washerwoman';
+      } else if (role.id === 'marionette') {
+        isTheMarionette = true;
+        const tfsAndOuts = [...tfs, ...outs];
+        const availableFakeRoles = tfsAndOuts.filter(r => !roleIdsInPlay.includes(r.id));
+        const chosenFake = availableFakeRoles.length > 0 
+          ? availableFakeRoles[Math.floor(Math.random() * availableFakeRoles.length)] 
+          : tfsAndOuts[Math.floor(Math.random() * tfsAndOuts.length)];
+        roleId = chosenFake?.id || 'washerwoman';
+      }
+
+      return {
+        ...p,
+        roleId,
+        isTheDrunk,
+        isTheMarionette
+      };
+    });
+
+    setPlayers(updatedPlayers);
+  };
 
   const resetGame = () => {
     if (confirm('Are you sure you want to reset the game? This clears all players and roles.')) {
@@ -392,6 +573,64 @@ export default function StandardSetup() {
 
       {phase === 'setup' && (
         <div className="space-y-6">
+          {/* Script Upload & Randomization Panel */}
+          <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Setup Script</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={cn(
+                    "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1",
+                    customScriptRoles 
+                      ? "bg-clocktower-blood/10 border-clocktower-blood/40 text-clocktower-blood" 
+                      : "bg-gray-950 border-gray-800 text-gray-400"
+                  )}>
+                    {customScriptRoles ? "📜" : "🌐"} {scriptName}
+                  </span>
+                  {customScriptRoles && (
+                    <span className="text-[10px] text-gray-500 font-medium">
+                      ({customScriptRoles.length} roles loaded)
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleScriptUpload}
+                  accept=".json"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-gray-800 hover:bg-gray-700 border border-gray-750 text-gray-300 px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <Upload size={14} /> Upload Script
+                </button>
+                {customScriptRoles && (
+                  <button
+                    type="button"
+                    onClick={clearCustomScript}
+                    className="bg-transparent hover:bg-gray-800 border border-transparent text-gray-500 hover:text-gray-300 px-2.5 py-1.5 rounded text-xs font-semibold transition-all"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={randomlyAssignRoles}
+                  className="bg-clocktower-blood hover:bg-red-800 text-white px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={players.length < 5}
+                  title="Randomly assign roles to all players based on the active script, keeping to standard distribution rules"
+                >
+                  <Shuffle size={14} /> Randomly Assign
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section>
             <h2 className="text-lg font-semibold text-gray-300 mb-4">Players & Roles ({players.length})</h2>
 

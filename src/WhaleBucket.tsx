@@ -775,7 +775,7 @@ export default function WhaleBucket() {
     const count = players.length;
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[84vw] max-w-[560px] max-h-[620px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[84vw] max-w-[560px] max-h-[620px] md:max-h-[500px] landscape:max-h-[500px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: { width: '25cqw', height: '25cqw' } as CSSProperties,
@@ -790,7 +790,7 @@ export default function WhaleBucket() {
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[86vw] max-w-[620px] max-h-[680px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[86vw] max-w-[620px] max-h-[680px] md:max-h-[500px] landscape:max-h-[500px] rounded-[34px]",
         radiusX: 40,
         radiusY: 37,
         btnStyle: { width: '21cqw', height: '21cqw' } as CSSProperties,
@@ -805,7 +805,7 @@ export default function WhaleBucket() {
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[88vw] max-w-[680px] max-h-[740px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[88vw] max-w-[680px] max-h-[740px] md:max-h-[500px] landscape:max-h-[500px] rounded-[40px]",
         radiusX: 42,
         radiusY: 38,
         btnStyle: { width: '16.5cqw', height: '16.5cqw' } as CSSProperties,

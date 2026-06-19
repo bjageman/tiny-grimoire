@@ -836,12 +836,10 @@ export default function WhaleBucket() {
         phase === 'game' && timeOfDay === 'day' ? "border-clocktower-blood/20" : "border-clocktower-blood"
       )}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className="flex justify-between sm:justify-start items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-3">
-              <a href="#/" className={cn("transition-colors text-sm", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300")}>← Home</a>
-              <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide">Whale Bucket</h1>
-            </div>
-            <button id="reset-game-button" onClick={resetGame} className={cn("p-2 transition-colors sm:hidden", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")} title="Reset game">
+          <div className="relative flex justify-center items-center w-full sm:w-auto sm:justify-start sm:gap-3">
+            <a href="#/" className={cn("absolute left-0 transition-colors text-sm sm:static", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300")}>← Home</a>
+            <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center sm:text-left">Whale Bucket</h1>
+            <button id="reset-game-button" onClick={resetGame} className={cn("absolute right-0 p-2 transition-colors sm:hidden", phase === 'game' && timeOfDay === 'day' ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")} title="Reset game">
               <RefreshCcw size={20} />
             </button>
           </div>

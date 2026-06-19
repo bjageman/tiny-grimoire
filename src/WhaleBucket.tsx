@@ -775,7 +775,7 @@ export default function WhaleBucket() {
     const count = players.length;
     if (count <= 6) {
       return {
-        boardClass: "w-[92vw] h-[82vw] max-w-[560px] max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[84vw] max-w-[560px] max-h-[520px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: { width: '25cqw', height: '25cqw' } as CSSProperties,
@@ -790,7 +790,7 @@ export default function WhaleBucket() {
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[94vw] h-[84vw] max-w-[620px] max-h-[550px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[86vw] max-w-[620px] max-h-[580px] rounded-[34px]",
         radiusX: 40,
         radiusY: 37,
         btnStyle: { width: '21cqw', height: '21cqw' } as CSSProperties,
@@ -805,7 +805,7 @@ export default function WhaleBucket() {
       };
     } else {
       return {
-        boardClass: "w-[96vw] h-[86vw] max-w-[680px] max-h-[620px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[88vw] max-w-[680px] max-h-[620px] rounded-[40px]",
         radiusX: 42,
         radiusY: 38,
         btnStyle: { width: '16.5cqw', height: '16.5cqw' } as CSSProperties,
@@ -1221,8 +1221,8 @@ export default function WhaleBucket() {
           {/* Column 1: Board Visual & Header */}
           <div className="space-y-4">
 
-            <div className={cn(
-              "relative w-full border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
+            <div id="grimoire-circle-board" className={cn(
+              "relative border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
               timeOfDay === 'day'
                 ? "bg-white/50 border-gray-300 shadow-gray-200/50"
                 : "bg-gray-950/40 border-gray-900/60 shadow-black/45",

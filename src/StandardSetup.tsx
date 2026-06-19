@@ -71,6 +71,7 @@ export default function StandardSetup() {
     if (saved) {
       try {
         const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, customScriptRoles: csr, scriptName: sn } = JSON.parse(saved);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPlayers(p || []);
         setPhase(ph || 'setup');
         setTimeOfDay(tod || 'night');
@@ -193,13 +194,14 @@ export default function StandardSetup() {
         }
 
         // Find metadata object
-        const metaObj = parsed.find((item: any) => item && typeof item === 'object' && item.id === '_meta');
+        type ScriptItem = { id: string; name?: string };
+        const metaObj = parsed.find((item: ScriptItem) => item && typeof item === 'object' && item.id === '_meta');
         const name = metaObj?.name || file.name.replace('.json', '');
 
         // Map roles
         const parsedRoles = parsed
-          .filter((item: any) => item && typeof item === 'object' && item.id && item.id !== '_meta')
-          .map((item: any) => {
+          .filter((item: ScriptItem) => item && typeof item === 'object' && item.id && item.id !== '_meta')
+          .map((item: ScriptItem) => {
             const matched = (rolesData as Role[]).find(r => r.id.toLowerCase() === item.id.toLowerCase());
             if (matched) return matched;
             return {
@@ -216,7 +218,7 @@ export default function StandardSetup() {
 
         setCustomScriptRoles(parsedRoles);
         setScriptName(name);
-      } catch (err) {
+      } catch {
         alert("Failed to parse JSON script file.");
       }
     };
@@ -253,7 +255,7 @@ export default function StandardSetup() {
 
     const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
-    let selectedDemons = shuffle(dems).slice(0, base.demon);
+    const selectedDemons = shuffle(dems).slice(0, base.demon);
     let selectedMinions = shuffle(mins).slice(0, base.minion);
 
     const hasLilMonsta = selectedDemons.some(d => d.id === 'lilmonsta');
@@ -281,7 +283,7 @@ export default function StandardSetup() {
       targetOutsiders = N - base.demon - base.minion;
     }
 
-    let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
+    const selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
     let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
     // Check Balloonist
@@ -298,7 +300,7 @@ export default function StandardSetup() {
       }
     }
 
-    let finalRolesList = shuffle([
+    const finalRolesList = shuffle([
       ...selectedDemons,
       ...selectedMinions,
       ...selectedOutsiders,
@@ -453,20 +455,14 @@ export default function StandardSetup() {
 
     const expectedTownsfolk = N - expectedDemon - expectedMinion - expectedOutsider;
 
-    let isOutsiderValid = false;
-    if (hasGodfather && !hasLegion && !hasRiot) {
-      isOutsiderValid = (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1);
-    } else {
-      isOutsiderValid = counts.outsider === expectedOutsider;
-    }
+    const isOutsiderValid = (hasGodfather && !hasLegion && !hasRiot)
+      ? (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1)
+      : counts.outsider === expectedOutsider;
 
-    let isTownsfolkValid = false;
-    if (hasGodfather && !hasLegion && !hasRiot) {
-      isTownsfolkValid = (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
-                           counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1));
-    } else {
-      isTownsfolkValid = counts.townsfolk === expectedTownsfolk;
-    }
+    const isTownsfolkValid = (hasGodfather && !hasLegion && !hasRiot)
+      ? (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
+         counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1))
+      : counts.townsfolk === expectedTownsfolk;
 
     const isDemonValid = counts.demon === expectedDemon;
     const isMinionValid = counts.minion === expectedMinion;

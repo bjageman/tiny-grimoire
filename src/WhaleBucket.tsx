@@ -255,7 +255,7 @@ function assignCharacters(players: Player[], allRoles: Role[]): AssignmentResult
       goodAssignments.push({ player: temp.player, role, fromPref });
     }
     
-    let fullAssignment = [...assignment, ...goodAssignments];
+    const fullAssignment = [...assignment, ...goodAssignments];
     let valid = false;
     
     for (let adj = 0; adj < 10; adj++) {
@@ -264,7 +264,7 @@ function assignCharacters(players: Player[], allRoles: Role[]): AssignmentResult
       const hasBalloonist = fullAssignment.some(a => a.role.id === 'balloonist');
       const hasGodfather = fullAssignment.some(a => a.role.id === 'godfather');
       
-      let deltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) + (hasBalloonist ? 1 : 0);
+      const deltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) + (hasBalloonist ? 1 : 0);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
       const targetOutMin = base.outsider + deltaOut - (hasGodfather ? 1 : 0);
@@ -364,7 +364,8 @@ function assignCharacters(players: Player[], allRoles: Role[]): AssignmentResult
 
 const getPreferenceLabel = (prefs: string[], defaultLabel: string) => {
   if (prefs.length === 0) return defaultLabel;
-  const allRoles = rolesData as any[];
+  type RoleEntry = { id: string; name: string };
+  const allRoles = rolesData as RoleEntry[];
   const names = prefs.map(id => allRoles.find(r => r.id === id)?.name || id);
   return names.join(', ');
 };
@@ -391,11 +392,13 @@ export default function WhaleBucket() {
     const saved = localStorage.getItem('whale-bucket-game');
     if (saved) {
       try {
-        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, allowFallbacks: af } = JSON.parse(saved);
-        const validatedPlayers = (p || []).map((player: any) => ({
+        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn } = JSON.parse(saved);
+        type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Player['preferences'] };
+        const validatedPlayers = (p || []).map((player: SavedPlayer) => ({
           ...player,
           preferences: player.preferences || { townsfolk: [], outsider: [], minion: [], demon: [] }
         }));
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPlayers(validatedPlayers);
         setPhase(ph || 'setup');
         setTimeOfDay(tod || 'night');
@@ -662,7 +665,7 @@ export default function WhaleBucket() {
     let expectedMinion = base.minion;
     let expectedOutsider = base.outsider;
     
-    let modifications: string[] = [];
+    const modifications: string[] = [];
     
     if (hasLegion) {
       const L = Math.round(N * 0.6);
@@ -679,7 +682,7 @@ export default function WhaleBucket() {
     } else if (hasAtheist) {
       expectedDemon = 0;
       expectedMinion = 0;
-      let delta = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) + (hasBalloonist ? 1 : 0);
+      const delta = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) + (hasBalloonist ? 1 : 0);
       expectedOutsider = base.outsider + delta;
       modifications.push("Atheist (No Evil players)");
       if (hasBaron) modifications.push("Baron (+2 Outsiders)");
@@ -708,22 +711,16 @@ export default function WhaleBucket() {
       }
     }
     
-    let expectedTownsfolk = N - expectedDemon - expectedMinion - expectedOutsider;
+    const expectedTownsfolk = N - expectedDemon - expectedMinion - expectedOutsider;
     
-    let isOutsiderValid = false;
-    if (hasGodfather && !hasLegion && !hasRiot) {
-      isOutsiderValid = (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1);
-    } else {
-      isOutsiderValid = counts.outsider === expectedOutsider;
-    }
+    const isOutsiderValid = (hasGodfather && !hasLegion && !hasRiot)
+      ? (counts.outsider === expectedOutsider + 1 || counts.outsider === expectedOutsider - 1)
+      : counts.outsider === expectedOutsider;
     
-    let isTownsfolkValid = false;
-    if (hasGodfather && !hasLegion && !hasRiot) {
-      isTownsfolkValid = (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
-                           counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1));
-    } else {
-      isTownsfolkValid = counts.townsfolk === expectedTownsfolk;
-    }
+    const isTownsfolkValid = (hasGodfather && !hasLegion && !hasRiot)
+      ? (counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider + 1) ||
+         counts.townsfolk === N - expectedDemon - expectedMinion - (expectedOutsider - 1))
+      : counts.townsfolk === expectedTownsfolk;
     
     const isDemonValid = counts.demon === expectedDemon;
     const isMinionValid = counts.minion === expectedMinion;

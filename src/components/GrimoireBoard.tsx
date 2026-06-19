@@ -233,6 +233,21 @@ export default function GrimoireBoard({
                     THE LUNATIC
                   </span>
                 )}
+                {p.isDrunkOrPoisoned && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '14%',
+                      right: '14%',
+                      fontSize: '4.0cqw',
+                      lineHeight: 1,
+                      zIndex: 30,
+                    }}
+                    title="Drunk/Poisoned"
+                  >
+                    🤢
+                  </div>
+                )}
               </button>
             </div>
           </div>

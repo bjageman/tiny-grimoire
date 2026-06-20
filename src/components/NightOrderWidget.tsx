@@ -117,8 +117,12 @@ export default function NightOrderWidget({
     }
 
     // Check if the character is in play
-    const matchedPlayers = playersByRole.get(id);
-    if (matchedPlayers && matchedPlayers.length > 0) {
+    let matchedPlayers = playersByRole.get(id) || [];
+    if (id === 'lilmonsta') {
+      const extra = players.filter(p => p.isTheLilMonsta && p.roleId !== 'lilmonsta');
+      matchedPlayers = [...matchedPlayers, ...extra];
+    }
+    if (matchedPlayers.length > 0) {
       const roleDetails = officialRoles.find(r => r.id === id);
       const reminder = activeTab === 'first' 
         ? roleDetails?.firstNightReminder 

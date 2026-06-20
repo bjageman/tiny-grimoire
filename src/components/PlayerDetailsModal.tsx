@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { ChevronLeft, ChevronRight, Pencil, X, Search } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Role } from '../types';
+import officialRoles from '../official_roles.json';
 
 interface Player {
   id: string;
@@ -62,6 +63,7 @@ export default function PlayerDetailsModal({
 
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
   const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
+  const officialRole = roleObj ? officialRoles.find(r => r.id === roleObj.id) : undefined;
 
 
   const teamFill = (team: Role['team']) => ({
@@ -302,6 +304,16 @@ export default function PlayerDetailsModal({
                 </div>
               )}
             </button>
+          )}
+          {roleObj && officialRole?.ability && (
+            <div className="text-center px-4 mt-2">
+              <p className={cn(
+                'text-xs leading-relaxed italic font-medium',
+                isLightModeActive ? 'text-gray-650' : 'text-gray-300'
+              )}>
+                "{officialRole.ability}"
+              </p>
+            </div>
           )}
         </div>
 

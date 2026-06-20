@@ -253,27 +253,6 @@ export default function GrimoireBoard({
                     🤢
                   </div>
                 )}
-                {(() => {
-                  const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-                  const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-                  const isAlignmentShifted = p.isEvil !== undefined && p.isEvil !== defaultEvil;
-                  if (!isAlignmentShifted) return null;
-                  return (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '14%',
-                        left: '14%',
-                        fontSize: '4.0cqw',
-                        lineHeight: 1,
-                        zIndex: 30,
-                      }}
-                      title={isEvil ? "Secretly Evil" : "Secretly Good"}
-                    >
-                      {isEvil ? '👿' : '😇'}
-                    </div>
-                  );
-                })()}
               </button>
             </div>
           </div>

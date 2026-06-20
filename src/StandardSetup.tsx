@@ -56,6 +56,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     handleDragLeave,
     handleDrop,
     handleDragEnd,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
     movePlayer,
   } = usePlayerDragAndDrop(players, setPlayers);
 
@@ -398,6 +401,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           handleDragLeave={handleDragLeave}
           handleDrop={handleDrop}
           handleDragEnd={handleDragEnd}
+          handleTouchStart={handleTouchStart}
+          handleTouchMove={handleTouchMove}
+          handleTouchEnd={handleTouchEnd}
           movePlayer={movePlayer}
         />
       )}
@@ -424,6 +430,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           handleDragLeave={handleDragLeave}
           handleDrop={handleDrop}
           handleDragEnd={handleDragEnd}
+          handleTouchStart={handleTouchStart}
+          handleTouchMove={handleTouchMove}
+          handleTouchEnd={handleTouchEnd}
           validationSummary={validationSummary}
         />
       )}

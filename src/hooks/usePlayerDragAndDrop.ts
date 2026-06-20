@@ -42,6 +42,51 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
     setDragOverIndex(null);
   };
 
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (draggedIndex === null) return;
+    
+    // Prevent standard page scrolling when touch-dragging
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    const touch = e.touches[0];
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!targetElement) return;
+
+    let current: HTMLElement | null = targetElement as HTMLElement;
+    let foundIndex: number | null = null;
+    while (current) {
+      const idxAttr = current.getAttribute('data-drag-index');
+      if (idxAttr !== null) {
+        foundIndex = parseInt(idxAttr, 10);
+        break;
+      }
+      current = current.parentElement;
+    }
+
+    if (foundIndex !== null && foundIndex !== dragOverIndex) {
+      setDragOverIndex(foundIndex);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggedIndex !== null && dragOverIndex !== null) {
+      if (draggedIndex !== dragOverIndex) {
+        const updated = [...items];
+        const [removed] = updated.splice(draggedIndex, 1);
+        updated.splice(dragOverIndex, 0, removed);
+        setItems(updated);
+      }
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const movePlayer = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= items.length) return;
@@ -59,6 +104,9 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
     handleDragLeave,
     handleDrop,
     handleDragEnd,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
     movePlayer,
   };
 }

@@ -48,6 +48,9 @@ interface StandardSetupPhaseProps {
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
+  handleTouchStart: (e: React.TouchEvent, index: number) => void;
+  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchEnd: () => void;
   movePlayer: (index: number, direction: 'up' | 'down') => void;
 }
 
@@ -80,6 +83,9 @@ export default function StandardSetupPhase({
   handleDragLeave,
   handleDrop,
   handleDragEnd,
+  handleTouchStart,
+  handleTouchMove,
+  handleTouchEnd,
   movePlayer,
 }: StandardSetupPhaseProps) {
   return (
@@ -198,6 +204,9 @@ export default function StandardSetupPhase({
                 handleDragLeave={handleDragLeave}
                 handleDrop={handleDrop}
                 handleDragEnd={handleDragEnd}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
                 movePlayer={movePlayer}
                 removePlayer={removePlayer}
                 updatePlayerName={updatePlayerName}
@@ -353,7 +362,13 @@ export default function StandardSetupPhase({
         <button
           id="open-grimoire-button"
           disabled={!allAssigned}
-          onClick={() => setPhase('game')}
+          onClick={() => {
+            setPhase('game');
+            setTimeout(() => {
+              const grimoireElement = document.getElementById('grimoire-board-container');
+              grimoireElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
           className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
         >
           Open Grimoire

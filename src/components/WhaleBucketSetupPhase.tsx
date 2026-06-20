@@ -31,6 +31,9 @@ interface WhaleBucketSetupPhaseProps {
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
+  handleTouchStart: (e: React.TouchEvent, index: number) => void;
+  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchEnd: () => void;
   movePlayer: (index: number, direction: 'up' | 'down') => void;
   addPlayer: () => void;
   removePlayer: (id: string) => void;
@@ -58,6 +61,9 @@ export default function WhaleBucketSetupPhase({
   handleDragLeave,
   handleDrop,
   handleDragEnd,
+  handleTouchStart,
+  handleTouchMove,
+  handleTouchEnd,
   movePlayer,
   addPlayer,
   removePlayer,
@@ -147,6 +153,7 @@ export default function WhaleBucketSetupPhase({
             {players.map((p, index) => (
               <div
                 key={p.id}
+                data-drag-index={index}
                 draggable={true}
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
@@ -154,13 +161,18 @@ export default function WhaleBucketSetupPhase({
                 onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
                 className={cn(
-                  "bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2 transition-all",
-                  draggedIndex === index && "opacity-40 border-dashed border-clocktower-blood/50 scale-[0.98]",
-                  dragOverIndex === index && draggedIndex !== index && "border-t-2 border-t-clocktower-blood bg-gray-800/20"
+                  "bg-gray-900/60 p-3 rounded-lg border border-gray-800/50 space-y-2 transition-all duration-200",
+                  draggedIndex === index && "opacity-20 border-2 border-dashed border-clocktower-blood bg-black/40 scale-[0.96]",
+                  dragOverIndex === index && draggedIndex !== index && "border-t-4 border-t-clocktower-blood bg-clocktower-blood/10 shadow-[0_4px_12px_rgba(139,0,0,0.15)] translate-y-1"
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <div className="text-gray-600 cursor-grab active:cursor-grabbing hover:text-gray-400 p-0.5 shrink-0 flex items-center">
+                  <div
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    className="text-gray-600 cursor-grab active:cursor-grabbing hover:text-gray-400 p-0.5 shrink-0 flex items-center select-none touch-none"
+                  >
                     <GripVertical size={14} />
                   </div>
                   <span className="text-xs text-gray-500 font-mono w-5">#{index + 1}</span>

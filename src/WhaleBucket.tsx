@@ -54,6 +54,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     handleDragLeave,
     handleDrop,
     handleDragEnd,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
     movePlayer,
   } = usePlayerDragAndDrop(players, setPlayers);
 
@@ -388,6 +391,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           handleDragLeave={handleDragLeave}
           handleDrop={handleDrop}
           handleDragEnd={handleDragEnd}
+          handleTouchStart={handleTouchStart}
+          handleTouchMove={handleTouchMove}
+          handleTouchEnd={handleTouchEnd}
           movePlayer={movePlayer}
           addPlayer={addPlayer}
           removePlayer={removePlayer}
@@ -432,6 +438,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           handleDragLeave={handleDragLeave}
           handleDrop={handleDrop}
           handleDragEnd={handleDragEnd}
+          handleTouchStart={handleTouchStart}
+          handleTouchMove={handleTouchMove}
+          handleTouchEnd={handleTouchEnd}
           setSelectedPlayerId={setSelectedPlayerId}
           toggleTimeOfDay={toggleTimeOfDay}
           addTravelerGamePhase={addTravelerGamePhase}

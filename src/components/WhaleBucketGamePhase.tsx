@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
@@ -20,6 +20,9 @@ interface WhaleBucketGamePhaseProps {
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
+  handleTouchStart: (e: React.TouchEvent, index: number) => void;
+  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchEnd: () => void;
   setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
   addTravelerGamePhase: () => void;
@@ -42,6 +45,9 @@ export default function WhaleBucketGamePhase({
   handleDragLeave,
   handleDrop,
   handleDragEnd,
+  handleTouchStart,
+  handleTouchMove,
+  handleTouchEnd,
   setSelectedPlayerId,
   toggleTimeOfDay,
   addTravelerGamePhase,
@@ -49,10 +55,11 @@ export default function WhaleBucketGamePhase({
   setNewTravelerRoleId,
   setPhase,
 }: WhaleBucketGamePhaseProps) {
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
       {/* Column 1: Board Visual & Header */}
-      <div className="space-y-4">
+      <div id="grimoire-board-container" className="space-y-4">
         <GrimoireBoard
           players={players}
           timeOfDay={timeOfDay}
@@ -84,34 +91,54 @@ export default function WhaleBucketGamePhase({
             ? "bg-white/50 border-gray-300 text-clocktower-night"
             : "bg-gray-900/40 border-gray-800/80"
         )}>
-          <h4 className={cn(
-            "text-[10px] uppercase font-bold tracking-wider",
-            isLightModeActive ? "text-gray-600" : "text-gray-500"
-          )}>Grimoire Ledger Reference</h4>
+          <div className="flex justify-between items-center mb-1">
+            <h4 className={cn(
+              "text-[10px] uppercase font-bold tracking-wider",
+              isLightModeActive ? "text-gray-600" : "text-gray-500"
+            )}>Grimoire Ledger Reference</h4>
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isDragEnabled}
+                onChange={(e) => setIsDragEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-7 h-4 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-350 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-clocktower-blood"></div>
+              <span className="ml-1.5 text-[9px] font-bold text-gray-500 uppercase tracking-wider">Drag to Reorder</span>
+            </label>
+          </div>
           <div className="grid grid-cols-1 gap-1.5 text-xs">
             {players.map((p, index) => {
               const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
               return (
                 <div
                   key={p.id}
-                  draggable={true}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
+                  data-drag-index={index}
+                  draggable={isDragEnabled}
+                  onDragStart={isDragEnabled ? (e) => handleDragStart(e, index) : undefined}
+                  onDragOver={isDragEnabled ? (e) => handleDragOver(e, index) : undefined}
+                  onDragLeave={isDragEnabled ? handleDragLeave : undefined}
+                  onDrop={isDragEnabled ? (e) => handleDrop(e, index) : undefined}
+                  onDragEnd={isDragEnabled ? handleDragEnd : undefined}
+                  onTouchStart={isDragEnabled ? (e) => handleTouchStart(e, index) : undefined}
+                  onTouchMove={isDragEnabled ? handleTouchMove : undefined}
+                  onTouchEnd={isDragEnabled ? handleTouchEnd : undefined}
                   onClick={() => setSelectedPlayerId(p.id)}
                   className={cn(
-                    "flex items-center gap-1.5 py-0.5 px-1.5 rounded border transition-colors min-w-0 cursor-move hover:ring-1 hover:ring-gray-500/50",
+                    "flex items-center gap-1.5 py-2.5 px-1.5 rounded border transition-all duration-200 min-w-0 hover:ring-1 hover:ring-gray-500/50 select-none",
+                    isDragEnabled ? "cursor-move touch-none" : "cursor-pointer touch-auto",
                     p.isDead && "opacity-45",
-                    draggedIndex === index && "opacity-40 border-dashed border-clocktower-blood/50 scale-[0.98]",
-                    dragOverIndex === index && draggedIndex !== index && "border-t-2 border-t-clocktower-blood bg-gray-800/20",
+                    isDragEnabled && draggedIndex === index && "opacity-20 border-2 border-dashed border-clocktower-blood bg-black/40 scale-[0.96]",
+                    isDragEnabled && dragOverIndex === index && draggedIndex !== index && "border-t-4 border-t-clocktower-blood bg-clocktower-blood/10 shadow-[0_4px_12px_rgba(139,0,0,0.15)] translate-y-0.5",
                     isLightModeActive
                       ? "bg-white/40 border-gray-200 hover:bg-white/70"
                       : "bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60"
                   )}
                 >
-                  <div className="text-gray-500 cursor-grab active:cursor-grabbing hover:text-gray-400 p-0.5 shrink-0 flex items-center">
+                  <div className={cn(
+                    "text-gray-500 p-0.5 shrink-0 flex items-center transition-opacity duration-200",
+                    isDragEnabled ? "opacity-100" : "opacity-25"
+                  )}>
                     <GripVertical size={10} />
                   </div>
                   <span className={cn("text-[9px] font-mono w-4 shrink-0", isLightModeActive ? "text-gray-550" : "text-gray-600")}>{index + 1}</span>

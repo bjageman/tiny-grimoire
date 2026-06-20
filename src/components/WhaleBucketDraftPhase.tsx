@@ -316,7 +316,13 @@ export default function WhaleBucketDraftPhase({
         <button
           id="open-grimoire-button"
           disabled={players.some(p => !p.roleId)}
-          onClick={() => setPhase('game')}
+          onClick={() => {
+            setPhase('game');
+            setTimeout(() => {
+              const grimoireElement = document.getElementById('grimoire-board-container');
+              grimoireElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
           className="flex-[2] bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 shadow-lg shadow-black/40"
         >
           Open Grimoire

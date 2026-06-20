@@ -4,6 +4,7 @@ import { cn } from '../utils/cn';
 import type { Player, Role } from '../types';
 import rolesData from '../roles.json';
 import GrimoireBoard from './GrimoireBoard';
+import NightOrderWidget from './NightOrderWidget';
 
 import type { ValidationSummary } from '../utils/whaleBucketValidation';
 
@@ -46,15 +47,23 @@ export default function StandardGamePhase({
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
-      {/* Column 1: Board */}
-      <div id="grimoire-board-container" className="space-y-4">
-        <GrimoireBoard
+      {/* Column 1: Board & Night Order */}
+      <div className="space-y-6">
+        <div id="grimoire-board-container" className="space-y-4">
+          <GrimoireBoard
+            players={players}
+            timeOfDay={timeOfDay}
+            dayNumber={dayNumber}
+            toggleTimeOfDay={toggleTimeOfDay}
+            onSelectPlayer={setSelectedPlayerId}
+            rolesData={selectionRoles}
+          />
+        </div>
+        <NightOrderWidget
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
-          toggleTimeOfDay={toggleTimeOfDay}
-          onSelectPlayer={setSelectedPlayerId}
-          rolesData={selectionRoles}
+          isLightModeActive={isLightModeActive}
         />
       </div>
 

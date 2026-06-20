@@ -5,6 +5,7 @@ import type { Player } from '../WhaleBucket';
 import type { Role } from '../types';
 import rolesData from '../roles.json';
 import GrimoireBoard from './GrimoireBoard';
+import NightOrderWidget from './NightOrderWidget';
 
 interface WhaleBucketGamePhaseProps {
   players: Player[];
@@ -58,15 +59,23 @@ export default function WhaleBucketGamePhase({
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
-      {/* Column 1: Board Visual & Header */}
-      <div id="grimoire-board-container" className="space-y-4">
-        <GrimoireBoard
+      {/* Column 1: Board Visual & Header & Night Order */}
+      <div className="space-y-6">
+        <div id="grimoire-board-container" className="space-y-4">
+          <GrimoireBoard
+            players={players}
+            timeOfDay={timeOfDay}
+            dayNumber={dayNumber}
+            toggleTimeOfDay={toggleTimeOfDay}
+            onSelectPlayer={setSelectedPlayerId}
+            rolesData={rolesData as Role[]}
+          />
+        </div>
+        <NightOrderWidget
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
-          toggleTimeOfDay={toggleTimeOfDay}
-          onSelectPlayer={setSelectedPlayerId}
-          rolesData={rolesData as Role[]}
+          isLightModeActive={isLightModeActive}
         />
       </div>
 

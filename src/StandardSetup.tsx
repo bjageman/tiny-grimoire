@@ -397,7 +397,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div className="relative flex justify-center items-center w-full sm:w-auto sm:justify-start sm:gap-3">
             <a href="#/" className={cn("absolute left-0 transition-colors text-sm sm:static", isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300")}>← Home</a>
-            <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center sm:text-left">Standard Setup</h1>
+            <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center sm:text-left">Standard Grimoire</h1>
             <div className="absolute right-0 flex items-center gap-1 sm:hidden">
               <button
                 onClick={toggleTheme}

@@ -34,12 +34,22 @@ export default function WhaleBucketDraftPhase({
   return (
     <div className="space-y-5">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-300">2. Character Draft Assignment</h2>
+        <h2 className={cn(
+          "text-lg font-semibold",
+          isLightModeActive ? "text-gray-800" : "text-gray-300"
+        )}>
+          2. Character Draft Assignment
+        </h2>
         <button
           onClick={runAssignment}
-          className="text-xs text-clocktower-townsfolk flex items-center gap-1 hover:underline font-semibold"
+          className={cn(
+            "text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border",
+            isLightModeActive
+              ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
+              : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
+          )}
         >
-          <Shuffle size={12} /> Re-Assign
+          <Shuffle size={14} /> Re-Assign
         </button>
       </div>
 

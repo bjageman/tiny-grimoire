@@ -1,4 +1,4 @@
-# 📖 BotC Grimoire & Draft Companion
+# 📖 BotC Grimoire
 
 A lightweight storyteller and setup companion web application for **Blood on the Clocktower** (BotC) storytellers. It offers two distinct modes: standard manual grimoire tracking and the custom **"Whale Bucket"** preference draft mode.
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Sparkles, BookOpen, Sun, Moon } from 'lucide-react';
+import { BookOpen, Sun, Moon } from 'lucide-react';
+import { WhaleIcon } from './components/WhaleIcon';
 import { cn } from './utils/cn';
 
 interface HomeProps {
@@ -47,7 +48,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
       <div className="max-w-md w-full space-y-8 text-center">
         {/* Title */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-clocktower-blood tracking-wide">BotC Grimoire & Draft Companion</h1>
+          <h1 className="text-4xl font-bold text-clocktower-blood tracking-wide">BotC Grimoire</h1>
           <p className="text-gray-500 text-sm">Blood on the Clocktower — Storyteller & Setup Companion</p>
         </div>
 
@@ -100,7 +101,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
           >
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-lg bg-clocktower-blood/10 border border-clocktower-blood/20 group-hover:bg-clocktower-blood/20 transition-colors">
-                <Sparkles size={24} className="text-clocktower-blood" />
+                <WhaleIcon size={24} className="text-clocktower-blood" />
               </div>
               <div className="flex-1">
                 <h2 className={cn(
@@ -110,7 +111,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
                   Whale Bucket Grimoire
                 </h2>
                 <p className={cn("text-sm mt-1 leading-relaxed", isLightModeActive ? "text-gray-600" : "text-gray-500")}>
-                  Players submit role preferences, then the grimoire is randomly assembled. Perfect for casual groups who want a surprise.
+                  Players submit role preferences, then the grimoire is randomly assembled.
                 </p>
                 <div className="flex gap-2 mt-3">
                   <span className="text-[10px] font-semibold bg-clocktower-blood/10 text-clocktower-blood/80 border border-clocktower-blood/20 px-2 py-0.5 rounded">Preference Draft</span>

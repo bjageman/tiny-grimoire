@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ArrowLeft } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role } from './types';
@@ -400,21 +400,27 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             <a
               href="#/"
               className={cn(
-                "absolute left-0 transition-colors text-lg font-bold px-2",
-                isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300"
+                "absolute left-0 transition-all p-1.5 rounded-full flex items-center justify-center",
+                isLightModeActive 
+                  ? "text-gray-700 hover:text-gray-900 hover:bg-black/5" 
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
               )}
+              title="Back to home"
             >
-              ←
+              <ArrowLeft size={24} />
             </a>
           ) : (
             <button
               onClick={() => setPhase('setup')}
               className={cn(
-                "absolute left-0 transition-colors text-lg font-bold px-2",
-                isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300"
+                "absolute left-0 transition-all p-1.5 rounded-full flex items-center justify-center",
+                isLightModeActive 
+                  ? "text-gray-700 hover:text-gray-900 hover:bg-black/5" 
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
               )}
+              title="Back to setup"
             >
-              ←
+              <ArrowLeft size={24} />
             </button>
           )}
           

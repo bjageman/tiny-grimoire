@@ -1,4 +1,4 @@
-# Contributing to BotC Grimoire & Draft Companion
+# Contributing to BotC Grimoire
 
 Thank you for your interest in contributing! We welcome community contributions to help improve the grimoire and draft companion.
 

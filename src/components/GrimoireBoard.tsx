@@ -119,6 +119,8 @@ export default function GrimoireBoard({
         const topPos = 50 + grimoireConfig.radiusY * Math.sin(angle);
 
         const roleObj = rolesData.find((r) => r.id === p.roleId);
+        const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
+        const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
 
         return (
           <div
@@ -139,8 +141,11 @@ export default function GrimoireBoard({
                 className={cn(
                   "rounded-full border-2 flex flex-col items-center justify-center transition-all duration-200 shadow-md relative group-hover:scale-125 group-hover:shadow-lg",
                   p.isDead
-                    ? "bg-[#e4e4e7] border-[#d4d4d8] text-[#71717a] scale-95 opacity-60"
-                    : "bg-[#ffffff] border-[#d4d4d8] text-[#1a1a1a] hover:border-[#a1a1aa] hover:bg-[#fafafa]"
+                    ? "bg-[#e4e4e7] text-[#71717a] scale-95 opacity-60"
+                    : "bg-[#ffffff] text-[#1a1a1a] hover:bg-[#fafafa]",
+                  isEvil
+                    ? "border-clocktower-minion/80 hover:border-clocktower-minion"
+                    : "border-clocktower-townsfolk/80 hover:border-clocktower-townsfolk"
                 )}
               >
                 <div

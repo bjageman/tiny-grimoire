@@ -399,7 +399,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             </a>
           ) : (
             <button
-              onClick={() => setPhase('setup')}
+              onClick={() => {
+                if (phase === 'game') {
+                  setPhase('draft');
+                } else {
+                  setPhase('setup');
+                }
+              }}
               className={cn(
                 "absolute left-0 transition-colors text-lg font-bold px-2",
                 isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-500 hover:text-gray-300"

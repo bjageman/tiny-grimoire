@@ -419,14 +419,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             </button>
           </div>
         </div>
-
-        {/* Legend */}
-        <div id="character-type-legend" className="flex justify-center gap-2.5 text-[9px] font-bold tracking-wider text-gray-500 w-full">
-          <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-townsfolk" /> Townsfolk</span>
-          <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-outsider" /> Outsider</span>
-          <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-minion" /> Minion</span>
-          <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-clocktower-demon" /> Demon</span>
-        </div>
       </header>
 
       {phase === 'setup' && (

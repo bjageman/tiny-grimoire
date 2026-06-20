@@ -130,6 +130,19 @@ export default function GrimoireBoard({
         const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
         const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
 
+        // Calculate dynamic font size and split name by space to prevent overflow
+        const baseFontSizeVal = parseFloat(grimoireConfig.nameStyle.fontSize as string);
+        const baseFontSizeUnit = (grimoireConfig.nameStyle.fontSize as string).replace(/[0-9.]/g, '');
+        const nameWords = p.name.split(' ');
+        const longestWordLength = Math.max(...nameWords.map(w => w.length));
+
+        let scaleFactor = 1.0;
+        if (longestWordLength > 10) scaleFactor = 0.65;
+        else if (longestWordLength > 8) scaleFactor = 0.75;
+        else if (longestWordLength > 6) scaleFactor = 0.88;
+
+        const dynamicFontSize = `${baseFontSizeVal * scaleFactor}${baseFontSizeUnit}`;
+
         return (
           <div
             key={p.id}
@@ -209,7 +222,7 @@ export default function GrimoireBoard({
                         alt={roleObj.name}
                         className={cn(
                           "w-full h-full object-contain transition-all duration-200 select-none",
-                          p.isDead ? "grayscale opacity-30" : "opacity-90"
+                          p.isDead ? "grayscale opacity-15" : "opacity-35"
                         )}
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
@@ -221,16 +234,21 @@ export default function GrimoireBoard({
                 <span
                   style={{
                     ...grimoireConfig.nameStyle,
+                    fontSize: dynamicFontSize,
                     textShadow: p.isDead
                       ? '0 1px 1px rgba(255,255,255,0.8), 0 0 2px rgba(255,255,255,0.7)'
                       : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                   }}
                   className={cn(
-                    "font-bold font-sans tracking-tighter truncate text-center leading-tight z-20 relative pointer-events-none select-none",
+                    "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none flex flex-col items-center max-w-[85%] truncate",
                     p.isDead ? "line-through text-[#71717a]" : "text-[#1a1a1a] font-bold"
                   )}
                 >
-                  {p.name.substring(0, grimoireConfig.charLimit)}
+                  {nameWords.map((word, wIdx) => (
+                    <span key={wIdx} className="truncate max-w-full">
+                      {word}
+                    </span>
+                  ))}
                 </span>
 
                 {p.isTheDrunk && (

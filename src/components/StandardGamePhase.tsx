@@ -121,7 +121,7 @@ export default function StandardGamePhase({
                 : "grid-cols-4 gap-2"
             )}>
               <div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Townsfolk</div>
+                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
                 <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
                   {validationSummary.counts.townsfolk} / {validationSummary.expectedTownsfolkLabel}
                 </div>

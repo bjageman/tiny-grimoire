@@ -506,7 +506,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setActivePrefModal={setActivePrefModal}
           setPrefSearchTerm={setPrefSearchTerm}
           runAssignment={runAssignment}
-          validationSummary={validationSummary}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}

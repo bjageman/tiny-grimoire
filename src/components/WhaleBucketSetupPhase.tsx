@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, Shuffle, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, Shuffle, Sparkles } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
 import type { Role } from '../types';
@@ -7,7 +7,7 @@ import { getDistribution } from '../constants';
 import { getPreferenceLabel } from '../utils/assignment';
 import rolesData from '../official_roles.json';
 
-import type { ValidationSummary } from '../utils/whaleBucketValidation';
+
 
 interface WhaleBucketSetupPhaseProps {
   players: Player[];
@@ -34,7 +34,6 @@ interface WhaleBucketSetupPhaseProps {
   setActivePrefModal: (val: { playerId: string; team: Role['team'] } | null) => void;
   setPrefSearchTerm: (term: string) => void;
   runAssignment: () => void;
-  validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
   excludedRoleIds: string[];
   setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
@@ -65,7 +64,6 @@ export default function WhaleBucketSetupPhase({
   setActivePrefModal,
   setPrefSearchTerm,
   runAssignment,
-  validationSummary,
   isLightModeActive,
   excludedRoleIds,
   setExcludedRoleIds,

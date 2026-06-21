@@ -269,7 +269,7 @@ export function performStandardAssignment(
       isTheMarionette,
       isTheLunatic,
       isTheLilMonsta,
-      isEvil: roleId === 'legion' ? true : undefined,
+      isEvil: (roleId === 'legion' || isTheMarionette) ? true : undefined,
     };
   });
 }

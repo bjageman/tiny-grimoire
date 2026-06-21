@@ -60,6 +60,7 @@ describe('performStandardAssignment', () => {
       const fakeRole = mockScriptRoles.find(r => r.id === marionettePlayer.roleId);
       expect(fakeRole).toBeDefined();
       expect(['townsfolk', 'outsider']).toContain(fakeRole?.team);
+      expect(marionettePlayer.isEvil).toBe(true);
 
       // Verify the Marionette player is adjacent to the Demon player in the seating circle
       const N = players.length;

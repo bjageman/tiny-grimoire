@@ -7,7 +7,8 @@ describe('cn utility', () => {
   });
 
   it('should filter out falsy values', () => {
-    expect(cn('class1', false && 'class2', null, undefined, 'class3')).toBe('class1 class3');
+    const isFalse = false;
+    expect(cn('class1', isFalse && 'class2', null, undefined, 'class3')).toBe('class1 class3');
   });
 
   it('should merge tailwind classes properly using twMerge', () => {

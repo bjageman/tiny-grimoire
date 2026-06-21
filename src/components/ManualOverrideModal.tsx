@@ -31,12 +31,46 @@ export default function ManualOverrideModal({
     ...(draftPlayer.preferences.demon || []),
   ] : [];
 
+  const TEAM_ORDER: Record<string, number> = {
+    townsfolk: 1,
+    outsider: 2,
+    minion: 3,
+    demon: 4,
+    traveler: 5
+  };
+
   const filteredRoles = (rolesData as Role[]).filter(r => 
-    r.name.toLowerCase().includes(searchTerm.toLowerCase())
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.team.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const preferredRoles = filteredRoles.filter(r => preferredIds.includes(r.id));
-  const otherRoles = filteredRoles.filter(r => !preferredIds.includes(r.id));
+  const preferredRoles = filteredRoles
+    .filter(r => preferredIds.includes(r.id))
+    .sort((a, b) => {
+      const isCurrentA = a.id === draftPlayer?.roleId;
+      const isCurrentB = b.id === draftPlayer?.roleId;
+      if (isCurrentA && !isCurrentB) return -1;
+      if (!isCurrentA && isCurrentB) return 1;
+
+      const orderA = TEAM_ORDER[a.team] || 99;
+      const orderB = TEAM_ORDER[b.team] || 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+  const otherRoles = filteredRoles
+    .filter(r => !preferredIds.includes(r.id))
+    .sort((a, b) => {
+      const isCurrentA = a.id === draftPlayer?.roleId;
+      const isCurrentB = b.id === draftPlayer?.roleId;
+      if (isCurrentA && !isCurrentB) return -1;
+      if (!isCurrentA && isCurrentB) return 1;
+
+      const orderA = TEAM_ORDER[a.team] || 99;
+      const orderB = TEAM_ORDER[b.team] || 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4 backdrop-blur-xs">
@@ -65,6 +99,7 @@ export default function ManualOverrideModal({
         <div className="overflow-y-auto flex-1 border border-gray-800 rounded bg-gray-955/40 divide-y divide-gray-800/60 pr-1">
           {preferredRoles.map(role => {
             const selectedByPlayer = players.find(pl => pl.roleId === role.id && pl.id !== activeDraftPlayerId);
+            const isCurrent = role.id === draftPlayer?.roleId;
             return (
               <button
                 key={role.id}
@@ -73,7 +108,10 @@ export default function ManualOverrideModal({
                   setActiveDraftPlayerId(null);
                   setSearchTerm('');
                 }}
-                className="w-full text-left px-3 py-2.5 bg-amber-500/5 hover:bg-amber-500/10 text-xs transition-colors flex justify-between items-center"
+                className={cn(
+                  "w-full text-left px-3 py-2.5 bg-amber-500/5 hover:bg-amber-500/10 text-xs transition-colors flex justify-between items-center",
+                  isCurrent && (isLightModeActive ? "bg-amber-100/90 border-l-2 border-l-amber-600" : "bg-amber-500/20 border-l-2 border-l-amber-500")
+                )}
               >
                 <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
                   <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
@@ -86,12 +124,16 @@ export default function ManualOverrideModal({
                   </span>
                   <span className={cn(
                     "font-semibold text-xs truncate",
-                    role.team === 'townsfolk' && "text-clocktower-townsfolk",
-                    role.team === 'outsider' && "text-clocktower-outsider",
-                    role.team === 'minion' && "text-clocktower-minion",
-                    role.team === 'demon' && "text-clocktower-demon",
+                    isCurrent
+                      ? (isLightModeActive ? "text-gray-950 font-bold" : "text-white font-bold")
+                      : (
+                        (role.team === 'townsfolk' && "text-clocktower-townsfolk") ||
+                        (role.team === 'outsider' && "text-clocktower-outsider") ||
+                        (role.team === 'minion' && "text-clocktower-minion") ||
+                        (role.team === 'demon' && "text-clocktower-demon")
+                      )
                   )}>
-                    {role.name}
+                    {role.name} {isCurrent && "✓"}
                   </span>
                   <span className="text-[8px] bg-amber-500/25 text-amber-400 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
                     ★ Pick
@@ -112,8 +154,9 @@ export default function ManualOverrideModal({
             );
           })}
 
-          {otherRoles.map(role => {
+           {otherRoles.map(role => {
             const selectedByPlayer = players.find(pl => pl.roleId === role.id && pl.id !== activeDraftPlayerId);
+            const isCurrent = role.id === draftPlayer?.roleId;
             return (
               <button
                 key={role.id}
@@ -122,7 +165,10 @@ export default function ManualOverrideModal({
                   setActiveDraftPlayerId(null);
                   setSearchTerm('');
                 }}
-                className="w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center"
+                className={cn(
+                  "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
+                  isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
+                )}
               >
                 <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
                   <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
@@ -135,12 +181,16 @@ export default function ManualOverrideModal({
                   </span>
                   <span className={cn(
                     "font-semibold text-xs truncate",
-                    role.team === 'townsfolk' && "text-clocktower-townsfolk",
-                    role.team === 'outsider' && "text-clocktower-outsider",
-                    role.team === 'minion' && "text-clocktower-minion",
-                    role.team === 'demon' && "text-clocktower-demon",
+                    isCurrent
+                      ? (isLightModeActive ? "text-gray-950 font-bold" : "text-white font-bold")
+                      : (
+                        (role.team === 'townsfolk' && "text-clocktower-townsfolk") ||
+                        (role.team === 'outsider' && "text-clocktower-outsider") ||
+                        (role.team === 'minion' && "text-clocktower-minion") ||
+                        (role.team === 'demon' && "text-clocktower-demon")
+                      )
                   )}>
-                    {role.name}
+                    {role.name} {isCurrent && "✓"}
                   </span>
                   {selectedByPlayer && (
                     <span className={cn(

@@ -279,7 +279,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDead = (id: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, isDead: !p.isDead } : p));
+    setPlayers(players.map(p => {
+      if (p.id === id) {
+        const nextDead = !p.isDead;
+        return {
+          ...p,
+          isDead: nextDead,
+          hasDeadVote: nextDead ? true : undefined
+        };
+      }
+      return p;
+    }));
+  };
+
+  const togglePlayerDeadVote = (id: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
   };
 
   const togglePlayerEvil = (id: string) => {
@@ -364,9 +378,29 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   // Details Modal variables
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
   const modalRoleObj = modalPlayer ? (rolesData as Role[]).find(r => r.id === modalPlayer.roleId) : undefined;
-  const filteredModalRoles = (rolesData as Role[]).filter(r =>
-    r.name.toLowerCase().includes(modalRoleSearch.toLowerCase())
-  );
+  const filteredModalRoles = (rolesData as Role[])
+    .filter(r =>
+      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
+      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      const isCurrentA = a.id === modalPlayer?.roleId;
+      const isCurrentB = b.id === modalPlayer?.roleId;
+      if (isCurrentA && !isCurrentB) return -1;
+      if (!isCurrentA && isCurrentB) return 1;
+
+      const TEAM_ORDER: Record<string, number> = {
+        townsfolk: 1,
+        outsider: 2,
+        minion: 3,
+        demon: 4,
+        traveler: 5
+      };
+      const orderA = TEAM_ORDER[a.team] || 99;
+      const orderB = TEAM_ORDER[b.team] || 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
   const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
   const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
   const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
@@ -419,7 +453,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           )}
 
           <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
-            Whale Bucket Grimoire
+            Whale Bucket
           </h1>
 
           <div className="absolute right-0 flex items-center gap-1">
@@ -558,6 +592,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onToggleDead={togglePlayerDead}
+          onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}
           onToggleEvil={togglePlayerEvil}
           onToggleLilMonsta={togglePlayerTheLilMonsta}

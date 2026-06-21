@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Sun, Moon, ArrowLeft, RefreshCcw } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role } from './types';
@@ -46,6 +46,20 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setSelectedPlayerId(null);
     setIsSearchingRole(false);
     setModalRoleSearch('');
+  };
+
+  const resetGame = () => {
+    if (confirm('Are you sure you want to reset the game? This clears all players and settings.')) {
+      setPlayers([]);
+      setPhase('setup');
+      setSearchTerm('');
+      setTimeOfDay('night');
+      setDayNumber(1);
+      setIsLilMonstaGame(false);
+      setScriptName("All Roles (Default)");
+      setCustomScriptRoles(null);
+      localStorage.removeItem('standard-botc-game');
+    }
   };
 
   // Drag and drop states
@@ -183,7 +197,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDead = (id: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, isDead: !p.isDead } : p));
+    setPlayers(players.map(p => {
+      if (p.id === id) {
+        const nextDead = !p.isDead;
+        return {
+          ...p,
+          isDead: nextDead,
+          hasDeadVote: nextDead ? true : undefined
+        };
+      }
+      return p;
+    }));
+  };
+
+  const togglePlayerDeadVote = (id: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
   };
 
   const togglePlayerEvil = (id: string) => {
@@ -373,9 +401,29 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   // Modal logic details
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
   const modalRoleObj = modalPlayer ? (rolesData as Role[]).find(r => r.id === modalPlayer.roleId) : undefined;
-  const filteredModalRoles = selectionRoles.filter(r =>
-    r.name.toLowerCase().includes(modalRoleSearch.toLowerCase())
-  );
+  const filteredModalRoles = selectionRoles
+    .filter(r =>
+      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
+      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      const isCurrentA = a.id === modalPlayer?.roleId;
+      const isCurrentB = b.id === modalPlayer?.roleId;
+      if (isCurrentA && !isCurrentB) return -1;
+      if (!isCurrentA && isCurrentB) return 1;
+
+      const TEAM_ORDER: Record<string, number> = {
+        townsfolk: 1,
+        outsider: 2,
+        minion: 3,
+        demon: 4,
+        traveler: 5
+      };
+      const orderA = TEAM_ORDER[a.team] || 99;
+      const orderB = TEAM_ORDER[b.team] || 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
   const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
   const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
   const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
@@ -422,7 +470,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           )}
           
           <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
-            Standard Grimoire
+            Standard
           </h1>
 
           <div className="absolute right-0 flex items-center gap-1">
@@ -432,6 +480,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
               title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button
+              id="reset-game-button"
+              onClick={resetGame}
+              className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
+              title="Reset game"
+            >
+              <RefreshCcw size={20} />
             </button>
           </div>
         </div>
@@ -534,6 +590,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onToggleDead={togglePlayerDead}
+          onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}
           onToggleEvil={togglePlayerEvil}
           onToggleLilMonsta={togglePlayerTheLilMonsta}

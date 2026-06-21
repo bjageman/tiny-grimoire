@@ -104,10 +104,7 @@ export default function GrimoireBoard({
       >
         <span
           style={grimoireConfig.centerText1Style}
-          className={cn(
-            "font-serif tracking-widest font-bold transition-colors",
-            timeOfDay === 'day' ? "text-yellow-600" : "text-clocktower-blood/60"
-          )}
+          className="font-serif tracking-widest font-bold transition-colors"
         >
           BOTC
         </span>
@@ -170,11 +167,11 @@ export default function GrimoireBoard({
                 style={grimoireConfig.btnStyle}
                 className={cn(
                   "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative group-hover:scale-125 group-hover:shadow-lg select-none",
-                  p.isDead ? "scale-95 opacity-60" : "hover:bg-[#fafafa]"
+                  p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
                 )}
               >
                 {/* SVG representing the token */}
-                <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none">
+                <svg viewBox="0 0 200 200" className={cn("w-full h-full absolute inset-0 z-0 select-none pointer-events-none", p.isDead && "opacity-60")}>
                   <defs>
                     <path id={`topTextPath-${p.id}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
                     <path id={`bottomTextPath-${p.id}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
@@ -245,12 +242,12 @@ export default function GrimoireBoard({
                     ...grimoireConfig.nameStyle,
                     fontSize: dynamicFontSize,
                     textShadow: p.isDead
-                      ? '0 1px 1px rgba(255,255,255,0.8), 0 0 2px rgba(255,255,255,0.7)'
+                      ? 'none'
                       : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                   }}
                   className={cn(
                     "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none break-words whitespace-normal max-w-[82%] inline-block align-middle",
-                    p.isDead ? "line-through text-[#71717a]" : "text-[#1a1a1a] font-bold"
+                    p.isDead ? "line-through text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
                   )}
                 >
                   {p.name}
@@ -301,6 +298,22 @@ export default function GrimoireBoard({
                     title="Drunk/Poisoned"
                   >
                     🤢
+                  </div>
+                )}
+                {p.isDead && p.hasDeadVote && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '25%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      fontSize: '4.0cqw',
+                      lineHeight: 1,
+                      zIndex: 30,
+                    }}
+                    title="Vote Token Active"
+                  >
+                    🗳️
                   </div>
                 )}
               </button>

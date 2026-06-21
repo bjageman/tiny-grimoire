@@ -53,6 +53,14 @@ describe('performStandardAssignment', () => {
       expect(demonIdx).not.toBe(-1);
       expect(marionetteIdx).not.toBe(-1);
 
+      const marionettePlayer = result[marionetteIdx];
+      expect(marionettePlayer.isTheMarionette).toBe(true);
+
+      // Verify the Marionette has been assigned a fake Townsfolk or Outsider role (thinks they are good)
+      const fakeRole = mockScriptRoles.find(r => r.id === marionettePlayer.roleId);
+      expect(fakeRole).toBeDefined();
+      expect(['townsfolk', 'outsider']).toContain(fakeRole?.team);
+
       // Verify the Marionette player is adjacent to the Demon player in the seating circle
       const N = players.length;
       const leftNeighborIdx = (demonIdx - 1 + N) % N;

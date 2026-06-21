@@ -283,7 +283,7 @@ export default function NightOrderWidget({
                     <span
                       className={cn(
                         "font-bold font-serif text-sm",
-                        isInfo ? "text-gray-500 dark:text-gray-400" : "text-gray-850 dark:text-[#f4e4bc]",
+                        isInfo ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-[#f4e4bc]",
                         isChecked && "line-through text-gray-400 dark:text-gray-500"
                       )}
                     >
@@ -299,7 +299,7 @@ export default function NightOrderWidget({
 
                     {/* Player name */}
                     {item.player && (
-                      <span className="text-xs text-gray-550 dark:text-gray-400 font-medium">
+                      <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                         — {item.player.name}
                       </span>
                     )}

@@ -146,14 +146,23 @@ export default function NightOrderWidget({
   const wakeItems = items.filter(item => item.type === 'character' || item.id === 'minioninfo' || item.id === 'demoninfo');
   const allResolved = wakeItems.length > 0 && wakeItems.every(item => checkedItems[item.id]);
 
-  const getTeamBgClass = (team?: string) => {
-    switch (team) {
-      case 'townsfolk': return 'bg-clocktower-townsfolk/10 text-clocktower-townsfolk border-clocktower-townsfolk/30';
-      case 'outsider': return 'bg-clocktower-outsider/10 text-clocktower-outsider border-clocktower-outsider/30';
-      case 'minion': return 'bg-clocktower-minion/10 text-clocktower-minion border-clocktower-minion/30';
-      case 'demon': return 'bg-[#7f1d1d]/15 text-[#f87171] border-[#7f1d1d]/40';
-      case 'traveler': return 'bg-clocktower-traveler/10 text-clocktower-traveler border-clocktower-traveler/30';
-      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+  const getCharacterColorClass = (item: NightOrderItem, isLight: boolean) => {
+    if (item.type === 'info') {
+      return isLight ? 'text-gray-600' : 'text-gray-400';
+    }
+    switch (item.team) {
+      case 'townsfolk':
+        return isLight ? 'text-blue-700' : 'text-blue-400';
+      case 'outsider':
+        return isLight ? 'text-emerald-700' : 'text-emerald-400';
+      case 'minion':
+        return isLight ? 'text-red-600' : 'text-rose-400';
+      case 'demon':
+        return isLight ? 'text-red-800' : 'text-red-400';
+      case 'traveler':
+        return isLight ? 'text-purple-700' : 'text-purple-400';
+      default:
+        return isLight ? 'text-gray-900' : 'text-[#f4e4bc]';
     }
   };
 
@@ -279,25 +288,15 @@ export default function NightOrderWidget({
                 {/* Role and Player info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    {/* Role name */}
                     <span
                       className={cn(
                         "font-bold font-serif text-sm",
-                        isInfo
-                          ? (isLightModeActive ? "text-gray-600" : "text-gray-400")
-                          : (isLightModeActive ? "text-gray-900" : "text-[#f4e4bc]"),
+                        getCharacterColorClass(item, isLightModeActive),
                         isChecked && "line-through text-gray-500"
                       )}
                     >
                       {item.name}
                     </span>
-
-                    {/* Team Badge for Characters */}
-                    {!isInfo && (
-                      <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider", getTeamBgClass(item.team))}>
-                        {item.team}
-                      </span>
-                    )}
 
                     {/* Player name */}
                     {item.player && (

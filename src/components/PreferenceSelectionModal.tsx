@@ -13,6 +13,7 @@ interface PreferenceSelectionModalProps {
   togglePreference: (playerId: string, team: Role['team'], roleId: string) => void;
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   setActivePrefModal: (val: { playerId: string; team: Role['team'] } | null) => void;
+  excludedRoleIds: string[];
 }
 
 export default function PreferenceSelectionModal({
@@ -23,9 +24,11 @@ export default function PreferenceSelectionModal({
   togglePreference,
   setPlayers,
   setActivePrefModal,
+  excludedRoleIds,
 }: PreferenceSelectionModalProps) {
   const filteredPrefRoles = (rolesData as Role[]).filter(r => 
     r.team === activePrefModal.team &&
+    !excludedRoleIds.includes(r.id) &&
     r.name.toLowerCase().includes(prefSearchTerm.toLowerCase())
   );
 
@@ -127,7 +130,10 @@ export default function PreferenceSelectionModal({
           <button
             onClick={() => {
               if (currentPlayer) {
-                const available = (rolesData as Role[]).filter(r => r.team === activePrefModal.team);
+                const available = (rolesData as Role[]).filter(r => 
+                  r.team === activePrefModal.team &&
+                  !excludedRoleIds.includes(r.id)
+                );
                 if (available.length > 0) {
                   const randIdx = Math.floor(Math.random() * available.length);
                   const r = available[randIdx];

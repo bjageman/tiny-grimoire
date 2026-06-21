@@ -39,6 +39,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [newTravelerName, setNewTravelerName] = useState('');
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
+  // Exclusion states
+  const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>([]);
+
   // Preference modal states
   const [activePrefModal, setActivePrefModal] = useState<{ playerId: string; team: Role['team'] } | null>(null);
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
@@ -66,7 +69,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const saved = localStorage.getItem('whale-bucket-game');
     if (saved) {
       try {
-        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, allowTravelers: at, isLilMonstaGame: lmg } = JSON.parse(saved);
+        const { players: p, phase: ph, timeOfDay: tod, dayNumber: dn, allowTravelers: at, isLilMonstaGame: lmg, excludedRoleIds: er } = JSON.parse(saved);
         type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Partial<Player['preferences']> };
         const validatedPlayers = (p || []).map((player: SavedPlayer) => ({
           ...player,
@@ -85,6 +88,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         setDayNumber(dn || 1);
         if (at !== undefined) setAllowTravelers(false); // Force traveler selection off
         if (lmg !== undefined) setIsLilMonstaGame(lmg);
+        if (er !== undefined) setExcludedRoleIds(er);
 
       } catch (e) {
         console.error(e);
@@ -94,7 +98,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Save to localStorage and update document theme
   useEffect(() => {
-    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame }));
+    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds }));
     
     const isLightMode = theme === 'light';
     if (isLightMode) {
@@ -106,7 +110,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     return () => {
       document.documentElement.classList.remove('theme-light');
     };
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, theme, isLilMonstaGame]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, theme, isLilMonstaGame, excludedRoleIds]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -504,6 +508,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           runAssignment={runAssignment}
           validationSummary={validationSummary}
           isLightModeActive={isLightModeActive}
+          excludedRoleIds={excludedRoleIds}
+          setExcludedRoleIds={setExcludedRoleIds}
         />
       )}
 
@@ -558,6 +564,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           togglePreference={togglePreference}
           setPlayers={setPlayers}
           setActivePrefModal={setActivePrefModal}
+          excludedRoleIds={excludedRoleIds}
         />
       )}
 

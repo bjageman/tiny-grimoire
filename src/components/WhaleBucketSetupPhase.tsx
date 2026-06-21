@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical, Shuffle, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
 import type { Role } from '../types';
 import { getDistribution } from '../constants';
 import { getPreferenceLabel } from '../utils/assignment';
+import rolesData from '../official_roles.json';
 
 import type { ValidationSummary } from '../utils/whaleBucketValidation';
 
@@ -34,6 +36,8 @@ interface WhaleBucketSetupPhaseProps {
   runAssignment: () => void;
   validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
+  excludedRoleIds: string[];
+  setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export default function WhaleBucketSetupPhase({
@@ -63,7 +67,28 @@ export default function WhaleBucketSetupPhase({
   runAssignment,
   validationSummary,
   isLightModeActive,
+  excludedRoleIds,
+  setExcludedRoleIds,
 }: WhaleBucketSetupPhaseProps) {
+  const [excludeSearchTerm, setExcludeSearchTerm] = useState('');
+
+  const excludeSuggestions = excludeSearchTerm
+    ? (rolesData as Role[]).filter(r =>
+        !excludedRoleIds.includes(r.id) &&
+        r.name.toLowerCase().includes(excludeSearchTerm.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const handleExcludeRole = (roleId: string) => {
+    if (!excludedRoleIds.includes(roleId)) {
+      setExcludedRoleIds(prev => [...prev, roleId]);
+    }
+  };
+
+  const handleRemoveExcludedRole = (roleId: string) => {
+    setExcludedRoleIds(prev => prev.filter(id => id !== roleId));
+  };
+
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
 
@@ -271,6 +296,100 @@ export default function WhaleBucketSetupPhase({
 
       {/* Section C: Distribution & Assign Button */}
       <div className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
+        {/* Exclude Characters Widget */}
+        <div className={cn(
+          "p-4 rounded-lg border flex flex-col gap-3 transition-colors duration-300",
+          isLightModeActive
+            ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
+            : "bg-gray-900/60 border-gray-800/50"
+        )}>
+          <div>
+            <span className={cn("text-xs font-bold block uppercase tracking-wider text-left", isLightModeActive ? "text-gray-700" : "text-gray-300")}>Exclude Characters</span>
+            <span className="text-[10px] text-gray-500 block text-left">These characters will be hidden in selection screens</span>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search to exclude..."
+              value={excludeSearchTerm}
+              onChange={(e) => setExcludeSearchTerm(e.target.value)}
+              className={cn(
+                "w-full rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-clocktower-blood border",
+                isLightModeActive
+                  ? "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400"
+                  : "bg-gray-955 border-gray-800 text-white placeholder-gray-650"
+              )}
+            />
+            {excludeSearchTerm && (
+              <div className={cn(
+                "absolute left-0 right-0 mt-1 border rounded-md shadow-xl z-20 max-h-48 overflow-y-auto",
+                isLightModeActive ? "bg-white border-gray-200" : "bg-gray-900 border-gray-800"
+              )}>
+                {excludeSuggestions.length === 0 ? (
+                  <div className="p-2 text-xs text-gray-500 italic">No matching characters</div>
+                ) : (
+                  excludeSuggestions.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => {
+                        handleExcludeRole(r.id);
+                        setExcludeSearchTerm('');
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors",
+                        isLightModeActive 
+                          ? "text-gray-700 hover:bg-gray-100 hover:text-gray-950" 
+                          : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                      )}
+                    >
+                      <span>{r.name}</span>
+                      <span className={cn(
+                        "text-[8px] font-bold px-1 py-0.5 rounded border uppercase tracking-wider",
+                        isLightModeActive
+                          ? "bg-gray-100 text-gray-500 border-gray-200"
+                          : "bg-gray-955 text-gray-500 border-gray-800"
+                      )}>
+                        {r.team}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Excluded Pills list */}
+          {excludedRoleIds.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {excludedRoleIds.map(id => {
+                const r = (rolesData as Role[]).find(x => x.id === id);
+                if (!r) return null;
+                return (
+                  <span
+                    key={id}
+                    className={cn(
+                      "flex items-center gap-1 text-[10px] font-bold pl-2 pr-1 py-0.5 rounded border",
+                      isLightModeActive
+                        ? "bg-gray-100 border-gray-200 text-gray-700"
+                        : "bg-gray-955 border-gray-800 text-gray-400"
+                    )}
+                  >
+                    {r.name}
+                    <button
+                      onClick={() => handleRemoveExcludedRole(id)}
+                      className="hover:text-red-500 p-0.5 transition-colors"
+                    >
+                      <Plus className="w-3 h-3 rotate-45" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Validation Summary */}
         {validationSummary && players.length >= 5 && (
           <div

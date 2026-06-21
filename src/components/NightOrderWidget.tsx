@@ -287,52 +287,54 @@ export default function NightOrderWidget({
 
                 {/* Role and Player info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span
-                      className={cn(
-                        "font-bold font-serif text-sm",
-                        getCharacterColorClass(item, isLightModeActive),
-                        isChecked && "line-through text-gray-500"
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span
+                        className={cn(
+                          "font-bold font-serif text-sm",
+                          getCharacterColorClass(item, isLightModeActive),
+                          isChecked && "line-through text-gray-500"
+                        )}
+                      >
+                        {item.name}
+                      </span>
+
+                      {/* Status Badges */}
+                      {isDead && (
+                        <span className="text-[9px] bg-gray-600/20 text-gray-400 border border-gray-600/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Dead
+                        </span>
                       )}
-                    >
-                      {item.name}
-                    </span>
+
+                      {item.player?.isTheDrunk && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Drunk
+                        </span>
+                      )}
+                      {item.player?.isTheMarionette && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Marionette
+                        </span>
+                      )}
+                      {item.player?.isTheLunatic && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Lunatic
+                        </span>
+                      )}
+                      {item.player?.isDrunkOrPoisoned && (
+                        <span className="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Poisoned
+                        </span>
+                      )}
+                    </div>
 
                     {/* Player name */}
                     {item.player && (
                       <span className={cn(
-                        "text-xs font-medium",
+                        "text-xs font-medium ml-auto",
                         isLightModeActive ? "text-gray-600" : "text-gray-400"
                       )}>
-                        — {item.player.name}
-                      </span>
-                    )}
-
-                    {/* Status Badges */}
-                    {isDead && (
-                      <span className="text-[9px] bg-gray-600/20 text-gray-400 border border-gray-600/30 px-1 rounded font-bold uppercase tracking-wide">
-                        Dead
-                      </span>
-                    )}
-
-                    {item.player?.isTheDrunk && (
-                      <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
-                        Drunk
-                      </span>
-                    )}
-                    {item.player?.isTheMarionette && (
-                      <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
-                        Marionette
-                      </span>
-                    )}
-                    {item.player?.isTheLunatic && (
-                      <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 rounded font-bold uppercase tracking-wide">
-                        Lunatic
-                      </span>
-                    )}
-                    {item.player?.isDrunkOrPoisoned && (
-                      <span className="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/30 px-1 rounded font-bold uppercase tracking-wide">
-                        Poisoned
+                        {item.player.name}
                       </span>
                     )}
                   </div>

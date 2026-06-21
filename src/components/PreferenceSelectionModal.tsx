@@ -51,12 +51,12 @@ export default function PreferenceSelectionModal({
           </button>
         </div>
 
-        <div className="flex items-center bg-gray-955 border border-gray-800 rounded px-2.5 py-1.5 text-sm">
-          <Search size={14} className="text-gray-500 mr-2" />
+        <div className="flex items-center bg-gray-955 border border-gray-800 rounded px-2.5 py-0 text-sm">
+          <Search size={14} className="text-gray-500 mr-2 flex-shrink-0" />
           <input
             type="text"
             placeholder={`Search character name...`}
-            className="bg-transparent flex-1 outline-none text-white text-xs placeholder-gray-600"
+            className="bg-transparent flex-1 outline-none text-white text-xs placeholder-gray-650 h-9 w-full"
             value={prefSearchTerm}
             onChange={(e) => setPrefSearchTerm(e.target.value)}
           />

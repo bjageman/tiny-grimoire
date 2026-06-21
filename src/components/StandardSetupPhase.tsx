@@ -147,7 +147,7 @@ export default function StandardSetupPhase({
         </section>
       </div>
 
-      {/* Section B: Seating & Players list */}
+      {/* Section B: Players & Roles list */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <h2 className="text-lg font-semibold text-gray-300 mb-4">Players & Roles ({players.length})</h2>

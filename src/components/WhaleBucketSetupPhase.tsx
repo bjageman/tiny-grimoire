@@ -93,11 +93,11 @@ export default function WhaleBucketSetupPhase({
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
 
 
-      {/* Section B: Seating & Preferences */}
+      {/* Section B: Players & Role Preferences */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-300">1. Seating & Preferences ({players.length})</h2>
+            <h2 className="text-lg font-semibold text-gray-300">1. Players & Role Preferences ({players.length})</h2>
             {players.length > 0 && (
               <div className="flex gap-2">
                 <button 

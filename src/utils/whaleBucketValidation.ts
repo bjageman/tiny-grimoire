@@ -1,6 +1,6 @@
 import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
-import rolesData from '../roles.json';
+import rolesData from '../official_roles.json';
 
 export interface ValidationSummary {
   base: { townsfolk: number; outsider: number; minion: number; demon: number; traveler: number };

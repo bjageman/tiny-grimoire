@@ -2,7 +2,7 @@ import { Shuffle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
 import type { Role } from '../types';
-import rolesData from '../roles.json';
+import rolesData from '../official_roles.json';
 
 import type { ValidationSummary } from '../utils/whaleBucketValidation';
 

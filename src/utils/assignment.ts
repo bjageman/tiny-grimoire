@@ -1,6 +1,6 @@
 import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
-import rolesData from '../roles.json';
+import rolesData from '../official_roles.json';
 
 export function assignCharacters(
   players: Player[],

@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
 import type { Role } from '../types';
-import rolesData from '../roles.json';
+import rolesData from '../official_roles.json';
 
 interface PreferenceSelectionModalProps {
   activePrefModal: { playerId: string; team: Role['team'] };

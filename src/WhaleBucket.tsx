@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Sun, Moon, RefreshCcw, ArrowLeft } from 'lucide-react';
-import rolesData from './roles.json';
+import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences } from './types';
 import { assignCharacters } from './utils/assignment';

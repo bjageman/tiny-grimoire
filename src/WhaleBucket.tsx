@@ -405,7 +405,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const resetGame = () => {
-    if (confirm('Are you sure you want to reset the game? This clears all players and preferences.')) {
+    if (confirm('Are you sure you want to reset the game? This clears all players and settings.')) {
       setPlayers([]);
       setPhase('setup');
       setActiveDraftPlayerId(null);
@@ -414,6 +414,19 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setDayNumber(1);
       setIsLilMonstaGame(false);
       localStorage.removeItem('whale-bucket-game');
+    }
+  };
+
+  const resetDead = () => {
+    if (confirm('Mark all players as alive?')) {
+      setPlayers(prev => prev.map(p => ({ ...p, isDead: false, hasDeadVote: false })));
+    }
+  };
+
+  const resetDay = () => {
+    if (confirm('Reset back to Day 1?')) {
+      setDayNumber(1);
+      setTimeOfDay('day');
     }
   };
 
@@ -594,6 +607,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           addTravelerGamePhase={addTravelerGamePhase}
           setNewTravelerName={setNewTravelerName}
           setNewTravelerRoleId={setNewTravelerRoleId}
+          onResetDead={resetDead}
+          onResetDay={resetDay}
         />
       )}
 

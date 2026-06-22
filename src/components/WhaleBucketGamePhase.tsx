@@ -30,6 +30,8 @@ interface WhaleBucketGamePhaseProps {
   addTravelerGamePhase: () => void;
   setNewTravelerName: (name: string) => void;
   setNewTravelerRoleId: (roleId: string) => void;
+  onResetDead?: () => void;
+  onResetDay?: () => void;
 }
 
 export default function WhaleBucketGamePhase({
@@ -54,6 +56,8 @@ export default function WhaleBucketGamePhase({
   addTravelerGamePhase,
   setNewTravelerName,
   setNewTravelerRoleId,
+  onResetDead,
+  onResetDay,
 }: WhaleBucketGamePhaseProps) {
   const [isDragEnabled, setIsDragEnabled] = useState(false);
   return (
@@ -68,6 +72,8 @@ export default function WhaleBucketGamePhase({
             toggleTimeOfDay={toggleTimeOfDay}
             onSelectPlayer={setSelectedPlayerId}
             rolesData={rolesData as Role[]}
+            onResetDead={onResetDead}
+            onResetDay={onResetDay}
           />
         </div>
         <NightOrderWidget

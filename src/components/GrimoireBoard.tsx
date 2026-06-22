@@ -10,6 +10,8 @@ interface GrimoireBoardProps {
   toggleTimeOfDay: () => void;
   onSelectPlayer: (playerId: string) => void;
   rolesData: Role[];
+  onResetDead?: () => void;
+  onResetDay?: () => void;
 }
 
 export default function GrimoireBoard({
@@ -19,6 +21,8 @@ export default function GrimoireBoard({
   toggleTimeOfDay,
   onSelectPlayer,
   rolesData,
+  onResetDead,
+  onResetDay,
 }: GrimoireBoardProps) {
   const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
 
@@ -92,6 +96,35 @@ export default function GrimoireBoard({
       )}
       style={{ containerType: 'size' }}
     >
+      {onResetDay && (
+        <button
+          onClick={onResetDay}
+          className={cn(
+            "absolute top-4 left-4 z-30 px-2 py-1 rounded text-[9px] md:text-[10px] font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+            timeOfDay === 'day'
+              ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46] hover:bg-[#ffffff] hover:text-[#18181b]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#f4f4f5]"
+          )}
+          title="Reset back to Day 1"
+        >
+          Reset Day
+        </button>
+      )}
+
+      {onResetDead && (
+        <button
+          onClick={onResetDead}
+          className={cn(
+            "absolute top-4 right-4 z-30 px-2 py-1 rounded text-[9px] md:text-[10px] font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+            timeOfDay === 'day'
+              ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46] hover:bg-[#ffffff] hover:text-[#18181b]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#f4f4f5]"
+          )}
+          title="Mark everyone as alive"
+        >
+          Reset Dead
+        </button>
+      )}
       <button
         id="grimoire-time-toggle-button"
         onClick={toggleTimeOfDay}

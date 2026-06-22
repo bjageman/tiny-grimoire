@@ -228,9 +228,19 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       return;
     }
     
+    const hasChoirboy = result.some(r => r.role.id === 'choirboy');
+    const hasHuntsman = result.some(r => r.role.id === 'huntsman');
+
     const updatedPlayers = players.map(p => {
       const assigned = result.find(r => r.player.id === p.id);
-      let roleId = assigned?.fromPref ? assigned?.role.id : undefined;
+      let isRevealed = assigned?.fromPref || assigned?.role.id === 'legion';
+      if (hasChoirboy && (assigned?.role.id === 'choirboy' || assigned?.role.id === 'king')) {
+        isRevealed = true;
+      }
+      if (hasHuntsman && (assigned?.role.id === 'huntsman' || assigned?.role.id === 'damsel')) {
+        isRevealed = true;
+      }
+      let roleId = isRevealed ? assigned?.role.id : undefined;
       let isTheLunatic = false;
       let isTheLilMonsta = false;
 
@@ -263,7 +273,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerRole = (id: string, roleId: string) => {
-    setPlayers(players.map(p => {
+    let newPlayers = players.map(p => {
       if (p.id === id) {
         const role = (rolesData as Role[]).find(r => r.id === roleId);
         const isPref = role ? (p.preferences[role.team] || []).includes(roleId) : false;
@@ -279,7 +289,29 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         };
       }
       return p;
-    }));
+    });
+
+    if (roleId === 'choirboy') {
+      const hasKing = newPlayers.some(p => p.roleId === 'king');
+      if (!hasKing) {
+        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
+                          newPlayers.find(p => p.id !== id && p.roleId !== 'choirboy');
+        if (candidate) {
+          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'king', assignedFromPref: false } : p);
+        }
+      }
+    } else if (roleId === 'huntsman') {
+      const hasDamsel = newPlayers.some(p => p.roleId === 'damsel');
+      if (!hasDamsel) {
+        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
+                          newPlayers.find(p => p.id !== id && p.roleId !== 'huntsman');
+        if (candidate) {
+          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'damsel', assignedFromPref: false } : p);
+        }
+      }
+    }
+
+    setPlayers(newPlayers);
   };
 
   const togglePlayerDead = (id: string) => {

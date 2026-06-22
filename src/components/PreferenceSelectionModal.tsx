@@ -26,11 +26,13 @@ export default function PreferenceSelectionModal({
   setActivePrefModal,
   excludedRoleIds,
 }: PreferenceSelectionModalProps) {
-  const filteredPrefRoles = (rolesData as Role[]).filter(r => 
-    r.team === activePrefModal.team &&
-    !excludedRoleIds.includes(r.id) &&
-    r.name.toLowerCase().includes(prefSearchTerm.toLowerCase())
-  );
+  const filteredPrefRoles = (rolesData as Role[])
+    .filter(r => 
+      r.team === activePrefModal.team &&
+      !excludedRoleIds.includes(r.id) &&
+      r.name.toLowerCase().includes(prefSearchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const currentPlayer = players.find(p => p.id === activePrefModal.playerId);
 

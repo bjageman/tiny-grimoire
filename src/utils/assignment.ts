@@ -183,15 +183,28 @@ function assignBaseCharacters(
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
     const legionRole = allRoles.find(r => r.id === 'legion')!;
-    for (let i = 0; i < L; i++) {
+
+    // Categorize players based on preferences to respect good-preferring players
+    const goodPreferring = initialShuffledPlayers.filter(p => (p.preferences?.townsfolk || []).length > 0 && !(p.preferences?.demon || []).includes('legion'));
+    const legionPreferring = initialShuffledPlayers.filter(p => (p.preferences?.demon || []).includes('legion'));
+    const neutral = initialShuffledPlayers.filter(p => !goodPreferring.some(gp => gp.id === p.id) && !legionPreferring.some(lp => lp.id === p.id));
+
+    // Prioritize good-preferring players for Townsfolk roles, then neutral, then legion-preferring as fallback
+    const candidatesForGood = [...goodPreferring, ...neutral, ...legionPreferring];
+    const goodPlayers = candidatesForGood.slice(0, N - L);
+    const legionPlayers = candidatesForGood.slice(N - L);
+
+    // Assign Legion to the legionPlayers
+    for (const p of legionPlayers) {
       assignment.push({
-        player: { ...initialShuffledPlayers[i], isEvil: true },
+        player: { ...p, isEvil: true },
         role: legionRole,
-        fromPref: !!initialShuffledPlayers[i].preferences?.demon.includes('legion')
+        fromPref: !!p.preferences?.demon.includes('legion')
       });
     }
-    for (let i = L; i < N; i++) {
-      const p = initialShuffledPlayers[i];
+
+    // Assign Townsfolk to the goodPlayers, honoring their preferences
+    for (const p of goodPlayers) {
       const { role, fromPref } = selectRoleForPlayer(p, 'townsfolk', usedRoleIds);
       usedRoleIds.add(role.id);
       assignment.push({
@@ -200,6 +213,7 @@ function assignBaseCharacters(
         fromPref
       });
     }
+
     return assignment;
   }
 
@@ -312,6 +326,13 @@ function assignBaseCharacters(
       const team = (i < targetOutsiders) ? 'outsider' : 'townsfolk';
       tempAssignment.push({ player: remainingPlayers[i], team });
     }
+    tempAssignment.sort((a, b) => {
+      const hasPrefA = (a.player.preferences?.[a.team] || []).length > 0;
+      const hasPrefB = (b.player.preferences?.[b.team] || []).length > 0;
+      if (hasPrefA && !hasPrefB) return -1;
+      if (!hasPrefA && hasPrefB) return 1;
+      return 0;
+    });
     
     const tempUsedRoleIds = new Set(usedRoleIds);
     const goodAssignments: AssignmentResult[] = [];
@@ -398,22 +419,39 @@ function assignBaseCharacters(
         
         let jinxesMet = true;
         if (hasChoirboy && !hasKing) {
-          const otherTF = fullAssignment.find(a => a.role.team === 'townsfolk' && a.role.id !== 'choirboy' && a.role.id !== 'balloonist');
-          if (otherTF) {
-            const kingRole = allRoles.find(r => r.id === 'king')!;
-            otherTF.role = kingRole;
-            otherTF.fromPref = !!otherTF.player.preferences?.townsfolk.includes('king');
+          const kingRole = allRoles.find(r => r.id === 'king');
+          if (kingRole) {
+            const otherTF = fullAssignment.find(a => a.role.team === 'townsfolk' && a.role.id !== 'choirboy' && a.role.id !== 'balloonist' && !a.fromPref) ||
+                            fullAssignment.find(a => a.role.team === 'townsfolk' && a.role.id !== 'choirboy' && a.role.id !== 'balloonist');
+            if (otherTF) {
+              otherTF.role = kingRole;
+              otherTF.fromPref = !!otherTF.player.preferences?.townsfolk.includes('king');
+            } else {
+              jinxesMet = false;
+            }
           } else {
             jinxesMet = false;
           }
         }
         
         if (hasHuntsman && !hasDamsel) {
-          const otherOut = fullAssignment.find(a => a.role.team === 'outsider');
-          if (otherOut) {
-            const damselRole = allRoles.find(r => r.id === 'damsel')!;
-            otherOut.role = damselRole;
-            otherOut.fromPref = !!otherOut.player.preferences?.outsider.includes('damsel');
+          const damselRole = allRoles.find(r => r.id === 'damsel');
+          if (damselRole) {
+            const otherOut = fullAssignment.find(a => a.role.team === 'outsider' && !a.fromPref) ||
+                             fullAssignment.find(a => a.role.team === 'outsider');
+            if (otherOut) {
+              otherOut.role = damselRole;
+              otherOut.fromPref = !!otherOut.player.preferences?.outsider.includes('damsel');
+            } else {
+              const otherTF = fullAssignment.find(a => a.role.team === 'townsfolk' && a.role.id !== 'huntsman' && a.role.id !== 'choirboy' && a.role.id !== 'king' && a.role.id !== 'balloonist' && !a.fromPref) ||
+                              fullAssignment.find(a => a.role.team === 'townsfolk' && a.role.id !== 'huntsman' && a.role.id !== 'choirboy' && a.role.id !== 'king' && a.role.id !== 'balloonist');
+              if (otherTF) {
+                otherTF.role = damselRole;
+                otherTF.fromPref = !!otherTF.player.preferences?.outsider.includes('damsel');
+              } else {
+                jinxesMet = false;
+              }
+            }
           } else {
             jinxesMet = false;
           }

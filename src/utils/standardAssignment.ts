@@ -162,6 +162,43 @@ export function performStandardAssignment(
     }
   }
 
+  // 3. Huntsman & Damsel adjustment
+  const hasHuntsman = selectedTownsfolk.some(t => t.id === 'huntsman');
+  const hasDamsel = selectedOutsiders.some(o => o.id === 'damsel');
+  if (hasHuntsman && !hasDamsel) {
+    const damselRole = outs.find(o => o.id === 'damsel');
+    if (damselRole) {
+      const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'damsel');
+      if (otherOutsiders.length > 0) {
+        const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
+        selectedOutsiders = selectedOutsiders.filter(o => o.id !== outToRemove.id);
+        selectedOutsiders.push(damselRole);
+      } else {
+        selectedOutsiders.push(damselRole);
+        const otherTfs = selectedTownsfolk.filter(t => t.id !== 'huntsman' && t.id !== 'choirboy' && t.id !== 'king' && t.id !== 'balloonist');
+        if (otherTfs.length > 0) {
+          const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
+          selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
+        }
+      }
+    }
+  }
+
+  // 4. Choirboy & King adjustment
+  const hasChoirboy = selectedTownsfolk.some(t => t.id === 'choirboy');
+  const hasKing = selectedTownsfolk.some(t => t.id === 'king');
+  if (hasChoirboy && !hasKing) {
+    const kingRole = tfs.find(t => t.id === 'king');
+    if (kingRole) {
+      const otherTfs = selectedTownsfolk.filter(t => t.id !== 'choirboy' && t.id !== 'huntsman' && t.id !== 'balloonist');
+      if (otherTfs.length > 0) {
+        const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
+        selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
+        selectedTownsfolk.push(kingRole);
+      }
+    }
+  }
+
   const finalRolesList = shuffle([
     ...selectedDemons,
     ...selectedMinions,

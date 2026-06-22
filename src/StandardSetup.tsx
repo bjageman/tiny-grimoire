@@ -182,7 +182,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerRole = (id: string, roleId: string) => {
-    setPlayers(players.map(p => {
+    let newPlayers = players.map(p => {
       if (p.id === id) {
         return {
           ...p,
@@ -195,7 +195,29 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         };
       }
       return p;
-    }));
+    });
+
+    if (roleId === 'choirboy') {
+      const hasKing = newPlayers.some(p => p.roleId === 'king');
+      if (!hasKing) {
+        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
+                          newPlayers.find(p => p.id !== id && p.roleId !== 'choirboy');
+        if (candidate) {
+          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'king' } : p);
+        }
+      }
+    } else if (roleId === 'huntsman') {
+      const hasDamsel = newPlayers.some(p => p.roleId === 'damsel');
+      if (!hasDamsel) {
+        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
+                          newPlayers.find(p => p.id !== id && p.roleId !== 'huntsman');
+        if (candidate) {
+          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'damsel' } : p);
+        }
+      }
+    }
+
+    setPlayers(newPlayers);
   };
 
   const togglePlayerDead = (id: string) => {

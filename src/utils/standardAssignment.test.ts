@@ -195,5 +195,52 @@ describe('performStandardAssignment', () => {
     // 10 players * 0.6 = 6 Legion demons
     expect(legionCount).toBe(6);
   });
+
+  it('should assign a Damsel when a Huntsman is assigned, and a King when a Choirboy is assigned in standard randomization', () => {
+    const mockScriptWithJinxes: Role[] = [
+      ...mockScriptRoles,
+      { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },
+      { id: 'damsel', name: 'Damsel', team: 'outsider' },
+      { id: 'choirboy', name: 'Choirboy', team: 'townsfolk' },
+      { id: 'king', name: 'King', team: 'townsfolk' },
+    ];
+
+    const players: Player[] = [
+      { id: '1', name: 'Alice', isDead: false },
+      { id: '2', name: 'Bob', isDead: false },
+      { id: '3', name: 'Charlie', isDead: false },
+      { id: '4', name: 'David', isDead: false },
+      { id: '5', name: 'Eve', isDead: false },
+      { id: '6', name: 'Frank', isDead: false },
+    ];
+
+    // Filter to force Huntsman and Choirboy by removing other Townsfolk/Outsiders
+    const forcedScript = mockScriptWithJinxes.filter(r => 
+      r.id !== 'washerwoman' && 
+      r.id !== 'librarian' && 
+      r.id !== 'investigator' &&
+      r.id !== 'chef' &&
+      r.id !== 'empath' &&
+      r.id !== 'fortune_teller' &&
+      r.id !== 'undertaker' &&
+      r.id !== 'drunk'
+    );
+
+    const result = performStandardAssignment(players, forcedScript, []);
+    expect(result).not.toBeNull();
+    if (!result) return;
+
+    const hasHuntsman = result.some(p => p.roleId === 'huntsman');
+    const hasDamsel = result.some(p => p.roleId === 'damsel');
+    const hasChoirboy = result.some(p => p.roleId === 'choirboy');
+    const hasKing = result.some(p => p.roleId === 'king');
+
+    if (hasHuntsman) {
+      expect(hasDamsel).toBe(true);
+    }
+    if (hasChoirboy) {
+      expect(hasKing).toBe(true);
+    }
+  });
 });
 

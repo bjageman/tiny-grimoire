@@ -105,12 +105,6 @@ export default function GrimoireBoard({
         title="Click to toggle Day/Night"
       >
         <span
-          style={grimoireConfig.centerText1Style}
-          className="font-serif tracking-widest font-bold transition-colors"
-        >
-          BOTC
-        </span>
-        <span
           style={grimoireConfig.centerText2Style}
           className="font-bold font-mono uppercase tracking-wide"
         >

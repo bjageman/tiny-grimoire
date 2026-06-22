@@ -355,5 +355,43 @@ describe('performStandardAssignment', () => {
       }
     }
   });
+
+  it('should ensure a Damsel is in play if a Huntsman is the Marionette', () => {
+    const script: Role[] = [
+      { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },
+      { id: 'damsel', name: 'Damsel', team: 'outsider' },
+      { id: 'marionette', name: 'Marionette', team: 'minion' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    let targetTrialFound = false;
+
+    for (let trial = 0; trial < 100; trial++) {
+      const players: Player[] = [
+        { id: '1', name: 'Alice', isDead: false },
+        { id: '2', name: 'Bob', isDead: false },
+        { id: '3', name: 'Charlie', isDead: false },
+        { id: '4', name: 'David', isDead: false },
+        { id: '5', name: 'Eve', isDead: false },
+        { id: '6', name: 'Frank', isDead: false },
+      ];
+
+      const result = performStandardAssignment(players, script, []);
+      expect(result).not.toBeNull();
+      if (!result) return;
+
+      const huntsmanMarionette = result.find(p => p.roleId === 'huntsman' && p.isTheMarionette);
+      if (huntsmanMarionette) {
+        targetTrialFound = true;
+        const damselPlayer = result.find(p => p.roleId === 'damsel');
+        expect(damselPlayer).toBeDefined();
+        expect(damselPlayer?.id).not.toBe(huntsmanMarionette.id);
+      }
+    }
+
+    expect(targetTrialFound).toBe(true);
+  });
 });
 

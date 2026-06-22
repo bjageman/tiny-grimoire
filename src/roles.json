@@ -93,7 +93,7 @@
   {"id": "atheist", "name": "Atheist", "team": "townsfolk"},
   {"id": "cannibal", "name": "Cannibal", "team": "townsfolk"},
   {"id": "snitch", "name": "Snitch", "team": "outsider"},
-  {"id": "acrobat", "name": "Acrobat", "team": "outsider"},
+  {"id": "acrobat", "name": "Acrobat", "team": "townsfolk"},
   {"id": "puzzlemaster", "name": "Puzzlemaster", "team": "outsider"},
   {"id": "heretic", "name": "Heretic", "team": "outsider"},
   {"id": "damsel", "name": "Damsel", "team": "outsider"},

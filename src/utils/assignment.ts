@@ -312,7 +312,7 @@ function assignBaseCharacters(
     assignment.push({ player: { ...demonPlayer, isEvil: undefined }, role: demonRole, fromPref: demonFromPref });
     
     const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lilmonsta' || demonRole.id === 'lordoftyphon' ? 1 : 0));
-    let minionPlayers: Player[] = [];
+    const minionPlayers: Player[] = [];
     if (demonRole.id === 'lordoftyphon') {
       const d_idx = players.findIndex(p => p.id === demonPlayer.id);
       const E = 1 + numMinions;

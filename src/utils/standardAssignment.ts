@@ -86,8 +86,68 @@ export function performStandardAssignment(
     });
   }
 
-  // Normal / non-Legion setup
-  const nonLegionDemons = dems.filter(d => d.id !== 'legion');
+  const riotRole = dems.find(d => d.id === 'riot');
+  const hasRiot = !!(riotRole && chosenDemonAtTop && chosenDemonAtTop.id === 'riot');
+
+  if (hasRiot && riotRole) {
+    const D = 1 + base.minion;
+    const riotDemons = Array(D).fill(riotRole);
+
+    const targetTownsfolk = baseCount - D;
+    const riotTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
+
+    const finalRolesList = shuffle([
+      ...riotDemons,
+      ...riotTownsfolk
+    ]);
+
+    while (finalRolesList.length < baseCount) {
+      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
+      if (unusedTfs.length > 0) {
+        finalRolesList.push(unusedTfs[0]);
+      } else {
+        finalRolesList.push(tfs[0] || dems[0]);
+      }
+    }
+
+    const shuffledPlayers = shuffle(players);
+    const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
+    const basePlayers = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
+
+    const assignedRoles = shuffle(finalRolesList);
+
+    return players.map(p => {
+      const isTraveler = travelerPlayers.some(tp => tp.id === p.id);
+      if (isTraveler) {
+        const matched = selectionRoles.find(r => r.team === 'traveler') || { id: 'beggar' };
+        return {
+          ...p,
+          roleId: matched.id,
+          isTheDrunk: false,
+          isTheMarionette: false,
+          isTheLunatic: false,
+          isTheLilMonsta: false,
+        };
+      }
+
+      const bpIdx = basePlayers.findIndex(bp => bp.id === p.id);
+      const role = assignedRoles[bpIdx];
+      const roleId = role?.id;
+
+      return {
+        ...p,
+        roleId,
+        isTheDrunk: false,
+        isTheMarionette: false,
+        isTheLunatic: false,
+        isTheLilMonsta: false,
+        isEvil: roleId === 'riot' ? true : undefined,
+      };
+    });
+  }
+
+  // Normal / non-Legion / non-Riot setup
+  const nonLegionDemons = dems.filter(d => d.id !== 'legion' && d.id !== 'riot');
   const chosenDemon = shuffle(nonLegionDemons)[0];
 
   const hasLordOfTyphon = chosenDemon && chosenDemon.id === 'lordoftyphon';

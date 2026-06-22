@@ -233,7 +233,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
     const updatedPlayers = players.map(p => {
       const assigned = result.find(r => r.player.id === p.id);
-      let isRevealed = assigned?.fromPref || assigned?.role.id === 'legion';
+      let isRevealed = assigned?.fromPref || assigned?.role.id === 'legion' || assigned?.role.id === 'riot';
       if (hasChoirboy && (assigned?.role.id === 'choirboy' || assigned?.role.id === 'king')) {
         isRevealed = true;
       }

@@ -222,15 +222,28 @@ function assignBaseCharacters(
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
     const riotRole = allRoles.find(r => r.id === 'riot')!;
-    for (let i = 0; i < D; i++) {
+
+    // Categorize players based on preferences to respect good-preferring players
+    const goodPreferring = initialShuffledPlayers.filter(p => (p.preferences?.townsfolk || []).length > 0 && !(p.preferences?.demon || []).includes('riot'));
+    const riotPreferring = initialShuffledPlayers.filter(p => (p.preferences?.demon || []).includes('riot'));
+    const neutral = initialShuffledPlayers.filter(p => !goodPreferring.some(gp => gp.id === p.id) && !riotPreferring.some(rp => rp.id === p.id));
+
+    // Prioritize good-preferring players for Townsfolk roles, then neutral, then riot-preferring as fallback
+    const candidatesForGood = [...goodPreferring, ...neutral, ...riotPreferring];
+    const goodPlayers = candidatesForGood.slice(0, N - D);
+    const riotPlayers = candidatesForGood.slice(N - D);
+
+    // Assign Riot to the riotPlayers
+    for (const p of riotPlayers) {
       assignment.push({
-        player: { ...initialShuffledPlayers[i], isEvil: true },
+        player: { ...p, isEvil: true },
         role: riotRole,
-        fromPref: !!initialShuffledPlayers[i].preferences?.demon.includes('riot')
+        fromPref: !!p.preferences?.demon.includes('riot')
       });
     }
-    for (let i = D; i < N; i++) {
-      const p = initialShuffledPlayers[i];
+
+    // Assign Townsfolk to the goodPlayers, honoring their preferences
+    for (const p of goodPlayers) {
       const { role, fromPref } = selectRoleForPlayer(p, 'townsfolk', usedRoleIds);
       usedRoleIds.add(role.id);
       assignment.push({
@@ -239,6 +252,7 @@ function assignBaseCharacters(
         fromPref
       });
     }
+
     return assignment;
   }
 

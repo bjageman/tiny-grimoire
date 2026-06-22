@@ -156,4 +156,62 @@ describe('assignCharacters', () => {
       expect(kingAssignment?.player.id).not.toBe('2');
     }
   });
+
+  it('should assign Riot to all demons and minions in a Riot setup', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'riot', name: 'Riot', team: 'demon' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+
+    const players: Player[] = [
+      { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+      { id: '2', name: 'Bob', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+      { id: '3', name: 'Charlie', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: ['riot'], traveler: [] } },
+      { id: '4', name: 'David', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+      { id: '5', name: 'Eve', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+    ];
+
+    const result = assignCharacters(players, roles);
+    expect(result).not.toBeNull();
+    if (!result) return;
+
+    // Check count of Riot
+    const riotAssignments = result.filter(r => r.role.id === 'riot');
+    // 5 players = 1 demon + 1 minion = 2 Riot
+    expect(riotAssignments.length).toBe(2);
+  });
+
+  it('should respect Townsfolk preference over Riot assignment if possible', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'riot', name: 'Riot', team: 'demon' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+
+    // Bob wants chef (townsfolk). If Charlie wants Riot, Charlie should be Riot.
+    // In a 5-player game, 2 players are Riot. Even if Bob is randomly selected first,
+    // his preference for Townsfolk should protect him from being assigned Riot,
+    // leaving Riot to neutral/Riot-preferring players (Alice, Charlie, David, Eve).
+    for (let run = 0; run < 20; run++) {
+      const players: Player[] = [
+        { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+        { id: '2', name: 'Bob', isDead: false, preferences: { townsfolk: ['chef'], outsider: [], minion: [], demon: [], traveler: [] } },
+        { id: '3', name: 'Charlie', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: ['riot'], traveler: [] } },
+        { id: '4', name: 'David', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+        { id: '5', name: 'Eve', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
+      ];
+
+      const result = assignCharacters(players, roles);
+      expect(result).not.toBeNull();
+      if (!result) return;
+
+      const bobAssignment = result.find(r => r.player.id === '2');
+      expect(bobAssignment?.role.id).not.toBe('riot');
+    }
+  });
 });

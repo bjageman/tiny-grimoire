@@ -242,5 +242,34 @@ describe('performStandardAssignment', () => {
       expect(hasKing).toBe(true);
     }
   });
+
+  it('should assign Riot to demon + minion count players and Townsfolk to the rest in standard randomization', () => {
+    const scriptWithRiot: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'riot', name: 'Riot', team: 'demon' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+
+    const players: Player[] = [
+      { id: '1', name: 'Alice', isDead: false },
+      { id: '2', name: 'Bob', isDead: false },
+      { id: '3', name: 'Charlie', isDead: false },
+      { id: '4', name: 'David', isDead: false },
+      { id: '5', name: 'Eve', isDead: false },
+    ];
+
+    const result = performStandardAssignment(players, scriptWithRiot, []);
+    expect(result).not.toBeNull();
+    if (!result) return;
+
+    const riotCount = result.filter(p => p.roleId === 'riot').length;
+    // 5 players = 1 demon + 1 minion = 2 Riot
+    expect(riotCount).toBe(2);
+
+    const nonRiotCount = result.filter(p => p.roleId && p.roleId !== 'riot').length;
+    expect(nonRiotCount).toBe(3);
+  });
 });
 

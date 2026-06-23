@@ -78,7 +78,7 @@ export default function GrimoireBoard({
         radiusX: 34,
         radiusY: 36,
         btnStyle: { width: '30cqw', height: '30cqw' } as CSSProperties,
-        btnClass: "md:max-w-[85px] md:max-h-[85px]",
+        btnClass: "md:max-w-[150px] md:max-h-[150px]",
         dotStyle: { top: '6%', width: '2.0cqw', height: '2.0cqw' } as CSSProperties,
         nameStyle: { fontSize: '4.8cqw', maxWidth: '28cqw', marginTop: '0.5cqw' } as CSSProperties,
         roleStyle: { fontSize: '3.8cqw', maxWidth: '28cqw', marginTop: '0cqw' } as CSSProperties,
@@ -94,7 +94,7 @@ export default function GrimoireBoard({
         radiusX: 36,
         radiusY: 38,
         btnStyle: { width: '26cqw', height: '26cqw' } as CSSProperties,
-        btnClass: "md:max-w-[74px] md:max-h-[74px]",
+        btnClass: "md:max-w-[130px] md:max-h-[130px]",
         dotStyle: { top: '6%', width: '1.7cqw', height: '1.7cqw' } as CSSProperties,
         nameStyle: { fontSize: '4.3cqw', maxWidth: '24cqw', marginTop: '0.4cqw' } as CSSProperties,
         roleStyle: { fontSize: '3.4cqw', maxWidth: '24cqw', marginTop: '0cqw' } as CSSProperties,
@@ -110,7 +110,7 @@ export default function GrimoireBoard({
         radiusX: 38,
         radiusY: 40,
         btnStyle: { width: '21cqw', height: '21cqw' } as CSSProperties,
-        btnClass: "md:max-w-[62px] md:max-h-[62px]",
+        btnClass: "md:max-w-[105px] md:max-h-[105px]",
         dotStyle: { top: '6%', width: '1.4cqw', height: '1.4cqw' } as CSSProperties,
         nameStyle: { fontSize: '3.7cqw', maxWidth: '19cqw', marginTop: '0.3cqw' } as CSSProperties,
         roleStyle: { fontSize: '2.8cqw', maxWidth: '19cqw', marginTop: '0cqw' } as CSSProperties,
@@ -132,7 +132,7 @@ export default function GrimoireBoard({
 
   const dynamicRadiusY = useMemo(() => {
     if (boardAspect < 1.15) {
-      return grimoireConfig.radiusY * 0.97; // Minimal reduction needed now
+      return grimoireConfig.radiusY * 0.94; // Mild vertical reduction for 10% smaller tokens
     }
     return grimoireConfig.radiusY;
   }, [grimoireConfig.radiusY, boardAspect]);

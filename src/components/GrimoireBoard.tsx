@@ -122,14 +122,14 @@ export default function GrimoireBoard({
 
   const dynamicRadiusX = useMemo(() => {
     if (boardAspect < 1.15) {
-      return grimoireConfig.radiusX * 0.85;
+      return grimoireConfig.radiusX * 0.96; // Minimal horizontal reduction since width isn't constrained
     }
     return grimoireConfig.radiusX;
   }, [grimoireConfig.radiusX, boardAspect]);
 
   const dynamicRadiusY = useMemo(() => {
     if (boardAspect < 1.15) {
-      return grimoireConfig.radiusY * 0.80;
+      return grimoireConfig.radiusY * 0.92; // Gentle vertical reduction to avoid overflowing top/bottom
     }
     return grimoireConfig.radiusY;
   }, [grimoireConfig.radiusY, boardAspect]);

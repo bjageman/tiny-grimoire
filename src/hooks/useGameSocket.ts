@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 // Use a free public PieSocket demo cluster API key for development and testing.
 // PieSocket provides a generous free tier of 500k messages/day and 100 concurrent connections.
-const PIESOCKET_API_KEY = 'o7ee7Gx2z1ecb0Ogb9g7367s76sC5G6O';
-const PIESOCKET_CLUSTER_ID = 'demo';
+const PIESOCKET_API_KEY = import.meta.env.VITE_PIESOCKET_API_KEY || '';
+const PIESOCKET_CLUSTER_ID = import.meta.env.VITE_PIESOCKET_CLUSTER_ID || 'demo';
 
 export function useGameSocket(gameCode: string, onMessage: (data: any) => void) {
   const wsRef = useRef<WebSocket | null>(null);

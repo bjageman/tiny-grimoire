@@ -55,6 +55,23 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
         {/* Mode Cards */}
         <div className="space-y-4">
           <a
+            href="#/join"
+            className={cn(
+              "block border rounded-lg p-6 transition-all group cursor-pointer text-center",
+              isLightModeActive
+                ? "bg-white border-gray-250 text-clocktower-night shadow-sm hover:border-clocktower-blood/60 hover:bg-gray-50/80"
+                : "bg-gray-900/60 border-gray-800 text-gray-200 hover:border-clocktower-blood/60 hover:bg-gray-900/80"
+            )}
+          >
+            <h2 className={cn(
+              "text-lg font-bold transition-colors",
+              isLightModeActive ? "text-clocktower-night group-hover:text-clocktower-blood" : "text-gray-200 group-hover:text-white"
+            )}>
+              Join Game
+            </h2>
+          </a>
+
+          <a
             href="#/tracker"
             className={cn(
               "block border rounded-lg p-6 transition-all group cursor-pointer text-left",

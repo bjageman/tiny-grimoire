@@ -12,6 +12,7 @@ import StandardGamePhase from './components/StandardGamePhase';
 import StandardSetupPhase from './components/StandardSetupPhase';
 import StandardRoleSelectionModal from './components/StandardRoleSelectionModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
+import { useGameSocket } from './hooks/useGameSocket';
 
 type Phase = 'setup' | 'game';
 
@@ -21,6 +22,14 @@ interface SetupProps {
 }
 
 export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
+  const [gameCode, setGameCode] = useState<string>(() => {
+    const saved = localStorage.getItem('standard-botc-game-code');
+    if (saved) return saved;
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-game-code', newCode);
+    return newCode;
+  });
+
   const [players, setPlayers] = useState<Player[]>(() => {
     const saved = localStorage.getItem('standard-botc-game');
     if (saved) {
@@ -120,6 +129,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     return null;
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const broadcastTimeoutRef = useRef<any>(null);
+  const sendMessageRef = useRef<any>(null);
+
+  const broadcastSetupUpdate = (listToBroadcast: Player[]) => {
+    clearTimeout(broadcastTimeoutRef.current);
+    broadcastTimeoutRef.current = setTimeout(() => {
+      if (sendMessageRef.current) {
+        sendMessageRef.current({
+          type: 'setup_update',
+          gameType: 'standard',
+          players: listToBroadcast
+        });
+      }
+    }, 1000);
+  };
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -138,6 +162,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setScriptName("All Roles (Default)");
       setCustomScriptRoles(null);
       localStorage.removeItem('standard-botc-game');
+      
+      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+      localStorage.setItem('standard-botc-game-code', newCode);
+      setGameCode(newCode);
     }
   };
 
@@ -169,6 +197,91 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     handleTouchEnd,
     movePlayer,
   } = usePlayerDragAndDrop(players, setPlayers);
+
+  const handleIncomingMessage = (payload: any) => {
+    if (payload.type === 'player_join') {
+      const isExistingPlayer = players.some(
+        p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
+      );
+      if (phase === 'game' && !isExistingPlayer) {
+        return;
+      }
+
+      sendMessage({
+        type: 'code_valid',
+        gameType: 'standard',
+        playerId: payload.id,
+        playerName: payload.name
+      });
+
+      if (!payload.checkOnly) {
+        setPlayers(prev => {
+          const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
+          if (exists) return prev;
+          return [
+            ...prev,
+            {
+              id: payload.id || 'p-' + Math.random().toString(36).substring(2, 9),
+              name: payload.name,
+              isDead: false,
+              roleId: '',
+            }
+          ];
+        });
+      }
+
+      if (phase === 'setup') {
+        const updatedPlayers = isExistingPlayer ? players : (
+          payload.checkOnly ? players : [
+            ...players,
+            {
+              id: payload.id || 'p-' + Math.random().toString(36).substring(2, 9),
+              name: payload.name,
+              isDead: false,
+              roleId: '',
+            }
+          ]
+        );
+        broadcastSetupUpdate(updatedPlayers);
+      }
+
+      if (phase === 'game') {
+        sendMessage({
+          type: 'game_update',
+          players,
+          timeOfDay,
+          dayNumber
+        });
+      }
+    }
+  };
+
+  const { sendMessage } = useGameSocket(gameCode, handleIncomingMessage);
+  sendMessageRef.current = sendMessage;
+
+  // Sync game state to players when in game phase
+  useEffect(() => {
+    if (phase === 'game') {
+      sendMessage({
+        type: 'game_update',
+        players,
+        timeOfDay,
+        dayNumber
+      });
+    }
+  }, [phase, players, timeOfDay, dayNumber, sendMessage]);
+
+  // Broadcast player list to players during setup phase
+  useEffect(() => {
+    if (phase === 'setup') {
+      // Only broadcast standard setup updates on initial mount or phase change
+      // rather than on every players list alteration to prevent loop storm
+      const initialTimer = setTimeout(() => {
+        broadcastSetupUpdate(players);
+      }, 500);
+      return () => clearTimeout(initialTimer);
+    }
+  }, [phase]);
 
   // Save to localStorage and update document theme
   useEffect(() => {
@@ -588,9 +701,27 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             </button>
           )}
           
-          <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
-            Standard
-          </h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
+              Standard
+            </h1>
+            <div 
+              onClick={() => {
+                const joinUrl = `${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`;
+                navigator.clipboard.writeText(joinUrl);
+                alert(`Copied link to clipboard: ${joinUrl}`);
+              }}
+              className={cn(
+                "cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-center gap-1",
+                isLightModeActive 
+                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200" 
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+              )}
+              title="Click to copy join link"
+            >
+              Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+            </div>
+          </div>
 
           <div className="absolute right-0 flex items-center gap-1">
             <button

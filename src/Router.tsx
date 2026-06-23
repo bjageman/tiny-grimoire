@@ -3,11 +3,14 @@ import HomePage from './HomePage';
 import WhaleBucket from './WhaleBucket';
 import StandardSetup from './StandardSetup';
 import PlayerTracker from './PlayerTracker';
+import JoinPage from './JoinPage';
 
-type Route = 'home' | 'whale-bucket' | 'standard' | 'tracker';
+type Route = 'home' | 'whale-bucket' | 'standard' | 'tracker' | 'join';
 
 function getRouteFromHash(): Route {
   const hash = window.location.hash;
+  const path = window.location.pathname;
+  if (path === '/join' || hash === '#/join' || hash.startsWith('#/join?')) return 'join';
   if (hash === '#/whale-bucket') return 'whale-bucket';
   if (hash === '#/standard') return 'standard';
   if (hash === '#/tracker') return 'tracker';
@@ -42,6 +45,8 @@ export default function Router() {
       return <StandardSetup theme={theme} toggleTheme={toggleTheme} />;
     case 'tracker':
       return <PlayerTracker theme={theme} toggleTheme={toggleTheme} />;
+    case 'join':
+      return <JoinPage theme={theme} toggleTheme={toggleTheme} />;
     default:
       return <HomePage theme={theme} toggleTheme={toggleTheme} />;
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Sun, Moon, RefreshCcw, ArrowLeft } from 'lucide-react';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
@@ -12,6 +12,7 @@ import WhaleBucketGamePhase from './components/WhaleBucketGamePhase';
 import PreferenceSelectionModal from './components/PreferenceSelectionModal';
 import ManualOverrideModal from './components/ManualOverrideModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
+import { useGameSocket } from './hooks/useGameSocket';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
   preferences: PlayerPreferences;
@@ -25,6 +26,14 @@ interface SetupProps {
 }
 
 export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
+  const [gameCode, setGameCode] = useState<string>(() => {
+    const saved = localStorage.getItem('whale-bucket-game-code');
+    if (saved) return saved;
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('whale-bucket-game-code', newCode);
+    return newCode;
+  });
+
   const [players, setPlayers] = useState<Player[]>(() => {
     const saved = localStorage.getItem('whale-bucket-game');
     if (saved) {
@@ -130,6 +139,22 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     return ['drunk', 'marionette', 'lunatic'];
   });
 
+  const broadcastTimeoutRef = useRef<any>(null);
+  const sendMessageRef = useRef<any>(null);
+
+  const broadcastSetupUpdate = (listToBroadcast: Player[]) => {
+    clearTimeout(broadcastTimeoutRef.current);
+    broadcastTimeoutRef.current = setTimeout(() => {
+      if (sendMessageRef.current) {
+        sendMessageRef.current({
+          type: 'setup_update',
+          gameType: 'whale-bucket',
+          players: listToBroadcast
+        });
+      }
+    }, 1000);
+  };
+
   // Preference modal states
   const [activePrefModal, setActivePrefModal] = useState<{ playerId: string; team: Role['team'] } | null>(null);
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
@@ -152,6 +177,129 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     handleTouchEnd,
     movePlayer,
   } = usePlayerDragAndDrop(players, setPlayers);
+
+  const handleIncomingMessage = (payload: any) => {
+    if (payload.type === 'player_join') {
+      const isExistingPlayer = players.some(
+        p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
+      );
+      if (phase === 'game' && !isExistingPlayer) {
+        return;
+      }
+
+      sendMessage({
+        type: 'code_valid',
+        gameType: 'whale-bucket',
+        playerId: payload.id,
+        playerName: payload.name
+      });
+
+      if (!payload.checkOnly) {
+        setPlayers(prev => {
+          const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
+          if (exists) {
+            return prev.map(p => {
+              if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
+                return {
+                  ...p,
+                  preferences: payload.preferences || p.preferences
+                };
+              }
+              return p;
+            });
+          }
+          return [
+            ...prev,
+            {
+              id: payload.id || 'p-' + Math.random().toString(36).substring(2, 9),
+              name: payload.name,
+              isDead: false,
+              roleId: '',
+              isTheDrunk: false,
+              isTheMarionette: false,
+              isTheLilMonsta: false,
+              preferences: payload.preferences || {
+                townsfolk: [],
+                outsider: [],
+                minion: [],
+                demon: [],
+                traveler: []
+              }
+            }
+          ];
+        });
+      }
+
+      if (phase === 'setup' || phase === 'draft') {
+        const updatedPlayers = isExistingPlayer ? (
+          payload.checkOnly ? players : players.map(p => {
+            if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
+              return {
+                ...p,
+                preferences: payload.preferences || p.preferences
+              };
+            }
+            return p;
+          })
+        ) : (
+          payload.checkOnly ? players : [
+            ...players,
+            {
+              id: payload.id || 'p-' + Math.random().toString(36).substring(2, 9),
+              name: payload.name,
+              isDead: false,
+              roleId: '',
+              isTheDrunk: false,
+              isTheMarionette: false,
+              isTheLilMonsta: false,
+              preferences: payload.preferences || {
+                townsfolk: [],
+                outsider: [],
+                minion: [],
+                demon: [],
+                traveler: []
+              }
+            }
+          ]
+        );
+        broadcastSetupUpdate(updatedPlayers);
+      }
+
+      if (phase === 'game') {
+        sendMessage({
+          type: 'game_update',
+          players,
+          timeOfDay,
+          dayNumber
+        });
+      }
+    }
+  };
+
+  const { sendMessage } = useGameSocket(gameCode, handleIncomingMessage);
+  sendMessageRef.current = sendMessage;
+
+  // Sync game state to players when in game phase
+  useEffect(() => {
+    if (phase === 'game') {
+      sendMessage({
+        type: 'game_update',
+        players,
+        timeOfDay,
+        dayNumber
+      });
+    }
+  }, [phase, players, timeOfDay, dayNumber, sendMessage]);
+
+  // Broadcast player list to players during setup or draft phases
+  useEffect(() => {
+    if (phase === 'setup' || phase === 'draft') {
+      const initialTimer = setTimeout(() => {
+        broadcastSetupUpdate(players);
+      }, 500);
+      return () => clearTimeout(initialTimer);
+    }
+  }, [phase]);
 
   // Save to localStorage and update document theme
   useEffect(() => {
@@ -475,6 +623,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setDayNumber(1);
       setIsLilMonstaGame(false);
       localStorage.removeItem('whale-bucket-game');
+
+      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+      localStorage.setItem('whale-bucket-game-code', newCode);
+      setGameCode(newCode);
     }
   };
 
@@ -574,9 +726,27 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             </button>
           )}
 
-          <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
-            Whale Bucket
-          </h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-clocktower-blood tracking-wide text-center">
+              Whale Bucket
+            </h1>
+            <div 
+              onClick={() => {
+                const joinUrl = `${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`;
+                navigator.clipboard.writeText(joinUrl);
+                alert(`Copied link to clipboard: ${joinUrl}`);
+              }}
+              className={cn(
+                "cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-center gap-1",
+                isLightModeActive 
+                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200" 
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+              )}
+              title="Click to copy join link"
+            >
+              Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+            </div>
+          </div>
 
           <div className="absolute right-0 flex items-center gap-1">
             <button

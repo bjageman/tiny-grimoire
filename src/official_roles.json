@@ -137,6 +137,7 @@
     "edition": "carousel",
     "team": "townsfolk",
     "firstNightReminder": "Show the Townsfolk character token marked *MAD*.",
+    "otherNightReminder": "Check if the Pixie's guessed character died. If so, they gain their ability.",
     "reminders": [
       "Mad",
       "Has Ability"
@@ -731,6 +732,7 @@
     "name": "Cannibal",
     "edition": "carousel",
     "team": "townsfolk",
+    "otherNightReminder": "Check if the Cannibal gained a new ability from yesterday's execution.",
     "reminders": [
       "Poisoned",
       "Lunch"

@@ -74,7 +74,7 @@ export default function GrimoireBoard({
     const count = players.length;
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[84vw] max-w-[560px] max-h-[620px] md:max-h-[500px] landscape:max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:max-h-[500px] landscape:max-h-[500px] rounded-[28px]",
         radiusX: 34,
         radiusY: 36,
         btnStyle: { width: '30cqw', height: '30cqw' } as CSSProperties,
@@ -89,7 +89,7 @@ export default function GrimoireBoard({
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[86vw] max-w-[620px] max-h-[680px] md:max-h-[500px] landscape:max-h-[500px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[118vw] max-w-[620px] max-h-[760px] md:max-h-[500px] landscape:max-h-[500px] rounded-[34px]",
         radiusX: 36,
         radiusY: 38,
         btnStyle: { width: '26cqw', height: '26cqw' } as CSSProperties,
@@ -104,7 +104,7 @@ export default function GrimoireBoard({
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[88vw] max-w-[680px] max-h-[740px] md:max-h-[500px] landscape:max-h-[500px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:max-h-[500px] landscape:max-h-[500px] rounded-[40px]",
         radiusX: 38,
         radiusY: 40,
         btnStyle: { width: '21cqw', height: '21cqw' } as CSSProperties,
@@ -121,11 +121,8 @@ export default function GrimoireBoard({
   }, [players.length]);
 
   const dynamicRadiusX = useMemo(() => {
-    if (boardAspect < 1.15) {
-      return grimoireConfig.radiusX * 0.96; // Minimal horizontal reduction since width isn't constrained
-    }
     return grimoireConfig.radiusX;
-  }, [grimoireConfig.radiusX, boardAspect]);
+  }, [grimoireConfig.radiusX]);
 
   const dynamicRadiusY = useMemo(() => {
     if (boardAspect < 1.15) {

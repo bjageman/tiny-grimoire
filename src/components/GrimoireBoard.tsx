@@ -75,7 +75,7 @@ export default function GrimoireBoard({
     if (count <= 6) {
       return {
         boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:max-h-[500px] landscape:max-h-[500px] rounded-[28px]",
-        radiusX: 34,
+        radiusX: 38,
         radiusY: 36,
         btnStyle: { width: '30cqw', height: '30cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '2.0cqw', height: '2.0cqw' } as CSSProperties,
@@ -90,7 +90,7 @@ export default function GrimoireBoard({
     } else if (count <= 10) {
       return {
         boardClass: "w-[90vw] h-[118vw] max-w-[620px] max-h-[760px] md:max-h-[500px] landscape:max-h-[500px] rounded-[34px]",
-        radiusX: 36,
+        radiusX: 40,
         radiusY: 38,
         btnStyle: { width: '26cqw', height: '26cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '1.7cqw', height: '1.7cqw' } as CSSProperties,
@@ -105,7 +105,7 @@ export default function GrimoireBoard({
     } else {
       return {
         boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:max-h-[500px] landscape:max-h-[500px] rounded-[40px]",
-        radiusX: 38,
+        radiusX: 42,
         radiusY: 40,
         btnStyle: { width: '21cqw', height: '21cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '1.4cqw', height: '1.4cqw' } as CSSProperties,

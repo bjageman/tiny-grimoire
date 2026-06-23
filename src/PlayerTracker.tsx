@@ -112,7 +112,18 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       customScriptRoles,
       scriptName,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName]);
+
+    const isLightMode = theme === 'light';
+    if (isLightMode) {
+      document.documentElement.classList.add('theme-light');
+    } else {
+      document.documentElement.classList.remove('theme-light');
+    }
+
+    return () => {
+      document.documentElement.classList.remove('theme-light');
+    };
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, theme]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {

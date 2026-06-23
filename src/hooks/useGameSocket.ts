@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Use a free public PieSocket demo cluster API key for development and testing.
-// PieSocket provides a generous free tier of 500k messages/day and 100 concurrent connections.
-const PIESOCKET_API_KEY = import.meta.env.VITE_PIESOCKET_API_KEY || '';
-const PIESOCKET_CLUSTER_ID = import.meta.env.VITE_PIESOCKET_CLUSTER_ID || 'demo';
+// Read endpoints from environment variables so the user can easily swap
+// between public ntfy.sh or a self-hosted ntfy server instance.
+const NTFY_SERVER_URL = import.meta.env.VITE_NTFY_SERVER_URL || 'ntfy.sh';
 
 export function useGameSocket(gameCode: string, onMessage: (data: unknown) => void) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -17,44 +16,51 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
 
   useEffect(() => {
     if (!gameCode) return;
-    const channelId = `botc-companion-${gameCode.toLowerCase()}`;
+    const topic = `botc-companion-${gameCode.toLowerCase()}`;
     let isMounted = true;
     let reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
 
     function connect() {
-      // Connect to PieSocket public demo cluster WebSocket
-      const wsUrl = `wss://${PIESOCKET_CLUSTER_ID}.piesocket.com/v3/${channelId}?api_key=${PIESOCKET_API_KEY}`;
-      console.log(`[PieSocket] Connecting to: ${wsUrl}`);
+      // Determine WebSocket protocol (ws: or wss:) based on secure/unsecure context
+      const protocol = NTFY_SERVER_URL.startsWith('localhost') || NTFY_SERVER_URL.startsWith('127.0.0.1') ? 'ws' : 'wss';
+      // Clean domain name string (strip protocol prefix if provided in env)
+      const domain = NTFY_SERVER_URL.replace(/^(https?:\/\/|wss?:\/\/)/, '');
+      
+      const wsUrl = `${protocol}://${domain}/${topic}/ws`;
+      console.log(`[ntfy] Connecting to: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         if (isMounted) {
-          console.log(`[PieSocket] Connection opened successfully for channel: ${channelId}`);
+          console.log(`[ntfy] Connection opened successfully for topic: ${topic}`);
           setIsConnected(true);
         }
       };
 
       ws.onmessage = (event) => {
         try {
-          const payload = JSON.parse(event.data) as unknown;
-          console.log(`[PieSocket] Message received on channel ${channelId}:`, payload);
-          onMessageRef.current(payload);
+          const eventData = JSON.parse(event.data);
+          if (eventData.message) {
+            const payload = JSON.parse(eventData.message) as unknown;
+            console.log(`[ntfy] Message received on topic ${topic}:`, payload);
+            onMessageRef.current(payload);
+          }
         } catch (e) {
-          console.warn(`[PieSocket] Non-JSON or unparseable event on channel ${channelId}:`, event.data, e);
+          console.warn(`[ntfy] Non-JSON or unparseable event on topic ${topic}:`, event.data, e);
         }
       };
 
       ws.onclose = () => {
         if (isMounted) {
-          console.warn(`[PieSocket] Connection closed for channel ${channelId}. Attempting reconnection in 3s...`);
+          console.warn(`[ntfy] Connection closed for topic ${topic}. Attempting reconnection in 3s...`);
           setIsConnected(false);
           reconnectTimeout = setTimeout(connect, 3000);
         }
       };
 
       ws.onerror = (error) => {
-        console.error(`[PieSocket] Error on channel ${channelId}:`, error);
+        console.error(`[ntfy] Error on topic ${topic}:`, error);
         ws.close();
       };
     }
@@ -65,20 +71,32 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
       isMounted = false;
       clearTimeout(reconnectTimeout);
       if (wsRef.current) {
-        console.log(`[PieSocket] Cleaning up connection for channel: ${channelId}`);
+        console.log(`[ntfy] Cleaning up connection for topic: ${topic}`);
         wsRef.current.close();
       }
     };
   }, [gameCode]);
 
   const sendMessage = useCallback(async (payload: unknown) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log(`[PieSocket] Publishing message to channel:`, payload);
-      wsRef.current.send(JSON.stringify(payload));
-    } else {
-      console.warn(`[PieSocket] WebSocket is not open. Cannot send message:`, payload);
+    if (!gameCode) return;
+    const topic = `botc-companion-${gameCode.toLowerCase()}`;
+    const cleanDomain = NTFY_SERVER_URL.replace(/^(https?:\/\/|wss?:\/\/)/, '');
+    const protocol = cleanDomain.startsWith('localhost') || cleanDomain.startsWith('127.0.0.1') ? 'http' : 'https';
+    const publishUrl = `${protocol}://${cleanDomain}/${topic}`;
+
+    console.log(`[ntfy] Publishing message to: ${publishUrl}`, payload);
+    try {
+      const response = await fetch(publishUrl, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        console.error(`[ntfy] HTTP POST publish failed with status: ${response.status} ${response.statusText}`);
+      }
+    } catch (e) {
+      console.error(`[ntfy] Exception during HTTP POST publish:`, e);
     }
-  }, []);
+  }, [gameCode]);
 
   return { isConnected, sendMessage };
 }

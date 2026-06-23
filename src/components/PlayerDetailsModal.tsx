@@ -296,70 +296,108 @@ export default function PlayerDetailsModal({
              >
                {displayRoles.length > 0 ? (
                  <div className="flex flex-col items-center space-y-3 w-full">
-                   <div className={cn(
-                     "relative flex items-center justify-center select-none transition-all duration-300",
-                     isNameHidden ? "w-48 h-48" : "w-36 h-36"
-                   )}>
-                     {displayRoles.map((roleId, idx) => {
-                       const rObj = (rolesData as Role[]).find(r => r.id === roleId);
-                       if (!rObj) return null;
-                       
-                       let transformClass = "absolute inset-0 transition-all duration-300 ease-out";
-                       if (displayRoles.length > 1) {
-                         if (displayRoles.length === 2) {
-                           transformClass += idx === 0 
-                             ? " -rotate-3 -translate-x-1 group-hover:-translate-x-8 group-hover:-rotate-12" 
-                             : " rotate-3 translate-x-1 group-hover:translate-x-8 group-hover:rotate-12";
-                         } else if (displayRoles.length === 3) {
-                           if (idx === 0) {
-                             transformClass += " -rotate-6 -translate-x-2 translate-y-0.5 group-hover:-translate-x-12 group-hover:translate-y-2 group-hover:-rotate-12";
-                           } else if (idx === 1) {
-                             transformClass += " translate-y-[-1px] group-hover:-translate-y-10 group-hover:scale-105";
-                           } else if (idx === 2) {
-                             transformClass += " rotate-6 translate-x-2 translate-y-0.5 group-hover:translate-x-12 group-hover:translate-y-2 group-hover:rotate-12";
+                   {allowMultipleRoles ? (
+                     /* Player Tracker Row Layout */
+                     <div className="flex flex-row justify-center items-center gap-4 select-none w-full flex-wrap">
+                       {displayRoles.map((roleId) => {
+                         const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                         if (!rObj) return null;
+                         return (
+                           <div key={roleId} className="relative w-24 h-24 shrink-0">
+                             <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
+                               <defs>
+                                 <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+                                 <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+                               </defs>
+                               <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
+                               <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                               <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
+                                 <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                   {rObj.name}
+                                 </textPath>
+                               </text>
+                               <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
+                                 <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                   {rObj.team}
+                                 </textPath>
+                               </text>
+                             </svg>
+                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                               <div className="w-[47%] h-[47%] flex items-center justify-center">
+                                 <img
+                                   src={`/icons/${rObj.id}.svg`}
+                                   alt={rObj.name}
+                                   className="w-full h-full object-contain"
+                                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                 />
+                               </div>
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   ) : (
+                     /* Standard Grimoire Stack/Fanning Layout (fallback/standard mode) */
+                     <div className={cn(
+                       "relative flex items-center justify-center select-none transition-all duration-300",
+                       isNameHidden ? "w-48 h-48" : "w-36 h-36"
+                     )}>
+                       {displayRoles.map((roleId, idx) => {
+                         const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                         if (!rObj) return null;
+                         
+                         let transformClass = "absolute inset-0 transition-all duration-300 ease-out";
+                         if (displayRoles.length > 1) {
+                           if (displayRoles.length === 2) {
+                             transformClass += idx === 0 
+                               ? " -rotate-3 -translate-x-1 group-hover:-translate-x-8 group-hover:-rotate-12" 
+                               : " rotate-3 translate-x-1 group-hover:translate-x-8 group-hover:rotate-12";
+                           } else if (displayRoles.length === 3) {
+                             if (idx === 0) {
+                               transformClass += " -rotate-6 -translate-x-2 translate-y-0.5 group-hover:-translate-x-12 group-hover:translate-y-2 group-hover:-rotate-12";
+                             } else if (idx === 1) {
+                               transformClass += " translate-y-[-1px] group-hover:-translate-y-10 group-hover:scale-105";
+                             } else if (idx === 2) {
+                               transformClass += " rotate-6 translate-x-2 translate-y-0.5 group-hover:translate-x-12 group-hover:translate-y-2 group-hover:rotate-12";
+                             }
                            }
                          }
-                       }
 
-                       return (
-                         <div key={roleId} className={transformClass}>
-                            {/* The SVG containing the token background, inner rings, and curved text */}
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
-                              <defs>
-                                <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                              </defs>
-                              
-                              <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                              <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                              
-                              <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.name}
-                                </textPath>
-                              </text>
-                              <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.team}
-                                </textPath>
-                              </text>
-                            </svg>
-                            
-                            {/* Centered character icon */}
-                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[47%] h-[47%] flex items-center justify-center">
-                                <img
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
+                         return (
+                           <div key={roleId} className={transformClass}>
+                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
+                                <defs>
+                                  <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+                                  <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+                                </defs>
+                                <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
+                                <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.name}
+                                  </textPath>
+                                </text>
+                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.team}
+                                  </textPath>
+                                </text>
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                                <div className="w-[47%] h-[47%] flex items-center justify-center">
+                                  <img
+                                    src={`/icons/${rObj.id}.svg`}
+                                    alt={rObj.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                         </div>
-                       );
-                     })}
-                   </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   )}
                  </div>
                ) : (
                  <div className="flex flex-col items-center space-y-2 py-1">

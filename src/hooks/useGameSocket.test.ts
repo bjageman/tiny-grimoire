@@ -54,7 +54,8 @@ describe('useGameSocket', () => {
     renderHook(() => useGameSocket('ABCDE', () => {}));
 
     expect(globalThis.WebSocket).toHaveBeenCalledTimes(1);
-    expect(mockWsInstances[0].url).toBe('wss://ntfy.sh/botc-companion-abcde/ws');
+    // URL should use the configured server and include ?auth= when credentials are set
+    expect(mockWsInstances[0].url).toContain('wss://ntfy.brodin.rocks/botc-companion-abcde/ws');
   });
 
   it('should set isConnected to true on open and false on close', () => {
@@ -119,7 +120,7 @@ describe('useGameSocket', () => {
     });
 
     expect(globalThis.WebSocket).toHaveBeenCalledTimes(2);
-    expect(mockWsInstances[1].url).toBe('wss://ntfy.sh/botc-companion-abcde/ws');
+    expect(mockWsInstances[1].url).toContain('wss://ntfy.brodin.rocks/botc-companion-abcde/ws');
   });
 
   it('should cleanup connection on unmount', () => {
@@ -131,7 +132,7 @@ describe('useGameSocket', () => {
     expect(closeSpy).toHaveBeenCalled();
   });
 
-  it('should publish message via fetch POST when sendMessage is called', async () => {
+  it('should publish message via fetch POST with Authorization header when credentials are set', async () => {
     const { result } = renderHook(() => useGameSocket('ABCDE', () => {}));
 
     await act(async () => {
@@ -139,11 +140,14 @@ describe('useGameSocket', () => {
     });
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://ntfy.sh/botc-companion-abcde',
+      'https://ntfy.brodin.rocks/botc-companion-abcde',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ action: 'reveal' }),
       })
     );
+    // Authorization header should be present when credentials are configured
+    const fetchArgs = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+    expect((fetchArgs.headers as Record<string, string>)['Authorization']).toMatch(/^Basic /);
   });
 });

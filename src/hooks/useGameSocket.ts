@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Read endpoints from environment variables so the user can easily swap
-// between public ntfy.sh or a self-hosted ntfy server instance.
+// Read endpoints and credentials from environment variables.
+// Leave USERNAME/PASSWORD blank when using the public ntfy.sh broker.
 const NTFY_SERVER_URL = import.meta.env.VITE_NTFY_SERVER_URL || 'ntfy.sh';
+const NTFY_USERNAME = import.meta.env.VITE_NTFY_ADMIN_USERNAME || '';
+const NTFY_PASSWORD = import.meta.env.VITE_NTFY_ADMIN_PASSWORD || '';
+
+/** Build the Basic auth header value from env credentials, or empty string. */
+function buildAuthHeader(): string {
+  if (!NTFY_USERNAME || !NTFY_PASSWORD) return '';
+  return 'Basic ' + btoa(`${NTFY_USERNAME}:${NTFY_PASSWORD}`);
+}
 
 export function useGameSocket(gameCode: string, onMessage: (data: unknown) => void) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -26,8 +34,14 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
       // Clean domain name string (strip protocol prefix if provided in env)
       const domain = NTFY_SERVER_URL.replace(/^(https?:\/\/|wss?:\/\/)/, '');
       
-      const wsUrl = `${protocol}://${domain}/${topic}/ws`;
-      console.log(`[ntfy] Connecting to: ${wsUrl}`);
+      // Browsers cannot set custom headers on WebSocket connections, so pass
+      // credentials via the ?auth= query param that ntfy supports natively.
+      const authHeader = buildAuthHeader();
+      const authParam = authHeader
+        ? `?auth=${encodeURIComponent(authHeader)}`
+        : '';
+      const wsUrl = `${protocol}://${domain}/${topic}/ws${authParam}`;
+      console.log(`[ntfy] Connecting to: ${protocol}://${domain}/${topic}/ws`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -85,9 +99,13 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
     const publishUrl = `${protocol}://${cleanDomain}/${topic}`;
 
     console.log(`[ntfy] Publishing message to: ${publishUrl}`, payload);
+    const authHeader = buildAuthHeader();
+    const headers: Record<string, string> = {};
+    if (authHeader) headers['Authorization'] = authHeader;
     try {
       const response = await fetch(publishUrl, {
         method: 'POST',
+        headers,
         body: JSON.stringify(payload),
       });
       if (!response.ok) {

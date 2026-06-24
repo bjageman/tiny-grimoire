@@ -100,11 +100,6 @@ export default function StandardGamePhase({
             )}>
               {customScriptRoles ? "📜" : "🌐"} {scriptName}
             </span>
-            {customScriptRoles && (
-              <span className="text-[10px] text-gray-500 font-medium">
-                ({customScriptRoles.length} roles loaded)
-              </span>
-            )}
           </div>
         </div>
 

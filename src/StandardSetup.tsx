@@ -157,6 +157,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const resetGame = () => {
     if (confirm('Are you sure you want to reset the game? This clears all players and settings.')) {
+      if (sendMessageRef.current) {
+        sendMessageRef.current({
+          type: 'storyteller_quit'
+        });
+      }
       setPlayers([]);
       setPhase('setup');
       setSearchTerm('');

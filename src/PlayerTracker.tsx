@@ -169,6 +169,21 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
+    } else if (payload.type === 'storyteller_quit') {
+      alert('The Storyteller has quit the session. Reverting to local tracker.');
+      sessionStorage.removeItem('joined-code');
+      sessionStorage.removeItem('joined-name');
+      const saved = localStorage.getItem('player-tracker-botc-game');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          delete parsed.code;
+          localStorage.setItem('player-tracker-botc-game', JSON.stringify(parsed));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setGameCode(null);
     }
   };
 

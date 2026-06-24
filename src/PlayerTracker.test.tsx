@@ -139,4 +139,32 @@ describe('PlayerTracker', () => {
     const voteToggle = screen.getByRole('button', { name: /vote: active/i });
     expect(voteToggle).toBeDisabled();
   });
+
+  it('reverts to local tracker when storyteller_quit message is received', () => {
+    sessionStorage.setItem('joined-code', 'TEST');
+    
+    // Mock alert
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    // Synced notice should be visible
+    expect(screen.getByText(/seating arrangement and player list are synced/i)).toBeInTheDocument();
+
+    // Send storyteller_quit message
+    act(() => {
+      mockOnMessageCallback({
+        type: 'storyteller_quit'
+      });
+    });
+
+    // Alert should be called
+    expect(alertMock).toHaveBeenCalledWith('The Storyteller has quit the session. Reverting to local tracker.');
+
+    // Synced notice should disappear and input field should show again
+    expect(screen.getByPlaceholderText('Enter player name in seating order...')).toBeInTheDocument();
+    expect(screen.queryByText(/seating arrangement and player list are synced/i)).toBeNull();
+    
+    alertMock.mockRestore();
+  });
 });

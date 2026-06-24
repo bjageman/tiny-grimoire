@@ -111,7 +111,7 @@ export default function PlayerTrackerSetupPhase({
                     ? "bg-gray-100/80 border-gray-300 hover:border-clocktower-blood/60 hover:bg-gray-150"
                     : "bg-gray-955 border-gray-800 hover:border-clocktower-blood"
                 )}
-                title="Click to upload custom script JSON"
+                title="Click to upload script JSON"
               >
                 <span className={cn(
                   "flex items-center gap-1.5 text-base font-extrabold transition-colors",
@@ -123,7 +123,7 @@ export default function PlayerTrackerSetupPhase({
                 </span>
                 <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
                   <Upload size={12} />
-                  {customScriptRoles ? `${getScriptStats()} — Click to change` : "Upload Custom Script (.json)"}
+                  {customScriptRoles ? `${getScriptStats()} — Click to change` : "Upload Script (.json)"}
                 </span>
               </button>
 
@@ -138,7 +138,7 @@ export default function PlayerTrackerSetupPhase({
                       : "hover:bg-gray-800 border-gray-800 text-red-400 hover:text-red-300"
                   )}
                 >
-                  Clear Custom Script
+                  Clear Script
                 </button>
               )}
             </>
@@ -146,7 +146,7 @@ export default function PlayerTrackerSetupPhase({
           <p className="text-[11px] text-gray-550 leading-relaxed">
             {isSynced 
               ? "The active script is automatically synchronized in real-time from the Storyteller."
-              : "Upload a custom script JSON file (e.g., from the Official Script Tool) to restrict character selections in the Player details modal to only those on this script."
+              : "Upload a script JSON file (e.g., from the Official Script Tool) to restrict character selections in the Player details modal to only those on this script."
             }
           </p>
         </section>

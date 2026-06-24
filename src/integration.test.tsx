@@ -58,6 +58,7 @@ describe('Storyteller Reset Integration', () => {
   });
 
   it('notifies and disconnects a joined PlayerTracker when storyteller resets the game', async () => {
+    window.location.hash = '#/standard';
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     let codeAtAlert: string | null = null;
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {
@@ -100,6 +101,9 @@ describe('Storyteller Reset Integration', () => {
     // Verify confirm was called
     expect(confirmSpy).toHaveBeenCalled();
 
+    // Verify storyteller hash is reset to home (main menu)
+    expect(window.location.hash).toBe('');
+
     // Verify player client received 'storyteller_quit' message via mock socket, showed the alert,
     // and reverted the UI back to local tracker mode
     expect(alertSpy).toHaveBeenCalledWith(
@@ -119,6 +123,7 @@ describe('Storyteller Reset Integration', () => {
   });
 
   it('notifies and disconnects a joined JoinPage client when storyteller resets the game', async () => {
+    window.location.hash = '#/standard';
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     let codeAtAlert: string | null = null;
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {
@@ -154,6 +159,9 @@ describe('Storyteller Reset Integration', () => {
       fireEvent.click(resetButton!);
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
+
+    // Verify storyteller hash is reset to home (main menu)
+    expect(window.location.hash).toBe('');
 
     // Verify JoinPage was notified, showed alert, and reverted back to the join screen
     expect(alertSpy).toHaveBeenCalledWith('The Storyteller has quit the session.');

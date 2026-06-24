@@ -652,6 +652,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
       localStorage.setItem('whale-bucket-game-code', newCode);
       setGameCode(newCode);
+      window.location.hash = '';
     }
   };
 

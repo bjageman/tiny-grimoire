@@ -207,6 +207,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setGameCode(null);
+      window.location.hash = '';
     }
   };
 

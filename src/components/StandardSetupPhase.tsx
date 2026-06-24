@@ -113,7 +113,7 @@ export default function StandardSetupPhase({
                 ? "bg-gray-100/80 border-gray-300 hover:border-clocktower-blood/60 hover:bg-gray-150"
                 : "bg-gray-955 border-gray-800 hover:border-clocktower-blood"
             )}
-            title="Click to upload custom script JSON"
+            title="Click to upload script JSON"
           >
             <span className={cn(
               "flex items-center gap-1.5 text-base font-extrabold transition-colors",

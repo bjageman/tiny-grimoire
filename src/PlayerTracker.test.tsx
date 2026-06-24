@@ -167,4 +167,20 @@ describe('PlayerTracker', () => {
     
     alertMock.mockRestore();
   });
+
+  it('resets the tracker and returns to the main menu when clicking the reset button', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    window.location.hash = '#/tracker';
+
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    // Click the reset button
+    const resetButton = screen.getByTitle('Reset game');
+    fireEvent.click(resetButton);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(window.location.hash).toBe('');
+
+    confirmSpy.mockRestore();
+  });
 });

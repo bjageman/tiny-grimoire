@@ -451,14 +451,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
 
   const selectionRoles = useMemo(() => {
-    const roles = [...currentScriptRoles];
-    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
-    for (const traveler of allTravelers) {
-      if (!roles.some(r => r.id === traveler.id)) {
-        roles.push(traveler);
-      }
-    }
-    return roles;
+    return currentScriptRoles.filter(r => r.team !== 'traveler');
   }, [currentScriptRoles]);
 
   const isLightModeActive = theme === 'light';

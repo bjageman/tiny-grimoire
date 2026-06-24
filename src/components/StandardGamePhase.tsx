@@ -92,11 +92,9 @@ export default function StandardGamePhase({
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5",
-              customScriptRoles 
-                ? "bg-clocktower-blood/10 border-clocktower-blood/40 text-clocktower-blood" 
-                : isLightModeActive
-                  ? "bg-gray-150 border-gray-300 text-gray-700"
-                  : "bg-gray-955 border-gray-800 text-gray-400"
+              isLightModeActive
+                ? "bg-gray-100 border-gray-300 text-gray-800"
+                : "bg-gray-955 border-gray-850 text-gray-300"
             )}>
               {customScriptRoles ? "📜" : "🌐"} {scriptName}
             </span>

@@ -40,24 +40,23 @@ The app ships with the full catalogue of official BOTC roles across all standard
 - [Node.js](https://nodejs.org/) 20+
 - npm
 
-### Real-Time Multiplayer Setup
-
 This app supports a real-time multiplayer portal allowing players to join rooms from their phones, submit role preferences (for Whale Bucket), and view their assigned tokens.
 
-Real-time message routing is powered by **PieSocket**. To enable this:
+Real-time message routing is powered by **ntfy**. You can run this out-of-the-box using the public `ntfy.sh` server or configure your own self-hosted `ntfy` server instance:
 
-1. Sign up for a free developer account at **[PieSocket.com](https://www.piesocket.com)**.
-2. In your dashboard, copy your **API Key** and **Cluster ID**.
-3. Copy `.env.example` in the root of the project to a new file named `.env`:
+1. Copy `.env.example` in the root of the project to a new file named `.env`:
    ```bash
    cp .env.example .env
    ```
-4. Paste your PieSocket credentials into `.env`:
+2. By default, it points to the public `ntfy.sh` broker server:
    ```env
-   VITE_PIESOCKET_API_KEY=your_piesocket_api_key_here
-   VITE_PIESOCKET_CLUSTER_ID=your_piesocket_cluster_id_here
+   VITE_NTFY_SERVER_URL=ntfy.sh
    ```
-5. Ensure your production deployment environment also defines these two variables.
+3. To swap this with a secure self-hosted `ntfy` server on your own server/VPS, change it to your domain:
+   ```env
+   VITE_NTFY_SERVER_URL=grimoire.brodin.rocks/ntfy
+   ```
+4. If you deploy using Docker or environment configurations, ensure `VITE_NTFY_SERVER_URL` is defined in your environment during build time.
 
 ### Development
 

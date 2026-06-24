@@ -84,54 +84,41 @@ export default function StandardSetupPhase({
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
       {/* Section A: Script & Randomization */}
       <div className="md:col-start-2 md:row-start-1 space-y-6 w-full">
-        {/* Script Upload & Randomization Panel */}
         <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
-          <div>
-            <h3 className="text-xs font-bold text-gray-555 uppercase tracking-wider">Active Setup Script</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={cn(
-                "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1",
-                customScriptRoles 
-                  ? "bg-clocktower-blood/10 border-clocktower-blood/40 text-clocktower-blood" 
-                  : "bg-gray-950 border-gray-800 text-gray-400"
-              )}>
-                {customScriptRoles ? "📜" : "🌐"} {scriptName}
-              </span>
-              {customScriptRoles && (
-                <span className="text-[10px] text-gray-500 font-medium">
-                  ({customScriptRoles.length} roles loaded)
-                </span>
-              )}
-            </div>
-          </div>
-          
           <div className="flex flex-col gap-2">
             <input
-              id="script-upload-input"
-              type="file"
-              ref={fileInputRef}
-              onChange={handleScriptUpload}
-              accept=".json"
-              className="hidden"
-            />
+            id="script-upload-input"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleScriptUpload}
+            accept=".json"
+            className="hidden"
+          />
+          <button
+            id="script-upload-button"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full bg-gray-950 border border-gray-800/80 hover:border-clocktower-blood text-gray-300 py-3.5 px-4 rounded-lg transition-all flex flex-col items-center justify-center gap-1 group text-center cursor-pointer"
+            title="Click to upload custom script JSON"
+          >
+            <span className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-clocktower-blood transition-colors">
+              {customScriptRoles ? "📜" : "🌐"} {scriptName}
+            </span>
+            <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+              <Upload size={12} />
+              {customScriptRoles ? `Custom Script (${customScriptRoles.length} roles) — Click to change` : "Default Script — Click to upload .json"}
+            </span>
+          </button>
+          {customScriptRoles && (
             <button
-              id="script-upload-button"
+              id="script-reset-button"
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-750 text-gray-300 py-2 rounded text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+              onClick={clearCustomScript}
+              className="w-full text-center bg-transparent hover:bg-gray-800 border border-gray-800 text-gray-500 hover:text-gray-400 py-1.5 rounded text-xs font-semibold transition-all"
             >
-              <Upload size={14} /> Upload Script (.json)
+              Reset to Default
             </button>
-            {customScriptRoles && (
-              <button
-                id="script-reset-button"
-                type="button"
-                onClick={clearCustomScript}
-                className="w-full text-center bg-transparent hover:bg-gray-800 border border-gray-800 text-gray-550 hover:text-gray-455 py-1.5 rounded text-xs font-semibold transition-all"
-              >
-                Reset to Default
-              </button>
-            )}
+          )}
             
             <div className="border-t border-gray-800/60 my-1" />
             

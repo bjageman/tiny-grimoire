@@ -687,13 +687,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               </div>
             </div>
 
-            <button
-              onClick={() => setState('tracker')}
-              className="w-full bg-clocktower-blood hover:bg-red-800 text-white rounded-lg py-3 font-bold transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-black/10 hover:scale-101"
-            >
-              <Eye size={16} />
-              <span>View Synced Grimoire Tracker</span>
-            </button>
 
             <button
               onClick={() => {

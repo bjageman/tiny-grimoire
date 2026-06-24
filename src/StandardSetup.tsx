@@ -141,11 +141,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         sendMessageRef.current({
           type: 'setup_update',
           gameType: 'standard',
-          players: listToBroadcast
+          players: listToBroadcast,
+          scriptName,
+          customScriptRoles
         });
       }
     }, 1000);
-  }, []);
+  }, [scriptName, customScriptRoles]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -220,7 +222,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           type: 'code_valid',
           gameType: 'standard',
           playerId: payload.id,
-          playerName: payload.name
+          playerName: payload.name,
+          scriptName,
+          customScriptRoles
         });
       }
 
@@ -260,7 +264,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           type: 'game_update',
           players,
           timeOfDay,
-          dayNumber
+          dayNumber,
+          scriptName,
+          customScriptRoles
         });
       }
     }
@@ -279,10 +285,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         type: 'game_update',
         players,
         timeOfDay,
-        dayNumber
+        dayNumber,
+        scriptName,
+        customScriptRoles
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, sendMessage]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, customScriptRoles, sendMessage]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {

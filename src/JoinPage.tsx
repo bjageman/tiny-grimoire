@@ -56,6 +56,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [activePrefSelect, setActivePrefSelect] = useState<{ team: 'townsfolk' | 'outsider' | 'minion' | 'demon' } | null>(null);
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
   const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>([]);
+  const [scriptName, setScriptName] = useState("All Roles (Default)");
+  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
 
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRetryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -78,6 +80,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     timeOfDay?: 'night' | 'day';
     dayNumber?: number;
     excludedRoleIds?: string[];
+    scriptName?: string;
+    customScriptRoles?: Role[];
   }
 
   const handleMessage = (data: unknown) => {
@@ -106,6 +110,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.excludedRoleIds) {
         setExcludedRoleIds(payload.excludedRoleIds);
       }
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
 
       if (state === 'waiting' || state === 'preferences' || state === 'checking') {
         setPlayers(payload.players || []);
@@ -130,7 +140,19 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.excludedRoleIds) {
         setExcludedRoleIds(payload.excludedRoleIds);
       }
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
       if (payload.players) {
         setPlayers(payload.players);
         setTimeOfDay(payload.timeOfDay || 'night');
@@ -682,8 +704,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   phase: 'game',
                   timeOfDay,
                   dayNumber,
-                  scriptName: "All Roles (Default)",
-                  customScriptRoles: null
+                  scriptName,
+                  customScriptRoles
                 }));
                 window.location.hash = '#/tracker';
               }}

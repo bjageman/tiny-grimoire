@@ -42,6 +42,7 @@ interface PlayerDetailsModalProps {
   isLilMonstaGame?: boolean;
   allowMultipleRoles?: boolean;
   onUpdateRoles?: (id: string, roleIds: string[]) => void;
+  isSynced?: boolean;
 }
 
 export default function PlayerDetailsModal({
@@ -68,6 +69,7 @@ export default function PlayerDetailsModal({
   isLilMonstaGame = false,
   allowMultipleRoles = false,
   onUpdateRoles,
+  isSynced = false,
 }: PlayerDetailsModalProps) {
   const isMobile = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -151,13 +153,15 @@ export default function PlayerDetailsModal({
                 ref={modalNameInputRef}
                 type="text"
                 value={p.name}
+                disabled={isSynced}
                 onChange={(e) => onUpdateName(p.id, e.target.value)}
                 onFocus={(e) => e.target.select()}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 autoCapitalize="words"
                 className={cn(
                   'font-bold text-xl bg-transparent border-b border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200',
-                  isLightModeActive ? 'text-clocktower-night' : 'text-white'
+                  isLightModeActive ? 'text-clocktower-night' : 'text-white',
+                  isSynced && 'cursor-default pointer-events-none hover:border-transparent'
                 )}
                 placeholder="Player Name"
               />
@@ -483,13 +487,19 @@ export default function PlayerDetailsModal({
            <button
              id="detail-status-toggle-button"
              type="button"
+             disabled={isSynced}
              onClick={(e) => { e.stopPropagation(); onToggleDead(p.id); }}
              className={cn(
                'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
-               !p.isDead
+               isSynced && 'opacity-60 cursor-not-allowed hover:bg-transparent',
+               !isSynced && (!p.isDead
                  ? 'bg-clocktower-outsider border-clocktower-outsider/40 text-white hover:bg-emerald-600'
-                 : 'bg-clocktower-blood border-clocktower-blood/40 text-white hover:bg-red-800'
+                 : 'bg-clocktower-blood border-clocktower-blood/40 text-white hover:bg-red-800'),
+               isSynced && (p.isDead
+                 ? 'bg-clocktower-blood/70 border-clocktower-blood/30 text-white'
+                 : 'bg-clocktower-outsider/70 border-clocktower-outsider/30 text-white')
              )}
+             title={isSynced ? "Status is synced from Storyteller" : undefined}
            >
              {p.isDead ? 'Dead' : 'Alive'}
            </button>
@@ -533,15 +543,23 @@ export default function PlayerDetailsModal({
                <button
                  id="detail-vote-token-toggle"
                  type="button"
+                 disabled={isSynced}
                  onClick={(e) => { e.stopPropagation(); onToggleDeadVote?.(p.id); }}
                  className={cn(
                    'px-3 py-2 rounded text-[11px] font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
-                   p.hasDeadVote
+                   isSynced && 'opacity-60 cursor-not-allowed',
+                   !isSynced && (p.hasDeadVote
                      ? 'bg-amber-600 border-amber-600/40 text-white hover:bg-amber-700'
                      : isLightModeActive
                        ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
-                       : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
+                       : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'),
+                   isSynced && (p.hasDeadVote
+                     ? 'bg-amber-600/70 border-amber-600/30 text-white'
+                     : isLightModeActive
+                       ? 'bg-gray-100 border-gray-250 text-gray-400'
+                       : 'bg-gray-900 border-gray-850 text-gray-500')
                  )}
+                 title={isSynced ? "Dead vote token is synced from Storyteller" : undefined}
                >
                  🗳️ {p.hasDeadVote ? 'Vote: Active' : 'Vote: Spent'}
                </button>

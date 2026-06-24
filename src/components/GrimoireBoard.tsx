@@ -12,6 +12,7 @@ interface GrimoireBoardProps {
   rolesData: Role[];
   onResetDead?: () => void;
   onResetTime?: () => void;
+  isSynced?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -23,6 +24,7 @@ export default function GrimoireBoard({
   rolesData,
   onResetDead,
   onResetTime,
+  isSynced = false,
 }: GrimoireBoardProps) {
   const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
   const [playerTopIndex, setPlayerTopIndex] = useState<Record<string, number>>({});
@@ -308,15 +310,18 @@ export default function GrimoireBoard({
         )}
         <button
           id="grimoire-time-toggle-button"
-          onClick={toggleTimeOfDay}
+          onClick={isSynced ? undefined : toggleTimeOfDay}
+          disabled={isSynced}
           style={grimoireConfig.centerBtnStyle}
           className={cn(
-            "absolute rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer z-20 select-none shadow-md",
+            "absolute rounded-full border flex flex-col items-center justify-center z-20 select-none shadow-md",
+            !isSynced && "transition-all cursor-pointer",
+            isSynced && "cursor-default opacity-90",
             timeOfDay === 'day'
-              ? "bg-[#fefce8] border-[#fef08a] text-[#854d0e] hover:bg-[#fef9c3]"
-              : "bg-[#1a1a1a]/80 border-[#8b0000]/30 text-[#f4e4bc] hover:bg-[#27272a]"
+              ? "bg-[#fefce8] border-[#fef08a] text-[#854d0e]" + (!isSynced ? " hover:bg-[#fef9c3]" : "")
+              : "bg-[#1a1a1a]/80 border-[#8b0000]/30 text-[#f4e4bc]" + (!isSynced ? " hover:bg-[#27272a]" : "")
           )}
-          title="Click to toggle Day/Night"
+          title={isSynced ? `Synced from Storyteller (Day ${dayNumber})` : "Click to toggle Day/Night"}
         >
           <span
             style={grimoireConfig.centerText1Style}

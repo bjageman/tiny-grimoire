@@ -151,11 +151,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         sendMessageRef.current({
           type: 'setup_update',
           gameType: 'whale-bucket',
-          players: listToBroadcast
+          players: listToBroadcast,
+          excludedRoleIds
         });
       }
     }, 1000);
-  }, []);
+  }, [excludedRoleIds]);
 
   // Preference modal states
   const [activePrefModal, setActivePrefModal] = useState<{ playerId: string; team: Role['team'] } | null>(null);
@@ -201,7 +202,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           type: 'code_valid',
           gameType: 'whale-bucket',
           playerId: payload.id,
-          playerName: payload.name
+          playerName: payload.name,
+          excludedRoleIds
         });
       }
 

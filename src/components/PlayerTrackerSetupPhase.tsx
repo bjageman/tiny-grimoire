@@ -29,6 +29,7 @@ interface PlayerTrackerSetupPhaseProps {
   handleTouchMove: (e: React.TouchEvent) => void;
   handleTouchEnd: () => void;
   movePlayer: (index: number, direction: 'up' | 'down') => void;
+  isSynced?: boolean;
 }
 
 export default function PlayerTrackerSetupPhase({
@@ -56,6 +57,7 @@ export default function PlayerTrackerSetupPhase({
   handleTouchMove,
   handleTouchEnd,
   movePlayer,
+  isSynced = false,
 }: PlayerTrackerSetupPhaseProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
@@ -81,31 +83,36 @@ export default function PlayerTrackerSetupPhase({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 bg-gray-955 border border-gray-800 hover:border-clocktower-blood text-gray-300 hover:text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all"
-            >
-              <Upload size={14} /> Upload Custom Script JSON
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleScriptUpload}
-              className="hidden"
-            />
-            {customScriptRoles && (
+          {!isSynced && (
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
-                onClick={clearCustomScript}
-                className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 hover:border-red-900 text-red-300 px-3 py-2 rounded text-xs font-semibold transition-all"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 bg-gray-955 border border-gray-800 hover:border-clocktower-blood text-gray-300 hover:text-white px-3 py-2 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all"
               >
-                Clear Script
+                <Upload size={14} /> Upload Custom Script JSON
               </button>
-            )}
-          </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleScriptUpload}
+                className="hidden"
+              />
+              {customScriptRoles && (
+                <button
+                  onClick={clearCustomScript}
+                  className="bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 hover:border-red-900 text-red-300 px-3 py-2 rounded text-xs font-semibold transition-all"
+                >
+                  Clear Script
+                </button>
+              )}
+            </div>
+          )}
           <p className="text-[11px] text-gray-550 leading-relaxed">
-            Upload a custom script JSON file (e.g., from the Official Script Tool) to restrict character selections in the Player details modal to only those on this script.
+            {isSynced 
+              ? "The active script is automatically synchronized in real-time from the Storyteller."
+              : "Upload a custom script JSON file (e.g., from the Official Script Tool) to restrict character selections in the Player details modal to only those on this script."
+            }
           </p>
         </section>
       </div>
@@ -116,36 +123,45 @@ export default function PlayerTrackerSetupPhase({
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-1.5 mb-4">
             <h2 className="text-lg font-semibold text-gray-300">Players List ({players.length})</h2>
             <span className="text-xs text-gray-500 font-medium italic">
-              Add yourself then every other player in clockwise order
+              {isSynced 
+                ? "The seating order is managed by the Storyteller"
+                : "Add yourself then every other player in clockwise order"
+              }
             </span>
           </div>
 
-          <div className="flex gap-2 mb-4">
-            <input
-              id="new-player-input"
-              type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-              disabled={players.length >= 20}
-              placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
-              autoCapitalize="words"
-              className="flex-1 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button 
-              id="add-player-button"
-              onClick={addPlayer} 
-              disabled={players.length >= 20}
-              className={cn(
-                "px-4 py-2 rounded transition-colors text-white",
-                players.length >= 20 
-                  ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
-                  : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
-              )}
-            >
-              <Plus size={20} />
-            </button>
-          </div>
+          {!isSynced ? (
+            <div className="flex gap-2 mb-4">
+              <input
+                id="new-player-input"
+                type="text"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
+                disabled={players.length >= 20}
+                placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+                autoCapitalize="words"
+                className="flex-1 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <button 
+                id="add-player-button"
+                onClick={addPlayer} 
+                disabled={players.length >= 20}
+                className={cn(
+                  "px-4 py-2 rounded transition-colors text-white",
+                  players.length >= 20 
+                    ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
+                    : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
+                )}
+              >
+                <Plus size={20} />
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 bg-clocktower-blood/10 border border-clocktower-blood/20 rounded-lg text-xs font-semibold text-clocktower-blood mb-4">
+              Seating arrangement and player list are synced with the Storyteller.
+            </div>
+          )}
 
           <div className="space-y-2.5">
             {players.map((p, index) => (
@@ -168,6 +184,7 @@ export default function PlayerTrackerSetupPhase({
                 movePlayer={movePlayer}
                 removePlayer={removePlayer}
                 updatePlayerName={updatePlayerName}
+                isSynced={isSynced}
               />
             ))}
             {players.length === 0 && (

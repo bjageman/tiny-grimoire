@@ -33,6 +33,9 @@ interface Props {
   onResetDead?: () => void;
   onResetTime?: () => void;
   showNightOrder?: boolean;
+  scriptName?: string;
+  customScriptRoles?: Role[] | null;
+  isSynced?: boolean;
 }
 
 export default function StandardGamePhase({
@@ -44,6 +47,9 @@ export default function StandardGamePhase({
   handleTouchStart, handleTouchMove, handleTouchEnd,
   onResetDead, onResetTime,
   showNightOrder = true,
+  scriptName = "All Roles (Default)",
+  customScriptRoles = null,
+  isSynced = false,
 }: Props) {
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
@@ -59,6 +65,7 @@ export default function StandardGamePhase({
             rolesData={selectionRoles}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
+            isSynced={isSynced}
           />
         </div>
         {showNightOrder && (
@@ -74,9 +81,9 @@ export default function StandardGamePhase({
       {/* Column 2: Controls */}
       <div id="grimoire-controls-container" className="space-y-6 md:pt-10 landscape:pt-10">
 
-        {/* Add Traveler */}
+        {/* Active Script Display */}
         <div className={cn(
-          'rounded-lg border p-3.5 space-y-3 transition-colors duration-300',
+          'rounded-lg border p-3.5 space-y-2 transition-colors duration-300',
           isLightModeActive
             ? 'bg-white/50 border-gray-300 text-clocktower-night'
             : 'bg-gray-900/40 border-gray-800/80'
@@ -84,56 +91,81 @@ export default function StandardGamePhase({
           <h4 className={cn(
             'text-[10px] uppercase font-bold tracking-wider',
             isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-          )}>Add Traveler (Late Arrival)</h4>
-          <div className="flex flex-col gap-2">
-            <input
-              id="game-traveler-name-input"
-              type="text"
-              placeholder="Traveler name..."
-              value={newTravelerName}
-              onChange={(e) => setNewTravelerName(e.target.value)}
-              autoCapitalize="words"
-              className={cn(
-                'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
-                isLightModeActive
-                  ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-                  : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-              )}
-            />
-            <div className="flex gap-2">
-              <select
-                id="game-traveler-role-select"
-                value={newTravelerRoleId}
-                onChange={(e) => setNewTravelerRoleId(e.target.value)}
-                className={cn(
-                  'flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
-                  isLightModeActive
-                    ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-                    : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-                )}
-              >
-                {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
-                  <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-950 text-gray-200'}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                id="game-add-traveler-button"
-                onClick={addTravelerGamePhase}
-                disabled={players.length >= 20}
-                className={cn(
-                  'px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 text-white shadow-sm',
-                  isLightModeActive
-                    ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
-                    : 'bg-clocktower-traveler hover:bg-purple-400 active:bg-purple-600'
-                )}
-              >
-                Add
-              </button>
-            </div>
+          )}>Active Script</h4>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-xs font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5",
+              isLightModeActive
+                ? "bg-gray-100 border-gray-300 text-gray-800"
+                : "bg-gray-955 border-gray-850 text-gray-300"
+            )}>
+              {customScriptRoles ? "📜" : "🌐"} {scriptName}
+            </span>
           </div>
         </div>
+
+        {/* Add Traveler */}
+        {!isSynced && (
+          <div className={cn(
+            'rounded-lg border p-3.5 space-y-3 transition-colors duration-300',
+            isLightModeActive
+              ? 'bg-white/50 border-gray-300 text-clocktower-night'
+              : 'bg-gray-900/40 border-gray-800/80'
+          )}>
+            <h4 className={cn(
+              'text-[10px] uppercase font-bold tracking-wider',
+              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
+            )}>Add Traveler (Late Arrival)</h4>
+            <div className="flex flex-col gap-2">
+              <input
+                id="game-traveler-name-input"
+                type="text"
+                placeholder="Traveler name..."
+                value={newTravelerName}
+                onChange={(e) => setNewTravelerName(e.target.value)}
+                autoCapitalize="words"
+                className={cn(
+                  'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
+                  isLightModeActive
+                    ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
+                    : 'bg-gray-955 border-gray-800 text-gray-200 focus:border-clocktower-blood'
+                )}
+              />
+              <div className="flex gap-2">
+                <select
+                  id="game-traveler-role-select"
+                  value={newTravelerRoleId}
+                  onChange={(e) => setNewTravelerRoleId(e.target.value)}
+                  className={cn(
+                    'flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
+                    isLightModeActive
+                      ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
+                      : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
+                  )}
+                >
+                  {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
+                    <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  id="game-add-traveler-button"
+                  onClick={addTravelerGamePhase}
+                  disabled={players.length >= 20}
+                  className={cn(
+                    'px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 text-white shadow-sm',
+                    isLightModeActive
+                      ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
+                      : 'bg-clocktower-traveler hover:bg-purple-400 active:bg-purple-600'
+                  )}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Ledger */}
         <div id="grimoire-ledger-container" className={cn(
@@ -145,7 +177,7 @@ export default function StandardGamePhase({
           <div className="flex justify-between items-center mb-1">
             <h4 className={cn(
               'text-[10px] uppercase font-bold tracking-wider',
-              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
+              isLightModeActive ? 'text-gray-655' : 'text-gray-500'
             )}>Grimoire Ledger Reference</h4>
           </div>
           <div className="grid grid-cols-1 gap-1.5 text-xs">
@@ -156,13 +188,13 @@ export default function StandardGamePhase({
                   id={`ledger-player-${p.id}`}
                   key={p.id}
                   data-drag-index={index}
-                  draggable={true}
-                  onMouseDown={handleMouseDown}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
+                  draggable={!isSynced}
+                  onMouseDown={isSynced ? undefined : handleMouseDown}
+                  onDragStart={isSynced ? undefined : (e) => handleDragStart(e, index)}
+                  onDragOver={isSynced ? undefined : (e) => handleDragOver(e, index)}
+                  onDragLeave={isSynced ? undefined : handleDragLeave}
+                  onDrop={isSynced ? undefined : (e) => handleDrop(e, index)}
+                  onDragEnd={isSynced ? undefined : handleDragEnd}
                   onClick={() => setSelectedPlayerId(p.id)}
                   className={cn(
                     'flex items-center gap-1.5 py-2.5 px-1.5 rounded border transition-all duration-200 min-w-0 hover:ring-1 hover:ring-gray-500/50 select-none cursor-pointer touch-auto',
@@ -174,15 +206,17 @@ export default function StandardGamePhase({
                       : 'bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60'
                   )}
                 >
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => handleTouchStart(e, index)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    className="text-gray-500 p-0.5 shrink-0 flex items-center transition-opacity duration-200 drag-handle opacity-60 hover:opacity-100 cursor-move touch-none"
-                  >
-                    <GripVertical size={10} />
-                  </div>
+                  {!isSynced && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      className="text-gray-555 p-0.5 shrink-0 flex items-center transition-opacity duration-200 drag-handle opacity-60 hover:opacity-100 cursor-move touch-none"
+                    >
+                      <GripVertical size={10} />
+                    </div>
+                  )}
                   <span className={cn('text-[9px] font-mono w-4 shrink-0', isLightModeActive ? 'text-gray-505' : 'text-gray-600')}>{index + 1}</span>
                   <span className={cn(
                     'font-medium truncate flex-1 min-w-0 flex items-center gap-1',

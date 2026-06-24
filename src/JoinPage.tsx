@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGameSocket } from './hooks/useGameSocket';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
-import { ShieldAlert, Sparkles, Moon, Sun, ArrowRight, Eye, EyeOff, Settings, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ShieldAlert, Sparkles, Moon, Sun, ArrowRight, Eye, EyeOff, Settings, CheckCircle2, RotateCcw, Plus, Search } from 'lucide-react';
 import type { Role, Player } from './types';
 import GrimoireBoard from './components/GrimoireBoard';
 
@@ -53,6 +53,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     demon: [] as string[],
   });
 
+  const [activePrefSelect, setActivePrefSelect] = useState<{ team: 'townsfolk' | 'outsider' | 'minion' | 'demon' } | null>(null);
+  const [prefSearchTerm, setPrefSearchTerm] = useState('');
+  const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>([]);
+  const [scriptName, setScriptName] = useState("All Roles (Default)");
+  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
+
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRetryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -73,6 +79,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     players?: Player[];
     timeOfDay?: 'night' | 'day';
     dayNumber?: number;
+    excludedRoleIds?: string[];
+    scriptName?: string;
+    customScriptRoles?: Role[];
   }
 
   const handleMessage = (data: unknown) => {
@@ -98,6 +107,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         }
       }
 
+      if (payload.excludedRoleIds) {
+        setExcludedRoleIds(payload.excludedRoleIds);
+      }
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
+
       if (state === 'waiting' || state === 'preferences' || state === 'checking') {
         setPlayers(payload.players || []);
       }
@@ -117,7 +136,23 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           }
         }
       }
+
+      if (payload.excludedRoleIds) {
+        setExcludedRoleIds(payload.excludedRoleIds);
+      }
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
       if (payload.players) {
         setPlayers(payload.players);
         setTimeOfDay(payload.timeOfDay || 'night');
@@ -221,20 +256,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setRevealed(false);
   };
 
-  // Helper to toggle a single preference selection
+  // Helper to toggle a single preference selection (max 1 character per type)
   const togglePreference = (team: 'townsfolk' | 'outsider' | 'minion' | 'demon', roleId: string) => {
     setPrefs(prev => {
       const list = prev[team];
       const isSelected = list.includes(roleId);
-      let updated: string[];
-      if (isSelected) {
-        updated = list.filter(id => id !== roleId);
-      } else {
-        // Limit to 3 preferences per category to keep it clean
-        if (list.length >= 3) return prev;
-        updated = [...list, roleId];
-      }
-      return { ...prev, [team]: updated };
+      return {
+        ...prev,
+        [team]: isSelected ? [] : [roleId]
+      };
     });
   };
 
@@ -342,56 +372,81 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         {/* 3. PREFERENCES SCREEN (Whale Bucket only) */}
         {state === 'preferences' && (
           <div className={cn(
-            "border rounded-2xl p-6 space-y-5 shadow-xl",
+            "border rounded-2xl p-6 space-y-5 shadow-xl w-full max-w-md",
             isLight ? "bg-white border-gray-200" : "bg-gray-900/60 border-gray-850"
           )}>
             <div>
               <h2 className="font-serif text-lg font-bold text-center">Submit Your Role Preferences</h2>
-              <p className="text-xs text-gray-500 text-center mt-0.5">Select up to 3 characters in each category (optional)</p>
+              <p className="text-xs text-gray-500 text-center mt-0.5">Select one character in each category (optional)</p>
             </div>
 
             {/* Render selectors for each category */}
-            {(['townsfolk', 'outsider', 'minion', 'demon'] as const).map((team) => {
-              const teamRoles = (rolesData as Role[]).filter(r => r.team === team);
-              return (
-                <div key={team} className="space-y-1.5">
-                  <label className={cn(
-                    "text-xs font-bold uppercase tracking-wider",
-                    team === 'townsfolk' && "text-clocktower-townsfolk",
-                    team === 'outsider' && "text-clocktower-outsider",
-                    team === 'minion' && "text-clocktower-minion",
-                    team === 'demon' && "text-clocktower-demon"
-                  )}>
-                    {team} ({prefs[team].length}/3 Selected)
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-950/20 rounded border border-gray-800/40">
-                    {teamRoles.map(r => {
-                      const isSelected = prefs[team].includes(r.id);
-                      return (
-                        <button
-                          key={r.id}
-                          type="button"
-                          onClick={() => togglePreference(team, r.id)}
-                          className={cn(
-                            "px-2.5 py-1 rounded text-2xs font-semibold border transition-all flex items-center gap-1",
-                            isSelected
-                              ? "bg-clocktower-blood text-white border-clocktower-blood font-bold scale-102"
-                              : isLight
-                                ? "bg-gray-100 border-gray-200 hover:bg-gray-200 text-gray-600"
-                                : "bg-gray-800 border-gray-700 hover:bg-gray-750 text-gray-300"
-                          )}
-                        >
-                          <span className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shrink-0">
-                            <img src={`/icons/${r.id}.svg`} alt={r.name} className="w-2.5 h-2.5 object-contain" />
-                          </span>
-                          <span>{r.name}</span>
-                        </button>
-                      );
-                    })}
+            <div className="space-y-3.5">
+              {(['townsfolk', 'outsider', 'minion', 'demon'] as const).map((team) => {
+                const selectedRoleId = prefs[team][0];
+                const selectedRole = selectedRoleId ? (rolesData as Role[]).find(r => r.id === selectedRoleId) : null;
+                return (
+                  <div key={team} className="space-y-1.5">
+                    <label className={cn(
+                      "text-xs font-bold uppercase tracking-wider",
+                      team === 'townsfolk' && "text-clocktower-townsfolk",
+                      team === 'outsider' && "text-clocktower-outsider",
+                      team === 'minion' && "text-clocktower-minion",
+                      team === 'demon' && "text-clocktower-demon"
+                    )}>
+                      {team} Preference
+                    </label>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePrefSelect({ team });
+                        setPrefSearchTerm('');
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all duration-200 hover:scale-[1.01]",
+                        selectedRole 
+                          ? isLight 
+                            ? "bg-white border-gray-300 shadow-sm"
+                            : "bg-gray-900 border-gray-800 shadow-sm"
+                          : isLight
+                            ? "bg-gray-50 border-dashed border-gray-300 hover:bg-gray-100 text-gray-400"
+                            : "bg-gray-950 border-dashed border-gray-800 hover:bg-gray-900/50 text-gray-500"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {selectedRole ? (
+                          <>
+                            <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 border border-gray-200 shadow-sm">
+                              <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-4 h-4 object-contain" />
+                            </span>
+                            <span className={cn(
+                              "font-bold text-sm truncate",
+                              team === 'townsfolk' && "text-clocktower-townsfolk",
+                              team === 'outsider' && "text-clocktower-outsider",
+                              team === 'minion' && "text-clocktower-minion",
+                              team === 'demon' && "text-clocktower-demon"
+                            )}>
+                              {selectedRole.name}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={16} className="shrink-0" />
+                            <span className="text-xs font-semibold">Select {team} preference...</span>
+                          </>
+                        )}
+                      </div>
+                      {selectedRole ? (
+                        <span className="text-[10px] text-gray-400 hover:underline uppercase font-bold shrink-0">Change</span>
+                      ) : (
+                        <Search size={14} className="shrink-0" />
+                      )}
+                    </button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             <button
               onClick={handlePrefsSubmit}
@@ -400,6 +455,133 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               <Sparkles size={16} />
               <span>Submit Character Preferences</span>
             </button>
+          </div>
+        )}
+
+        {/* 3b. SELECT MODAL (Whale Bucket only) */}
+        {activePrefSelect && (
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className={cn(
+              "border w-full max-w-sm rounded-2xl p-4 space-y-4 max-h-[80vh] flex flex-col shadow-2xl transition-all duration-300",
+              isLight ? "bg-white border-gray-250 text-gray-800" : "bg-gray-900 border-gray-800 text-gray-100"
+            )}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className={cn(
+                    "font-bold text-base font-serif",
+                    isLight ? "text-clocktower-night" : "text-white"
+                  )}>
+                    Select {activePrefSelect.team === 'townsfolk' ? 'Townsfolk' : activePrefSelect.team === 'outsider' ? 'Outsiders' : activePrefSelect.team === 'minion' ? 'Minions' : 'Demons'}
+                  </h3>
+                  <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                    For your {activePrefSelect.team} preference
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActivePrefSelect(null)}
+                  className="text-xs text-clocktower-blood hover:underline font-bold"
+                >
+                  Done
+                </button>
+              </div>
+
+              <div className={cn(
+                "flex items-center border rounded-lg px-2.5 text-xs py-1",
+                isLight ? "bg-gray-50 border-gray-300 focus-within:border-clocktower-blood" : "bg-gray-950 border-gray-850 focus-within:border-clocktower-blood"
+              )}>
+                <Search size={14} className="text-gray-500 mr-2 flex-shrink-0" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search character name..."
+                  className="bg-transparent flex-1 outline-none text-xs placeholder-gray-500 h-8 w-full"
+                  value={prefSearchTerm}
+                  onChange={(e) => setPrefSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className={cn(
+                "overflow-y-auto flex-1 border rounded bg-gray-955/20 divide-y pr-1",
+                isLight ? "border-gray-200 divide-gray-150" : "border-gray-855 divide-gray-800/60"
+              )}>
+                {(rolesData as Role[])
+                  .filter(r => r.team === activePrefSelect.team && !excludedRoleIds.includes(r.id) && r.name.toLowerCase().includes(prefSearchTerm.toLowerCase()))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(role => {
+                    const isSelected = prefs[activePrefSelect.team].includes(role.id);
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => {
+                          togglePreference(activePrefSelect.team, role.id);
+                          setActivePrefSelect(null);
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center",
+                          isSelected
+                            ? isLight ? "bg-red-50/50" : "bg-clocktower-blood/10"
+                            : isLight ? "hover:bg-gray-50" : "hover:bg-gray-850"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 border border-gray-100 shadow-sm">
+                            <img
+                              src={`/icons/${role.id}.svg`}
+                              alt={role.name}
+                              className="w-3.5 h-3.5 object-contain"
+                              onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                            />
+                          </span>
+                          <span className={cn(
+                            "font-bold text-xs truncate",
+                            role.team === 'townsfolk' && "text-clocktower-townsfolk",
+                            role.team === 'outsider' && "text-clocktower-outsider",
+                            role.team === 'minion' && "text-clocktower-minion",
+                            role.team === 'demon' && "text-clocktower-demon",
+                          )}>
+                            {role.name}
+                          </span>
+                        </div>
+                        {isSelected ? (
+                          <span className="text-[9px] bg-clocktower-blood/10 text-clocktower-blood border border-clocktower-blood/20 px-1.5 py-0.5 rounded font-black">
+                            ✓ SELECTED
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-gray-400 font-bold">+ SELECT</span>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <div className="flex justify-between items-center pt-2.5 border-t border-gray-250 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrefs(prev => ({ ...prev, [activePrefSelect.team]: [] }));
+                    setActivePrefSelect(null);
+                  }}
+                  className="text-xs text-gray-500 hover:text-red-500 hover:underline"
+                >
+                  Clear Selection
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const available = (rolesData as Role[]).filter(r => r.team === activePrefSelect.team);
+                    if (available.length > 0) {
+                      const randIdx = Math.floor(Math.random() * available.length);
+                      setPrefs(prev => ({ ...prev, [activePrefSelect.team]: [available[randIdx].id] }));
+                    }
+                    setActivePrefSelect(null);
+                  }}
+                  className="text-xs text-clocktower-townsfolk hover:underline font-semibold"
+                >
+                  Select Random
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -506,6 +688,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             </div>
 
             <button
+              onClick={() => setState('tracker')}
+              className="w-full bg-clocktower-blood hover:bg-red-800 text-white rounded-lg py-3 font-bold transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-black/10 hover:scale-101"
+            >
+              <Eye size={16} />
+              <span>View Synced Grimoire Tracker</span>
+            </button>
+
+            <button
               onClick={() => {
                 const clearedPlayers = players.map(p => ({
                   ...p,
@@ -522,8 +712,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   phase: 'game',
                   timeOfDay,
                   dayNumber,
-                  scriptName: "All Roles (Default)",
-                  customScriptRoles: null
+                  scriptName,
+                  customScriptRoles,
+                  code
                 }));
                 window.location.hash = '#/tracker';
               }}

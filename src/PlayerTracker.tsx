@@ -9,6 +9,7 @@ import PlayerDetailsModal from './components/PlayerDetailsModal';
 import StandardGamePhase from './components/StandardGamePhase';
 import PlayerTrackerSetupPhase from './components/PlayerTrackerSetupPhase';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
+import { useGameSocket } from './hooks/useGameSocket';
 
 type Phase = 'setup' | 'game';
 
@@ -104,6 +105,75 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [gameCode, setGameCode] = useState<string | null>(() => {
+    const saved = localStorage.getItem('player-tracker-botc-game');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.code) return parsed.code;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return sessionStorage.getItem('joined-code') || null;
+  });
+
+  const isSynced = !!gameCode;
+
+  const handleIncomingMessage = (data: unknown) => {
+    const payload = data as {
+      type: string;
+      players?: Player[];
+      timeOfDay?: 'night' | 'day';
+      dayNumber?: number;
+      scriptName?: string;
+      customScriptRoles?: Role[] | null;
+    };
+    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
+      if (payload.players) {
+        setPlayers((currentPlayers) => {
+          return payload.players!.map((sp) => {
+            const lp = currentPlayers.find(
+              (p) => p.id === sp.id || p.name.trim().toLowerCase() === sp.name.trim().toLowerCase()
+            );
+            if (lp) {
+              return {
+                ...sp,
+                // Preserve local guesses
+                roleId: lp.roleId,
+                roleIds: lp.roleIds,
+                isEvil: lp.isEvil,
+                isDrunkOrPoisoned: lp.isDrunkOrPoisoned,
+                isTheDrunk: lp.isTheDrunk,
+                isTheMarionette: lp.isTheMarionette,
+                isTheLunatic: lp.isTheLunatic,
+                isTheLilMonsta: lp.isTheLilMonsta,
+              };
+            }
+            return {
+              ...sp,
+              roleId: sp.roleId || '',
+            };
+          });
+        });
+      }
+      if (payload.timeOfDay) {
+        setTimeOfDay(payload.timeOfDay);
+      }
+      if (payload.dayNumber !== undefined) {
+        setDayNumber(payload.dayNumber);
+      }
+      if (payload.scriptName) {
+        setScriptName(payload.scriptName);
+      }
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+      }
+    }
+  };
+
+  useGameSocket(gameCode || '', handleIncomingMessage);
+
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
     setIsSearchingRole(false);
@@ -119,6 +189,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       setScriptName("All Roles (Default)");
       setCustomScriptRoles(null);
       localStorage.removeItem('player-tracker-botc-game');
+      sessionStorage.removeItem('joined-code');
+      sessionStorage.removeItem('joined-name');
+      setGameCode(null);
     }
   };
 
@@ -160,6 +233,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       dayNumber,
       customScriptRoles,
       scriptName,
+      code: gameCode || undefined,
     }));
 
     const isLightMode = theme === 'light';
@@ -172,7 +246,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     return () => {
       document.documentElement.classList.remove('theme-light');
     };
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, theme]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, theme, gameCode]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -512,6 +586,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           handleTouchMove={handleTouchMove}
           handleTouchEnd={handleTouchEnd}
           movePlayer={movePlayer}
+          isSynced={isSynced}
         />
       )}
 
@@ -540,9 +615,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           handleTouchStart={handleTouchStart}
           handleTouchMove={handleTouchMove}
           handleTouchEnd={handleTouchEnd}
-          onResetDead={resetDead}
-          onResetTime={resetTime}
+          onResetDead={isSynced ? undefined : resetDead}
+          onResetTime={isSynced ? undefined : resetTime}
           showNightOrder={false}
+          scriptName={scriptName}
+          customScriptRoles={customScriptRoles}
+          isSynced={isSynced}
         />
       )}
 
@@ -572,6 +650,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onSetModalRoleSearch={setModalRoleSearch}
           allowMultipleRoles={true}
           onUpdateRoles={updatePlayerRoles}
+          isSynced={isSynced}
         />
       )}
     </div>

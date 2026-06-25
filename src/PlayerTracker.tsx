@@ -12,6 +12,8 @@ import PlayerTrackerSetupPhase from './components/PlayerTrackerSetupPhase';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import PageLayout from './components/PageLayout';
+import DialogModal from './components/DialogModal';
+import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';
 
@@ -172,7 +174,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
     } else if (payload.type === 'storyteller_quit') {
-      alert('The Storyteller has quit the session. Reverting to local tracker.');
+      showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       const saved = localStorage.getItem('player-tracker-botc-game');
@@ -198,7 +200,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const resetGame = () => {
-    if (confirm('Are you sure you want to reset the tracker? This clears all players and settings.')) {
+    showConfirm('Are you sure you want to reset the tracker? This clears all players and settings.', () => {
       setPlayers([]);
       setPhase('setup');
       setTimeOfDay('night');
@@ -210,20 +212,20 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       sessionStorage.removeItem('joined-name');
       setGameCode(null);
       window.location.hash = '';
-    }
+    }, 'Reset Tracker');
   };
 
   const resetDead = () => {
-    if (confirm('Mark all players as alive?')) {
+    showConfirm('Mark all players as alive?', () => {
       setPlayers(prev => prev.map(p => ({ ...p, isDead: false, hasDeadVote: false })));
-    }
+    }, 'Reset Dead');
   };
 
   const resetTime = () => {
-    if (confirm('Reset back to Night 1?')) {
+    showConfirm('Reset back to Night 1?', () => {
       setDayNumber(1);
       setTimeOfDay('night');
-    }
+    }, 'Reset Time');
   };
 
   // Drag and drop states
@@ -278,15 +280,15 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   const addTravelerGamePhase = () => {
     if (!newTravelerName.trim()) {
-      alert("Please enter a traveler name.");
+      showAlert("Please enter a traveler name.");
       return;
     }
     if (!newTravelerRoleId) {
-      alert("Please select a traveler role.");
+      showAlert("Please select a traveler role.");
       return;
     }
     if (players.length >= 20) {
-      alert("Maximum players reached (20).");
+      showAlert("Maximum players reached (20).");
       return;
     }
     const newPlayer: Player = {
@@ -385,7 +387,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         setCustomScriptRoles(roles);
         setScriptName(name);
       })
-      .catch(err => alert((err as Error).message));
+      .catch(err => showAlert((err as Error).message));
   };
 
   const clearCustomScript = () => {
@@ -410,13 +412,14 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   }, [currentScriptRoles]);
 
   const isLightModeActive = theme === 'light';
+  const { dialogProps, showAlert, showConfirm } = useDialog();
 
   // Details Modal helpers
   const modalPlayer = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
   const modalRoleObj = modalPlayer ? ((rolesData as Role[]).find(r => r.id === modalPlayer.roleId) || undefined) : undefined;
   const currentIndex = selectedPlayerId ? players.findIndex(p => p.id === selectedPlayerId) : -1;
-  const prevPlayerId = currentIndex > 0 ? players[currentIndex - 1].id : null;
-  const nextPlayerId = currentIndex >= 0 && currentIndex < players.length - 1 ? players[currentIndex + 1].id : null;
+  const prevPlayerId = currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
+  const nextPlayerId = currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
 
   const filteredModalRoles = selectionRoles
     .filter(r =>
@@ -436,6 +439,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     });
 
   return (
+    <>
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
@@ -550,5 +554,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         />
       )}
     </PageLayout>
+    <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    </>
   );
 }

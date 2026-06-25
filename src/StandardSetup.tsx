@@ -15,6 +15,8 @@ import StandardRoleSelectionModal from './components/StandardRoleSelectionModal'
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import PageLayout from './components/PageLayout';
+import DialogModal from './components/DialogModal';
+import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';
 
@@ -157,13 +159,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const resetGame = async () => {
-    if (confirm('Are you sure you want to reset the game? This clears all players and settings.')) {
+  const resetGame = () => {
+    showConfirm('Are you sure you want to reset the game? This clears all players and settings.', async () => {
       if (sendMessageRef.current) {
         try {
-          await sendMessageRef.current({
-            type: 'storyteller_quit'
-          });
+          await sendMessageRef.current({ type: 'storyteller_quit' });
         } catch (e) {
           console.error('Failed to notify players on reset:', e);
         }
@@ -177,25 +177,24 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setScriptName("All Roles (Default)");
       setCustomScriptRoles(null);
       localStorage.removeItem('standard-botc-game');
-      
       const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
       localStorage.setItem('standard-botc-game-code', newCode);
       window.location.hash = '';
       setGameCode(newCode);
-    }
+    }, 'Reset Game');
   };
 
   const resetDead = () => {
-    if (confirm('Mark all players as alive?')) {
+    showConfirm('Mark all players as alive?', () => {
       setPlayers(prev => prev.map(p => ({ ...p, isDead: false, hasDeadVote: false })));
-    }
+    }, 'Reset Dead');
   };
 
   const resetTime = () => {
-    if (confirm('Reset back to Night 1?')) {
+    showConfirm('Reset back to Night 1?', () => {
       setDayNumber(1);
       setTimeOfDay('night');
-    }
+    }, 'Reset Time');
   };
 
   // Drag and drop states
@@ -355,15 +354,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const addTravelerGamePhase = () => {
     if (!newTravelerName.trim()) {
-      alert("Please enter a traveler name.");
+      showAlert("Please enter a traveler name.");
       return;
     }
     if (!newTravelerRoleId) {
-      alert("Please select a traveler role.");
+      showAlert("Please select a traveler role.");
       return;
     }
     if (players.length >= 20) {
-      alert("Maximum players reached (20).");
+      showAlert("Maximum players reached (20).");
       return;
     }
     const newPlayer: Player = {
@@ -545,7 +544,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         setCustomScriptRoles(roles);
         setScriptName(name);
       })
-      .catch(err => alert((err as Error).message));
+      .catch(err => showAlert((err as Error).message));
   };
 
   const clearCustomScript = () => {
@@ -573,11 +572,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles);
     if (!assignedPlayers) {
       const N = players.length;
-      if (N < 5) {
-        alert("Please add at least 5 players to assign roles.");
-      } else {
-        alert("The active script must contain at least some Townsfolk, Minions, and Demons.");
-      }
+      showAlert(N < 5
+        ? "Please add at least 5 players to assign roles."
+        : "The active script must contain at least some Townsfolk, Minions, and Demons.");
       return;
     }
     setPlayers(assignedPlayers);
@@ -592,6 +589,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
+  const { dialogProps, showAlert, showConfirm } = useDialog();
 
   // Modal logic details
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
@@ -617,6 +615,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
 
   return (
+    <>
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
@@ -631,7 +630,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             onClick={() => {
               const joinUrl = `${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`;
               navigator.clipboard.writeText(joinUrl);
-              alert(`Copied link to clipboard: ${joinUrl}`);
+              showAlert(`Copied link to clipboard: ${joinUrl}`, 'Copied!');
             }}
             className={cn(
               "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
@@ -789,5 +788,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         />
       )}
     </PageLayout>
+    <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    </>
   );
 }

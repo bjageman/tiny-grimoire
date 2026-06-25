@@ -6,6 +6,8 @@ import { ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, Settings, CheckCircle2,
 import type { Role, Player } from './types';
 import GrimoireBoard from './components/GrimoireBoard';
 import PageLayout from './components/PageLayout';
+import DialogModal from './components/DialogModal';
+import { useDialog } from './hooks/useDialog';
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -172,7 +174,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         }
       }
     } else if (payload.type === 'storyteller_quit') {
-      alert('The Storyteller has quit the session.');
+      showAlert('The Storyteller has quit the session.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setState('join');
@@ -275,8 +277,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   };
 
   const isLight = theme === 'light';
+  const { dialogProps, showAlert } = useDialog();
 
   return (
+    <>
     <PageLayout theme={theme} toggleTheme={toggleTheme} title="Join Game" backHref="#/">
       <div className="w-full max-w-md mx-auto">
 
@@ -791,5 +795,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         )}
       </div>
     </PageLayout>
+    <DialogModal {...dialogProps} isLightModeActive={isLight} />
+    </>
   );
 }

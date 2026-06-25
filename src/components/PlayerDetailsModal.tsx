@@ -4,6 +4,8 @@ import { cn } from '../utils/cn';
 import type { Role } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
+import DialogModal from './DialogModal';
+import { useDialog } from '../hooks/useDialog';
 
 interface Player {
   id: string;
@@ -77,6 +79,7 @@ export default function PlayerDetailsModal({
   }, []);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
+  const { dialogProps, showAlert } = useDialog();
 
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
   const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
@@ -106,6 +109,8 @@ export default function PlayerDetailsModal({
   }, [allowMultipleRoles, p.roleIds, p.roleId, p.isTheLunatic]);
 
   return (
+    <>
+    <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
     <div
       onClick={onClose}
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
@@ -121,7 +126,7 @@ export default function PlayerDetailsModal({
         )}
       >
         {/* Navigations buttons */}
-        {currentIndex > 0 && (
+        {players.length > 1 && (
           <button
             id="detail-prev-player-button"
             type="button"
@@ -132,7 +137,7 @@ export default function PlayerDetailsModal({
             <ChevronLeft size={20} />
           </button>
         )}
-        {currentIndex < players.length - 1 && (
+        {players.length > 1 && (
           <button
             id="detail-next-player-button"
             type="button"
@@ -239,7 +244,7 @@ export default function PlayerDetailsModal({
                       onUpdateRoles(p.id, currentRoles.filter(id => id !== roleId));
                     } else {
                       if (currentRoles.length >= 3) {
-                        alert("You can select up to 3 candidate characters per player.");
+                        showAlert("You can select up to 3 candidate characters per player.");
                         return;
                       }
                       onUpdateRoles(p.id, [...currentRoles, roleId]);
@@ -586,6 +591,7 @@ export default function PlayerDetailsModal({
          )}
        </div>
      </div>
+    </>
   );
 }
 

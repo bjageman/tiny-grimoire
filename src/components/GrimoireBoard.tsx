@@ -236,14 +236,15 @@ export default function GrimoireBoard({
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Controls row — above the grimoire on all screen sizes */}
-      <div id="grimoire-controls-row" className="flex justify-between items-center w-full px-4 mb-2 max-w-[450px] md:max-w-none">
+      {/* Controls + info rows share a 3-column grid so badges align under buttons */}
+      <div className="w-full px-4 mb-2 max-w-[450px] md:max-w-none grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 gap-y-1.5">
+        {/* Row 1: buttons */}
         {onResetTime ? (
           <button
             id="grimoire-reset-time-button"
             onClick={onResetTime}
             className={cn(
-              "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
@@ -254,27 +255,29 @@ export default function GrimoireBoard({
           </button>
         ) : <div />}
 
-        {!isSynced && (
-          <button
-            id="grimoire-time-toggle-button"
-            onClick={toggleTimeOfDay}
-            className={cn(
-              "px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-              isLightModeActive
-                ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
-                : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
-            )}
-          >
-            {timeOfDay === 'day' ? 'End Day' : 'End Night'}
-          </button>
-        )}
+        <div className="flex justify-center">
+          {!isSynced && (
+            <button
+              id="grimoire-time-toggle-button"
+              onClick={toggleTimeOfDay}
+              className={cn(
+                "px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+                isLightModeActive
+                  ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
+                  : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
+              )}
+            >
+              {timeOfDay === 'day' ? 'End Day' : 'End Night'}
+            </button>
+          )}
+        </div>
 
         {onResetDead ? (
           <button
             id="grimoire-reset-dead-button"
             onClick={onResetDead}
             className={cn(
-              "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
@@ -284,6 +287,31 @@ export default function GrimoireBoard({
             Reset Dead
           </button>
         ) : <div />}
+
+        {/* Row 2: info badges — mobile only */}
+        <div
+          id="grimoire-info-row"
+          className={cn(
+            "md:hidden w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
+            timeOfDay === 'day'
+              ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}
+        >
+          <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+          <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+        </div>
+
+        <div className="md:hidden" /> {/* keep center column empty */}
+
+        <div id="grimoire-alive-badge-mobile" className={cn(
+          "md:hidden w-full flex items-center justify-center px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
+          isLightModeActive
+            ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
+            : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+        )}>
+          {players.filter(p => !p.isDead).length} Alive
+        </div>
       </div>
 
       <div
@@ -298,11 +326,11 @@ export default function GrimoireBoard({
         )}
         style={{ containerType: 'size' }}
       >
-        {/* Night/Day count — upper left, changes color with day/night */}
+        {/* Night/Day count — upper left, desktop only */}
         <div
           id="grimoire-time-badge"
           className={cn(
-            "absolute top-4 left-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center",
+            "hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
@@ -312,9 +340,9 @@ export default function GrimoireBoard({
           <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
         </div>
 
-        {/* Alive count — upper right */}
+        {/* Alive count — upper right, desktop only */}
         <div id="grimoire-alive-badge" className={cn(
-          "absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
+          "hidden md:block absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
           isLightModeActive
             ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
             : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
@@ -534,7 +562,7 @@ export default function GrimoireBoard({
                     style={{
                       ...grimoireConfig.nameStyle,
                       fontSize: dynamicFontSize,
-                      textShadow: p.isDead || isLightModeActive
+                      textShadow: p.isDead
                         ? 'none'
                         : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                     }}

@@ -59,11 +59,6 @@ describe('Storyteller Reset Integration', () => {
 
   it('notifies and disconnects a joined PlayerTracker when storyteller resets the game', async () => {
     window.location.hash = '#/standard';
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    let codeAtAlert: string | null = null;
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {
-      codeAtAlert = localStorage.getItem('standard-botc-game-code');
-    });
 
     // 1. Render the Storyteller setup page to generate the game session
     const { container: storytellerContainer, unmount: unmountStoryteller } = render(
@@ -89,46 +84,35 @@ describe('Storyteller Reset Integration', () => {
       tracker.getByText(/seating arrangement and player list are synced/i)
     ).toBeInTheDocument();
 
-    // 4. Trigger reset game on the Storyteller page
+    // 4. Trigger reset game on the Storyteller page — click reset then confirm the modal
     const resetButton = storytellerContainer.querySelector('#reset-game-button');
     expect(resetButton).not.toBeNull();
 
+    fireEvent.click(resetButton!);
+
+    // Confirm modal should appear — click to proceed with reset
+    const confirmButton = storytellerContainer.querySelector('#dialog-confirm-button');
+    expect(confirmButton).not.toBeNull();
+
     await act(async () => {
-      fireEvent.click(resetButton!);
+      fireEvent.click(confirmButton!);
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
-
-    // Verify confirm was called
-    expect(confirmSpy).toHaveBeenCalled();
 
     // Verify storyteller hash is reset to home (main menu)
     expect(window.location.hash).toBe('');
 
-    // Verify player client received 'storyteller_quit' message via mock socket, showed the alert,
-    // and reverted the UI back to local tracker mode
-    expect(alertSpy).toHaveBeenCalledWith(
-      'The Storyteller has quit the session. Reverting to local tracker.'
-    );
-    // Verify that the code at the alert moment was still the old code (awaited correctly)
-    expect(codeAtAlert).toBe(gameCode);
-
-    // Verify the seating arrangement sync notice is gone and player list input is enabled
+    // Verify player client received 'storyteller_quit' message and reverted UI
+    expect(tracker.getByText('The Storyteller has quit the session. Reverting to local tracker.')).toBeInTheDocument();
     expect(tracker.queryByText(/seating arrangement and player list are synced/i)).toBeNull();
     expect(tracker.getByPlaceholderText('Enter player name in seating order...')).toBeInTheDocument();
 
     unmountStoryteller();
     unmountTracker();
-    confirmSpy.mockRestore();
-    alertSpy.mockRestore();
   });
 
   it('notifies and disconnects a joined JoinPage client when storyteller resets the game', async () => {
     window.location.hash = '#/standard';
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    let codeAtAlert: string | null = null;
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {
-      codeAtAlert = localStorage.getItem('standard-botc-game-code');
-    });
 
     // 1. Render Storyteller to get game session
     const { container: storytellerContainer, unmount: unmountStoryteller } = render(
@@ -151,27 +135,29 @@ describe('Storyteller Reset Integration', () => {
     // JoinPage should be in the waiting room / waiting state
     expect(joinPage.getByText(new RegExp(`Joined Room ${gameCode}`, 'i'))).toBeInTheDocument();
 
-    // 4. Trigger reset on Storyteller setup page
+    // 4. Trigger reset on Storyteller setup page — click reset then confirm the modal
     const resetButton = storytellerContainer.querySelector('#reset-game-button');
     expect(resetButton).not.toBeNull();
 
+    fireEvent.click(resetButton!);
+
+    // Confirm modal should appear — click to proceed with reset
+    const confirmButton = storytellerContainer.querySelector('#dialog-confirm-button');
+    expect(confirmButton).not.toBeNull();
+
     await act(async () => {
-      fireEvent.click(resetButton!);
+      fireEvent.click(confirmButton!);
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
 
     // Verify storyteller hash is reset to home (main menu)
     expect(window.location.hash).toBe('');
 
-    // Verify JoinPage was notified, showed alert, and reverted back to the join screen
-    expect(alertSpy).toHaveBeenCalledWith('The Storyteller has quit the session.');
-    // Verify that the code at the alert moment was still the old code (awaited correctly)
-    expect(codeAtAlert).toBe(gameCode);
+    // Verify JoinPage was notified and reverted back to the join screen
+    expect(joinPage.getByText('The Storyteller has quit the session.')).toBeInTheDocument();
     expect(joinPage.getByPlaceholderText('e.g. KVTQ')).toBeInTheDocument();
 
     unmountStoryteller();
     unmountJoinPage();
-    confirmSpy.mockRestore();
-    alertSpy.mockRestore();
   });
 });

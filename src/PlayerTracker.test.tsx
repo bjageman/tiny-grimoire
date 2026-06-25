@@ -55,8 +55,8 @@ describe('PlayerTracker', () => {
     const startButton = screen.getByText('Start Game Tracker');
     fireEvent.click(startButton);
 
-    // Verify we are in game phase
-    expect(screen.getByText(/night 1/i)).toBeInTheDocument();
+    // Verify we are in game phase (badge appears in both mobile row and desktop grimoire)
+    expect(screen.getAllByText(/night 1/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText('Alice')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Bob')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Charlie')[0]).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('PlayerTracker', () => {
     });
 
     // Verify Bob is dead
-    expect(screen.getByText(/day 2/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/day 2/i)[0]).toBeInTheDocument();
     
     // Open Bob details and verify dead/alive status and vote toggles are disabled
     const bobRow = document.getElementById('ledger-player-2');
@@ -142,45 +142,37 @@ describe('PlayerTracker', () => {
 
   it('reverts to local tracker when storyteller_quit message is received', () => {
     sessionStorage.setItem('joined-code', 'TEST');
-    
-    // Mock alert
-    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    
+
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
-    // Synced notice should be visible
     expect(screen.getByText(/seating arrangement and player list are synced/i)).toBeInTheDocument();
 
-    // Send storyteller_quit message
     act(() => {
-      mockOnMessageCallback({
-        type: 'storyteller_quit'
-      });
+      mockOnMessageCallback({ type: 'storyteller_quit' });
     });
 
-    // Alert should be called
-    expect(alertMock).toHaveBeenCalledWith('The Storyteller has quit the session. Reverting to local tracker.');
+    // Dialog modal should show the message
+    expect(screen.getByText('The Storyteller has quit the session. Reverting to local tracker.')).toBeInTheDocument();
 
     // Synced notice should disappear and input field should show again
     expect(screen.getByPlaceholderText('Enter player name in seating order...')).toBeInTheDocument();
     expect(screen.queryByText(/seating arrangement and player list are synced/i)).toBeNull();
-    
-    alertMock.mockRestore();
   });
 
   it('resets the tracker and returns to the main menu when clicking the reset button', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     window.location.hash = '#/tracker';
 
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
-    // Click the reset button
     const resetButton = screen.getByTitle('Reset game');
     fireEvent.click(resetButton);
 
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(window.location.hash).toBe('');
+    // Confirm modal should appear
+    expect(screen.getByText('Are you sure you want to reset the tracker? This clears all players and settings.')).toBeInTheDocument();
 
-    confirmSpy.mockRestore();
+    // Click Confirm
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(window.location.hash).toBe('');
   });
 });

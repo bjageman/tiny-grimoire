@@ -38,13 +38,13 @@ body {
 }
 
 /* All input fields use white background + black text for readability in both modes */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *):not(#script-search-input),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *):not(#script-search-input):not(#reminder-search-input),
 select:not(#grimoire-circle-board *),
 textarea:not(#grimoire-circle-board *) {
   background-color: white !important;
   color: #111827 !important;
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *):not(#script-search-input)::placeholder,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *):not(#script-search-input):not(#reminder-search-input)::placeholder,
 textarea:not(#grimoire-circle-board *)::placeholder {
   color: #9ca3af !important;
 }

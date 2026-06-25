@@ -1,37 +1,49 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { CSSProperties } from 'react';
-import type { Player, Role } from '../types';
+import type { Player, Role, PlacedReminder } from '../types';
 import { cn } from '../utils/cn';
+import ReminderPickerModal from './ReminderPickerModal';
+import ReminderTokenModal from './ReminderTokenModal';
 
 interface GrimoireBoardProps {
   players: Player[];
   timeOfDay: 'night' | 'day';
   dayNumber: number;
-  toggleTimeOfDay: () => void;
+  toggleTimeOfDay?: () => void;
   onSelectPlayer: (playerId: string) => void;
   rolesData: Role[];
   onResetDead?: () => void;
   onResetTime?: () => void;
   isSynced?: boolean;
   isLightModeActive?: boolean;
+  reminderTokens?: PlacedReminder[];
+  onAddReminder?: (targetPlayerId: string, sourceCharId: string, text: string) => void;
+  onRemoveReminder?: (reminderId: string) => void;
+  onRemoveAllReminders?: () => void;
 }
 
 export default function GrimoireBoard({
   players,
   timeOfDay,
   dayNumber,
-  toggleTimeOfDay,
   onSelectPlayer,
   rolesData,
   onResetDead,
   onResetTime,
   isSynced = false,
   isLightModeActive = false,
+  reminderTokens = [],
+  onAddReminder,
+  onRemoveReminder,
+  onRemoveAllReminders,
 }: GrimoireBoardProps) {
   const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
   const [playerTopIndex, setPlayerTopIndex] = useState<Record<string, number>>({});
   const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
+  const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +74,22 @@ export default function GrimoireBoard({
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (pickerPlayerId !== null || selectedReminder !== null) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [pickerPlayerId, selectedReminder]);
+
+  const activeCharIds = useMemo(() => {
+    const ids = new Set<string>();
+    players.forEach(p => {
+      if (p.roleId) ids.add(p.roleId);
+      p.roleIds?.forEach(id => ids.add(id));
+    });
+    return [...ids];
+  }, [players]);
 
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
@@ -235,6 +263,7 @@ export default function GrimoireBoard({
   }, [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect]);
 
   return (
+    <>
     <div className="w-full flex flex-col items-center">
       {/* Controls + info rows share a 3-column grid so badges align under buttons */}
       <div className="w-full px-4 mb-2 max-w-[450px] md:max-w-none grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 gap-y-1.5">
@@ -244,7 +273,7 @@ export default function GrimoireBoard({
             id="grimoire-reset-time-button"
             onClick={onResetTime}
             className={cn(
-              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
@@ -256,18 +285,18 @@ export default function GrimoireBoard({
         ) : <div />}
 
         <div className="flex justify-center">
-          {!isSynced && (
+          {!isSynced && onRemoveAllReminders && reminderTokens.length > 0 && (
             <button
-              id="grimoire-time-toggle-button"
-              onClick={toggleTimeOfDay}
+              id="grimoire-reset-reminders-button"
+              onClick={onRemoveAllReminders}
               className={cn(
-                "px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+                "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
                 isLightModeActive
-                  ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
-                  : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
+                  ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
               )}
             >
-              {timeOfDay === 'day' ? 'End Day' : 'End Night'}
+              Reset Reminders
             </button>
           )}
         </div>
@@ -277,7 +306,7 @@ export default function GrimoireBoard({
             id="grimoire-reset-dead-button"
             onClick={onResetDead}
             className={cn(
-              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
@@ -390,6 +419,13 @@ export default function GrimoireBoard({
 
           const isFanned = fannedPlayerId === p.id;
 
+          const dx = 50 - leftPos;
+          const dy = 50 - topPos;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const inwardDx = dist > 0 ? dx / dist : 0;
+          const inwardDy = dist > 0 ? dy / dist : 0;
+          const playerReminders = reminderTokens.filter(r => r.targetPlayerId === p.id);
+
           return (
             <div
               key={p.id}
@@ -419,6 +455,74 @@ export default function GrimoireBoard({
               }}
               className="hover:z-50 group"
             >
+              {/* "+" add-reminder — at anchor when empty, shifted inward when reminders exist */}
+              {!isSynced && onAddReminder && playerReminders.length < 5 && (
+                <button
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% + ${(inwardDx * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
+                    top: `calc(50% + ${(inwardDy * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    width: '23%',
+                    height: '23%',
+                    zIndex: 55,
+                  }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPickerPlayerId(p.id);
+                  }}
+                  className="rounded-full bg-gray-400/70 text-white font-bold flex items-center justify-center border border-gray-500/50 shadow hover:bg-gray-500/80 active:bg-gray-600 transition-colors leading-none text-[10px]"
+                  title={`Add reminder to ${p.name}`}
+                >
+                  +
+                </button>
+              )}
+
+              {/* Placed reminder token circles — last at anchor, earlier ones arc around it */}
+              {playerReminders.map((reminder, ri) => {
+                const n = playerReminders.length;
+                const isLast = ri === n - 1;
+                const arcN = n - 1;
+                const totalAngle = Math.PI;
+                const startAngle = -totalAngle / 2;
+                const theta = startAngle + (arcN > 1 ? (ri / (arcN - 1)) * totalAngle : 0);
+                const arcRadius = 30;
+                const rx = inwardDx * Math.cos(theta) - inwardDy * Math.sin(theta);
+                const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
+                const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
+                const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
+
+                return (
+                <button
+                  key={reminder.id}
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% + ${reminderLeft.toFixed(1)}%)`,
+                    top: `calc(50% + ${reminderTop.toFixed(1)}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    width: '23%',
+                    height: '23%',
+                    zIndex: 55,
+                  }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReminder(reminder);
+                  }}
+                  className="rounded-full bg-gray-200 border-2 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-150 hover:shadow-md hover:z-[60]"
+                  title={reminder.text}
+                >
+                  <img
+                    src={`/icons/${reminder.sourceCharId}.svg`}
+                    alt={reminder.text}
+                    className="w-full h-full object-contain opacity-80"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </button>
+                );
+              })}
+
               <div className="relative flex flex-col items-center">
                 <button
                   id={`grimoire-player-${p.id}`}
@@ -643,6 +747,37 @@ export default function GrimoireBoard({
           );
         })}
       </div>
+
     </div>
+
+    {pickerPlayerId && createPortal(
+      <ReminderPickerModal
+        targetPlayerName={players.find(p => p.id === pickerPlayerId)?.name ?? ''}
+        activeRoleIds={activeCharIds}
+        rolesData={rolesData}
+        onSelect={(sourceCharId, text) => {
+          onAddReminder?.(pickerPlayerId, sourceCharId, text);
+          setPickerPlayerId(null);
+        }}
+        onClose={() => setPickerPlayerId(null)}
+        isLightModeActive={isLightModeActive}
+      />,
+      document.body
+    )}
+
+    {selectedReminder && createPortal(
+      <ReminderTokenModal
+        reminder={selectedReminder}
+        rolesData={rolesData}
+        onRemove={() => {
+          onRemoveReminder?.(selectedReminder.id);
+          setSelectedReminder(null);
+        }}
+        onClose={() => setSelectedReminder(null)}
+        isLightModeActive={isLightModeActive}
+      />,
+      document.body
+    )}
+    </>
   );
 }

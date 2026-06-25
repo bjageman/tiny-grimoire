@@ -190,6 +190,17 @@ export default function NightOrderWidget({
 
         {/* Controls */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Current day/night label */}
+          <div className={cn(
+            "flex items-center gap-1 px-2.5 py-1 rounded-md text-[8.5px] font-bold tracking-wider uppercase border select-none",
+            timeOfDay === 'day'
+              ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}>
+            <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+            <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+          </div>
+
           {/* Tabs */}
           <div className="flex bg-gray-200 dark:bg-gray-900 rounded-lg p-0.5 text-xs font-semibold">
             <button

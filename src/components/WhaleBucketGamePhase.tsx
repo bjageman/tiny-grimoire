@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { GripVertical, X, Search, Scroll } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../WhaleBucket';
-import type { Role } from '../types';
+import type { Role, PlacedReminder } from '../types';
 import { getScriptStats } from '../utils/scriptUtils';
 import rolesData from '../official_roles.json';
 import allRolesData from '../roles.json';
@@ -65,6 +65,18 @@ export default function WhaleBucketGamePhase({
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [selectedRoleForInfo, setSelectedRoleForInfo] = useState<Role | null>(null);
+  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>([]);
+
+  const handleAddReminder = (targetPlayerId: string, sourceCharId: string, text: string) => {
+    const id = typeof crypto?.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
+  };
+  const handleRemoveReminder = (reminderId: string) => {
+    setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
+  };
+  const handleRemoveAllReminders = () => setReminderTokens([]);
 
   const scriptName = "All Roles (Default)";
   const customScriptRoles = null;
@@ -132,20 +144,39 @@ export default function WhaleBucketGamePhase({
             players={players}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
-            toggleTimeOfDay={toggleTimeOfDay}
             onSelectPlayer={setSelectedPlayerId}
             rolesData={rolesData as Role[]}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
             isLightModeActive={isLightModeActive}
+            reminderTokens={reminderTokens}
+            onAddReminder={handleAddReminder}
+            onRemoveReminder={handleRemoveReminder}
+            onRemoveAllReminders={handleRemoveAllReminders}
           />
         </div>
-        <NightOrderWidget
-          players={players}
-          timeOfDay={timeOfDay}
-          dayNumber={dayNumber}
-          isLightModeActive={isLightModeActive}
-        />
+        <div className="!mt-0 space-y-2">
+          <div className="flex justify-center">
+            <button
+              id="grimoire-time-toggle-button"
+              onClick={toggleTimeOfDay}
+              className={cn(
+                "px-10 py-2 rounded-md text-xs md:text-sm font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+                isLightModeActive
+                  ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
+                  : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
+              )}
+            >
+              {timeOfDay === 'day' ? 'End Day' : 'End Night'}
+            </button>
+          </div>
+          <NightOrderWidget
+            players={players}
+            timeOfDay={timeOfDay}
+            dayNumber={dayNumber}
+            isLightModeActive={isLightModeActive}
+          />
+        </div>
       </div>
 
       {/* Column 2: Ledger & Controls */}

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GripVertical, Search, X, Scroll } from 'lucide-react';
 import { cn } from '../utils/cn';
-import type { Player, Role } from '../types';
+import type { Player, Role, PlacedReminder } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 import { getScriptStats } from '../utils/scriptUtils';
@@ -57,6 +57,18 @@ export default function StandardGamePhase({
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [selectedRoleForInfo, setSelectedRoleForInfo] = useState<Role | null>(null);
+  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>([]);
+
+  const handleAddReminder = (targetPlayerId: string, sourceCharId: string, text: string) => {
+    const id = typeof crypto?.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
+  };
+  const handleRemoveReminder = (reminderId: string) => {
+    setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
+  };
+  const handleRemoveAllReminders = () => setReminderTokens([]);
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
@@ -120,23 +132,44 @@ export default function StandardGamePhase({
             players={players}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
-            toggleTimeOfDay={toggleTimeOfDay}
             onSelectPlayer={setSelectedPlayerId}
             rolesData={selectionRoles}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
             isSynced={isSynced}
             isLightModeActive={isLightModeActive}
+            reminderTokens={reminderTokens}
+            onAddReminder={isSynced ? undefined : handleAddReminder}
+            onRemoveReminder={isSynced ? undefined : handleRemoveReminder}
+            onRemoveAllReminders={isSynced ? undefined : handleRemoveAllReminders}
           />
         </div>
-        {showNightOrder && (
-          <NightOrderWidget
-            players={players}
-            timeOfDay={timeOfDay}
-            dayNumber={dayNumber}
-            isLightModeActive={isLightModeActive}
-          />
-        )}
+        <div className="!mt-0 space-y-2">
+          {!isSynced && (
+            <div className="flex justify-center">
+              <button
+                id="grimoire-time-toggle-button"
+                onClick={toggleTimeOfDay}
+                className={cn(
+                  "px-10 py-2 rounded-md text-xs md:text-sm font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+                  isLightModeActive
+                    ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
+                    : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
+                )}
+              >
+                {timeOfDay === 'day' ? 'End Day' : 'End Night'}
+              </button>
+            </div>
+          )}
+          {showNightOrder && (
+            <NightOrderWidget
+              players={players}
+              timeOfDay={timeOfDay}
+              dayNumber={dayNumber}
+              isLightModeActive={isLightModeActive}
+            />
+          )}
+        </div>
       </div>
 
       {/* Column 2: Controls */}

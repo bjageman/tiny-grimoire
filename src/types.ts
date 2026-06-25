@@ -29,6 +29,13 @@ export interface Player {
   hasDeadVote?: boolean;
 }
 
+export interface PlacedReminder {
+  id: string;
+  sourceCharId: string;
+  text: string;
+  targetPlayerId: string;
+}
+
 export interface AssignmentResult {
   player: Player;
   role: Role;

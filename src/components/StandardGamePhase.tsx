@@ -104,6 +104,13 @@ export default function StandardGamePhase({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isScriptModalOpen, selectedRoleForInfo]);
 
+  useEffect(() => {
+    if (isScriptModalOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isScriptModalOpen]);
+
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
       {/* Column 1: Board & Night Order */}
@@ -381,17 +388,13 @@ export default function StandardGamePhase({
             </div>
 
             {/* Search Input */}
-            <div className={cn(
-              "flex items-center rounded-lg px-3 py-2 text-sm mb-4 border transition-colors",
-              isLightModeActive 
-                ? "bg-white border-gray-300 focus-within:border-clocktower-blood" 
-                : "bg-gray-955 border-gray-800 focus-within:border-clocktower-blood"
-            )}>
+            <div className="flex items-center rounded-lg px-3 py-2 text-sm mb-4 border transition-colors bg-white border-gray-300 focus-within:border-clocktower-blood">
               <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
               <input
+                id="script-search-input"
                 type="text"
                 placeholder="Search character by name or type..."
-                className="bg-transparent flex-1 outline-none text-xs placeholder-gray-500 w-full"
+                className="bg-transparent flex-1 outline-none text-xs text-gray-900 placeholder-gray-400 w-full"
                 value={modalSearchTerm}
                 onChange={(e) => setModalSearchTerm(e.target.value)}
               />

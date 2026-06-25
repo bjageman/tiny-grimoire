@@ -86,6 +86,13 @@ export default function WhaleBucketGamePhase({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isScriptModalOpen, selectedRoleForInfo]);
 
+  useEffect(() => {
+    if (isScriptModalOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isScriptModalOpen]);
+
   const sortedRoles = useMemo(() => {
     const roles = [...(rolesData as Role[])];
     // Include travelers that are active in the grimoire
@@ -393,17 +400,13 @@ export default function WhaleBucketGamePhase({
             </div>
 
             {/* Search Input */}
-            <div className={cn(
-              "flex items-center rounded-lg px-3 py-2 text-sm mb-4 border transition-colors",
-              isLightModeActive 
-                ? "bg-white border-gray-300 focus-within:border-clocktower-blood" 
-                : "bg-gray-955 border-gray-800 focus-within:border-clocktower-blood"
-            )}>
+            <div className="flex items-center rounded-lg px-3 py-2 text-sm mb-4 border transition-colors bg-white border-gray-300 focus-within:border-clocktower-blood">
               <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
               <input
+                id="script-search-input"
                 type="text"
                 placeholder="Search character by name or type..."
-                className="bg-transparent flex-1 outline-none text-xs placeholder-gray-500 w-full"
+                className="bg-transparent flex-1 outline-none text-xs text-gray-900 placeholder-gray-400 w-full"
                 value={modalSearchTerm}
                 onChange={(e) => setModalSearchTerm(e.target.value)}
               />

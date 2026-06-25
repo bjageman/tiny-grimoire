@@ -16,7 +16,21 @@ export default {
           minion: '#ef4444',
           demon: '#7f1d1d',
           traveler: '#a855f7',
-        }
+        },
+        // Intermediate gray shades not in Tailwind's default palette
+        gray: {
+          150: '#eceef1',
+          250: '#dde0e7',
+          505: '#677080',
+          550: '#5c6575',
+          555: '#5b6474',
+          650: '#424b5a',
+          655: '#414a59',
+          750: '#2d3748',
+          850: '#161d2b',
+          855: '#151b29',
+          955: '#020610',
+        },
       }
     },
   },

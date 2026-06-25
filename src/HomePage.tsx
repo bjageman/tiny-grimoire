@@ -12,9 +12,10 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
 
   return (
     <PageLayout theme={theme} toggleTheme={toggleTheme} title="BOTC Grimoire">
-      <div className="w-full max-w-md mx-auto space-y-4">
+      <div id="home-nav" className="w-full max-w-md mx-auto space-y-4">
 
         <a
+          id="home-join-link"
           href="#/join"
           className={cn(
             "block border rounded-lg p-6 transition-all group cursor-pointer text-center",
@@ -32,6 +33,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
         </a>
 
         <a
+          id="home-host-link"
           href="#/host"
           className={cn(
             "block border rounded-lg p-6 transition-all group cursor-pointer text-center",
@@ -49,6 +51,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
         </a>
 
         <a
+          id="home-tracker-link"
           href="#/tracker"
           className={cn(
             "block border rounded-lg p-6 transition-all group cursor-pointer text-center",

@@ -13,6 +13,7 @@ interface GrimoireBoardProps {
   onResetDead?: () => void;
   onResetTime?: () => void;
   isSynced?: boolean;
+  isLightModeActive?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -25,6 +26,7 @@ export default function GrimoireBoard({
   onResetDead,
   onResetTime,
   isSynced = false,
+  isLightModeActive = false,
 }: GrimoireBoardProps) {
   const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
   const [playerTopIndex, setPlayerTopIndex] = useState<Record<string, number>>({});
@@ -234,15 +236,16 @@ export default function GrimoireBoard({
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Mobile Reset Buttons Row */}
-      <div className="flex justify-between w-full px-4 md:hidden mb-2 max-w-[450px]">
+      {/* Controls row — above the grimoire on all screen sizes */}
+      <div id="grimoire-controls-row" className="flex justify-between items-center w-full px-4 mb-2 max-w-[450px] md:max-w-none">
         {onResetTime ? (
           <button
+            id="grimoire-reset-time-button"
             onClick={onResetTime}
             className={cn(
               "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-              timeOfDay === 'day'
-                ? "bg-white border-gray-300 text-gray-750 hover:bg-gray-50 active:bg-gray-100"
+              isLightModeActive
+                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
             )}
             title="Reset back to Night 1"
@@ -251,13 +254,29 @@ export default function GrimoireBoard({
           </button>
         ) : <div />}
 
+        {!isSynced && (
+          <button
+            id="grimoire-time-toggle-button"
+            onClick={toggleTimeOfDay}
+            className={cn(
+              "px-4 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+              isLightModeActive
+                ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
+                : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
+            )}
+          >
+            {timeOfDay === 'day' ? 'End Day' : 'End Night'}
+          </button>
+        )}
+
         {onResetDead ? (
           <button
+            id="grimoire-reset-dead-button"
             onClick={onResetDead}
             className={cn(
               "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-              timeOfDay === 'day'
-                ? "bg-white border-gray-300 text-gray-750 hover:bg-gray-50 active:bg-gray-100"
+              isLightModeActive
+                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
             )}
             title="Mark everyone as alive"
@@ -271,71 +290,38 @@ export default function GrimoireBoard({
         id="grimoire-circle-board"
         ref={boardRef}
         className={cn(
-          "relative border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto transition-colors duration-300",
-          timeOfDay === 'day'
-            ? "bg-[#f5f3eb] border-[#d4d4d8] shadow-gray-200/50"
+          "relative border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto",
+          isLightModeActive
+            ? "bg-[rgb(245_243_235)] border-[#d4d4d8] shadow-gray-200/50"
             : "bg-[#141416] border-[#27272a] shadow-black/45",
           grimoireConfig.boardClass
         )}
         style={{ containerType: 'size' }}
       >
-        {onResetTime && (
-          <button
-            onClick={onResetTime}
-            className={cn(
-              "hidden md:block absolute top-4 left-4 z-30 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-              timeOfDay === 'day'
-                ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46] hover:bg-[#ffffff] hover:text-[#18181b]"
-                : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#f4f4f5]"
-            )}
-            title="Reset back to Night 1"
-          >
-            Reset Time
-          </button>
-        )}
-
-        {onResetDead && (
-          <button
-            onClick={onResetDead}
-            className={cn(
-              "hidden md:block absolute top-4 right-4 z-30 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-              timeOfDay === 'day'
-                ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46] hover:bg-[#ffffff] hover:text-[#18181b]"
-                : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#f4f4f5]"
-            )}
-            title="Mark everyone as alive"
-          >
-            Reset Dead
-          </button>
-        )}
-        <button
-          id="grimoire-time-toggle-button"
-          onClick={isSynced ? undefined : toggleTimeOfDay}
-          disabled={isSynced}
-          style={grimoireConfig.centerBtnStyle}
+        {/* Night/Day count — upper left, changes color with day/night */}
+        <div
+          id="grimoire-time-badge"
           className={cn(
-            "absolute rounded-full border flex flex-col items-center justify-center z-20 select-none shadow-md",
-            !isSynced && "transition-all cursor-pointer",
-            isSynced && "cursor-default opacity-90",
+            "absolute top-4 left-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center",
             timeOfDay === 'day'
-              ? "bg-[#fefce8] border-[#fef08a] text-[#854d0e]" + (!isSynced ? " hover:bg-[#fef9c3]" : "")
-              : "bg-[#1a1a1a]/80 border-[#8b0000]/30 text-[#f4e4bc]" + (!isSynced ? " hover:bg-[#27272a]" : "")
+              ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
-          title={isSynced ? `Synced from Storyteller (Day ${dayNumber})` : "Click to toggle Day/Night"}
         >
-          <span
-            style={grimoireConfig.centerText1Style}
-            className="font-bold font-mono uppercase tracking-wide"
-          >
-            {timeOfDay} {dayNumber}
-          </span>
-          <span
-            style={grimoireConfig.centerText2Style}
-            className="font-semibold font-sans uppercase tracking-widest mt-0.5 opacity-80"
-          >
-            {players.filter(p => !p.isDead).length} Alive
-          </span>
-        </button>
+          <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+          <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+        </div>
+
+        {/* Alive count — upper right */}
+        <div id="grimoire-alive-badge" className={cn(
+          "absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
+          isLightModeActive
+            ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
+            : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+        )}>
+          {players.filter(p => !p.isDead).length} Alive
+        </div>
+
 
         {players.map((p, index) => {
           const angle = evenAngles[index] !== undefined ? evenAngles[index] : 0;
@@ -548,7 +534,7 @@ export default function GrimoireBoard({
                     style={{
                       ...grimoireConfig.nameStyle,
                       fontSize: dynamicFontSize,
-                      textShadow: p.isDead
+                      textShadow: p.isDead || isLightModeActive
                         ? 'none'
                         : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                     }}

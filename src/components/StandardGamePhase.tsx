@@ -119,6 +119,7 @@ export default function StandardGamePhase({
             onResetDead={onResetDead}
             onResetTime={onResetTime}
             isSynced={isSynced}
+            isLightModeActive={isLightModeActive}
           />
         </div>
         {showNightOrder && (

@@ -37,6 +37,18 @@ body {
   color: #1a1a1a !important;
 }
 
+/* All input fields use white background + black text for readability in both modes */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *),
+select:not(#grimoire-circle-board *),
+textarea:not(#grimoire-circle-board *) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not(#grimoire-circle-board *)::placeholder,
+textarea:not(#grimoire-circle-board *)::placeholder {
+  color: #9ca3af !important;
+}
+
 /* Overrides search inputs & form text boxes for readable parchment styles */
 :root.theme-light input[type="text"]:not(#grimoire-circle-board *),
 :root.theme-light input[type="search"]:not(#grimoire-circle-board *) {

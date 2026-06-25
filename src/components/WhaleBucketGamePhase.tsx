@@ -130,6 +130,7 @@ export default function WhaleBucketGamePhase({
             rolesData={rolesData as Role[]}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
+            isLightModeActive={isLightModeActive}
           />
         </div>
         <NightOrderWidget

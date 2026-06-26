@@ -45,6 +45,9 @@ interface Props {
   travelerCardTitle?: string;
   demonBluffs?: string[];
   onUpdateDemonBluffs?: (bluffs: string[]) => void;
+  gameLog?: string[];
+  onDownloadLog?: () => void;
+  onDeclareWinner?: (team: 'good' | 'evil') => void;
 }
 
 export default function GamePhase({
@@ -64,6 +67,9 @@ export default function GamePhase({
   travelerCardTitle = 'Add Traveler',
   demonBluffs = [],
   onUpdateDemonBluffs,
+  gameLog,
+  onDownloadLog,
+  onDeclareWinner,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -318,6 +324,37 @@ export default function GamePhase({
           </div>
         )}
 
+        {/* Declare Winner */}
+        {!isSynced && onDeclareWinner && (
+          <div className={cn(
+            'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
+            isLightModeActive
+              ? 'bg-white/50 border-gray-300'
+              : 'bg-gray-900/40 border-gray-800/80'
+          )}>
+            <h4 className={cn(
+              'text-[10px] uppercase font-bold tracking-wider',
+              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
+            )}>Declare Winner</h4>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onDeclareWinner('good')}
+                className="flex-1 py-2 rounded text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+              >
+                🌟 Good Wins
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeclareWinner('evil')}
+                className="flex-1 py-2 rounded text-xs font-bold text-white bg-red-800 hover:bg-red-700 transition-colors"
+              >
+                😈 Evil Wins
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Add Traveler */}
         {!isSynced && (
           <div className={cn(
@@ -485,6 +522,38 @@ export default function GamePhase({
             })}
           </div>
         </div>
+
+        {/* Game Log */}
+        {!isSynced && gameLog && gameLog.length > 0 && onDownloadLog && (
+          <div className={cn(
+            'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
+            isLightModeActive
+              ? 'bg-white/50 border-gray-300'
+              : 'bg-gray-900/40 border-gray-800/80'
+          )}>
+            <div className="flex items-center justify-between">
+              <h4 className={cn(
+                'text-[10px] uppercase font-bold tracking-wider',
+                isLightModeActive ? 'text-gray-600' : 'text-gray-500'
+              )}>Game Log</h4>
+              <button
+                type="button"
+                onClick={onDownloadLog}
+                className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+              >
+                Download
+              </button>
+            </div>
+            <div className={cn(
+              'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
+              isLightModeActive ? 'text-gray-700' : 'text-gray-400'
+            )}>
+              {gameLog.map((entry, i) => (
+                <p key={i} className="leading-relaxed whitespace-pre-wrap">{entry}</p>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <ScriptCharactersModal

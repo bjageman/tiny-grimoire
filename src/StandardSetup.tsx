@@ -149,6 +149,32 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
     return [];
   });
+  const [gameLog, setGameLog] = useState<string[]>(() => {
+    const saved = localStorage.getItem('standard-botc-game');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.gameLog || [];
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
+  // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
+  const timeOfDayRef = useRef(timeOfDay);
+  const dayNumberRef = useRef(dayNumber);
+  useEffect(() => { timeOfDayRef.current = timeOfDay; }, [timeOfDay]);
+  useEffect(() => { dayNumberRef.current = dayNumber; }, [dayNumber]);
+
+  const addLogEntry = useCallback((message: string, tod?: 'day' | 'night', dn?: number) => {
+    const useTod = tod ?? timeOfDayRef.current;
+    const useDn = dn ?? dayNumberRef.current;
+    const label = useTod === 'night' ? `Night ${useDn}` : `Day ${useDn}`;
+    const clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
+  }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
@@ -194,6 +220,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setScriptName("All Roles");
       setCustomScriptRoles(null);
       setDemonBluffs([]);
+      setGameLog([]);
       localStorage.removeItem('standard-botc-game');
       const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
       localStorage.setItem('standard-botc-game-code', newCode);
@@ -358,15 +385,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       scriptName,
       isLilMonstaGame,
       demonBluffs,
+      gameLog,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, gameLog]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
       setTimeOfDay('day');
+      addLogEntry(`Advanced to Day ${dayNumber}`, 'day', dayNumber);
     } else {
       setTimeOfDay('night');
       setDayNumber(prev => prev + 1);
+      addLogEntry(`Advanced to Night ${dayNumber + 1}`, 'night', dayNumber + 1);
     }
   };
 
@@ -409,6 +439,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     };
     setPlayers([newPlayer, ...players]);
     setNewTravelerName('');
+    const travelerRole = (rolesData as Role[]).find(r => r.id === newTravelerRoleId);
+    addLogEntry(`${newTravelerName.trim()} joined as ${travelerRole?.name ?? newTravelerRoleId} (Traveler)`);
   };
 
   const removePlayer = (id: string) => {
@@ -467,6 +499,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDead = (id: string) => {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      const nextDead = !player.isDead;
+      addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
+    }
     setPlayers(players.map(p => {
       if (p.id === id) {
         const nextDead = !p.isDead;
@@ -485,6 +522,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerEvil = (id: string) => {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      const roleObj = (rolesData as Role[]).find(r => r.id === player.roleId);
+      const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
+      const currentEvil = player.isEvil !== undefined ? player.isEvil : defaultEvil;
+      addLogEntry(`${player.name} marked as ${!currentEvil ? 'Evil' : 'Good'}`);
+    }
     setPlayers(players.map(p => {
       if (p.id === id) {
         const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
@@ -497,6 +541,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDrunkOrPoisoned = (id: string) => {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      addLogEntry(`${player.name} ${!player.isDrunkOrPoisoned ? 'marked as Drunk/Poisoned' : 'cleared of Drunk/Poisoned'}`);
+    }
     setPlayers(players.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
@@ -707,6 +755,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          setPhase={(p) => {
+            if (p === 'game') {
+              const roleLines = players
+                .filter(pl => pl.roleId)
+                .map(pl => {
+                  const r = (rolesData as Role[]).find(ro => ro.id === pl.roleId);
+                  return `  ${pl.name} → ${r?.name ?? pl.roleId}`;
+                });
+              addLogEntry(`Game started — ${players.length} players\n${roleLines.join('\n')}`, 'night', 1);
+            }
+            setPhase(p);
+          }}
           customScriptRoles={customScriptRoles}
           scriptName={scriptName}
           newPlayerName={newPlayerName}
@@ -730,7 +790,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           remotePlayerCount={remotePlayerIds.size}
           grimoireConfirmed={grimoireConfirmed}
           onGrimoireConfirmed={() => setGrimoireConfirmed(true)}
-          setPhase={setPhase}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
           handleMouseDown={handleMouseDown}
@@ -776,7 +835,43 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName={scriptName}
           customScriptRoles={customScriptRoles}
           demonBluffs={demonBluffs}
-          onUpdateDemonBluffs={setDemonBluffs}
+          onUpdateDemonBluffs={(bluffs) => {
+            setDemonBluffs(bluffs);
+            const filled = bluffs.filter(Boolean);
+            if (filled.length === 3) {
+              const names = filled.map(id => (rolesData as Role[]).find(r => r.id === id)?.name ?? id);
+              addLogEntry(`Demon bluffs set: ${names.join(', ')}`);
+            }
+          }}
+          gameLog={gameLog}
+          onDownloadLog={() => {
+            const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
+            const content = header + gameLog.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `botc-game-log-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+          onDeclareWinner={(team) => {
+            const broadcast = () => {
+              const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';
+              addLogEntry(`Game over — ${label}`);
+              if (sendMessageRef.current) {
+                sendMessageRef.current({ type: 'game_winner', team });
+              }
+            };
+            if (remotePlayerIds.size > 0) {
+              const teamLabel = team === 'good' ? 'Good' : 'Evil';
+              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'}.`, broadcast);
+            } else {
+              broadcast();
+            }
+          }}
         />
       )}
 

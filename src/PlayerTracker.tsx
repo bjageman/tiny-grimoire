@@ -182,6 +182,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
+    } else if (payload.type === 'game_winner') {
+      const team = (payload as { type: string; team: string }).team;
+      showAlert(team === 'good' ? '🌟 Good wins! The forces of good have triumphed!' : '😈 Evil wins! The demons have prevailed!');
     } else if (payload.type === 'storyteller_quit') {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');

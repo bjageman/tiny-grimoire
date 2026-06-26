@@ -460,6 +460,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerRole = (id: string, roleId: string) => {
+    if (phase === 'game') {
+      const player = players.find(p => p.id === id);
+      if (player && player.roleId !== (roleId || undefined)) {
+        const oldRole = (rolesData as Role[]).find(r => r.id === player.roleId);
+        const newRole = (rolesData as Role[]).find(r => r.id === roleId);
+        if (oldRole && newRole) {
+          addLogEntry(`${player.name} changed from ${oldRole.name} to ${newRole.name}`);
+        } else if (newRole) {
+          addLogEntry(`${player.name} assigned ${newRole.name}`);
+        }
+      }
+    }
     let newPlayers = players.map(p => {
       if (p.id === id) {
         return {
@@ -761,9 +773,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
                 .filter(pl => pl.roleId)
                 .map(pl => {
                   const r = (rolesData as Role[]).find(ro => ro.id === pl.roleId);
-                  return `  ${pl.name} → ${r?.name ?? pl.roleId}`;
+                  const modifiers = [
+                    pl.isTheLunatic && 'Lunatic',
+                    pl.isTheMarionette && 'Marionette',
+                    pl.isTheDrunk && 'Drunk',
+                    pl.isTheLilMonsta && 'Lil Monsta',
+                  ].filter(Boolean).join(', ');
+                  const label = r?.name ?? pl.roleId;
+                  return `  ${pl.name} → ${modifiers ? `${label} (${modifiers})` : label}`;
                 });
-              addLogEntry(`Game started — ${players.length} players\n${roleLines.join('\n')}`, 'night', 1);
+              addLogEntry(`Game started — ${scriptName} · ${players.length} players\n${roleLines.join('\n')}`, 'night', 1);
             }
             setPhase(p);
           }}
@@ -857,6 +876,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           }}
+          onLogEvent={addLogEntry}
           onDeclareWinner={(team) => {
             const broadcast = () => {
               const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';

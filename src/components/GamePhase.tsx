@@ -48,6 +48,7 @@ interface Props {
   gameLog?: string[];
   onDownloadLog?: () => void;
   onDeclareWinner?: (team: 'good' | 'evil') => void;
+  onLogEvent?: (message: string) => void;
 }
 
 export default function GamePhase({
@@ -70,6 +71,7 @@ export default function GamePhase({
   gameLog,
   onDownloadLog,
   onDeclareWinner,
+  onLogEvent,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -84,11 +86,23 @@ export default function GamePhase({
       ? crypto.randomUUID()
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
+    const targetName = players.find(p => p.id === targetPlayerId)?.name ?? targetPlayerId;
+    const charName = (rolesData as Role[]).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
+    onLogEvent?.(`Reminder "${text} (${charName})" placed on ${targetName}`);
   };
   const handleRemoveReminder = (reminderId: string) => {
+    const token = reminderTokens.find(r => r.id === reminderId);
+    if (token) {
+      const targetName = players.find(p => p.id === token.targetPlayerId)?.name ?? token.targetPlayerId;
+      const charName = (rolesData as Role[]).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
+      onLogEvent?.(`Reminder "${token.text} (${charName})" removed from ${targetName}`);
+    }
     setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
   };
-  const handleRemoveAllReminders = () => setReminderTokens([]);
+  const handleRemoveAllReminders = () => {
+    if (reminderTokens.length > 0) onLogEvent?.(`All reminders cleared`);
+    setReminderTokens([]);
+  };
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);

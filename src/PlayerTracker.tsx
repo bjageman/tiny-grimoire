@@ -133,6 +133,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     return '';
   });
 
+  const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
+
   const handleIncomingMessage = (data: unknown) => {
     const payload = data as {
       type: string;
@@ -184,7 +186,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
     } else if (payload.type === 'game_winner') {
       const team = (payload as { type: string; team: string }).team;
-      showAlert(team === 'good' ? '🌟 Good wins! The forces of good have triumphed!' : '😈 Evil wins! The demons have prevailed!');
+      setWinnerTeam(team === 'good' ? 'good' : 'evil');
     } else if (payload.type === 'storyteller_quit') {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
@@ -591,6 +593,39 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+
+    {/* Winner full-screen overlay */}
+    {winnerTeam && (
+      <div
+        id="winner-overlay"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-8 cursor-pointer select-none animate-[fadeIn_0.6s_ease-out]"
+        style={{
+          minHeight: '100dvh',
+          background: winnerTeam === 'good'
+            ? 'linear-gradient(to bottom, #172554, #1e3a8a, #1e1b4b)'
+            : 'linear-gradient(to bottom, #450a0a, #1c0606, #020610)',
+        }}
+        onClick={() => setWinnerTeam(null)}
+      >
+        <div className="flex flex-col items-center gap-6 text-center max-w-sm animate-[scaleIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_0.2s_both]">
+          <div className="text-8xl">
+            {winnerTeam === 'good' ? '🌟' : '😈'}
+          </div>
+          <h1 className={cn(
+            'text-4xl font-extrabold tracking-tight',
+            winnerTeam === 'good' ? 'text-blue-200' : 'text-red-300'
+          )}>
+            {winnerTeam === 'good' ? 'Good Wins!' : 'Evil Wins!'}
+          </h1>
+          <p className="text-lg text-gray-300 leading-relaxed">
+            {winnerTeam === 'good'
+              ? 'Ravenswood Bluff is saved and the Demon will no longer kill again. At least for now…'
+              : 'The Townsfolk of Ravenswood Bluff never had a chance.'}
+          </p>
+          <p className="text-xs text-gray-500 mt-4">Tap to dismiss</p>
+        </div>
+      </div>
+    )}
     </>
   );
 }

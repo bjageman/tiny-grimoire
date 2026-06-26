@@ -154,6 +154,34 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
   }, []);
 
+  const handleStartGame = useCallback(() => {
+    const roleMap = new Map((rolesData as Role[]).map(r => [r.id, r]));
+    const teamLabels: Record<string, string> = { townsfolk: 'TF', outsider: 'Out', minion: 'Min', demon: 'Dmn' };
+
+    players.forEach(p => {
+      const role = p.roleId ? roleMap.get(p.roleId) : null;
+      const roleName = role?.name ?? 'Unassigned';
+      const prefTag = p.assignedFromPref ? ' ★' : '';
+      addLogEntry(`${p.name} → ${roleName}${prefTag}`, 'night', 1);
+    });
+
+    players.forEach(p => {
+      const prefParts: string[] = [];
+      (['townsfolk', 'outsider', 'minion', 'demon'] as const).forEach(team => {
+        const prefs = p.preferences[team];
+        if (prefs.length > 0) {
+          const names = prefs.map(id => roleMap.get(id)?.name ?? id).join(', ');
+          prefParts.push(`${teamLabels[team]}: ${names}`);
+        }
+      });
+      if (prefParts.length > 0) {
+        addLogEntry(`${p.name}'s prefs — ${prefParts.join(' | ')}`, 'night', 1);
+      }
+    });
+
+    setPhase('game');
+  }, [players, addLogEntry]);
+
   const [demonBluffs, setDemonBluffs] = useState<string[]>(() => {
     const saved = localStorage.getItem('whale-bucket-game');
     if (saved) {
@@ -586,6 +614,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDead = (id: string) => {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      const nextDead = !player.isDead;
+      addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
+    }
     setPlayers(players.map(p => {
       if (p.id === id) {
         const nextDead = !p.isDead;
@@ -600,6 +633,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDeadVote = (id: string) => {
+    const player = players.find(p => p.id === id);
+    if (player) {
+      addLogEntry(player.hasDeadVote ? `${player.name}'s ghost vote used` : `${player.name}'s ghost vote restored`);
+    }
     setPlayers(players.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
   };
 
@@ -834,6 +871,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           isLightModeActive={isLightModeActive}
           setPhase={setPhase}
+          onStartGame={handleStartGame}
           runAssignment={runAssignment}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           togglePlayerTheDrunk={togglePlayerTheDrunk}
@@ -887,7 +925,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `botc-game-log-${new Date().toISOString().split('T')[0]}.txt`;
+            const dt = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
+            a.download = `whalebuffet-all-roles-${players.length}p-${dt}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -956,6 +995,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLilMonstaGame={isLilMonstaGame}
           onSetSearchingRole={setIsSearchingRole}
           onSetModalRoleSearch={setModalRoleSearch}
+          onLogEvent={phase === 'game' ? addLogEntry : undefined}
         />
       )}
     </PageLayout>

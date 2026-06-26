@@ -11,6 +11,7 @@ interface WhaleBucketDraftPhaseProps {
   validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
   setPhase: (p: 'setup' | 'draft' | 'game') => void;
+  onStartGame: () => void;
   runAssignment: () => void;
   setActiveDraftPlayerId: (id: string | null) => void;
   togglePlayerTheDrunk: (id: string) => void;
@@ -24,6 +25,7 @@ export default function WhaleBucketDraftPhase({
   validationSummary,
   isLightModeActive,
   setPhase,
+  onStartGame,
   runAssignment,
   setActiveDraftPlayerId,
   togglePlayerTheDrunk,
@@ -38,7 +40,7 @@ export default function WhaleBucketDraftPhase({
           "font-display text-base font-bold tracking-wider uppercase",
           isLightModeActive ? "text-gray-800" : "text-gray-300"
         )}>
-          2. Character Draft
+          2. Character Assignment
         </h2>
         <button
           onClick={runAssignment}
@@ -66,7 +68,7 @@ export default function WhaleBucketDraftPhase({
           id="open-grimoire-button-top"
           disabled={players.some(p => !p.roleId)}
           onClick={() => {
-            setPhase('game');
+            onStartGame();
             setTimeout(() => {
               const grimoireElement = document.getElementById('grimoire-board-container');
               grimoireElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -369,7 +371,7 @@ export default function WhaleBucketDraftPhase({
           id="open-grimoire-button"
           disabled={players.some(p => !p.roleId)}
           onClick={() => {
-            setPhase('game');
+            onStartGame();
             setTimeout(() => {
               const grimoireElement = document.getElementById('grimoire-board-container');
               grimoireElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });

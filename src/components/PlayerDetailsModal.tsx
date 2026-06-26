@@ -18,6 +18,7 @@ interface Player {
   isTheLunatic?: boolean;
   isTheLilMonsta?: boolean;
   hasDeadVote?: boolean;
+  notes?: string;
 }
 
 interface PlayerDetailsModalProps {
@@ -45,6 +46,7 @@ interface PlayerDetailsModalProps {
   allowMultipleRoles?: boolean;
   onUpdateRoles?: (id: string, roleIds: string[]) => void;
   isSynced?: boolean;
+  onUpdateNotes?: (id: string, notes: string) => void;
 }
 
 export default function PlayerDetailsModal({
@@ -72,6 +74,7 @@ export default function PlayerDetailsModal({
   allowMultipleRoles = false,
   onUpdateRoles,
   isSynced = false,
+  onUpdateNotes,
 }: PlayerDetailsModalProps) {
   const isMobile = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -173,6 +176,21 @@ export default function PlayerDetailsModal({
               <p className={cn('text-[11px] font-medium mt-0', isLightModeActive ? 'text-gray-500' : 'text-gray-400')}>
                 Player {currentIndex + 1} of {players.length}
               </p>
+              {!isSynced && onUpdateNotes && (
+                <input
+                  type="text"
+                  placeholder="Notes..."
+                  value={p.notes ?? ''}
+                  onChange={(e) => onUpdateNotes(p.id, e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  className={cn(
+                    'w-full mt-1.5 rounded px-2 py-1 text-xs border focus:outline-none focus:border-clocktower-blood/60 transition-colors',
+                    isLightModeActive
+                      ? 'bg-gray-50 border-gray-200 text-gray-700 placeholder-gray-400'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-300 placeholder-gray-500'
+                  )}
+                />
+              )}
             </div>
           </div>
           <button

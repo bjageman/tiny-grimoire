@@ -9,7 +9,7 @@ import { getValidationSummary } from './utils/whaleBucketValidation';
 import PlayerDetailsModal from './components/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/WhaleBucketSetupPhase';
 import WhaleBucketDraftPhase from './components/WhaleBucketDraftPhase';
-import WhaleBucketGamePhase from './components/WhaleBucketGamePhase';
+import GamePhase from './components/GamePhase';
 import PreferenceSelectionModal from './components/PreferenceSelectionModal';
 import ManualOverrideModal from './components/ManualOverrideModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
@@ -376,6 +376,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   const updatePlayerName = (id: string, name: string) => {
     setPlayers(players.map(p => p.id === id ? { ...p, name } : p));
+  };
+
+  const updatePlayerNotes = (id: string, notes: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
   };
 
   const updatePlayerRoles = (id: string, roleIds: string[]) => {
@@ -799,7 +803,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       )}
 
       {phase === 'game' && (
-        <WhaleBucketGamePhase
+        <GamePhase
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
@@ -824,6 +828,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setNewTravelerRoleId={setNewTravelerRoleId}
           onResetDead={resetDead}
           onResetTime={resetTime}
+          travelerCardTitle="Add Traveler (Late Arrival)"
         />
       )}
 
@@ -871,6 +876,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onUpdateRoles={updatePlayerRoles}
+          onUpdateNotes={updatePlayerNotes}
           onToggleDead={togglePlayerDead}
           onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}

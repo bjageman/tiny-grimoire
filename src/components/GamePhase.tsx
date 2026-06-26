@@ -1,12 +1,28 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GripVertical, Search, X, Scroll } from 'lucide-react';
 import { cn } from '../utils/cn';
-import type { Player, Role, PlacedReminder } from '../types';
+import type { Role, PlacedReminder } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 import { getScriptStats } from '../utils/scriptUtils';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
+
+interface Player {
+  id: string;
+  name: string;
+  roleId?: string;
+  roleIds?: string[];
+  isDead?: boolean;
+  hasDeadVote?: boolean;
+  isEvil?: boolean;
+  isTheDrunk?: boolean;
+  isTheMarionette?: boolean;
+  isTheLunatic?: boolean;
+  isTheLilMonsta?: boolean;
+  isDrunkOrPoisoned?: boolean;
+  notes?: string;
+}
 
 interface Props {
   players: Player[];
@@ -15,10 +31,9 @@ interface Props {
   newTravelerName: string;
   newTravelerRoleId: string;
   isLightModeActive: boolean;
-  selectionRoles: Role[];
   draggedIndex: number | null;
   dragOverIndex: number | null;
-  setSelectedPlayerId: (id: string) => void;
+  setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
   addTravelerGamePhase: () => void;
   setNewTravelerName: (v: string) => void;
@@ -34,26 +49,31 @@ interface Props {
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
+  // Optional / mode-specific
+  selectionRoles?: Role[];
   showNightOrder?: boolean;
   scriptName?: string;
   customScriptRoles?: Role[] | null;
   isSynced?: boolean;
   enableReminders?: boolean;
+  travelerCardTitle?: string;
 }
 
-export default function StandardGamePhase({
+export default function GamePhase({
   players, timeOfDay, dayNumber, newTravelerName, newTravelerRoleId,
-  isLightModeActive, selectionRoles, draggedIndex, dragOverIndex,
+  isLightModeActive, draggedIndex, dragOverIndex,
   setSelectedPlayerId, toggleTimeOfDay, addTravelerGamePhase,
   setNewTravelerName, setNewTravelerRoleId,
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   handleTouchStart, handleTouchMove, handleTouchEnd,
   onResetDead, onResetTime,
+  selectionRoles,
   showNightOrder = true,
-  scriptName = "All Roles (Default)",
+  scriptName = 'All Roles (Default)',
   customScriptRoles = null,
   isSynced = false,
   enableReminders = true,
+  travelerCardTitle = 'Add Traveler',
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -75,7 +95,6 @@ export default function StandardGamePhase({
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
     const roles = [...baseRoles];
-    // Include travelers that are active in the grimoire
     players.forEach(p => {
       const displayRoles = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
       displayRoles.forEach(roleId => {
@@ -125,6 +144,8 @@ export default function StandardGamePhase({
     }
   }, [isScriptModalOpen]);
 
+  const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);
+
   return (
     <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:space-y-0 md:items-start landscape:grid landscape:grid-cols-[3fr_2fr] landscape:gap-6 landscape:space-y-0 landscape:items-start">
       {/* Column 1: Board & Night Order */}
@@ -134,8 +155,9 @@ export default function StandardGamePhase({
             players={players}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
+            toggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
             onSelectPlayer={setSelectedPlayerId}
-            rolesData={selectionRoles}
+            rolesData={grimoireRolesData}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
             isSynced={isSynced}
@@ -146,36 +168,19 @@ export default function StandardGamePhase({
             onRemoveAllReminders={enableReminders && !isSynced ? handleRemoveAllReminders : undefined}
           />
         </div>
-        <div className="!mt-0 space-y-2">
-          {!isSynced && (
-            <div className="flex justify-center">
-              <button
-                id="grimoire-time-toggle-button"
-                onClick={toggleTimeOfDay}
-                className={cn(
-                  "px-10 py-2 rounded-md text-xs md:text-sm font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
-                  isLightModeActive
-                    ? "bg-gray-200 border-gray-400 text-gray-900 hover:bg-gray-300 active:bg-gray-350"
-                    : "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-650 active:bg-gray-600"
-                )}
-              >
-                {timeOfDay === 'day' ? 'End Day' : 'End Night'}
-              </button>
-            </div>
-          )}
-          {showNightOrder && (
-            <NightOrderWidget
-              players={players}
-              timeOfDay={timeOfDay}
-              dayNumber={dayNumber}
-              isLightModeActive={isLightModeActive}
-            />
-          )}
-        </div>
+        {showNightOrder && (
+          <NightOrderWidget
+            players={players}
+            timeOfDay={timeOfDay}
+            dayNumber={dayNumber}
+            isLightModeActive={isLightModeActive}
+            onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
+          />
+        )}
       </div>
 
       {/* Column 2: Controls */}
-      <div id="grimoire-controls-container" className="space-y-6 md:pt-10 landscape:pt-10">
+      <div id="grimoire-controls-container" className="space-y-6">
 
         {/* Active Script Display */}
         <button
@@ -212,7 +217,7 @@ export default function StandardGamePhase({
             <h4 className={cn(
               'text-[10px] uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-            )}>Add Traveler (Late Arrival)</h4>
+            )}>{travelerCardTitle}</h4>
             <div className="flex flex-col gap-2">
               <input
                 id="game-traveler-name-input"
@@ -281,7 +286,7 @@ export default function StandardGamePhase({
             {players.map((p, index) => {
               const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
               return (
-                 <div
+                <div
                   id={`ledger-player-${p.id}`}
                   key={p.id}
                   data-drag-index={index}
@@ -372,18 +377,18 @@ export default function StandardGamePhase({
 
       {/* Script Characters List Modal */}
       {isScriptModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => {
             setIsScriptModalOpen(false);
             setModalSearchTerm('');
           }}
         >
-          <div 
+          <div
             className={cn(
               "w-full max-w-2xl rounded-lg p-5 flex flex-col shadow-2xl transition-all duration-300 max-h-[85vh]",
-              isLightModeActive 
-                ? "bg-[#fdfaf2] border border-amber-900/10 text-gray-800" 
+              isLightModeActive
+                ? "bg-[#fdfaf2] border border-amber-900/10 text-gray-800"
                 : "bg-gray-900 border border-gray-800 text-gray-150"
             )}
             onClick={(e) => e.stopPropagation()}
@@ -404,7 +409,7 @@ export default function StandardGamePhase({
                   </p>
                 )}
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   setIsScriptModalOpen(false);
@@ -412,8 +417,8 @@ export default function StandardGamePhase({
                 }}
                 className={cn(
                   "p-1.5 rounded-full transition-colors",
-                  isLightModeActive 
-                    ? "text-gray-500 hover:bg-gray-250/50 hover:text-gray-800" 
+                  isLightModeActive
+                    ? "text-gray-500 hover:bg-gray-250/50 hover:text-gray-800"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 )}
                 aria-label="Close modal"
@@ -446,8 +451,7 @@ export default function StandardGamePhase({
 
             {/* Roles List grouped by team */}
             <div className="overflow-y-auto flex-1 space-y-5 pr-1 select-none">
-              
-              {/* Townsfolk */}
+
               {townsfolk.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase font-bold tracking-wider text-clocktower-townsfolk border-b border-clocktower-townsfolk/15 pb-1 flex items-center gap-1.5">
@@ -455,29 +459,22 @@ export default function StandardGamePhase({
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {townsfolk.map(role => (
-                      <button 
+                      <button
                         type="button"
                         key={role.id}
                         onClick={() => setSelectedRoleForInfo(role)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive 
-                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-townsfolk/30 hover:shadow-sm" 
+                          isLightModeActive
+                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-townsfolk/30 hover:shadow-sm"
                             : "bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 hover:border-clocktower-townsfolk/30"
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img 
-                            src={`/icons/${role.id}.svg`} 
-                            alt={role.name} 
-                            className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                          />
+                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
                         </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          isLightModeActive ? "text-gray-900" : "text-gray-100"
-                        )}>
+                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                           {role.name}
                         </span>
                       </button>
@@ -486,7 +483,6 @@ export default function StandardGamePhase({
                 </div>
               )}
 
-              {/* Outsiders */}
               {outsiders.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase font-bold tracking-wider text-clocktower-outsider border-b border-clocktower-outsider/15 pb-1 flex items-center gap-1.5">
@@ -494,29 +490,22 @@ export default function StandardGamePhase({
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {outsiders.map(role => (
-                      <button 
+                      <button
                         type="button"
                         key={role.id}
                         onClick={() => setSelectedRoleForInfo(role)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive 
-                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-outsider/30 hover:shadow-sm" 
+                          isLightModeActive
+                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-outsider/30 hover:shadow-sm"
                             : "bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 hover:border-clocktower-outsider/30"
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img 
-                            src={`/icons/${role.id}.svg`} 
-                            alt={role.name} 
-                            className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                          />
+                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
                         </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          isLightModeActive ? "text-gray-900" : "text-gray-100"
-                        )}>
+                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                           {role.name}
                         </span>
                       </button>
@@ -525,7 +514,6 @@ export default function StandardGamePhase({
                 </div>
               )}
 
-              {/* Minions */}
               {minions.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase font-bold tracking-wider text-clocktower-minion border-b border-clocktower-minion/15 pb-1 flex items-center gap-1.5">
@@ -533,29 +521,22 @@ export default function StandardGamePhase({
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {minions.map(role => (
-                      <button 
+                      <button
                         type="button"
                         key={role.id}
                         onClick={() => setSelectedRoleForInfo(role)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive 
-                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-minion/30 hover:shadow-sm" 
+                          isLightModeActive
+                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-minion/30 hover:shadow-sm"
                             : "bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 hover:border-clocktower-minion/30"
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img 
-                            src={`/icons/${role.id}.svg`} 
-                            alt={role.name} 
-                            className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                          />
+                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
                         </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          isLightModeActive ? "text-gray-900" : "text-gray-100"
-                        )}>
+                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                           {role.name}
                         </span>
                       </button>
@@ -564,7 +545,6 @@ export default function StandardGamePhase({
                 </div>
               )}
 
-              {/* Demons */}
               {demons.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase font-bold tracking-wider text-clocktower-demon border-b border-clocktower-demon/15 pb-1 flex items-center gap-1.5">
@@ -572,29 +552,22 @@ export default function StandardGamePhase({
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {demons.map(role => (
-                      <button 
+                      <button
                         type="button"
                         key={role.id}
                         onClick={() => setSelectedRoleForInfo(role)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive 
-                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-demon/30 hover:shadow-sm" 
+                          isLightModeActive
+                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-demon/30 hover:shadow-sm"
                             : "bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 hover:border-clocktower-demon/30"
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img 
-                            src={`/icons/${role.id}.svg`} 
-                            alt={role.name} 
-                            className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                          />
+                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
                         </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          isLightModeActive ? "text-gray-900" : "text-gray-100"
-                        )}>
+                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                           {role.name}
                         </span>
                       </button>
@@ -603,7 +576,6 @@ export default function StandardGamePhase({
                 </div>
               )}
 
-              {/* Travelers */}
               {travelers.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs uppercase font-bold tracking-wider text-clocktower-traveler border-b border-clocktower-traveler/15 pb-1 flex items-center gap-1.5">
@@ -611,29 +583,22 @@ export default function StandardGamePhase({
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {travelers.map(role => (
-                      <button 
+                      <button
                         type="button"
                         key={role.id}
                         onClick={() => setSelectedRoleForInfo(role)}
                         className={cn(
                           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive 
-                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-traveler/30 hover:shadow-sm" 
+                          isLightModeActive
+                            ? "bg-white/80 border-gray-200/60 hover:bg-white hover:border-clocktower-traveler/30 hover:shadow-sm"
                             : "bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 hover:border-clocktower-traveler/30"
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img 
-                            src={`/icons/${role.id}.svg`} 
-                            alt={role.name} 
-                            className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                          />
+                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
                         </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          isLightModeActive ? "text-gray-900" : "text-gray-100"
-                        )}>
+                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                           {role.name}
                         </span>
                       </button>
@@ -642,7 +607,6 @@ export default function StandardGamePhase({
                 </div>
               )}
 
-              {/* Empty state */}
               {townsfolk.length === 0 && outsiders.length === 0 && minions.length === 0 && demons.length === 0 && travelers.length === 0 && (
                 <div className="text-center py-8 text-sm text-gray-500 italic">
                   No matching characters found in this script.
@@ -656,30 +620,29 @@ export default function StandardGamePhase({
       {/* Role Ability Info Modal */}
       {selectedRoleForInfo && (() => {
         const officialRole = officialRoles.find(r => r.id === selectedRoleForInfo.id);
-        const abilityText = officialRole?.ability || "Ability description not found.";
-        
+        const abilityText = (officialRole as { ability?: string } | undefined)?.ability || "Ability description not found.";
+
         return (
-          <div 
+          <div
             className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn"
             onClick={() => setSelectedRoleForInfo(null)}
           >
-            <div 
+            <div
               className={cn(
                 "w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl transition-all duration-300 transform scale-100",
-                isLightModeActive 
-                  ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" 
+                isLightModeActive
+                  ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800"
                   : "bg-gray-900 border border-gray-800 text-gray-150"
               )}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
-              <button 
+              <button
                 type="button"
                 onClick={() => setSelectedRoleForInfo(null)}
                 className={cn(
                   "absolute top-4 right-4 p-1.5 rounded-full transition-colors",
-                  isLightModeActive 
-                    ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" 
+                  isLightModeActive
+                    ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800"
                     : "text-gray-400 hover:bg-gray-800 hover:text-white"
                 )}
                 aria-label="Close details"
@@ -687,7 +650,6 @@ export default function StandardGamePhase({
                 <X size={18} />
               </button>
 
-              {/* Large Role Token */}
               <div className={cn(
                 "w-24 h-24 mx-auto rounded-full bg-white flex items-center justify-center shadow-lg border-4 transition-transform duration-300 hover:rotate-6 mt-2",
                 selectedRoleForInfo.team === 'townsfolk' && "border-clocktower-townsfolk shadow-clocktower-townsfolk/20",
@@ -696,15 +658,14 @@ export default function StandardGamePhase({
                 selectedRoleForInfo.team === 'demon' && "border-clocktower-demon shadow-clocktower-demon/20",
                 selectedRoleForInfo.team === 'traveler' && "border-clocktower-traveler shadow-clocktower-traveler/20"
               )}>
-                <img 
-                  src={`/icons/${selectedRoleForInfo.id}.svg`} 
-                  alt={selectedRoleForInfo.name} 
+                <img
+                  src={`/icons/${selectedRoleForInfo.id}.svg`}
+                  alt={selectedRoleForInfo.name}
                   className="w-16 h-16 object-contain"
                   onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
                 />
               </div>
 
-              {/* Role Name */}
               <h4 className={cn(
                 "text-2xl font-black mt-4 tracking-wide",
                 selectedRoleForInfo.team === 'townsfolk' && "text-clocktower-townsfolk",
@@ -716,7 +677,6 @@ export default function StandardGamePhase({
                 {selectedRoleForInfo.name}
               </h4>
 
-              {/* Team Pill */}
               <span className={cn(
                 "inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mt-2",
                 selectedRoleForInfo.team === 'townsfolk' && "bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20",
@@ -728,17 +688,15 @@ export default function StandardGamePhase({
                 {selectedRoleForInfo.team}
               </span>
 
-              {/* Ability Description */}
               <div className={cn(
                 "mt-5 p-4 rounded-xl border leading-relaxed text-sm select-text text-center font-medium",
-                isLightModeActive 
-                  ? "bg-white border-amber-900/10 text-gray-700 shadow-sm" 
+                isLightModeActive
+                  ? "bg-white border-amber-900/10 text-gray-700 shadow-sm"
                   : "bg-gray-955/60 border-gray-800 text-gray-300"
               )}>
                 {abilityText}
               </div>
 
-              {/* Action Button */}
               <button
                 type="button"
                 onClick={() => setSelectedRoleForInfo(null)}

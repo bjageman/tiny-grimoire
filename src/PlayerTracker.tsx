@@ -7,7 +7,7 @@ import { TEAM_ORDER } from './types';
 import { parseScriptFile } from './utils/scriptUtils';
 
 import PlayerDetailsModal from './components/PlayerDetailsModal';
-import StandardGamePhase from './components/StandardGamePhase';
+import GamePhase from './components/GamePhase';
 import PlayerTrackerSetupPhase from './components/PlayerTrackerSetupPhase';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
@@ -310,6 +310,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(players.map(p => p.id === id ? { ...p, name } : p));
   };
 
+  const updatePlayerNotes = (id: string, notes: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
+  };
+
   const updatePlayerRole = (id: string, roleId: string) => {
     setPlayers(players.map(p => {
       if (p.id === id) {
@@ -491,7 +495,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
 
       {phase === 'game' && (
-        <StandardGamePhase
+        <GamePhase
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
@@ -541,6 +545,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
+          onUpdateNotes={updatePlayerNotes}
           onToggleDead={togglePlayerDead}
           onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}

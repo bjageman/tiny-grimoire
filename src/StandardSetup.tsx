@@ -9,7 +9,7 @@ import { parseScriptFile } from './utils/scriptUtils';
 import { performStandardAssignment } from './utils/standardAssignment';
 import { getValidationSummary } from './utils/whaleBucketValidation';
 import PlayerDetailsModal from './components/PlayerDetailsModal';
-import StandardGamePhase from './components/StandardGamePhase';
+import GamePhase from './components/GamePhase';
 import StandardSetupPhase from './components/StandardSetupPhase';
 import StandardRoleSelectionModal from './components/StandardRoleSelectionModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
@@ -392,6 +392,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setPlayers(players.map(p => p.id === id ? { ...p, name } : p));
   };
 
+  const updatePlayerNotes = (id: string, notes: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
+  };
+
   const updatePlayerRoles = (id: string, roleIds: string[]) => {
     setPlayers(players.map(p => p.id === id ? { ...p, roleIds } : p));
   };
@@ -716,7 +720,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       )}
 
       {phase === 'game' && (
-        <StandardGamePhase
+        <GamePhase
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
@@ -778,6 +782,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onUpdateRoles={updatePlayerRoles}
+          onUpdateNotes={updatePlayerNotes}
           onToggleDead={togglePlayerDead}
           onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}

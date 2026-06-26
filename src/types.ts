@@ -27,6 +27,7 @@ export interface Player {
   isTheLilMonsta?: boolean;
   isDrunkOrPoisoned?: boolean;
   hasDeadVote?: boolean;
+  notes?: string;
 }
 
 export interface PlacedReminder {

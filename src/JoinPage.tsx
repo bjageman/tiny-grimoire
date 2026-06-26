@@ -66,7 +66,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
-  const [pronouns, setPronouns] = useState(() => sessionStorage.getItem('joined-pronouns') || '');
+  const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
@@ -269,12 +269,34 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const handleLeaveGame = () => {
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
-    sessionStorage.removeItem('joined-pronouns');
     setCode('');
     setName('');
     setState('join');
     setAssignedRole(null);
     setRevealed(false);
+  };
+
+  const goToTracker = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: '',
+      roleIds: undefined,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined
+    }));
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: clearedPlayers,
+      phase: 'game',
+      timeOfDay,
+      dayNumber,
+      scriptName,
+      customScriptRoles,
+      code
+    }));
+    window.location.hash = '#/tracker';
   };
 
   // Helper to toggle a single preference selection (max 1 character per type)
@@ -602,7 +624,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                     onClick={() => {
                       const next = pronouns === p ? '' : p;
                       setPronouns(next);
-                      sessionStorage.setItem('joined-pronouns', next);
+                      localStorage.setItem('joined-pronouns', next);
                       sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined });
                     }}
                     className={cn(
@@ -657,7 +679,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           <div className="space-y-6 text-center">
             {/* Reveal Card Wrapper */}
             <div
-              onClick={() => setRevealed(!revealed)}
+              onClick={() => revealed ? goToTracker() : setRevealed(true)}
               className={cn(
                 "w-full h-80 rounded-lg border cursor-pointer perspective-1000 transform-style-3d transition-all duration-700 relative shadow-2xl border-clocktower-blood/50",
                 revealed ? "rotate-y-180" : ""
@@ -725,28 +747,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             </div>
 
             <button
-              onClick={() => {
-                const clearedPlayers = players.map(p => ({
-                  ...p,
-                  roleId: '', // Hide characters
-                  roleIds: undefined,
-                  isTheDrunk: false,
-                  isTheMarionette: false,
-                  isTheLunatic: false,
-                  isTheLilMonsta: false,
-                  isEvil: undefined
-                }));
-                localStorage.setItem('player-tracker-botc-game', JSON.stringify({
-                  players: clearedPlayers,
-                  phase: 'game',
-                  timeOfDay,
-                  dayNumber,
-                  scriptName,
-                  customScriptRoles,
-                  code
-                }));
-                window.location.hash = '#/tracker';
-              }}
+              onClick={goToTracker}
               className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-gray-800 text-white rounded-lg py-3 font-bold transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-black/10 hover:scale-101"
             >
               <Settings size={16} />

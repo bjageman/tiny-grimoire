@@ -124,11 +124,20 @@ export default function GamePhase({
   }, [bluffCandidates, bluffSearch]);
 
   useEffect(() => {
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const isTouchDevice = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
     if (bluffPickerSlot !== null && !isTouchDevice) {
       setTimeout(() => bluffSearchRef.current?.focus(), 50);
     }
   }, [bluffPickerSlot]);
+
+  useEffect(() => {
+    if (isBluffOverlayOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isBluffOverlayOpen]);
 
   const setBluff = (slot: number, roleId: string) => {
     if (!onUpdateDemonBluffs) return;
@@ -489,7 +498,8 @@ export default function GamePhase({
       {/* Demon Bluffs full-screen overlay — always dark */}
       {isBluffOverlayOpen && (
         <div
-          className="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-8 p-8 cursor-pointer"
+          className="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-8 p-8 cursor-pointer overscroll-none touch-none"
+          style={{ minHeight: '100dvh' }}
           onClick={() => setIsBluffOverlayOpen(false)}
         >
           <p className="text-gray-400 text-xs uppercase tracking-widest font-bold select-none">Demon Bluffs — tap to close</p>

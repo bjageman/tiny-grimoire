@@ -5,7 +5,7 @@ A comprehensive web app for running **Blood on the Clocktower** in-person withou
 ## Core Features
 
 ### Auto-Distribution Algorithm
-Both modes use a shared distribution engine that respects official team counts for 5–15 players and dynamically resolves complex setup roles and jinxes — for example, Legion and Riot restructure the entire grimoire composition, Atheist removes the evil team entirely, Baron and similar roles adjust outsider counts automatically, and linked jinx pairs like Choirboy ↔ King are enforced.
+Both modes use a shared distribution engine that respects official team counts for 5–15 players and dynamically resolves complex setup roles and jinxes — for example, Legion and Riot restructure the entire evil team composition, Atheist removes the evil team entirely, Baron and similar roles adjust outsider counts automatically, and linked pairs like Choirboy ↔ King are enforced.
 
 ### 1. Standard Setup Mode
 Classic manual storyteller mode:

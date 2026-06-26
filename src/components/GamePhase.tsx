@@ -124,7 +124,8 @@ export default function GamePhase({
   }, [bluffCandidates, bluffSearch]);
 
   useEffect(() => {
-    if (bluffPickerSlot !== null) {
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (bluffPickerSlot !== null && !isTouchDevice) {
       setTimeout(() => bluffSearchRef.current?.focus(), 50);
     }
   }, [bluffPickerSlot]);

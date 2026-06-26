@@ -527,7 +527,7 @@ export default function GamePhase({
         </div>
 
         {/* Game Log */}
-        {!isSynced && gameLog && gameLog.length > 0 && onDownloadLog && (
+        {!isSynced && onDownloadLog && (
           <div className={cn(
             'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
             isLightModeActive
@@ -539,21 +539,26 @@ export default function GamePhase({
                 'text-[10px] uppercase font-bold tracking-wider',
                 isLightModeActive ? 'text-gray-600' : 'text-gray-500'
               )}>Game Log</h4>
-              <button
-                type="button"
-                onClick={onDownloadLog}
-                className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
-              >
-                Download
-              </button>
+              {gameLog && gameLog.length > 0 && (
+                <button
+                  type="button"
+                  onClick={onDownloadLog}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+                >
+                  Download
+                </button>
+              )}
             </div>
             <div className={cn(
               'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
               isLightModeActive ? 'text-gray-700' : 'text-gray-400'
             )}>
-              {gameLog.map((entry, i) => (
-                <p key={i} className="leading-relaxed whitespace-pre-wrap">{entry}</p>
-              ))}
+              {gameLog && gameLog.length > 0
+                ? gameLog.map((entry, i) => (
+                    <p key={i} className="leading-relaxed whitespace-pre-wrap">{entry}</p>
+                  ))
+                : <p className={cn('italic', isLightModeActive ? 'text-gray-400' : 'text-gray-600')}>No entries yet.</p>
+              }
             </div>
           </div>
         )}

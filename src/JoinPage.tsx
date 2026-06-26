@@ -679,7 +679,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           <div className="space-y-6 text-center">
             {/* Reveal Card Wrapper */}
             <div
-              onClick={() => setRevealed(!revealed)}
+              onClick={() => revealed ? goToTracker() : setRevealed(true)}
               className={cn(
                 "w-full h-80 rounded-lg border cursor-pointer perspective-1000 transform-style-3d transition-all duration-700 relative shadow-2xl border-clocktower-blood/50",
                 revealed ? "rotate-y-180" : ""
@@ -714,12 +714,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   assignedRole.team === 'demon' && "border-clocktower-demon",
                   assignedRole.team === 'traveler' && "border-clocktower-traveler"
                 )}>
-                  <img
-                    src={`/icons/${assignedRole.id}.svg`}
-                    alt={assignedRole.name}
-                    className="w-20 h-20 object-contain cursor-pointer"
-                    onClick={e => { e.stopPropagation(); goToTracker(); }}
-                  />
+                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" />
                 </div>
 
                 <span className={cn(

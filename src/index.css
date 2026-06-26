@@ -33,16 +33,16 @@ body {
    ========================================================================== */
 
 /* Overrides card and container backgrounds to a subtle soft white scroll look */
-:root.theme-light .bg-gray-900:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-900\/50:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-900\/60:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-955:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-950:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-950\/40:not(#grimoire-circle-board):not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-955\/40:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-800:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-850:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .bg-gray-800\/50:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *) {
+:root.theme-light .bg-gray-900:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-900\/50:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-900\/60:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-955:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-950:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-950\/40:not(#grimoire-circle-board):not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-955\/40:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-800:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-850:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .bg-gray-800\/50:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *) {
   background-color: rgba(255, 255, 255, 0.45) !important;
   color: #1a1a1a !important;
 }
@@ -84,23 +84,23 @@ textarea:not(#grimoire-circle-board *)::placeholder {
 }
 
 /* Text coloring overrides */
-:root.theme-light .text-gray-200:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .text-gray-300:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .text-gray-400:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light h2:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light h3:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light span.text-gray-300:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *) {
+:root.theme-light .text-gray-200:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .text-gray-300:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .text-gray-400:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light h2:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light h3:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light span.text-gray-300:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *) {
   color: #1a1a1a !important;
 }
 
-:root.theme-light .text-gray-555:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .text-gray-505:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .text-gray-500:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *),
-:root.theme-light .text-gray-405:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *) {
+:root.theme-light .text-gray-555:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .text-gray-505:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .text-gray-500:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *),
+:root.theme-light .text-gray-405:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *) {
   color: #635746 !important;
 }
 
-:root.theme-light .text-gray-600:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *) {
+:root.theme-light .text-gray-600:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *) {
   color: #4a3e2e !important;
 }
 
@@ -155,7 +155,7 @@ textarea:not(#grimoire-circle-board *)::placeholder {
 }
 
 /* Preferences defaults tag */
-:root.theme-light .bg-gray-955:not(#grimoire-circle-board *):not(#demon-bluffs-overlay):not(#demon-bluffs-overlay *):not(#winner-overlay):not(#winner-overlay *) {
+:root.theme-light .bg-gray-955:not(#grimoire-circle-board *):not(#winner-overlay):not(#winner-overlay *) {
   background-color: rgba(0, 0, 0, 0.05) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
   color: #5c5c5c !important;

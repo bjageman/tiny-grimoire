@@ -16,6 +16,7 @@ import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import PageLayout from './components/PageLayout';
 import DialogModal from './components/DialogModal';
+import RoomCodeModal from './components/RoomCodeModal';
 import { useDialog } from './hooks/useDialog';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
@@ -126,6 +127,47 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     }
     return false;
   });
+  const [gameLog, setGameLog] = useState<string[]>(() => {
+    const saved = localStorage.getItem('whale-bucket-game');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.gameLog || [];
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
+  // Refs so log callbacks always see current values without stale closures
+  const timeOfDayRef = useRef(timeOfDay);
+  const dayNumberRef = useRef(dayNumber);
+  useEffect(() => { timeOfDayRef.current = timeOfDay; }, [timeOfDay]);
+  useEffect(() => { dayNumberRef.current = dayNumber; }, [dayNumber]);
+
+  const addLogEntry = useCallback((message: string, tod?: 'day' | 'night', dn?: number) => {
+    const useTod = tod ?? timeOfDayRef.current;
+    const useDn = dn ?? dayNumberRef.current;
+    const label = useTod === 'night' ? `Night ${useDn}` : `Day ${useDn}`;
+    const clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
+  }, []);
+
+  const [demonBluffs, setDemonBluffs] = useState<string[]>(() => {
+    const saved = localStorage.getItem('whale-bucket-game');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.demonBluffs || [];
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+  const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+
   const [newTravelerName, setNewTravelerName] = useState('');
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
@@ -328,15 +370,17 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds]);
+    localStorage.setItem('whale-bucket-game', JSON.stringify({ players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs }));
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
       setTimeOfDay('day');
+      addLogEntry(`Advanced to Day ${dayNumberRef.current}`, 'day', dayNumberRef.current);
     } else {
       setTimeOfDay('night');
       setDayNumber(prev => prev + 1);
+      addLogEntry(`Advanced to Night ${dayNumberRef.current + 1}`, 'night', dayNumberRef.current + 1);
     }
   };
 
@@ -711,11 +755,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             Whale Bucket
           </h1>
           <div
-            onClick={() => {
-              const joinUrl = `${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`;
-              navigator.clipboard.writeText(joinUrl);
-              showAlert(`Copied link to clipboard: ${joinUrl}`, 'Copied!');
-            }}
+          onClick={() => setShowRoomCodeModal(true)}
             className={cn(
               "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
               isLightModeActive
@@ -740,11 +780,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       headerExtra={
         <div
-          onClick={() => {
-            const joinUrl = `${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`;
-            navigator.clipboard.writeText(joinUrl);
-            alert(`Copied link to clipboard: ${joinUrl}`);
-          }}
+          onClick={() => setShowRoomCodeModal(true)}
           className={cn(
             "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
             isLightModeActive
@@ -834,6 +870,37 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onResetDead={resetDead}
           onResetTime={resetTime}
           travelerCardTitle="Add Traveler (Late Arrival)"
+          demonBluffs={demonBluffs}
+          onUpdateDemonBluffs={(bluffs) => {
+            setDemonBluffs(bluffs);
+            const filled = bluffs.filter(Boolean);
+            if (filled.length === 3) {
+              const names = filled.map(id => (rolesData as Role[]).find(r => r.id === id)?.name ?? id);
+              addLogEntry(`Demon bluffs set: ${names.join(', ')}`);
+            }
+          }}
+          gameLog={gameLog}
+          onDownloadLog={() => {
+            const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
+            const content = header + gameLog.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `botc-game-log-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+          onLogEvent={addLogEntry}
+          onDeclareWinner={(team) => {
+            const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';
+            addLogEntry(`Game over — ${label}`);
+            if (sendMessageRef.current) {
+              sendMessageRef.current({ type: 'game_winner', team });
+            }
+          }}
         />
       )}
 
@@ -893,6 +960,14 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    {showRoomCodeModal && (
+      <RoomCodeModal
+        gameCode={gameCode}
+        joinUrl={`${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`}
+        onClose={() => setShowRoomCodeModal(false)}
+        isLightModeActive={isLightModeActive}
+      />
+    )}
     </>
   );
 }

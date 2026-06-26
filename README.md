@@ -23,6 +23,16 @@ Semi-randomized player preference draft:
 - **Preference Drafting** — Add players and let them submit up to 4 preferred roles for Townsfolk, Outsider, Minion, and Demon teams.
 - **Randomized Assignment** — Roles are assigned based on player preferences using the shared distribution engine above.
 
+### 3. Live Player Sessions
+Players join from their own devices using a 4-letter room code:
+- **Character Token Reveal** — Players receive their assigned character token on their device when the grimoire opens.
+- **Real-Time Sync** — The town square layout, player statuses, and day/night phase stay in sync across all connected devices.
+- **Whale Buffet Preferences** — In Whale Buffet mode, players submit their role preferences directly from their phone before assignment.
+- **Player Notes Tracker** — Players can track character claims and alive/dead statuses from their own device throughout the game.
+
+### 4. Installable Web App
+The app is installable as a standalone app via "Add to Home Screen" on Android and iOS, giving a full-screen native-app experience without the browser UI.
+
 All state is persisted to `localStorage`, so refreshing the page won't lose your storyteller grimoire.
 
 ## Getting Started
@@ -32,9 +42,7 @@ All state is persisted to `localStorage`, so refreshing the page won't lose your
 - [Node.js](https://nodejs.org/) 20+
 - npm
 
-This app supports a real-time multiplayer portal allowing players to join rooms from their phones, submit role preferences (for Whale Buffet), and view their assigned tokens.
-
-Real-time message routing is powered by **ntfy**. A self-hosted ntfy instance is required for practical use — the public `ntfy.sh` server will rate-limit a game session almost immediately.
+Real-time session routing is powered by **ntfy**. A self-hosted ntfy instance is required for practical use — the public `ntfy.sh` server will rate-limit a game session almost immediately.
 
 1. Copy `.env.example` in the root of the project to a new file named `.env`:
    ```bash

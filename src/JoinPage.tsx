@@ -277,6 +277,29 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setRevealed(false);
   };
 
+  const goToTracker = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: '',
+      roleIds: undefined,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined
+    }));
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: clearedPlayers,
+      phase: 'game',
+      timeOfDay,
+      dayNumber,
+      scriptName,
+      customScriptRoles,
+      code
+    }));
+    window.location.hash = '#/tracker';
+  };
+
   // Helper to toggle a single preference selection (max 1 character per type)
   const togglePreference = (team: 'townsfolk' | 'outsider' | 'minion' | 'demon', roleId: string) => {
     setPrefs(prev => {
@@ -692,7 +715,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   assignedRole.team === 'demon' && "border-clocktower-demon",
                   assignedRole.team === 'traveler' && "border-clocktower-traveler"
                 )}>
-                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" />
+                  <img
+                    src={`/icons/${assignedRole.id}.svg`}
+                    alt={assignedRole.name}
+                    className="w-20 h-20 object-contain cursor-pointer"
+                    onClick={e => { e.stopPropagation(); goToTracker(); }}
+                  />
                 </div>
 
                 <span className={cn(
@@ -725,28 +753,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             </div>
 
             <button
-              onClick={() => {
-                const clearedPlayers = players.map(p => ({
-                  ...p,
-                  roleId: '', // Hide characters
-                  roleIds: undefined,
-                  isTheDrunk: false,
-                  isTheMarionette: false,
-                  isTheLunatic: false,
-                  isTheLilMonsta: false,
-                  isEvil: undefined
-                }));
-                localStorage.setItem('player-tracker-botc-game', JSON.stringify({
-                  players: clearedPlayers,
-                  phase: 'game',
-                  timeOfDay,
-                  dayNumber,
-                  scriptName,
-                  customScriptRoles,
-                  code
-                }));
-                window.location.hash = '#/tracker';
-              }}
+              onClick={goToTracker}
               className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-gray-800 text-white rounded-lg py-3 font-bold transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-black/10 hover:scale-101"
             >
               <Settings size={16} />

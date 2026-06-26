@@ -291,7 +291,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                 return {
                   ...p,
                   preferences: payload.preferences || p.preferences,
-                  pronouns: payload.pronouns ?? p.pronouns,
+                  pronouns: payload.pronouns,
                 };
               }
               return p;
@@ -327,7 +327,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               return {
                 ...p,
                 preferences: payload.preferences || p.preferences,
-                pronouns: payload.pronouns ?? p.pronouns,
+                pronouns: payload.pronouns,
               };
             }
             return p;

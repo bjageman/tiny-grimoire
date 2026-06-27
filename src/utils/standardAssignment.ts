@@ -1,6 +1,92 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
 
+const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+function fillToCount(list: Role[], count: number, pool: Role[], ...fallbacks: (Role | undefined)[]): void {
+  while (list.length < count) {
+    const inPlay = new Set(list.map(r => r.id));
+    const unused = pool.find(r => !inPlay.has(r.id));
+    if (unused) {
+      list.push(unused);
+    } else {
+      const fallback = fallbacks.find(Boolean);
+      if (fallback) list.push(fallback); else break;
+    }
+  }
+}
+
+function splitTravelers(players: Player[], travelerCount: number): { travelerIds: Set<string>; basePlayers: Player[] } {
+  const shuffled = shuffle(players);
+  const travelerIds = new Set(shuffled.slice(0, travelerCount).map(p => p.id));
+  return { travelerIds, basePlayers: players.filter(p => !travelerIds.has(p.id)) };
+}
+
+function applyChoirboyKing(tfs: Role[], selectedTownsfolk: Role[], exclude: string[]): Role[] {
+  if (!selectedTownsfolk.some(t => t.id === 'choirboy') || selectedTownsfolk.some(t => t.id === 'king')) return selectedTownsfolk;
+  const kingRole = tfs.find(t => t.id === 'king');
+  if (!kingRole) return selectedTownsfolk;
+  const excluded = new Set(['choirboy', ...exclude]);
+  const swappable = selectedTownsfolk.filter(t => !excluded.has(t.id));
+  if (swappable.length === 0) return selectedTownsfolk;
+  const remove = swappable[Math.floor(Math.random() * swappable.length)];
+  return [...selectedTownsfolk.filter(t => t.id !== remove.id), kingRole];
+}
+
+function applyHuntsmanDamsel(
+  outs: Role[],
+  selectedTownsfolk: Role[],
+  selectedOutsiders: Role[],
+  tfExclude: string[]
+): { tfs: Role[]; outs: Role[] } {
+  if (!selectedTownsfolk.some(t => t.id === 'huntsman') || selectedOutsiders.some(o => o.id === 'damsel')) {
+    return { tfs: selectedTownsfolk, outs: selectedOutsiders };
+  }
+  const damselRole = outs.find(o => o.id === 'damsel');
+  if (!damselRole) return { tfs: selectedTownsfolk, outs: selectedOutsiders };
+
+  const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'damsel');
+  if (otherOutsiders.length > 0) {
+    const remove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
+    return { tfs: selectedTownsfolk, outs: [...selectedOutsiders.filter(o => o.id !== remove.id), damselRole] };
+  }
+
+  const excluded = new Set(['huntsman', ...tfExclude]);
+  const swappable = selectedTownsfolk.filter(t => !excluded.has(t.id));
+  const newTfs = swappable.length > 0
+    ? selectedTownsfolk.filter(t => t.id !== swappable[Math.floor(Math.random() * swappable.length)].id)
+    : selectedTownsfolk;
+  return { tfs: newTfs, outs: [...selectedOutsiders, damselRole] };
+}
+
+function assignSimpleRolesToPlayers(
+  players: Player[],
+  assignedRoles: Role[],
+  travelerIds: Set<string>,
+  basePlayers: Player[],
+  selectionRoles: Role[],
+  isEvilId?: string
+): Player[] {
+  const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
+  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+
+  return players.map(p => {
+    if (travelerIds.has(p.id)) {
+      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+    }
+    const roleId = assignedRoles[basePlayerIndex.get(p.id) ?? 0]?.id;
+    return {
+      ...p,
+      roleId,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: (isEvilId && roleId === isEvilId) ? true : undefined,
+    };
+  });
+}
+
 export function performStandardAssignment(
   players: Player[],
   currentScriptRoles: Role[],
@@ -18,118 +104,29 @@ export function performStandardAssignment(
   const mins = currentScriptRoles.filter(r => r.team === 'minion');
   const dems = currentScriptRoles.filter(r => r.team === 'demon');
 
-  const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
-
   const hasAtheistRole = tfs.some(r => r.id === 'atheist');
   let isAtheistActive = false;
   if (hasAtheistRole) {
-    const bagCandidates = [...dems];
-    const atheistRole = tfs.find(r => r.id === 'atheist')!;
-    bagCandidates.push(atheistRole);
-    const drawn = shuffle(bagCandidates)[0];
-    if (drawn.id === 'atheist') {
-      isAtheistActive = true;
-    }
+    const bagCandidates = [...dems, tfs.find(r => r.id === 'atheist')!];
+    isAtheistActive = shuffle(bagCandidates)[0].id === 'atheist';
   }
 
   if (isAtheistActive) {
     const O = base.outsider;
-    const T = baseCount - O;
-
-    let selectedOutsiders = shuffle(outs).slice(0, O);
     const atheistRole = tfs.find(r => r.id === 'atheist')!;
-    let selectedTownsfolk = [atheistRole, ...shuffle(tfs.filter(t => t.id !== 'atheist')).slice(0, T - 1)];
+    let selectedOutsiders = shuffle(outs).slice(0, O);
+    let selectedTownsfolk = [atheistRole, ...shuffle(tfs.filter(t => t.id !== 'atheist')).slice(0, baseCount - O - 1)];
 
-    // Choirboy & King adjustment
-    const hasChoirboy = selectedTownsfolk.some(t => t.id === 'choirboy');
-    const hasKing = selectedTownsfolk.some(t => t.id === 'king');
-    if (hasChoirboy && !hasKing) {
-      const kingRole = tfs.find(t => t.id === 'king');
-      if (kingRole) {
-        const otherTfs = selectedTownsfolk.filter(t => t.id !== 'choirboy' && t.id !== 'atheist');
-        if (otherTfs.length > 0) {
-          const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
-          selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
-          selectedTownsfolk.push(kingRole);
-        }
-      }
-    }
+    selectedTownsfolk = applyChoirboyKing(tfs, selectedTownsfolk, ['atheist']);
+    ({ tfs: selectedTownsfolk, outs: selectedOutsiders } = applyHuntsmanDamsel(outs, selectedTownsfolk, selectedOutsiders, ['atheist']));
 
-    // Huntsman & Damsel adjustment
-    const hasHuntsman = selectedTownsfolk.some(t => t.id === 'huntsman');
-    const hasDamsel = selectedOutsiders.some(o => o.id === 'damsel');
-    if (hasHuntsman && !hasDamsel) {
-      const damselRole = outs.find(o => o.id === 'damsel');
-      if (damselRole) {
-        const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'damsel');
-        if (otherOutsiders.length > 0) {
-          const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
-          selectedOutsiders = selectedOutsiders.filter(o => o.id !== outToRemove.id);
-          selectedOutsiders.push(damselRole);
-        } else {
-          selectedOutsiders.push(damselRole);
-          const otherTfs = selectedTownsfolk.filter(t => t.id !== 'huntsman' && t.id !== 'atheist');
-          if (otherTfs.length > 0) {
-            const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
-            selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
-          }
-        }
-      }
-    }
+    const finalRolesList = shuffle([...selectedOutsiders, ...selectedTownsfolk]);
+    fillToCount(finalRolesList, baseCount, tfs, tfs[0], outs[0]);
 
-    const finalRolesList = shuffle([
-      ...selectedOutsiders,
-      ...selectedTownsfolk
-    ]);
-
-    while (finalRolesList.length < baseCount) {
-      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
-      if (unusedTfs.length > 0) {
-        finalRolesList.push(unusedTfs[0]);
-      } else {
-        finalRolesList.push(tfs[0] || outs[0]);
-      }
-    }
-
-    const shuffledPlayers = shuffle(players);
-    const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
-    const basePlayers = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
-
-    const assignedRoles = shuffle(finalRolesList);
-
-    const assignedPlayers = players.map(p => {
-      const isTraveler = travelerPlayers.some(tp => tp.id === p.id);
-      if (isTraveler) {
-        const matched = selectionRoles.find(r => r.team === 'traveler') || { id: 'beggar' };
-        return {
-          ...p,
-          roleId: matched.id,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-
-      const bpIdx = basePlayers.findIndex(bp => bp.id === p.id);
-      const role = assignedRoles[bpIdx];
-      const roleId = role?.id;
-
-      return {
-        ...p,
-        roleId,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
-        isEvil: undefined,
-      };
-    });
-
-    return assignedPlayers;
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles);
   }
 
-  // If Atheist is not active, filter it out from the Townsfolk pool for standard assignment
   if (hasAtheistRole) {
     tfs = tfs.filter(t => t.id !== 'atheist');
   }
@@ -141,59 +138,10 @@ export function performStandardAssignment(
 
   if (hasLegion && legionRole) {
     const L = Math.round(baseCount * 0.6);
-    const legionDemons = Array(L).fill(legionRole);
-
-    const targetTownsfolk = baseCount - L;
-    const legionTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
-
-    const finalRolesList = shuffle([
-      ...legionDemons,
-      ...legionTownsfolk
-    ]);
-
-    while (finalRolesList.length < baseCount) {
-      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
-      if (unusedTfs.length > 0) {
-        finalRolesList.push(unusedTfs[0]);
-      } else {
-        finalRolesList.push(tfs[0] || dems[0]);
-      }
-    }
-
-    const shuffledPlayers = shuffle(players);
-    const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
-    const basePlayers = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
-
-    const assignedRoles = shuffle(finalRolesList);
-
-    return players.map(p => {
-      const isTraveler = travelerPlayers.some(tp => tp.id === p.id);
-      if (isTraveler) {
-        const matched = selectionRoles.find(r => r.team === 'traveler') || { id: 'beggar' };
-        return {
-          ...p,
-          roleId: matched.id,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-
-      const bpIdx = basePlayers.findIndex(bp => bp.id === p.id);
-      const role = assignedRoles[bpIdx];
-      const roleId = role?.id;
-
-      return {
-        ...p,
-        roleId,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
-        isEvil: roleId === 'legion' ? true : undefined,
-      };
-    });
+    const finalRolesList = shuffle([...Array(L).fill(legionRole), ...shuffle(tfs).slice(0, baseCount - L)]);
+    fillToCount(finalRolesList, baseCount, tfs, tfs[0], dems[0]);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'legion');
   }
 
   const riotRole = dems.find(d => d.id === 'riot');
@@ -201,59 +149,10 @@ export function performStandardAssignment(
 
   if (hasRiot && riotRole) {
     const D = 1 + base.minion;
-    const riotDemons = Array(D).fill(riotRole);
-
-    const targetTownsfolk = baseCount - D;
-    const riotTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
-
-    const finalRolesList = shuffle([
-      ...riotDemons,
-      ...riotTownsfolk
-    ]);
-
-    while (finalRolesList.length < baseCount) {
-      const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
-      if (unusedTfs.length > 0) {
-        finalRolesList.push(unusedTfs[0]);
-      } else {
-        finalRolesList.push(tfs[0] || dems[0]);
-      }
-    }
-
-    const shuffledPlayers = shuffle(players);
-    const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
-    const basePlayers = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
-
-    const assignedRoles = shuffle(finalRolesList);
-
-    return players.map(p => {
-      const isTraveler = travelerPlayers.some(tp => tp.id === p.id);
-      if (isTraveler) {
-        const matched = selectionRoles.find(r => r.team === 'traveler') || { id: 'beggar' };
-        return {
-          ...p,
-          roleId: matched.id,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-
-      const bpIdx = basePlayers.findIndex(bp => bp.id === p.id);
-      const role = assignedRoles[bpIdx];
-      const roleId = role?.id;
-
-      return {
-        ...p,
-        roleId,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
-        isEvil: roleId === 'riot' ? true : undefined,
-      };
-    });
+    const finalRolesList = shuffle([...Array(D).fill(riotRole), ...shuffle(tfs).slice(0, baseCount - D)]);
+    fillToCount(finalRolesList, baseCount, tfs, tfs[0], dems[0]);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'riot');
   }
 
   // Normal / non-Legion / non-Riot setup
@@ -276,15 +175,9 @@ export function performStandardAssignment(
   }
 
   let outsiderModifier = 0;
-  if (selectedMinions.some(m => m.id === 'baron')) {
-    outsiderModifier += 2;
-  }
-  if (selectedMinions.some(m => m.id === 'godfather')) {
-    outsiderModifier += Math.random() < 0.5 ? 1 : -1;
-  }
-  if (selectedDemons.some(d => d.id === 'fanggu')) {
-    outsiderModifier += 1;
-  }
+  if (selectedMinions.some(m => m.id === 'baron')) outsiderModifier += 2;
+  if (selectedMinions.some(m => m.id === 'godfather')) outsiderModifier += Math.random() < 0.5 ? 1 : -1;
+  if (selectedDemons.some(d => d.id === 'fanggu')) outsiderModifier += 1;
 
   let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
@@ -333,41 +226,10 @@ export function performStandardAssignment(
   }
 
   // 3. Huntsman & Damsel adjustment
-  const hasHuntsman = selectedTownsfolk.some(t => t.id === 'huntsman');
-  const hasDamsel = selectedOutsiders.some(o => o.id === 'damsel');
-  if (hasHuntsman && !hasDamsel) {
-    const damselRole = outs.find(o => o.id === 'damsel');
-    if (damselRole) {
-      const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'damsel');
-      if (otherOutsiders.length > 0) {
-        const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
-        selectedOutsiders = selectedOutsiders.filter(o => o.id !== outToRemove.id);
-        selectedOutsiders.push(damselRole);
-      } else {
-        selectedOutsiders.push(damselRole);
-        const otherTfs = selectedTownsfolk.filter(t => t.id !== 'huntsman' && t.id !== 'choirboy' && t.id !== 'king' && t.id !== 'balloonist');
-        if (otherTfs.length > 0) {
-          const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
-          selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
-        }
-      }
-    }
-  }
+  ({ tfs: selectedTownsfolk, outs: selectedOutsiders } = applyHuntsmanDamsel(outs, selectedTownsfolk, selectedOutsiders, ['choirboy', 'king', 'balloonist']));
 
   // 4. Choirboy & King adjustment
-  const hasChoirboy = selectedTownsfolk.some(t => t.id === 'choirboy');
-  const hasKing = selectedTownsfolk.some(t => t.id === 'king');
-  if (hasChoirboy && !hasKing) {
-    const kingRole = tfs.find(t => t.id === 'king');
-    if (kingRole) {
-      const otherTfs = selectedTownsfolk.filter(t => t.id !== 'choirboy' && t.id !== 'huntsman' && t.id !== 'balloonist');
-      if (otherTfs.length > 0) {
-        const tfToRemove = otherTfs[Math.floor(Math.random() * otherTfs.length)];
-        selectedTownsfolk = selectedTownsfolk.filter(t => t.id !== tfToRemove.id);
-        selectedTownsfolk.push(kingRole);
-      }
-    }
-  }
+  selectedTownsfolk = applyChoirboyKing(tfs, selectedTownsfolk, ['huntsman', 'balloonist']);
 
   const finalRolesList = shuffle([
     ...selectedDemons,
@@ -376,19 +238,11 @@ export function performStandardAssignment(
     ...selectedTownsfolk
   ]);
 
-  while (finalRolesList.length < baseCount) {
-    const unusedTfs = tfs.filter(t => !finalRolesList.some(fr => fr.id === t.id));
-    if (unusedTfs.length > 0) {
-      finalRolesList.push(unusedTfs[0]);
-    } else {
-      finalRolesList.push(tfs[0] || outs[0] || mins[0] || dems[0]);
-    }
-  }
+  fillToCount(finalRolesList, baseCount, tfs, tfs[0], outs[0], mins[0], dems[0]);
 
-  const roleIdsInPlay = finalRolesList.map(r => r.id);
-  const shuffledPlayers = shuffle(players);
-  const travelerPlayers = shuffledPlayers.slice(0, travelerCount);
-  const basePlayers = players.filter(p => !travelerPlayers.some(tp => tp.id === p.id));
+  const roleIdsInPlay = new Set(finalRolesList.map(r => r.id));
+  const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+  const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
 
   const K = basePlayers.length;
   const assignedRoles: Role[] = new Array(K);
@@ -396,7 +250,6 @@ export function performStandardAssignment(
 
   const demonRoleIndex = finalRolesList.findIndex(r => r.team === 'demon');
   const marionetteRoleIndex = finalRolesList.findIndex(r => r.id === 'marionette');
-
   const typhonRoleIndex = finalRolesList.findIndex(r => r.id === 'lordoftyphon');
 
   if (typhonRoleIndex !== -1) {
@@ -485,22 +338,14 @@ export function performStandardAssignment(
     }
   }
 
+  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+
   const assignedPlayers = players.map(p => {
-    const isTraveler = travelerPlayers.some(tp => tp.id === p.id);
-    if (isTraveler) {
-      const matched = selectionRoles.find(r => r.team === 'traveler') || { id: 'beggar' };
-      return {
-        ...p,
-        roleId: matched.id,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
-      };
+    if (travelerIds.has(p.id)) {
+      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
     }
 
-    const bpIdx = basePlayers.findIndex(bp => bp.id === p.id);
-    const role = assignedRoles[bpIdx];
+    const role = assignedRoles[basePlayerIndex.get(p.id) ?? 0];
     let roleId = role?.id;
     let isTheDrunk = false;
     let isTheMarionette = false;
@@ -509,14 +354,14 @@ export function performStandardAssignment(
 
     if (roleId === 'drunk') {
       isTheDrunk = true;
-      const unmatchedTFs = tfs.filter(t => !roleIdsInPlay.includes(t.id));
+      const unmatchedTFs = tfs.filter(t => !roleIdsInPlay.has(t.id));
       const fakeTF = unmatchedTFs.length > 0
         ? unmatchedTFs[Math.floor(Math.random() * unmatchedTFs.length)]
         : tfs[Math.floor(Math.random() * tfs.length)];
       roleId = fakeTF?.id ?? roleId;
     } else if (roleId === 'marionette') {
       isTheMarionette = true;
-      const unmatchedGoods = [...tfs, ...outs].filter(g => !roleIdsInPlay.includes(g.id));
+      const unmatchedGoods = [...tfs, ...outs].filter(g => !roleIdsInPlay.has(g.id));
       const matchedGood = unmatchedGoods[Math.floor(Math.random() * unmatchedGoods.length)] || tfs[0];
       roleId = matchedGood.id;
     } else if (roleId === 'lunatic') {
@@ -525,7 +370,7 @@ export function performStandardAssignment(
       roleId = matchedDemon.id;
     } else if (roleId === 'lilmonsta') {
       isTheLilMonsta = true;
-      const unmatchedMinions = mins.filter(m => !roleIdsInPlay.includes(m.id));
+      const unmatchedMinions = mins.filter(m => !roleIdsInPlay.has(m.id));
       const matchedMinion = unmatchedMinions[Math.floor(Math.random() * unmatchedMinions.length)] || mins[0];
       roleId = matchedMinion.id;
     }
@@ -542,18 +387,20 @@ export function performStandardAssignment(
   });
 
   const travelerRoleIds = new Set(selectionRoles.filter(r => r.team === 'traveler').map(r => r.id));
+  const tfIds = new Set(tfs.map(r => r.id));
+  const outIds = new Set(outs.map(r => r.id));
 
   const hasHuntsmanInPlay = assignedPlayers.some(p => p.roleId === 'huntsman');
   const hasDamselInPlay = assignedPlayers.some(p => p.roleId === 'damsel');
 
   if (hasHuntsmanInPlay && !hasDamselInPlay) {
-    const eligiblePlayers = assignedPlayers.filter(p => 
-      p.roleId && 
+    const eligiblePlayers = assignedPlayers.filter(p =>
+      p.roleId &&
       !travelerRoleIds.has(p.roleId) &&
       !p.isTheMarionette &&
       !p.isTheLunatic &&
       p.roleId !== 'huntsman' &&
-      (tfs.some(t => t.id === p.roleId) || outs.some(o => o.id === p.roleId))
+      (tfIds.has(p.roleId) || outIds.has(p.roleId))
     );
     if (eligiblePlayers.length > 0) {
       const chosenForDamsel = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
@@ -564,16 +411,14 @@ export function performStandardAssignment(
 
   const hasAtheist = assignedPlayers.some(p => p.roleId === 'atheist' && !p.isTheDrunk && !p.isTheMarionette && !p.isTheLunatic);
   if (hasAtheist) {
-    assignedPlayers.forEach(p => {
-      p.isEvil = undefined;
-    });
+    assignedPlayers.forEach(p => { p.isEvil = undefined; });
   } else {
     const hasBountyHunter = assignedPlayers.some(p => p.roleId === 'bountyhunter' && !p.isTheDrunk && !p.isTheMarionette && !p.isTheLunatic);
     if (hasBountyHunter) {
-      const townsfolkPlayers = assignedPlayers.filter(p => 
-        p.roleId && 
+      const townsfolkPlayers = assignedPlayers.filter(p =>
+        p.roleId &&
         !travelerRoleIds.has(p.roleId) &&
-        tfs.some(t => t.id === p.roleId) &&
+        tfIds.has(p.roleId) &&
         !p.isTheMarionette
       );
       if (townsfolkPlayers.length > 0) {

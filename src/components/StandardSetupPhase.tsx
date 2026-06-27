@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Shuffle, Upload, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player, Role } from '../types';
@@ -96,11 +96,13 @@ export default function StandardSetupPhase({
   const [showGrimoireWarning, setShowGrimoireWarning] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isSelectCharactersModalOpen, setIsSelectCharactersModalOpen] = useState(false);
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(new Set());
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => new Set(scriptRoles.map(r => r.id)));
+  const [prevScriptRoles, setPrevScriptRoles] = useState<Role[]>(scriptRoles);
 
-  useEffect(() => {
+  if (prevScriptRoles !== scriptRoles) {
+    setPrevScriptRoles(scriptRoles);
     setSelectedCharacterIds(new Set(scriptRoles.map(r => r.id)));
-  }, [scriptRoles]);
+  }
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);

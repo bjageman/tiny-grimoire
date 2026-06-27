@@ -48,10 +48,17 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
     [selectedRoles, playerCount]
   );
 
+  const MAX_ASSIGN = 15;
+  const atCap = selectedIds.size >= MAX_ASSIGN;
+
   const toggleRole = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_ASSIGN) {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -61,16 +68,22 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
     const allSelected = teamRoles.every(r => selectedIds.has(r.id));
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (allSelected) teamRoles.forEach(r => next.delete(r.id));
-      else teamRoles.forEach(r => next.add(r.id));
+      if (allSelected) {
+        teamRoles.forEach(r => next.delete(r.id));
+      } else {
+        for (const r of teamRoles) {
+          if (next.size >= MAX_ASSIGN) break;
+          next.add(r.id);
+        }
+      }
       return next;
     });
   };
 
-  const selectAll   = () => setSelectedIds(new Set(assignableRoles.map(r => r.id)));
+  const selectAll   = () => setSelectedIds(new Set(assignableRoles.slice(0, MAX_ASSIGN).map(r => r.id)));
   const deselectAll = () => setSelectedIds(new Set());
 
-  const canAssign = playerCount >= 5 && selectedIds.size >= playerCount;
+  const canAssign = playerCount >= 5 && selectedIds.size >= playerCount && selectedIds.size <= MAX_ASSIGN;
 
   const handleAssign = () => { onAssign(selectedRoles); onClose(); };
 
@@ -106,8 +119,8 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 space-y-4 pb-4 pt-1">
           {/* Global select controls */}
           <div className="flex items-center justify-between">
-            <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-              {selectedIds.size} of {assignableRoles.length} characters
+            <span className={cn("text-xs font-semibold", atCap ? (isLightModeActive ? "text-amber-700" : "text-yellow-400") : isLightModeActive ? "text-gray-600" : "text-gray-400")}>
+              {selectedIds.size}/{MAX_ASSIGN} characters{atCap ? ' (max)' : ''}
             </span>
             <div className="flex gap-2">
               <button
@@ -173,11 +186,13 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {teamRoles.map(role => {
                       const checked = selectedIds.has(role.id);
+                      const disabled = atCap && !checked;
                       return (
                         <label
                           key={role.id}
                           className={cn(
-                            "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all select-none",
+                            "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all select-none",
+                            disabled ? "cursor-not-allowed" : "cursor-pointer",
                             checked
                               ? isLightModeActive
                                 ? "border-gray-400 bg-white shadow-sm"
@@ -190,6 +205,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                           <input
                             type="checkbox"
                             checked={checked}
+                            disabled={disabled}
                             onChange={() => toggleRole(role.id)}
                             className="shrink-0 w-3.5 h-3.5"
                           />

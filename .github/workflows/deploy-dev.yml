@@ -18,6 +18,7 @@ jobs:
           command_timeout: 30m
           script_stop: true
           script: |
+            export DOCKER_HOST=unix:///tank/services/docker.sock
             cd /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion
             git fetch origin
             git checkout dev

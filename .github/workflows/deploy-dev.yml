@@ -1,0 +1,22 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          command_timeout: 30m
+          script: |
+            cd /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion
+            git pull
+            docker compose -f docker-compose.dev.yml up -d --build --remove-orphans

@@ -691,8 +691,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles);
-    if (!assignedPlayers) return;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles)!;
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };

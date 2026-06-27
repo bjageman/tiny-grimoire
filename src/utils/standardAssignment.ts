@@ -18,10 +18,6 @@ export function performStandardAssignment(
   const mins = currentScriptRoles.filter(r => r.team === 'minion');
   const dems = currentScriptRoles.filter(r => r.team === 'demon');
 
-  if (dems.length === 0 || mins.length === 0 || tfs.length === 0) {
-    return null;
-  }
-
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
   const hasAtheistRole = tfs.some(r => r.id === 'atheist');

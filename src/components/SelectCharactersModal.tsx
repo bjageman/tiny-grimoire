@@ -16,6 +16,12 @@ interface Props {
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
+const ICON_ID: Record<string, string> = {
+  villageidiot2: 'villageidiot',
+  villageidiot3: 'villageidiot',
+};
+const iconId = (id: string) => ICON_ID[id] ?? id;
+
 const TEAMS = [
   { key: 'townsfolk', label: '🔵 Townsfolk', color: 'text-clocktower-townsfolk', border: 'border-clocktower-townsfolk/20' },
   { key: 'outsider',  label: '🔵 Outsiders', color: 'text-clocktower-outsider',  border: 'border-clocktower-outsider/20'  },
@@ -194,7 +200,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                           />
                           <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                             <img
-                              src={`/icons/${role.id}.svg`}
+                              src={`/icons/${iconId(role.id)}.svg`}
                               alt=""
                               className="w-3.5 h-3.5 object-contain"
                               onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}

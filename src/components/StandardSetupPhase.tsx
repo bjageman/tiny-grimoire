@@ -104,6 +104,15 @@ export default function StandardSetupPhase({
     setSelectedCharacterIds(new Set(scriptRoles.map(r => r.id)));
   }
 
+  const selectableRoles = useMemo(() => {
+    if (!scriptRoles.some(r => r.id === 'villageidiot')) return scriptRoles;
+    const idx = scriptRoles.findIndex(r => r.id === 'villageidiot');
+    const result = [...scriptRoles];
+    const vi: Role = { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' };
+    result.splice(idx + 1, 0, { ...vi, id: 'villageidiot2' }, { ...vi, id: 'villageidiot3' });
+    return result;
+  }, [scriptRoles]);
+
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
     return [...baseRoles].sort((a, b) => a.name.localeCompare(b.name));
@@ -219,7 +228,7 @@ export default function StandardSetupPhase({
               type="button"
               onClick={() => {
                 if (selectedCharacterIds.size > 0) {
-                  const selectedRoles = scriptRoles.filter(r => selectedCharacterIds.has(r.id));
+                  const selectedRoles = selectableRoles.filter(r => selectedCharacterIds.has(r.id));
                   randomlyAssignWithRoles(selectedRoles);
                 } else {
                   randomlyAssignRoles();
@@ -510,7 +519,7 @@ export default function StandardSetupPhase({
     <SelectCharactersModal
       isOpen={isSelectCharactersModalOpen}
       onClose={() => setIsSelectCharactersModalOpen(false)}
-      roles={scriptRoles}
+      roles={selectableRoles}
       playerCount={players.length}
       isLightModeActive={isLightModeActive}
       onAssign={randomlyAssignWithRoles}

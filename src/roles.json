@@ -120,6 +120,8 @@
   {"id": "shugenja", "name": "Shugenja", "team": "townsfolk"},
   {"id": "steward", "name": "Steward", "team": "townsfolk"},
   {"id": "villageidiot", "name": "Village Idiot", "team": "townsfolk"},
+  {"id": "villageidiot2", "name": "Village Idiot", "team": "townsfolk"},
+  {"id": "villageidiot3", "name": "Village Idiot", "team": "townsfolk"},
   {"id": "hatter", "name": "Hatter", "team": "outsider"},
   {"id": "hermit", "name": "Hermit", "team": "outsider"},
   {"id": "ogre", "name": "Ogre", "team": "outsider"},

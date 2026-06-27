@@ -273,6 +273,34 @@
     "flavor": "Roses are blue, and violets are red, Please reverse what I just said."
   },
   {
+    "id": "villageidiot2",
+    "name": "Village Idiot",
+    "team": "townsfolk",
+    "edition": "carousel",
+    "firstNightReminder": "Wake the Village Idiots one at a time to choose a player. Give a thumb signal.",
+    "otherNightReminder": "Wake the Village Idiots one at a time to choose a player. Give a thumb signal.",
+    "reminders": [
+      "Drunk"
+    ],
+    "setup": false,
+    "ability": "Each night, choose a player: you learn their alignment. [+0 to +2 Village Idiots. 1 of the extras is drunk]",
+    "flavor": "Roses are blue, and violets are red, Please reverse what I just said."
+  },
+  {
+    "id": "villageidiot3",
+    "name": "Village Idiot",
+    "team": "townsfolk",
+    "edition": "carousel",
+    "firstNightReminder": "Wake the Village Idiots one at a time to choose a player. Give a thumb signal.",
+    "otherNightReminder": "Wake the Village Idiots one at a time to choose a player. Give a thumb signal.",
+    "reminders": [
+      "Drunk"
+    ],
+    "setup": false,
+    "ability": "Each night, choose a player: you learn their alignment. [+0 to +2 Village Idiots. 1 of the extras is drunk]",
+    "flavor": "Roses are blue, and violets are red, Please reverse what I just said."
+  },
+  {
     "id": "snakecharmer",
     "name": "Snake Charmer",
     "edition": "snv",

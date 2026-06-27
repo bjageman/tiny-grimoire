@@ -1849,7 +1849,6 @@
     "name": "Lord of Typhon",
     "team": "demon",
     "edition": "carousel",
-    "firstNightReminder": "Wake the Lord of Typhon's neighbors. Show the *YOU ARE* and Minion tokens & give a thumbs-down.",
     "otherNightReminder": "The Lord of Typhon chooses a player. :reminder:",
     "reminders": [
       "Dead"

@@ -18,6 +18,7 @@ This file defines how AI coding agents should work in this repository. Follow th
 - Keep edits scoped to the requested work; avoid opportunistic rewrites.
 - Do not invent requirements, APIs, configuration, or dependencies.
 - Ask for approval before making risky or high-blast-radius changes.
+- Only propose and use self-hosted solutions for problems (avoid external SaaS/cloud integrations).
 
 ## Commands
 

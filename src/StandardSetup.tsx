@@ -21,6 +21,11 @@ import RoomCodeModal from './components/RoomCodeModal';
 
 type Phase = 'setup' | 'game';
 
+const generateId = (): string =>
+  typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).substring(2);
+
 interface SetupProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -404,7 +409,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (players.length >= 20) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     const newPlayer: Player = {
-      id: Math.random().toString(36).substring(2, 11),
+      id: generateId(),
       name,
       isDead: false,
       isTheDrunk: false,
@@ -429,7 +434,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       return;
     }
     const newPlayer: Player = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: newTravelerName.trim(),
       roleId: newTravelerRoleId,
       isDead: false,

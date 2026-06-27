@@ -50,6 +50,8 @@ interface StandardSetupPhaseProps {
   movePlayer: (index: number, direction: 'up' | 'down') => void;
   validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
+  selectedCharacterIds: Set<string>;
+  setSelectedCharacterIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
 export default function StandardSetupPhase({
@@ -89,6 +91,8 @@ export default function StandardSetupPhase({
   movePlayer,
   validationSummary,
   isLightModeActive,
+  selectedCharacterIds,
+  setSelectedCharacterIds,
   remotePlayerCount = 0,
   grimoireConfirmed = false,
   onGrimoireConfirmed,
@@ -96,7 +100,6 @@ export default function StandardSetupPhase({
   const [showGrimoireWarning, setShowGrimoireWarning] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isSelectCharactersModalOpen, setIsSelectCharactersModalOpen] = useState(false);
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => new Set(scriptRoles.map(r => r.id)));
   const [prevScriptRoles, setPrevScriptRoles] = useState<Role[]>(scriptRoles);
 
   if (prevScriptRoles !== scriptRoles) {

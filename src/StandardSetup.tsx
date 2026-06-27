@@ -659,6 +659,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
 
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(
+    () => new Set(currentScriptRoles.map(r => r.id))
+  );
+  const [prevScriptRolesForSelection, setPrevScriptRolesForSelection] = useState(currentScriptRoles);
+  if (prevScriptRolesForSelection !== currentScriptRoles) {
+    setPrevScriptRolesForSelection(currentScriptRoles);
+    setSelectedCharacterIds(new Set(currentScriptRoles.map(r => r.id)));
+  }
+
   const selectionRoles = useMemo(() => {
     const roles = expandVillageIdiots([...currentScriptRoles]);
     const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
@@ -826,6 +835,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           isLightModeActive={isLightModeActive}
           allAssigned={allAssigned}
+          selectedCharacterIds={selectedCharacterIds}
+          setSelectedCharacterIds={setSelectedCharacterIds}
           remotePlayerCount={remotePlayerIds.size}
           grimoireConfirmed={grimoireConfirmed}
           onGrimoireConfirmed={() => setGrimoireConfirmed(true)}

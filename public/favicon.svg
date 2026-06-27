@@ -53,10 +53,7 @@
   <line x1="234" y1="318" x2="234" y2="370" stroke="#cc0000" stroke-width="6"/>
   <ellipse cx="234" cy="377" rx="8" ry="10" fill="#cc0000"/>
 
-  <line x1="258" y1="318" x2="258" y2="400" stroke="#cc0000" stroke-width="6"/>
-  <ellipse cx="258" cy="408" rx="8" ry="10" fill="#cc0000"/>
-
-  <line x1="280" y1="318" x2="280" y2="355" stroke="#cc0000" stroke-width="6"/>
+<line x1="280" y1="318" x2="280" y2="355" stroke="#cc0000" stroke-width="6"/>
   <ellipse cx="280" cy="362" rx="8" ry="10" fill="#cc0000"/>
 
   <!-- Small arched window -->

@@ -679,7 +679,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           <div className="space-y-6 text-center">
             {/* Reveal Card Wrapper */}
             <div
-              onClick={() => revealed ? goToTracker() : setRevealed(true)}
+              onClick={() => {
+                if (revealed) {
+                  goToTracker();
+                } else {
+                  setRevealed(true);
+                  setTimeout(goToTracker, 800);
+                }
+              }}
               className={cn(
                 "w-full h-80 rounded-lg border cursor-pointer perspective-1000 transform-style-3d transition-all duration-700 relative shadow-2xl border-clocktower-blood/50",
                 revealed ? "rotate-y-180" : ""

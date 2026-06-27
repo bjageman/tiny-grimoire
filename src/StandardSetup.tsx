@@ -406,7 +406,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const addPlayer = () => {
-    if (players.length >= 20) return;
+    if (players.length >= 15) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     const newPlayer: Player = {
       id: generateId(),

@@ -605,6 +605,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           isTheDrunk: nextVal ? false : p.isTheDrunk,
           isTheMarionette: nextVal ? false : p.isTheMarionette,
           isTheLilMonsta: nextVal ? false : p.isTheLilMonsta,
+          isEvil: nextVal ? false : undefined,
         };
       }
       return p;

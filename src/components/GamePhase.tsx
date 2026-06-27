@@ -480,8 +480,16 @@ export default function GamePhase({
                     <span className="truncate">{p.name}</span>
                     {(() => {
                       const defaultEvil = rObj ? (rObj.team === 'minion' || rObj.team === 'demon') : false;
-                      const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-                      const hasAlignmentShift = p.isEvil !== undefined && p.isEvil !== defaultEvil;
+                      const isEvil = p.isEvil !== undefined
+                        ? p.isEvil
+                        : p.isTheLunatic
+                        ? false
+                        : p.isTheMarionette
+                        ? true
+                        : defaultEvil;
+                      const hasAlignmentShift = (p.isEvil !== undefined && p.isEvil !== defaultEvil)
+                        || p.isTheLunatic
+                        || p.isTheMarionette;
                       return hasAlignmentShift ? (isEvil ? '👿' : '😇') : null;
                     })()}
                   </span>

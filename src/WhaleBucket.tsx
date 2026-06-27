@@ -677,7 +677,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerTheLunatic = (id: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, isTheLunatic: !p.isTheLunatic, isTheDrunk: false, isTheMarionette: false, isTheLilMonsta: false } : p));
+    setPlayers(players.map(p => {
+      if (p.id === id) {
+        const nextVal = !p.isTheLunatic;
+        return {
+          ...p,
+          isTheLunatic: nextVal,
+          isTheDrunk: false,
+          isTheMarionette: false,
+          isTheLilMonsta: false,
+          isEvil: nextVal ? false : undefined,
+        };
+      }
+      return p;
+    }));
   };
 
   const togglePlayerTheLilMonsta = (id: string) => {

@@ -622,7 +622,13 @@ export default function GrimoireBoard({
                     return displayRoles.map((roleId, idx) => {
                       const roleObj = roleId ? rolesData.find((r) => r.id === roleId) : null;
                       const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-                      const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
+                      const isEvil = p.isEvil !== undefined
+                        ? p.isEvil
+                        : p.isTheLunatic
+                        ? false
+                        : p.isTheMarionette
+                        ? true
+                        : defaultEvil;
 
                       let transformClass = "absolute inset-0 transition-all duration-300 ease-out hover:z-20";
                       if (displayRoles.length > 1) {

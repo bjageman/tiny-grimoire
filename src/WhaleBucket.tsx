@@ -1291,6 +1291,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         joinUrl={`${window.location.origin}${window.location.pathname}#/whale-bucket?syncCode=${syncCode}&gameCode=${gameCode}`}
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
+        syncOnly={true}
       />
     )}
     </>

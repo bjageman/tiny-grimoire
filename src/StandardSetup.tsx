@@ -1231,6 +1231,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         joinUrl={`${window.location.origin}${window.location.pathname}#/standard?syncCode=${syncCode}&gameCode=${gameCode}`}
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
+        syncOnly={true}
       />
     )}
     </>

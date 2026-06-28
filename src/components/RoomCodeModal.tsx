@@ -9,9 +9,10 @@ interface RoomCodeModalProps {
   joinUrl: string;
   onClose: () => void;
   isLightModeActive: boolean;
+  syncOnly?: boolean;
 }
 
-export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeActive }: RoomCodeModalProps) {
+export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeActive, syncOnly = false }: RoomCodeModalProps) {
   useScrollLock();
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -75,14 +76,25 @@ export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeA
         )}
         onClick={e => e.stopPropagation()}
       >
-        <div className="text-center">
-          <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>
-            Room Code
-          </p>
-          <p className="text-3xl font-mono font-bold tracking-widest text-clocktower-blood">
-            {gameCode}
-          </p>
-        </div>
+        {!syncOnly ? (
+          <div className="text-center">
+            <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>
+              Room Code
+            </p>
+            <p className="text-3xl font-mono font-bold tracking-widest text-clocktower-blood">
+              {gameCode}
+            </p>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-sm font-display font-bold uppercase tracking-wider text-clocktower-blood">
+              Sync Other Device
+            </p>
+            <p className={cn('text-[11px] font-medium mt-0.5 leading-relaxed', isLightModeActive ? 'text-gray-500' : 'text-gray-450')}>
+              Scan with your phone to sync as storyteller controller
+            </p>
+          </div>
+        )}
 
         {/* QR Code */}
         <div className="flex justify-center">
@@ -104,17 +116,19 @@ export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeA
           >
             {copiedUrl ? '✓ Copied!' : 'Copy Join URL'}
           </button>
-          <button
-            onClick={() => copy(gameCode, 'code')}
-            className={cn(
-              'w-full px-3 py-2 rounded-md text-sm font-semibold border transition-colors',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-            )}
-          >
-            {copiedCode ? '✓ Copied!' : 'Copy Code'}
-          </button>
+          {!syncOnly && (
+            <button
+              onClick={() => copy(gameCode, 'code')}
+              className={cn(
+                'w-full px-3 py-2 rounded-md text-sm font-semibold border transition-colors',
+                isLightModeActive
+                  ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+              )}
+            >
+              {copiedCode ? '✓ Copied!' : 'Copy Code'}
+            </button>
+          )}
         </div>
       </div>
     </div>,

@@ -52,6 +52,8 @@ interface Props {
   onSetReminderTokens?: React.Dispatch<React.SetStateAction<PlacedReminder[]>>;
   checkedItems?: Record<string, boolean>;
   onSetCheckedItems?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  rotationOffset?: number;
+  onRotationChange?: (offset: number) => void;
 }
 
 export default function GamePhase({
@@ -79,6 +81,8 @@ export default function GamePhase({
   onSetReminderTokens,
   checkedItems,
   onSetCheckedItems,
+  rotationOffset,
+  onRotationChange,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -197,6 +201,8 @@ export default function GamePhase({
             onAddReminder={enableReminders && !isSynced ? handleAddReminder : undefined}
             onRemoveReminder={enableReminders && !isSynced ? handleRemoveReminder : undefined}
             onRemoveAllReminders={enableReminders && !isSynced ? handleRemoveAllReminders : undefined}
+            rotationOffset={rotationOffset}
+            onRotationChange={onRotationChange}
           />
         </div>
         {showNightOrder && (

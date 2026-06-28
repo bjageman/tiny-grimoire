@@ -229,6 +229,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
   }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rotationOffset, setRotationOffset] = useState(0);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
 
@@ -450,6 +451,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         demonBluffs: string[];
         reminderTokens: PlacedReminder[];
         checkedItems: Record<string, boolean>;
+        rotationOffset?: number;
       };
     };
 
@@ -468,6 +470,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             demonBluffs,
             reminderTokens,
             checkedItems,
+            rotationOffset,
           }
         });
       }
@@ -496,6 +499,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         demonBluffs,
         reminderTokens,
         checkedItems,
+        rotationOffset,
       });
 
       const incomingStateStr = JSON.stringify({
@@ -509,6 +513,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         demonBluffs: incoming.demonBluffs || [],
         reminderTokens: incoming.reminderTokens || [],
         checkedItems: incoming.checkedItems || {},
+        rotationOffset: incoming.rotationOffset ?? 0,
       });
 
       if (localStateStr !== incomingStateStr) {
@@ -522,6 +527,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         setDemonBluffs(incoming.demonBluffs || []);
         setReminderTokens(incoming.reminderTokens || []);
         setCheckedItems(incoming.checkedItems || {});
+        setRotationOffset(incoming.rotationOffset ?? 0);
       }
       setHasReceivedSync(true);
     }
@@ -537,6 +543,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     demonBluffs,
     reminderTokens,
     checkedItems,
+    rotationOffset,
   ]);
 
   const { sendMessage: sendSyncMessage } = useGameSocket(syncChannelCode, handleIncomingSyncMessage);
@@ -565,6 +572,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     demonBluffs,
     reminderTokens,
     checkedItems,
+    rotationOffset,
   });
 
   useEffect(() => {
@@ -582,6 +590,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           demonBluffs,
           reminderTokens,
           checkedItems,
+          rotationOffset,
         }
       });
     }
@@ -1187,6 +1196,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onSetReminderTokens={setReminderTokens}
           checkedItems={checkedItems}
           onSetCheckedItems={setCheckedItems}
+          rotationOffset={rotationOffset}
+          onRotationChange={setRotationOffset}
         />
       )}
 

@@ -282,6 +282,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [excludedRoleIds]);
 
   // Preference modal states
+  const [rotationOffset, setRotationOffset] = useState(0);
   const [activePrefModal, setActivePrefModal] = useState<{ playerId: string; team: Role['team'] } | null>(null);
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -464,6 +465,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         demonBluffs: string[];
         reminderTokens: PlacedReminder[];
         checkedItems: Record<string, boolean>;
+        rotationOffset?: number;
       };
     };
 
@@ -482,6 +484,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             demonBluffs,
             reminderTokens,
             checkedItems,
+            rotationOffset,
           }
         });
       }
@@ -498,6 +501,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         demonBluffs,
         reminderTokens,
         checkedItems,
+        rotationOffset,
       });
 
       const incomingStateStr = JSON.stringify({
@@ -511,6 +515,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         demonBluffs: incoming.demonBluffs || [],
         reminderTokens: incoming.reminderTokens || [],
         checkedItems: incoming.checkedItems || {},
+        rotationOffset: incoming.rotationOffset ?? 0,
       });
 
       if (localStateStr !== incomingStateStr) {
@@ -524,6 +529,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         setDemonBluffs(incoming.demonBluffs || []);
         setReminderTokens(incoming.reminderTokens || []);
         setCheckedItems(incoming.checkedItems || {});
+        setRotationOffset(incoming.rotationOffset ?? 0);
       }
       setHasReceivedSync(true);
     }
@@ -539,6 +545,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     demonBluffs,
     reminderTokens,
     checkedItems,
+    rotationOffset,
   ]);
 
   const { sendMessage: sendSyncMessage } = useGameSocket(syncChannelCode, handleIncomingSyncMessage);
@@ -567,6 +574,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     demonBluffs,
     reminderTokens,
     checkedItems,
+    rotationOffset,
   });
 
   useEffect(() => {
@@ -584,6 +592,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           demonBluffs,
           reminderTokens,
           checkedItems,
+          rotationOffset,
         }
       });
     }
@@ -1222,6 +1231,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onSetReminderTokens={setReminderTokens}
           checkedItems={checkedItems}
           onSetCheckedItems={setCheckedItems}
+          rotationOffset={rotationOffset}
+          onRotationChange={setRotationOffset}
         />
       )}
 

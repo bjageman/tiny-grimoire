@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Check, RotateCcw, Moon, Award, ChevronRight } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Player } from '../types';
@@ -11,6 +12,8 @@ interface NightOrderWidgetProps {
   dayNumber: number;
   isLightModeActive: boolean;
   onToggleTimeOfDay?: () => void;
+  checkedItems?: Record<string, boolean>;
+  onSetCheckedItems?: Dispatch<SetStateAction<Record<string, boolean>>>;
 }
 
 interface NightOrderItem {
@@ -29,13 +32,17 @@ export default function NightOrderWidget({
   dayNumber,
   isLightModeActive,
   onToggleTimeOfDay,
+  checkedItems: propCheckedItems,
+  onSetCheckedItems,
 }: NightOrderWidgetProps) {
   // Track previous phase to reset tab and checklist on phase change
   const [prevPhase, setPrevPhase] = useState({ dayNumber, timeOfDay });
   const [activeTab, setActiveTab] = useState<'first' | 'other'>(dayNumber === 1 ? 'first' : 'other');
   
   // Track checkmarks by item ID
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [localCheckedItems, setLocalCheckedItems] = useState<Record<string, boolean>>({});
+  const checkedItems = propCheckedItems !== undefined ? propCheckedItems : localCheckedItems;
+  const setCheckedItems = onSetCheckedItems !== undefined ? onSetCheckedItems : setLocalCheckedItems;
 
   // Reset tab and checklists during render if phase changes
   if (prevPhase.dayNumber !== dayNumber || prevPhase.timeOfDay !== timeOfDay) {
@@ -51,10 +58,10 @@ export default function NightOrderWidget({
 
   // Toggle checkmark
   const handleToggleCheck = (itemId: string) => {
-    setCheckedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
+    setCheckedItems({
+      ...checkedItems,
+      [itemId]: !checkedItems[itemId],
+    });
   };
 
   // Group in-play players by their role ID

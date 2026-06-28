@@ -48,6 +48,10 @@ interface Props {
   onDownloadLog?: () => void;
   onDeclareWinner?: (team: 'good' | 'evil') => void;
   onLogEvent?: (message: string) => void;
+  reminderTokens?: PlacedReminder[];
+  onSetReminderTokens?: React.Dispatch<React.SetStateAction<PlacedReminder[]>>;
+  checkedItems?: Record<string, boolean>;
+  onSetCheckedItems?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }
 
 export default function GamePhase({
@@ -71,6 +75,10 @@ export default function GamePhase({
   onDownloadLog,
   onDeclareWinner,
   onLogEvent,
+  reminderTokens: propReminderTokens,
+  onSetReminderTokens,
+  checkedItems,
+  onSetCheckedItems,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -78,7 +86,9 @@ export default function GamePhase({
   const [bluffPickerSlot, setBluffPickerSlot] = useState<number | null>(null);
   const [bluffSearch, setBluffSearch] = useState('');
   const bluffSearchRef = useRef<HTMLInputElement>(null);
-  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>([]);
+  const [localReminderTokens, setLocalReminderTokens] = useState<PlacedReminder[]>([]);
+  const reminderTokens = propReminderTokens !== undefined ? propReminderTokens : localReminderTokens;
+  const setReminderTokens = onSetReminderTokens !== undefined ? onSetReminderTokens : setLocalReminderTokens;
 
   const handleAddReminder = (targetPlayerId: string, sourceCharId: string, text: string) => {
     const id = typeof crypto?.randomUUID === 'function'
@@ -196,6 +206,8 @@ export default function GamePhase({
             dayNumber={dayNumber}
             isLightModeActive={isLightModeActive}
             onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
+            checkedItems={checkedItems}
+            onSetCheckedItems={onSetCheckedItems}
           />
         )}
       </div>

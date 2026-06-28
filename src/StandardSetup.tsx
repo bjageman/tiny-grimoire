@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
-import type { Player, Role } from './types';
+import type { Player, Role, PlacedReminder } from './types';
 import { TEAM_ORDER } from './types';
 import { parseScriptFile } from './utils/scriptUtils';
 
@@ -32,7 +32,31 @@ interface SetupProps {
 }
 
 export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
+  const [isSecondary] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
+    return params.has('syncCode');
+  });
+
+  const [syncCode, setSyncCode] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
+    const urlSync = params.get('syncCode');
+    if (urlSync) return urlSync.toUpperCase();
+
+    const saved = localStorage.getItem('standard-botc-sync-code');
+    if (saved) return saved;
+    const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-sync-code', newSync);
+    return newSync;
+  });
+
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [hasReceivedSync, setHasReceivedSync] = useState(!isSecondary);
+
   const [gameCode, setGameCode] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search);
+    const urlGame = params.get('gameCode');
+    if (isSecondary && urlGame) return urlGame.toUpperCase();
+
     const saved = localStorage.getItem('standard-botc-game-code');
     if (saved) return saved;
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
@@ -43,6 +67,30 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
+
+  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>(() => {
+    const saved = localStorage.getItem('standard-botc-game');
+    if (saved) {
+      try {
+        return JSON.parse(saved).reminderTokens || [];
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('standard-botc-game');
+    if (saved) {
+      try {
+        return JSON.parse(saved).checkedItems || {};
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {};
+  });
 
   const [players, setPlayers] = useState<Player[]>(() => {
     const saved = localStorage.getItem('standard-botc-game');
@@ -226,11 +274,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setCustomScriptRoles(null);
       setDemonBluffs([]);
       setGameLog([]);
+      setReminderTokens([]);
+      setCheckedItems({});
       localStorage.removeItem('standard-botc-game');
       const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
       localStorage.setItem('standard-botc-game-code', newCode);
+      const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+      localStorage.setItem('standard-botc-sync-code', newSync);
       window.location.hash = '';
       setGameCode(newCode);
+      setSyncCode(newSync);
     }, 'Reset Game');
   };
 
@@ -347,7 +400,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  const { sendMessage } = useGameSocket(gameCode, handleIncomingMessage);
+  const { sendMessage } = useGameSocket(!isSecondary ? gameCode : '', handleIncomingMessage);
 
   useEffect(() => {
     sendMessageRef.current = sendMessage;
@@ -355,7 +408,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   // Sync game state to players when in game phase
   useEffect(() => {
-    if (phase === 'game') {
+    if (!isSecondary && phase === 'game' && sendMessage) {
       sendMessage({
         type: 'game_update',
         players,
@@ -365,11 +418,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customScriptRoles
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, customScriptRoles, sendMessage]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, customScriptRoles, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
-    if (phase === 'setup') {
+    if (!isSecondary && phase === 'setup') {
       // Only broadcast standard setup updates on initial mount or phase change
       // rather than on every players list alteration to prevent loop storm
       const initialTimer = setTimeout(() => {
@@ -377,7 +430,145 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       }, 500);
       return () => clearTimeout(initialTimer);
     }
-  }, [phase, players, broadcastSetupUpdate]);
+  }, [phase, players, broadcastSetupUpdate, isSecondary]);
+
+  // Storyteller Sync channel (laptop <-> phone)
+  const syncChannelCode = syncCode;
+  const sendSyncRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+
+  const handleIncomingSyncMessage = useCallback((data: unknown) => {
+    const payload = data as {
+      type: string;
+      state?: {
+        players: Player[];
+        phase: Phase;
+        timeOfDay: 'night' | 'day';
+        dayNumber: number;
+        customScriptRoles: Role[] | null;
+        scriptName: string;
+        isLilMonstaGame: boolean;
+        demonBluffs: string[];
+        gameLog: string[];
+        reminderTokens: PlacedReminder[];
+        checkedItems: Record<string, boolean>;
+      };
+    };
+
+    if (payload.type === 'storyteller_sync_request') {
+      if (!isSecondary && sendSyncRef.current) {
+        sendSyncRef.current({
+          type: 'storyteller_state_sync',
+          state: {
+            players,
+            phase,
+            timeOfDay,
+            dayNumber,
+            customScriptRoles,
+            scriptName,
+            isLilMonstaGame,
+            demonBluffs,
+            gameLog,
+            reminderTokens,
+            checkedItems,
+          }
+        });
+      }
+    } else if (payload.type === 'storyteller_state_sync' && payload.state) {
+      const incoming = payload.state;
+      const localStateStr = JSON.stringify({
+        players,
+        phase,
+        timeOfDay,
+        dayNumber,
+        customScriptRoles,
+        scriptName,
+        isLilMonstaGame,
+        demonBluffs,
+        gameLog,
+        reminderTokens,
+        checkedItems,
+      });
+      const incomingStateStr = JSON.stringify(incoming);
+
+      if (localStateStr !== incomingStateStr) {
+        setPlayers(incoming.players || []);
+        setPhase(incoming.phase || 'setup');
+        setTimeOfDay(incoming.timeOfDay || 'night');
+        setDayNumber(incoming.dayNumber || 1);
+        setCustomScriptRoles(incoming.customScriptRoles || null);
+        setScriptName(incoming.scriptName || "All Roles");
+        setIsLilMonstaGame(incoming.isLilMonstaGame || false);
+        setDemonBluffs(incoming.demonBluffs || []);
+        setGameLog(incoming.gameLog || []);
+        setReminderTokens(incoming.reminderTokens || []);
+        setCheckedItems(incoming.checkedItems || {});
+      }
+      setHasReceivedSync(true);
+    }
+  }, [
+    isSecondary,
+    players,
+    phase,
+    timeOfDay,
+    dayNumber,
+    customScriptRoles,
+    scriptName,
+    isLilMonstaGame,
+    demonBluffs,
+    gameLog,
+    reminderTokens,
+    checkedItems,
+  ]);
+
+  const { sendMessage: sendSyncMessage } = useGameSocket(syncChannelCode, handleIncomingSyncMessage);
+
+  useEffect(() => {
+    sendSyncRef.current = sendSyncMessage;
+  }, [sendSyncMessage]);
+
+  useEffect(() => {
+    if (isSecondary && sendSyncMessage) {
+      const timer = setTimeout(() => {
+        sendSyncMessage({ type: 'storyteller_sync_request' });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSecondary, sendSyncMessage]);
+
+  const localStateStr = JSON.stringify({
+    players,
+    phase,
+    timeOfDay,
+    dayNumber,
+    customScriptRoles,
+    scriptName,
+    isLilMonstaGame,
+    demonBluffs,
+    gameLog,
+    reminderTokens,
+    checkedItems,
+  });
+
+  useEffect(() => {
+    if (sendSyncMessage && hasReceivedSync) {
+      sendSyncMessage({
+        type: 'storyteller_state_sync',
+        state: {
+          players,
+          phase,
+          timeOfDay,
+          dayNumber,
+          customScriptRoles,
+          scriptName,
+          isLilMonstaGame,
+          demonBluffs,
+          gameLog,
+          reminderTokens,
+          checkedItems,
+        }
+      });
+    }
+  }, [localStateStr, sendSyncMessage, hasReceivedSync]);
 
   // Save to localStorage
   useEffect(() => {
@@ -391,8 +582,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       isLilMonstaGame,
       demonBluffs,
       gameLog,
+      reminderTokens,
+      checkedItems,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, gameLog]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -449,7 +642,31 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const removePlayer = (id: string) => {
-    setPlayers(players.filter(p => p.id !== id));
+    const player = players.find(p => p.id === id);
+    if (!player) return;
+
+    const performRemoval = () => {
+      setPlayers(players.filter(p => p.id !== id));
+      if (remotePlayerIds.has(id)) {
+        setRemotePlayerIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        if (sendMessageRef.current) {
+          sendMessageRef.current({
+            type: 'booted',
+            playerId: id,
+          });
+        }
+      }
+    };
+
+    if (remotePlayerIds.has(id)) {
+      showConfirm(`Are you sure you want to remove the connected player "${player.name}"?`, performRemoval, 'Remove Player');
+    } else {
+      performRemoval();
+    }
   };
 
   const updatePlayerName = (id: string, name: string) => {
@@ -746,18 +963,33 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Standard
           </h1>
-          <div
-            onClick={() => setShowRoomCodeModal(true)}
-            className={cn(
-              "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
-            title="Click to share room"
-          >
-            Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          {phase === 'setup' ? (
+            <div
+              onClick={() => setShowRoomCodeModal(true)}
+              className={cn(
+                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
+                isLightModeActive
+                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+              )}
+              title="Click to share room"
+            >
+              Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+            </div>
+          ) : (
+            <div
+              onClick={() => setShowSyncModal(true)}
+              className={cn(
+                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
+                isLightModeActive
+                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+              )}
+              title="Sync other device as secondary controller"
+            >
+              Sync Other Device
+            </div>
+          )}
         </div>
       }
       extraControls={
@@ -771,18 +1003,33 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         </button>
       }
       headerExtra={
-        <div
-          onClick={() => setShowRoomCodeModal(true)}
-          className={cn(
-            "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-            isLightModeActive
-              ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-              : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-          )}
-          title="Click to share room"
-        >
-          Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-        </div>
+        phase === 'setup' ? (
+          <div
+            onClick={() => setShowRoomCodeModal(true)}
+            className={cn(
+              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
+              isLightModeActive
+                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
+                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+            )}
+            title="Click to share room"
+          >
+            Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+          </div>
+        ) : (
+          <div
+            onClick={() => setShowSyncModal(true)}
+            className={cn(
+              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
+              isLightModeActive
+                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
+                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
+            )}
+            title="Sync other device as secondary controller"
+          >
+            Sync Other Device
+          </div>
+        )
       }
       contentClassName="px-4 pt-6 pb-4"
     >
@@ -919,6 +1166,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
               broadcast();
             }
           }}
+          reminderTokens={reminderTokens}
+          onSetReminderTokens={setReminderTokens}
+          checkedItems={checkedItems}
+          onSetCheckedItems={setCheckedItems}
         />
       )}
 
@@ -972,6 +1223,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         joinUrl={`${window.location.origin}${window.location.pathname}#/join?code=${gameCode}`}
         onClose={() => setShowRoomCodeModal(false)}
         isLightModeActive={isLightModeActive}
+      />
+    )}
+    {showSyncModal && (
+      <RoomCodeModal
+        gameCode={syncCode}
+        joinUrl={`${window.location.origin}${window.location.pathname}#/standard?syncCode=${syncCode}&gameCode=${gameCode}`}
+        onClose={() => setShowSyncModal(false)}
+        isLightModeActive={isLightModeActive}
+        syncOnly={true}
       />
     )}
     </>

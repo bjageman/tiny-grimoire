@@ -191,6 +191,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setState('join');
+    } else if (payload.type === 'booted') {
+      if (payload.playerId === playerId) {
+        showAlert('You have been booted from the game room.');
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        window.location.hash = '#/join';
+        setState('join');
+      }
     }
   };
 

@@ -13,8 +13,8 @@ function getRouteFromHash(): Route {
   const path = window.location.pathname;
   if (path === '/join' || hash === '#/join' || hash.startsWith('#/join?')) return 'join';
   if (hash === '#/host') return 'host';
-  if (hash === '#/whale-bucket') return 'whale-bucket';
-  if (hash === '#/standard') return 'standard';
+  if (hash === '#/whale-bucket' || hash.startsWith('#/whale-bucket?')) return 'whale-bucket';
+  if (hash === '#/standard' || hash.startsWith('#/standard?')) return 'standard';
   if (hash === '#/tracker') return 'tracker';
   return 'home';
 }

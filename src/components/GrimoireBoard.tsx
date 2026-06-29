@@ -800,7 +800,7 @@ export default function GrimoireBoard({
                       style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
                       className="absolute bottom-0 bg-yellow-600 text-black font-black border-yellow-700 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
                     >
-                      DRUNK {p.roleId ? `(${(rolesData.find(r => r.id === p.roleId)?.name || p.roleId)})` : ''}
+                      DRUNK
                     </span>
                   )}
                   {p.isTheMarionette && (
@@ -808,7 +808,7 @@ export default function GrimoireBoard({
                       style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
                       className="absolute bottom-0 bg-clocktower-minion text-white font-black border-clocktower-minion/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
                     >
-                      MARIONETTE {p.roleId ? `(${(rolesData.find(r => r.id === p.roleId)?.name || p.roleId)})` : ''}
+                      MARIONETTE
                     </span>
                   )}
                   {p.isTheLunatic && (
@@ -816,7 +816,7 @@ export default function GrimoireBoard({
                       style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
                       className="absolute bottom-0 bg-clocktower-outsider text-white font-black border-clocktower-outsider/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
                     >
-                      LUNATIC {p.roleId ? `(${(rolesData.find(r => r.id === p.roleId)?.name || p.roleId)})` : ''}
+                      LUNATIC
                     </span>
                   )}
                   {p.isTheLilMonsta && (

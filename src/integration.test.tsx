@@ -640,9 +640,10 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('renders assigned role for Marionette in details modal, grimoire board, and game phase list', async () => {
+  it('renders assigned good role for Marionette in details modal, grimoire board, and game phase list', async () => {
+    // Marionette is always assigned a good role (Townsfolk/Outsider) — they think they are that character
     const PLAYERS = [
-      { id: 'p1', name: 'Bob', isDead: false, roleId: 'poisoner', isTheMarionette: true },
+      { id: 'p1', name: 'Bob', isDead: false, roleId: 'washerwoman', isTheMarionette: true },
     ];
 
     seedPrimary({
@@ -655,12 +656,12 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
 
-    // 1. Verify Grimoire Board displays the assigned Minion (Poisoner) name on the token and badge
-    expect(within(storyteller.container).getByText('MARIONETTE (Poisoner)')).toBeInTheDocument();
+    // 1. Verify Grimoire Board displays the assigned Townsfolk (Washerwoman) name on the token and badge
+    expect(within(storyteller.container).getByText('MARIONETTE (Washerwoman)')).toBeInTheDocument();
 
     const boardTokens = storyteller.container.querySelectorAll('textPath');
     const tokenNames = Array.from(boardTokens).map(el => el.textContent);
-    expect(tokenNames).toContain('Poisoner');
+    expect(tokenNames).toContain('Washerwoman');
     expect(tokenNames).not.toContain('Marionette');
 
     // 2. Open details modal for Bob
@@ -671,10 +672,10 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 150));
     });
 
-    // Verify Details Modal shows "Poisoner" instead of "Marionette" as the character title
+    // Verify Details Modal shows "Washerwoman" instead of "Marionette" as the character title
     const modalTextPaths = storyteller.container.querySelectorAll('textPath');
     const modalTokenNames = Array.from(modalTextPaths).map(el => el.textContent);
-    expect(modalTokenNames).toContain('Poisoner');
+    expect(modalTokenNames).toContain('Washerwoman');
 
     // Close details modal
     const closeBtn = storyteller.container.querySelector('#detail-close-button');
@@ -686,7 +687,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     // 3. Check player list in sidebar
     const sidebarRoleNames = Array.from(storyteller.container.querySelectorAll('.truncate')).map(el => el.textContent);
-    expect(sidebarRoleNames).toContain('Poisoner');
+    expect(sidebarRoleNames).toContain('Washerwoman');
     expect(sidebarRoleNames).not.toContain('Marionette');
 
     storyteller.unmount();

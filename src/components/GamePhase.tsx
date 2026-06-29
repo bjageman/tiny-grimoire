@@ -520,9 +520,9 @@ export default function GamePhase({
                         : (p.isTheDrunk 
                             ? ['drunk'] 
                             : p.isTheMarionette 
-                              ? ['marionette'] 
-                              : p.isTheLunatic 
-                                ? ['lunatic'] 
+                              ? [p.roleId || 'marionette']
+                              : p.isTheLunatic
+                                ? [p.roleId || 'lunatic'] 
                                 : p.roleId 
                                   ? [p.roleId] 
                                   : []);

@@ -643,10 +643,10 @@ export default function GrimoireBoard({
                       ? p.roleIds 
                       : (p.isTheDrunk 
                           ? ['drunk'] 
-                          : p.isTheMarionette 
-                            ? ['marionette'] 
-                            : p.isTheLunatic 
-                              ? ['lunatic'] 
+                          : p.isTheMarionette
+                            ? [p.roleId || 'marionette']
+                            : p.isTheLunatic
+                              ? [p.roleId || 'lunatic']
                               : p.roleId 
                                 ? [p.roleId] 
                                 : [null]);

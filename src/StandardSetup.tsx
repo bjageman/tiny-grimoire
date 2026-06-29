@@ -896,9 +896,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const actualRoleId = modalPlayer.isTheDrunk
       ? 'drunk'
       : modalPlayer.isTheMarionette
-        ? 'marionette'
+        ? (modalPlayer.roleId || 'marionette')
         : modalPlayer.isTheLunatic
-          ? 'lunatic'
+          ? (modalPlayer.roleId || 'lunatic')
           : modalPlayer.roleId;
     return (rolesData as Role[]).find(r => r.id === actualRoleId);
   })() : undefined;

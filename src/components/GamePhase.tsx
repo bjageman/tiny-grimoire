@@ -515,16 +515,16 @@ export default function GamePhase({
                   </span>
                   <div className="flex items-center gap-1.5 shrink-0 max-w-[55%] min-w-0 ml-auto justify-end flex-wrap">
                     {(() => {
-                      const displayRoles = p.roleIds && p.roleIds.length > 0 
-                        ? p.roleIds 
-                        : (p.isTheDrunk 
-                            ? ['drunk'] 
-                            : p.isTheMarionette 
-                              ? [p.roleId || 'marionette']
-                              : p.isTheLunatic
-                                ? [p.roleId || 'lunatic'] 
-                                : p.roleId 
-                                  ? [p.roleId] 
+                      const displayRoles = p.roleIds && p.roleIds.length > 0
+                        ? p.roleIds
+                        : (p.roleId
+                            ? [p.roleId]
+                            : p.isTheDrunk
+                              ? ['drunk']
+                              : p.isTheMarionette
+                                ? ['marionette']
+                                : p.isTheLunatic
+                                  ? ['lunatic']
                                   : []);
                       if (displayRoles.length === 0) {
                         return <span className="text-gray-500 font-semibold text-[10px]">—</span>;

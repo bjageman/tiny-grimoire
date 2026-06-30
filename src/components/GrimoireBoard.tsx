@@ -639,16 +639,16 @@ export default function GrimoireBoard({
                 >
                   {/* Render fanned character tokens */}
                   {(() => {
-                    const displayRoles = p.roleIds && p.roleIds.length > 0 
-                      ? p.roleIds 
-                      : (p.isTheDrunk 
-                          ? ['drunk'] 
-                          : p.isTheMarionette
-                            ? [p.roleId || 'marionette']
-                            : p.isTheLunatic
-                              ? [p.roleId || 'lunatic']
-                              : p.roleId 
-                                ? [p.roleId] 
+                    const displayRoles = p.roleIds && p.roleIds.length > 0
+                      ? p.roleIds
+                      : (p.roleId
+                          ? [p.roleId]
+                          : p.isTheDrunk
+                            ? ['drunk']
+                            : p.isTheMarionette
+                              ? ['marionette']
+                              : p.isTheLunatic
+                                ? ['lunatic']
                                 : [null]);
                     return displayRoles.map((roleId, idx) => {
                       const roleObj = roleId ? rolesData.find((r) => r.id === roleId) : null;

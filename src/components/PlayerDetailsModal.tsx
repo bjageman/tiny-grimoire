@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useScrollLock } from '../hooks/useScrollLock';
 import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -83,6 +83,46 @@ export default function PlayerDetailsModal({
   useScrollLock();
   const originalName = useRef('');
   const originalNotes = useRef('');
+  const [editedName, setEditedName] = useState(p.name);
+  const lastPlayerId = useRef(p.id);
+  const lastEditedName = useRef(editedName);
+
+  // Keep ref updated so cleanup function has access to the latest values
+  useEffect(() => {
+    lastEditedName.current = editedName;
+  }, [editedName]);
+
+  useEffect(() => {
+    lastPlayerId.current = p.id;
+  }, [p.id]);
+
+  // When p.id changes, it means we navigated to another player.
+  // Save the name of the previous player and update local state to the new player's name.
+  useEffect(() => {
+    if (p.id !== lastPlayerId.current) {
+      // Save previous player's name if it was changed
+      const prevId = lastPlayerId.current;
+      const prevName = lastEditedName.current;
+      const prevPlayer = players.find(x => x.id === prevId);
+      if (prevPlayer && prevPlayer.name !== prevName) {
+        onUpdateName(prevId, prevName);
+      }
+      // Update local state for new player
+      setEditedName(p.name);
+    }
+  }, [p.id, p.name, onUpdateName, players]);
+
+  // Save on unmount (when modal is closed)
+  useEffect(() => {
+    return () => {
+      const currentId = lastPlayerId.current;
+      const currentName = lastEditedName.current;
+      const currentPlayer = players.find(x => x.id === currentId);
+      if (currentPlayer && currentPlayer.name !== currentName) {
+        onUpdateName(currentId, currentName);
+      }
+    };
+  }, [onUpdateName, players]);
   const isMobile = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -115,10 +155,11 @@ export default function PlayerDetailsModal({
     if (allowMultipleRoles && p.roleIds && p.roleIds.length > 0) {
       return p.roleIds;
     }
+    if (p.roleId) return [p.roleId];
     if (p.isTheDrunk) return ['drunk'];
-    if (p.isTheMarionette) return [p.roleId || 'marionette'];
-    if (p.isTheLunatic) return [p.roleId || 'lunatic'];
-    return p.roleId ? [p.roleId] : [];
+    if (p.isTheMarionette) return ['marionette'];
+    if (p.isTheLunatic) return ['lunatic'];
+    return [];
   }, [allowMultipleRoles, p.roleIds, p.roleId, p.isTheDrunk, p.isTheMarionette, p.isTheLunatic]);
 
   return (
@@ -170,9 +211,9 @@ export default function PlayerDetailsModal({
                 id="detail-player-name-input"
                 ref={modalNameInputRef}
                 type="text"
-                value={p.name}
+                value={editedName}
                 disabled={isSynced}
-                onChange={(e) => onUpdateName(p.id, e.target.value)}
+                onChange={(e) => setEditedName(e.target.value)}
                 onFocus={(e) => { originalName.current = e.target.value; e.target.select(); }}
                 onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalName.current) onLogEvent(`${originalName.current} renamed to ${e.target.value}`); }}
                 onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}

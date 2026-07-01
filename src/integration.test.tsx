@@ -493,6 +493,54 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
+  it('persists both name and notes when edited together and the modal is closed (regression: stale-closure race)', async () => {
+    const PLAYERS = [
+      { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+    ];
+
+    seedPrimary({
+      players: PLAYERS,
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    });
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    const aliceRow = storyteller.container.querySelector('#ledger-player-p1');
+    expect(aliceRow).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(aliceRow!);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    const nameInput = storyteller.container.querySelector('#detail-player-name-input') as HTMLInputElement;
+    const notesInput = storyteller.container.querySelector('input[placeholder="Notes..."]') as HTMLInputElement;
+    expect(nameInput).not.toBeNull();
+    expect(notesInput).not.toBeNull();
+
+    fireEvent.change(nameInput, { target: { value: 'Alicia' } });
+    fireEvent.change(notesInput, { target: { value: 'Watch this one' } });
+
+    const closeBtn = storyteller.container.querySelector('#detail-close-button');
+    expect(closeBtn).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(closeBtn!);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    const alice = saved.players.find((p: { id: string; name?: string; notes?: string }) => p.id === 'p1');
+    expect(alice).toBeDefined();
+    expect(alice!.name).toBe('Alicia');
+    expect(alice!.notes).toBe('Watch this one');
+
+    storyteller.unmount();
+  });
+
   it('clears checklist checkboxes on day/night transitions', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }

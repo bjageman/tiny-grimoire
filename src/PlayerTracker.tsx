@@ -341,19 +341,19 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerName = (id: string, name: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, name } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
   };
 
   const updatePlayerNotes = (id: string, notes: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes } : p));
   };
 
   const updatePlayerPronouns = (id: string, pronouns: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, pronouns } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, pronouns } : p));
   };
 
   const updatePlayerRole = (id: string, roleId: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         return {
           ...p,
@@ -371,7 +371,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerRoles = (id: string, roleIds: string[]) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         return {
           ...p,
@@ -389,7 +389,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDead = (id: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextDead = !p.isDead;
         return {
@@ -403,11 +403,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDeadVote = (id: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
   };
 
   const togglePlayerEvil = (id: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
         const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
@@ -419,7 +419,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerDrunkOrPoisoned = (id: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
   const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

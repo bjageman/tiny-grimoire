@@ -620,19 +620,19 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const updatePlayerName = (id: string, name: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, name } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
   };
 
   const updatePlayerNotes = (id: string, notes: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes } : p));
   };
 
   const updatePlayerPronouns = (id: string, pronouns: string) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, pronouns } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, pronouns } : p));
   };
 
   const updatePlayerRoles = (id: string, roleIds: string[]) => {
-    setPlayers(players.map(p => p.id === id ? { ...p, roleIds } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, roleIds } : p));
   };
 
   const updatePlayerRole = (id: string, roleId: string) => {
@@ -703,7 +703,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       const nextDead = !player.isDead;
       addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
     }
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextDead = !p.isDead;
         return {
@@ -721,7 +721,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (player) {
       addLogEntry(player.hasDeadVote ? `${player.name}'s ghost vote used` : `${player.name}'s ghost vote restored`);
     }
-    setPlayers(players.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
   };
 
   const togglePlayerEvil = (id: string) => {
@@ -732,7 +732,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       const currentEvil = player.isEvil !== undefined ? player.isEvil : defaultEvil;
       addLogEntry(`${player.name} marked as ${!currentEvil ? 'Evil' : 'Good'}`);
     }
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
         const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
@@ -748,11 +748,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (player) {
       addLogEntry(`${player.name} ${!player.isDrunkOrPoisoned ? 'marked as Drunk/Poisoned' : 'cleared of Drunk/Poisoned'}`);
     }
-    setPlayers(players.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
   const togglePlayerTheDrunk = (id: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextVal = !p.isTheDrunk;
         return {
@@ -767,7 +767,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerTheMarionette = (id: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextVal = !p.isTheMarionette;
         return {
@@ -783,7 +783,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const togglePlayerTheLunatic = (id: string) => {
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextVal = !p.isTheLunatic;
         return {
@@ -804,7 +804,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (isTurningOn) {
       setIsLilMonstaGame(true);
     }
-    setPlayers(players.map(p => {
+    setPlayers(prev => prev.map(p => {
       if (p.id === id) {
         const nextVal = !p.isTheLilMonsta;
         return {

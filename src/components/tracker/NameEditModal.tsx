@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
+import { cn } from '../../utils/cn';
 import type { Player } from '../../types';
 
 interface PlayerTrackerNameEditModalProps {
@@ -29,7 +30,13 @@ export default function PlayerTrackerNameEditModal({
   if (!player) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className={cn(
+        "fixed inset-0 bg-black/70 z-50 flex justify-center p-4 backdrop-blur-sm",
+        isMobile ? "items-start pt-16" : "items-center"
+      )}
+      onClick={onClose}
+    >
       <div
         id="player-tracker-name-edit-modal"
         className="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-lg p-4 space-y-3 shadow-2xl"
@@ -64,7 +71,7 @@ export default function PlayerTrackerNameEditModal({
             onChange={(e) => setEditedName(e.target.value)}
             onFocus={(e) => e.target.select()}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
+            autoFocus
             autoCapitalize="words"
             placeholder="Player name"
             className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"

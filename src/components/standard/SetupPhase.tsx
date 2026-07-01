@@ -159,17 +159,16 @@ export default function StandardSetupPhase({
           </div>
           {customScriptRoles && (
             <button
-              id="script-reset-button"
               type="button"
               onClick={clearCustomScript}
               className={cn(
-                "w-full text-center bg-transparent border py-1.5 rounded text-xs font-semibold transition-all",
+                "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
                 isLightModeActive
-                  ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                  : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                  ? "hover:bg-red-50 border-gray-300 text-red-600 hover:text-red-700"
+                  : "hover:bg-gray-800 border-gray-800 text-red-400 hover:text-red-300"
               )}
             >
-              Reset to All Roles
+              Clear Script
             </button>
           )}
           <button
@@ -177,13 +176,13 @@ export default function StandardSetupPhase({
             type="button"
             onClick={() => setIsScriptModalOpen(true)}
             className={cn(
-              "w-full text-center bg-transparent border py-1.5 rounded text-xs font-semibold transition-all",
+              "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
               isLightModeActive
                 ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
                 : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
             )}
           >
-            View Characters
+            View Script
           </button>
           <button
             id="select-characters-button"
@@ -225,7 +224,7 @@ export default function StandardSetupPhase({
       {/* Section B: Players & Roles list */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
-          <h2 className="font-display text-lg font-bold tracking-wider uppercase text-gray-300 mb-4">Character Assignment ({players.length})</h2>
+          <h2 className="font-display text-lg font-bold tracking-wider uppercase text-gray-300 mb-4">Setup ({players.length} Players)</h2>
 
           <div className="flex gap-2 mb-4">
             <input

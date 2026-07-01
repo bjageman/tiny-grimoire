@@ -177,7 +177,7 @@ export default function PlayerDetailsModal({
                 onChange={(e) => setEditedName(e.target.value)}
                 onFocus={(e) => { originalName.current = e.target.value; e.target.select(); }}
                 onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalName.current) onLogEvent(`${originalName.current} renamed to ${e.target.value}`); }}
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
                 autoCapitalize="words"
                 className={cn(
                   'font-bold text-xl bg-transparent border-b border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200',

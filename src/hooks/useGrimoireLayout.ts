@@ -39,7 +39,7 @@ export function useGrimoireLayout(playerCount: number) {
 
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-[560px] md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[112vw] max-w-[680px] max-h-[760px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: isDesktop

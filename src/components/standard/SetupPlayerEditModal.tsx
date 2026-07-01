@@ -133,6 +133,7 @@ export default function SetupPlayerEditModal({
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
             onFocus={(e) => e.target.select()}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
             autoFocus={!isMobile}
             autoCapitalize="words"
             placeholder="Player name"

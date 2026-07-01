@@ -90,6 +90,7 @@ export default function GamePhase({
   const [isBluffOverlayOpen, setIsBluffOverlayOpen] = useState(false);
   const [bluffPickerSlot, setBluffPickerSlot] = useState<number | null>(null);
   const [bluffSearch, setBluffSearch] = useState('');
+  const [showAllBluffCandidates, setShowAllBluffCandidates] = useState(false);
   const bluffSearchRef = useRef<HTMLInputElement>(null);
   const [localReminderTokens, setLocalReminderTokens] = useState<PlacedReminder[]>([]);
   const reminderTokens = propReminderTokens !== undefined ? propReminderTokens : localReminderTokens;
@@ -142,13 +143,41 @@ export default function GamePhase({
 
   const bluffCandidates = useMemo(() => {
     const base = customScriptRoles || (rolesData as Role[]);
-    return base
-      .filter(r => (r.team === 'townsfolk' || r.team === 'outsider') && !assignedRoleIds.has(r.id))
+    const goodRoles = base.filter(r => r.team === 'townsfolk' || r.team === 'outsider');
+    if (showAllBluffCandidates) {
+      return [...goodRoles].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return goodRoles
+      .filter(r => !assignedRoleIds.has(r.id))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [customScriptRoles, assignedRoleIds]);
+  }, [customScriptRoles, assignedRoleIds, showAllBluffCandidates]);
 
   const officialRoleAbility = (id: string) =>
     (officialRoles as (Role & { ability?: string })[]).find(r => r.id === id)?.ability;
+
+  const bluffTeamLabel: Record<Role['team'], string> = {
+    townsfolk: 'Townsfolk',
+    outsider: 'Outsider',
+    minion: 'Minion',
+    demon: 'Demon',
+    traveler: 'Traveler',
+  };
+
+  const bluffTeamTextColor: Record<Role['team'], string> = {
+    townsfolk: 'text-blue-400',
+    outsider: 'text-emerald-400',
+    minion: 'text-red-400',
+    demon: 'text-red-600',
+    traveler: 'text-purple-400',
+  };
+
+  const bluffTeamOverlayColor: Record<Role['team'], { border: string; bg: string; text: string }> = {
+    townsfolk: { border: 'border-blue-500/50', bg: 'bg-blue-950/60', text: 'text-blue-300' },
+    outsider: { border: 'border-emerald-500/50', bg: 'bg-emerald-950/60', text: 'text-emerald-300' },
+    minion: { border: 'border-red-500/50', bg: 'bg-red-950/60', text: 'text-red-300' },
+    demon: { border: 'border-red-700/50', bg: 'bg-red-950/80', text: 'text-red-400' },
+    traveler: { border: 'border-purple-500/50', bg: 'bg-purple-950/60', text: 'text-purple-300' },
+  };
 
   const filteredBluffCandidates = useMemo(() => {
     if (!bluffSearch.trim()) return bluffCandidates;
@@ -293,8 +322,8 @@ export default function GamePhase({
                               className="w-full text-left text-xs px-2 py-1 rounded transition-colors hover:bg-gray-800 text-gray-200"
                             >
                               <span className="font-medium">{r.name}</span>
-                              <span className={cn('ml-1 text-[10px] font-semibold', r.team === 'outsider' ? 'text-emerald-400' : 'text-blue-400')}>
-                                {r.team === 'outsider' ? 'Outsider' : 'Townsfolk'}
+                              <span className={cn('ml-1 text-[10px] font-semibold', bluffTeamTextColor[r.team])}>
+                                {bluffTeamLabel[r.team]}
                               </span>
                             </button>
                           ))}
@@ -321,8 +350,8 @@ export default function GamePhase({
                                 <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                               </div>
                               <span>{role.name}</span>
-                              <span className={cn('text-[10px] font-semibold', role.team === 'outsider' ? 'text-emerald-400' : 'text-blue-400')}>
-                                {role.team === 'outsider' ? 'Outsider' : 'Townsfolk'}
+                              <span className={cn('text-[10px] font-semibold', bluffTeamTextColor[role.team])}>
+                                {bluffTeamLabel[role.team]}
                               </span>
                             </span>
                           ) : (
@@ -345,6 +374,15 @@ export default function GamePhase({
                 );
               })}
             </div>
+            <label className="flex items-center gap-1.5 text-[10px] text-gray-400 cursor-pointer select-none pt-0.5">
+              <input
+                type="checkbox"
+                checked={showAllBluffCandidates}
+                onChange={e => setShowAllBluffCandidates(e.target.checked)}
+                className="accent-clocktower-blood"
+              />
+              Lunatic Mode
+            </label>
           </div>
         )}
 
@@ -624,17 +662,13 @@ export default function GamePhase({
             {[0, 1, 2].map(slot => {
               const roleId = demonBluffs[slot] || '';
               const role = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : null;
-              const isOutsider = role?.team === 'outsider';
+              const overlayColor = role ? bluffTeamOverlayColor[role.team] : null;
               return (
                 <div
                   key={slot}
                   className={cn(
                     'rounded-xl border-2 px-5 py-4 flex items-center gap-4',
-                    role
-                      ? isOutsider
-                        ? 'border-emerald-500/50 bg-emerald-950/60'
-                        : 'border-blue-500/50 bg-blue-950/60'
-                      : 'border-gray-800 bg-gray-900/50'
+                    overlayColor ? `${overlayColor.border} ${overlayColor.bg}` : 'border-gray-800 bg-gray-900/50'
                   )}
                 >
                   {role ? (
@@ -650,7 +684,7 @@ export default function GamePhase({
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-2xl font-extrabold',
-                          isOutsider ? 'text-emerald-300' : 'text-blue-300'
+                          overlayColor?.text
                         )}>{role.name}</p>
                         {officialRoleAbility(role.id) && (
                           <p className="text-sm text-gray-300 mt-1 leading-snug">{officialRoleAbility(role.id)}</p>

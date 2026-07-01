@@ -52,8 +52,11 @@ interface PlayerDetailsModalProps {
   onUpdateRoles?: (id: string, roleIds: string[]) => void;
   isSynced?: boolean;
   onUpdateNotes?: (id: string, notes: string) => void;
+  onUpdatePronouns?: (id: string, pronouns: string) => void;
   onLogEvent?: (msg: string) => void;
 }
+
+const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
 
 export default function PlayerDetailsModal({
   player: p,
@@ -80,6 +83,7 @@ export default function PlayerDetailsModal({
   onUpdateRoles,
   isSynced = false,
   onUpdateNotes,
+  onUpdatePronouns,
   onLogEvent,
 }: PlayerDetailsModalProps) {
   useScrollLock();
@@ -180,16 +184,36 @@ export default function PlayerDetailsModal({
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
                 autoCapitalize="words"
                 className={cn(
-                  'font-bold text-xl bg-transparent border-b border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200',
-                  isLightModeActive ? 'text-clocktower-night' : 'text-white',
+                  'font-bold text-xl bg-white rounded-md px-2.5 py-1 border border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200 text-clocktower-night',
                   isSynced && 'cursor-default pointer-events-none hover:border-transparent'
                 )}
                 placeholder="Player Name"
               />
-              {p.pronouns && (
-                <p className={cn('text-sm font-medium mt-0', isLightModeActive ? 'text-gray-500' : 'text-gray-400')}>
-                  {p.pronouns}
-                </p>
+              {isSynced ? (
+                p.pronouns && (
+                  <p className={cn('text-sm font-medium mt-0', isLightModeActive ? 'text-gray-500' : 'text-gray-400')}>
+                    {p.pronouns}
+                  </p>
+                )
+              ) : onUpdatePronouns && (
+                <select
+                  id="detail-player-pronouns-select"
+                  value={p.pronouns || ''}
+                  onChange={(e) => onUpdatePronouns(p.id, e.target.value)}
+                  className={cn(
+                    'mt-1 rounded px-1.5 py-0.5 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer',
+                    isLightModeActive
+                      ? 'bg-white border-gray-300 text-gray-600'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-400'
+                  )}
+                >
+                  <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
+                  {PRONOUN_OPTIONS.map(option => (
+                    <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               )}
               {!isSynced && onUpdateNotes && (
                 <input

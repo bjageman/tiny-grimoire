@@ -627,6 +627,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
   };
 
+  const updatePlayerPronouns = (id: string, pronouns: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, pronouns } : p));
+  };
+
   const updatePlayerRoles = (id: string, roleIds: string[]) => {
     setPlayers(players.map(p => p.id === id ? { ...p, roleIds } : p));
   };
@@ -1179,6 +1183,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onUpdateRole={updatePlayerRole}
           onUpdateRoles={updatePlayerRoles}
           onUpdateNotes={updatePlayerNotes}
+          onUpdatePronouns={updatePlayerPronouns}
           onToggleDead={togglePlayerDead}
           onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}

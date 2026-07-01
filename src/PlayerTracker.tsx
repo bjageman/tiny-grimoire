@@ -330,6 +330,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(players.map(p => p.id === id ? { ...p, notes } : p));
   };
 
+  const updatePlayerPronouns = (id: string, pronouns: string) => {
+    setPlayers(players.map(p => p.id === id ? { ...p, pronouns } : p));
+  };
+
   const updatePlayerRole = (id: string, roleId: string) => {
     setPlayers(players.map(p => {
       if (p.id === id) {
@@ -589,6 +593,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onUpdateNotes={updatePlayerNotes}
+          onUpdatePronouns={updatePlayerPronouns}
           onToggleDead={togglePlayerDead}
           onToggleDeadVote={togglePlayerDeadVote}
           onToggleDrunkOrPoisoned={togglePlayerDrunkOrPoisoned}

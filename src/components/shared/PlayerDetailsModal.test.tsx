@@ -174,4 +174,34 @@ describe('PlayerDetailsModal', () => {
     expect(onUpdateRoles).not.toHaveBeenCalled();
     expect(screen.getByText('You can select up to 3 candidate characters per player.')).toBeInTheDocument();
   });
+
+  it('shows a pronoun dropdown for non-synced players and calls onUpdatePronouns on change', () => {
+    const onUpdatePronouns = vi.fn();
+    render(<PlayerDetailsModal {...defaultProps} onUpdatePronouns={onUpdatePronouns} />);
+
+    const select = document.getElementById('detail-player-pronouns-select') as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe('');
+    fireEvent.change(select, { target: { value: 'They/Them' } });
+
+    expect(onUpdatePronouns).toHaveBeenCalledWith('p1', 'They/Them');
+  });
+
+  it('reflects the player\'s current pronouns as the selected dropdown value', () => {
+    render(<PlayerDetailsModal {...defaultProps} player={{ ...player, pronouns: 'She/Her' }} onUpdatePronouns={vi.fn()} />);
+    const select = document.getElementById('detail-player-pronouns-select') as HTMLSelectElement;
+    expect(select.value).toBe('She/Her');
+  });
+
+  it('hides the pronoun dropdown and shows read-only pronouns for synced players', () => {
+    render(<PlayerDetailsModal {...defaultProps} player={{ ...player, pronouns: 'They/Them' }} isSynced={true} onUpdatePronouns={vi.fn()} />);
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.getByText('They/Them')).toBeInTheDocument();
+  });
+
+  it('shows nothing for a synced player with no pronouns set', () => {
+    render(<PlayerDetailsModal {...defaultProps} isSynced={true} onUpdatePronouns={vi.fn()} />);
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.queryByText('Set Pronouns')).toBeNull();
+  });
 });

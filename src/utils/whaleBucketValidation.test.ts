@@ -80,4 +80,70 @@ describe('whaleBucketValidation utility', () => {
       expect(summary.modifications).toContain("Atheist (No Evil players)");
     }
   });
+
+  it('allows 0 or +1 Outsider when Balloonist is assigned', () => {
+    // 8-player base: 5 TF / 1 Out / 1 Minion / 1 Demon. Balloonist is a Townsfolk.
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'balloonist', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary).not.toBeNull();
+    if (summary) {
+      expect(summary.modifications).toContain("Balloonist (0 or +1 Outsider)");
+      expect(summary.expectedOutsiderLabel).toBe('1 or 2');
+      expect(summary.isOutsiderValid).toBe(true);
+    }
+  });
+
+  it('allows 0 or +1 Outsider when Huntsman is assigned, and warns if no Damsel is assigned', () => {
+    // 8-player base: 5 TF / 1 Out / 1 Minion / 1 Demon. Huntsman is a Townsfolk.
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'huntsman', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary).not.toBeNull();
+    if (summary) {
+      expect(summary.modifications).toContain("Huntsman (0 or +1 Outsider)");
+      expect(summary.expectedOutsiderLabel).toBe('1 or 2');
+      expect(summary.isOutsiderValid).toBe(true);
+      expect(summary.jinxWarnings).toContain("Huntsman in play, but no Damsel assigned.");
+      expect(summary.isValid).toBe(false);
+    }
+  });
+
+  it('clears the Huntsman/Damsel jinx warning once a Damsel is assigned', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'huntsman', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'damsel', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary).not.toBeNull();
+    if (summary) {
+      expect(summary.jinxWarnings).not.toContain("Huntsman in play, but no Damsel assigned.");
+      expect(summary.isValid).toBe(true);
+    }
+  });
 });

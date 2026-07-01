@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeBalance } from '../../utils/computeBalance';
-import type { Role } from '../../types';
+import { computeBalance } from './computeBalance';
+import type { Role } from '../types';
 
 const r = (id: string, team: Role['team']): Role => ({ id, name: id, team });
 
@@ -93,6 +93,46 @@ describe('computeBalance — Marionette', () => {
 
     expect(computeBalance(withoutExtra, 8).isTownsfolkValid).toBe(false); // 5 TF, need 6
     expect(computeBalance(withExtra,    8).isTownsfolkValid).toBe(true);  // 6 TF
+  });
+});
+
+describe('computeBalance — Balloonist', () => {
+  it('allows 0 or +1 Outsider when Balloonist is selected', () => {
+    // 8-player base: 5 TF / 1 Out / 1 Minion / 1 Demon. Balloonist is a Townsfolk.
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('balloonist'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.modifications).toContain('Balloonist (0 or +1 Outsider)');
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+
+  it('is valid with Balloonist and +1 Outsider (2 outsiders instead of 1)', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('balloonist'), out('recluse'), out('mutant'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.counts.outsider).toBe(2);
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+});
+
+describe('computeBalance — Huntsman', () => {
+  it('allows 0 or +1 Outsider when Huntsman is selected, and warns if no Damsel is selected', () => {
+    // 8-player base: 5 TF / 1 Out / 1 Minion / 1 Demon. Huntsman is a Townsfolk.
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('huntsman'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.modifications).toContain('Huntsman (0 or +1 Outsider)');
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.jinxWarnings).toContain('Huntsman in play, but no Damsel selected.');
+    expect(b.isValid).toBe(false);
+  });
+
+  it('clears the Huntsman/Damsel jinx warning once Damsel is selected', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('huntsman'), out('recluse'), out('damsel'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.counts.outsider).toBe(2);
+    expect(b.jinxWarnings).not.toContain('Huntsman in play, but no Damsel selected.');
+    expect(b.isValid).toBe(true);
   });
 });
 

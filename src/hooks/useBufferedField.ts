@@ -14,35 +14,40 @@ export function useBufferedField(
   const lastEntityId = useRef(entityId);
   const lastValue = useRef(value);
   const lastOriginalValue = useRef(originalValue);
+  const onFlushRef = useRef(onFlush);
+
+  useEffect(() => {
+    onFlushRef.current = onFlush;
+  }, [onFlush]);
 
   useEffect(() => {
     lastValue.current = value;
   }, [value]);
 
   useEffect(() => {
-    lastOriginalValue.current = originalValue;
-  }, [originalValue]);
-
-  useEffect(() => {
     if (entityId !== lastEntityId.current) {
       const prevId = lastEntityId.current;
       const prevValue = lastValue.current;
+      // Compare against the outgoing entity's original value before it's
+      // overwritten below, otherwise switching entities in the same render
+      // (id and originalValue both changing) spuriously flushes the old
+      // entity's untouched value against the new entity's original.
       if (prevValue !== lastOriginalValue.current) {
-        onFlush(prevId, prevValue);
+        onFlushRef.current(prevId, prevValue);
       }
       lastEntityId.current = entityId;
       setValue(originalValue);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    lastOriginalValue.current = originalValue;
   }, [entityId, originalValue]);
 
   useEffect(() => {
     return () => {
       if (lastValue.current !== lastOriginalValue.current) {
-        onFlush(lastEntityId.current, lastValue.current);
+        onFlushRef.current(lastEntityId.current, lastValue.current);
       }
     };
-  }, [onFlush]);
+  }, []);
 
   return [value, setValue] as const;
 }

@@ -21,6 +21,19 @@ jobs:
             export DOCKER_HOST=unix:///tank/services/docker.sock
             cd /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion
             git fetch origin
-            git checkout main
-            git reset --hard origin/main
-            BUILDKIT_PROGRESS=plain docker compose -f docker-compose.prod.yml up --build -d
+            
+            # Build the new image in a clean temporary directory to prevent local changes from blocking checkout
+            rm -rf /tmp/botc-grimoire-companion-prod-build
+            git clone --no-checkout file:///home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion /tmp/botc-grimoire-companion-prod-build
+            cd /tmp/botc-grimoire-companion-prod-build
+            git checkout origin/main
+            cp /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion/docker-compose.prod.yml .
+            cp /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion/docker-compose.dev.yml .
+            cp /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion/.env .
+            BUILDKIT_PROGRESS=plain docker compose -f docker-compose.prod.yml build
+            
+            # Switch back to the main directory, clean up the build directory, and update the container
+            cd /home/neurobomber/Apps-Docker/vibes/botc-grimoire-companion
+            rm -rf /tmp/botc-grimoire-companion-prod-build
+            docker compose -f docker-compose.prod.yml up -d
+

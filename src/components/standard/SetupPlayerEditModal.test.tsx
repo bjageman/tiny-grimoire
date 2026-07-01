@@ -89,7 +89,7 @@ describe('SetupPlayerEditModal', () => {
 
   it('shows The Drunk toggle for a Townsfolk player and calls togglePlayerTheDrunk', () => {
     render(<SetupPlayerEditModal {...defaultProps} />);
-    const drunkBtn = screen.getByText('🍺 The Drunk');
+    const drunkBtn = screen.getByText('The Drunk');
     expect(drunkBtn).toBeInTheDocument();
     fireEvent.click(drunkBtn);
     expect(defaultProps.togglePlayerTheDrunk).toHaveBeenCalledWith('p1');
@@ -97,7 +97,7 @@ describe('SetupPlayerEditModal', () => {
 
   it('hides The Drunk toggle for a non-Townsfolk player', () => {
     render(<SetupPlayerEditModal {...defaultProps} activePlayerId="p2" />);
-    expect(screen.queryByText('🍺 The Drunk')).toBeNull();
+    expect(screen.queryByText('The Drunk')).toBeNull();
   });
 
   it('disables The Drunk toggle when another player is already the Drunk', () => {
@@ -107,25 +107,25 @@ describe('SetupPlayerEditModal', () => {
         players={[alice, bob, { ...charlie, isTheDrunk: true }]}
       />
     );
-    expect(screen.getByText('🍺 The Drunk')).toBeDisabled();
+    expect(screen.getByText('The Drunk')).toBeDisabled();
   });
 
   it('shows The Lunatic toggle only for a Demon player', () => {
     render(<SetupPlayerEditModal {...defaultProps} activePlayerId="p2" />);
-    expect(screen.getByText('👹 The Lunatic')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('👹 The Lunatic'));
+    expect(screen.getByText('The Lunatic')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('The Lunatic'));
     expect(defaultProps.togglePlayerTheLunatic).toHaveBeenCalledWith('p2');
   });
 
   it('shows The Marionette toggle for a good player seated next to the Demon', () => {
     // Seating order is Alice, Bob(demon), Charlie, Dave — Alice sits on Bob's other side.
     render(<SetupPlayerEditModal {...defaultProps} activePlayerId="p1" />);
-    expect(screen.getByText('🎭 The Marionette')).toBeInTheDocument();
+    expect(screen.getByText('The Marionette')).toBeInTheDocument();
   });
 
   it('hides The Marionette toggle for a good player not seated next to the Demon', () => {
     render(<SetupPlayerEditModal {...defaultProps} activePlayerId="p4" />);
-    expect(screen.queryByText('🎭 The Marionette')).toBeNull();
+    expect(screen.queryByText('The Marionette')).toBeNull();
   });
 
   it('filters the role list by search term', () => {

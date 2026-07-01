@@ -20,6 +20,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const hasBaron       = has('baron');
   const hasFangGu      = has('fanggu');
   const hasBalloonist  = has('balloonist');
+  const hasHuntsman    = has('huntsman');
   const hasHermit      = has('hermit');
   const hasGodfather   = has('godfather');
   const hasLilMonsta   = has('lilmonsta');
@@ -53,6 +54,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasFangGu)     modifications.push("Fang Gu (+1 Outsider)");
     if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
     if (hasBalloonist) modifications.push("Balloonist (0 or +1 Outsider)");
+    if (hasHuntsman)   modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit)     modifications.push("Hermit (0 or -1 Outsider)");
   } else {
     if (hasLilMonsta)    { expectedMinion += 1; expectedDemon -= 1; modifications.push("Lil' Monsta (+1 Minion, -1 Demon)"); }
@@ -62,6 +64,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasBaron)        modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu)       modifications.push("Fang Gu (+1 Outsider)");
     if (hasBalloonist)   modifications.push("Balloonist (0 or +1 Outsider)");
+    if (hasHuntsman)     modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit)       modifications.push("Hermit (0 or -1 Outsider)");
     if (hasGodfather)    modifications.push("Godfather (+1 or -1 Outsider)");
     if (hasMarionette)   modifications.push("Marionette (+1 Townsfolk)");
@@ -78,6 +81,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   const gfMods   = (hasGodfather  && !hasLegion && !hasRiot) ? [-1, 1] : [0];
   const balMods  = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1]  : [0];
+  const huntMods = (hasHuntsman   && !hasLegion && !hasRiot) ? [0, 1]  : [0];
   const hermMods = (hasHermit     && !hasLegion && !hasRiot) ? [-1, 0] : [0];
   const fixedDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0));
 
@@ -88,8 +92,8 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     const max = Math.max(0, playerCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= max; i++) possibleOutsiders.add(i);
   } else {
-    for (const gf of gfMods) for (const bal of balMods) for (const herm of hermMods) {
-      possibleOutsiders.add(Math.max(0, base.outsider + fixedDelta + gf + bal + herm));
+    for (const gf of gfMods) for (const bal of balMods) for (const hunt of huntMods) for (const herm of hermMods) {
+      possibleOutsiders.add(Math.max(0, base.outsider + fixedDelta + gf + bal + hunt + herm));
     }
   }
 
@@ -112,7 +116,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   const jinxWarnings: string[] = [];
   if (has('choirboy') && !has('king'))     jinxWarnings.push("Choirboy in play, but no King selected.");
-  if (has('huntsman') && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
+  if (hasHuntsman && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
 
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
 

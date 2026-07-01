@@ -61,6 +61,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const hasGodfather = assignedRoles.some(r => r.id === 'godfather');
   const hasFangGu = assignedRoles.some(r => r.id === 'fanggu');
   const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
+  const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
   const hasHermit = assignedRoles.some(r => r.id === 'hermit');
   const hasSummoner = assignedRoles.some(r => r.id === 'summoner');
@@ -90,6 +91,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
     if (hasBaron) modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu) modifications.push("Fang Gu (+1 Outsider)");
     if (hasBalloonist) modifications.push("Balloonist (0 or +1 Outsider)");
+    if (hasHuntsman) modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit) modifications.push("Hermit (0 or -1 Outsider)");
   } else {
     if (hasLilMonsta) {
@@ -114,6 +116,9 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
     if (hasBalloonist) {
       modifications.push("Balloonist (0 or +1 Outsider)");
     }
+    if (hasHuntsman) {
+      modifications.push("Huntsman (0 or +1 Outsider)");
+    }
     if (hasHermit) {
       modifications.push("Hermit (0 or -1 Outsider)");
     }
@@ -135,6 +140,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
 
   const gfMods = (hasGodfather && !hasLegion && !hasRiot) ? [-1, 1] : [0];
   const balMods = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1] : [0];
+  const huntMods = (hasHuntsman && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const hermMods = (hasHermit && !hasLegion && !hasRiot) ? [-1, 0] : [0];
   const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0));
 
@@ -149,9 +155,11 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   } else {
     for (const gf of gfMods) {
       for (const bal of balMods) {
-        for (const herm of hermMods) {
-          const total = base.outsider + fixedOutsiderDelta + gf + bal + herm;
-          possibleOutsiderCounts.add(Math.max(0, total));
+        for (const hunt of huntMods) {
+          for (const herm of hermMods) {
+            const total = base.outsider + fixedOutsiderDelta + gf + bal + hunt + herm;
+            possibleOutsiderCounts.add(Math.max(0, total));
+          }
         }
       }
     }
@@ -176,7 +184,6 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   // Jinx checks
   const hasChoirboy = assignedRoles.some(r => r.id === 'choirboy');
   const hasKing = assignedRoles.some(r => r.id === 'king');
-  const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
   const hasDamsel = assignedRoles.some(r => r.id === 'damsel');
   
   const jinxWarnings: string[] = [];

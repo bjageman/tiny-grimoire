@@ -62,6 +62,15 @@ export default function PlayerTrackerNameEditModal({
           <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
             Edit Player
           </h3>
+          <button
+            id="remove-tracker-player-button"
+            type="button"
+            onClick={() => { removePlayer(player.id); onClose(); }}
+            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
+            title="Remove player"
+          >
+            <Trash2 size={16} />
+          </button>
           <button id="close-tracker-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
             Close
           </button>
@@ -79,7 +88,6 @@ export default function PlayerTrackerNameEditModal({
             placeholder="Player name"
             className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
           />
-          
         </div>
       </div>
     </div>

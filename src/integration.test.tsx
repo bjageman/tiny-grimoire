@@ -694,3 +694,47 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 });
+
+describe('Storyteller Notes Privacy', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('never broadcasts the storyteller\'s private player notes to a synced client', async () => {
+    window.location.hash = '#/standard';
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman', notes: 'Secretly suspicious of everyone' }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    }));
+
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code');
+
+    sessionStorage.setItem('joined-code', gameCode!);
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Every payload sent to players (game_update / setup_update) must never carry `notes`
+    const leaked = sentPayloads.some(p => {
+      const payload = p.payload as { players?: Array<{ notes?: string }> };
+      return payload.players?.some(pl => pl.notes !== undefined);
+    });
+    expect(leaked).toBe(false);
+    expect(sentPayloads.length).toBeGreaterThan(0);
+
+    // And the note text itself should never reach the player's rendered UI
+    expect(within(tracker.container).queryByText(/Secretly suspicious/)).toBeNull();
+
+    storyteller.unmount();
+    tracker.unmount();
+  });
+});

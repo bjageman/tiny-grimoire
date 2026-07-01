@@ -267,7 +267,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         sendMessageRef.current({
           type: 'setup_update',
           gameType: 'whale-bucket',
-          players: listToBroadcast,
+          players: listToBroadcast.map(({ notes, ...rest }) => rest),
           excludedRoleIds
         });
       }
@@ -413,7 +413,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       if (phase === 'game' && sendMessageRef.current) {
         sendMessageRef.current({
           type: 'game_update',
-          players,
+          players: players.map(({ notes, ...rest }) => rest),
           timeOfDay,
           dayNumber
         });
@@ -432,7 +432,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     if (!isSecondary && phase === 'game' && sendMessage) {
       sendMessage({
         type: 'game_update',
-        players,
+        players: players.map(({ notes, ...rest }) => rest),
         timeOfDay,
         dayNumber
       });

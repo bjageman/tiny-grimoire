@@ -265,7 +265,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         sendMessageRef.current({
           type: 'setup_update',
           gameType: 'standard',
-          players: listToBroadcast,
+          players: listToBroadcast.map(({ notes, ...rest }) => rest),
           scriptName,
           customScriptRoles
         });
@@ -413,7 +413,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       if (phase === 'game' && sendMessageRef.current) {
         sendMessageRef.current({
           type: 'game_update',
-          players,
+          players: players.map(({ notes, ...rest }) => rest),
           timeOfDay,
           dayNumber,
           scriptName,
@@ -434,7 +434,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (!isSecondary && phase === 'game' && sendMessage) {
       sendMessage({
         type: 'game_update',
-        players,
+        players: players.map(({ notes, ...rest }) => rest),
         timeOfDay,
         dayNumber,
         scriptName,

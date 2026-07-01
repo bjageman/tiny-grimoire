@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
 import { getScriptStats } from '../../utils/scriptUtils';
+import rolesData from '../../roles.json';
 import PlayerTrackerCircle from './PlayerCircle';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
+import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];
@@ -59,8 +61,15 @@ export default function PlayerTrackerSetupPhase({
   isSynced = false,
   isLightModeActive = false,
 }: PlayerTrackerSetupPhaseProps) {
+  const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+
+  const sortedRoles = useMemo(() => {
+    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    return [...baseRoles].sort((a, b) => a.name.localeCompare(b.name));
+  }, [customScriptRoles]);
 
   return (
+    <>
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
       {/* Section A: Script Upload */}
       <div className="md:col-start-2 md:row-start-1 space-y-6 w-full">
@@ -136,6 +145,19 @@ export default function PlayerTrackerSetupPhase({
               )}
             </>
           )}
+          <button
+            id="game-script-button"
+            type="button"
+            onClick={() => setIsScriptModalOpen(true)}
+            className={cn(
+              "w-full text-center bg-transparent border py-1.5 rounded text-xs font-semibold transition-all",
+              isLightModeActive
+                ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
+                : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+            )}
+          >
+            View Script
+          </button>
           <p className="text-[11px] text-gray-550 leading-relaxed">
             {isSynced 
               ? "The active script is automatically synchronized in real-time from the Storyteller."
@@ -149,7 +171,7 @@ export default function PlayerTrackerSetupPhase({
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-1.5 mb-4">
-            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Players List ({players.length})</h2>
+            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup ({players.length} players)</h2>
             <span className="text-xs text-gray-500 font-medium italic">
               {isSynced 
                 ? "The seating order is managed by the Storyteller"
@@ -235,5 +257,14 @@ export default function PlayerTrackerSetupPhase({
         </button>
       </div>
     </div>
+    <ScriptCharactersModal
+      isOpen={isScriptModalOpen}
+      onClose={() => setIsScriptModalOpen(false)}
+      scriptName={scriptName}
+      roles={sortedRoles}
+      scriptStats={customScriptRoles ? getScriptStats(customScriptRoles) : undefined}
+      isLightModeActive={isLightModeActive}
+    />
+    </>
   );
 }

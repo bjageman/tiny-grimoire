@@ -8,8 +8,8 @@ import { parseScriptFile } from './utils/scriptUtils';
 
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import GamePhase from './components/shared/GamePhase';
-import PlayerTrackerSetupPhase from './components/tracker/PlayerTrackerSetupPhase';
-import PlayerTrackerNameEditModal from './components/tracker/PlayerTrackerNameEditModal';
+import PlayerTrackerSetupPhase from './components/tracker/SetupPhase';
+import PlayerTrackerNameEditModal from './components/tracker/NameEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import PageLayout from './components/shared/PageLayout';

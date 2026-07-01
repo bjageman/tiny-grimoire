@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
 
 interface DialogModalProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   type: 'alert' | 'confirm';
   confirmLabel: string;
   cancelLabel: string;
@@ -58,9 +59,9 @@ export default function DialogModal({
         {title && (
           <h3 className="font-display font-bold text-base text-clocktower-blood text-center tracking-wider uppercase">{title}</h3>
         )}
-        <p className={cn('text-sm leading-relaxed text-center', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
+        <div className={cn('text-sm leading-relaxed text-center', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
           {message}
-        </p>
+        </div>
         <div className="flex gap-2 justify-center">
           {type === 'confirm' && (
             <button

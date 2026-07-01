@@ -1,7 +1,7 @@
 import { Shuffle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
-import WhaleBucketDraftCircle from './WhaleBucketDraftCircle';
+import WhaleBucketDraftCircle from './DraftCircle';
 
 import type { ValidationSummary } from '../../utils/whaleBucketValidation';
 

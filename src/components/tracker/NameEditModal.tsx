@@ -40,7 +40,15 @@ export default function PlayerTrackerNameEditModal({
             Edit Player
           </h3>
           <div className="flex items-center gap-3">
-            <button
+            
+            <button id="close-tracker-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
               id="remove-tracker-player-button"
               type="button"
               onClick={() => { removePlayer(player.id); onClose(); }}
@@ -49,13 +57,6 @@ export default function PlayerTrackerNameEditModal({
             >
               <Trash2 size={16} />
             </button>
-            <button id="close-tracker-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
-              Close
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
           <input
             id="edit-tracker-player-name-input"
             type="text"

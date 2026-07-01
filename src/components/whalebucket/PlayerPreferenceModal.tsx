@@ -198,6 +198,15 @@ export default function WhaleBucketPlayerPreferenceModal({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            id="remove-preference-player-button"
+            type="button"
+            onClick={() => { removePlayer(player.id); onClose(); }}
+            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
+            title="Remove player"
+          >
+            <Trash2 size={16} />
+          </button>
           <input
             id="edit-preference-player-name-input"
             type="text"
@@ -217,15 +226,6 @@ export default function WhaleBucketPlayerPreferenceModal({
             title="Auto-fill remaining preferences"
           >
             <Shuffle size={16} />
-          </button>
-          <button
-            id="remove-preference-player-button"
-            type="button"
-            onClick={() => { removePlayer(player.id); onClose(); }}
-            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
-            title="Remove player"
-          >
-            <Trash2 size={16} />
           </button>
         </div>
 

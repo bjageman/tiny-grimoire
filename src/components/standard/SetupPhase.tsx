@@ -6,6 +6,7 @@ import { getScriptStats } from '../../utils/scriptUtils';
 import rolesData from '../../roles.json';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
+import ScriptHelpButton from '../shared/ScriptHelpButton';
 import { getDistribution } from '../../constants';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import type { ValidationSummary } from '../../utils/whaleBucketValidation';
@@ -128,31 +129,34 @@ export default function StandardSetupPhase({
             accept=".json"
             className="hidden"
           />
-          <button
-            id="script-upload-button"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "w-full border py-3.5 px-4 rounded-lg transition-all flex flex-col items-center justify-center gap-1 group text-center cursor-pointer",
-              isLightModeActive
-                ? "bg-gray-100/80 border-gray-300 hover:border-clocktower-blood/60 hover:bg-gray-150"
-                : "bg-gray-955 border-gray-800 hover:border-clocktower-blood"
-            )}
-            title="Click to upload script JSON"
-          >
-            <span className={cn(
-              "flex items-center gap-1.5 text-base font-extrabold transition-colors",
-              isLightModeActive
-                ? "text-gray-900 group-hover:text-clocktower-blood"
-                : "text-white group-hover:text-clocktower-blood"
-            )}>
-              📜 {scriptName}
-            </span>
-            <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-              <Upload size={12} />
-              {customScriptRoles ? `${getScriptStats(customScriptRoles)} — Click to change` : "Click to upload .json"}
-            </span>
-          </button>
+          <div className="relative">
+            <button
+              id="script-upload-button"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "w-full border py-3.5 px-4 rounded-lg transition-all flex flex-col items-center justify-center gap-1 group text-center cursor-pointer",
+                isLightModeActive
+                  ? "bg-gray-100/80 border-gray-300 hover:border-clocktower-blood/60 hover:bg-gray-150"
+                  : "bg-gray-955 border-gray-800 hover:border-clocktower-blood"
+              )}
+              title="Click to upload script JSON"
+            >
+              <span className={cn(
+                "flex items-center gap-1.5 text-base font-extrabold transition-colors",
+                isLightModeActive
+                  ? "text-gray-900 group-hover:text-clocktower-blood"
+                  : "text-white group-hover:text-clocktower-blood"
+              )}>
+                📜 {scriptName}
+              </span>
+              <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                <Upload size={12} />
+                {customScriptRoles ? `${getScriptStats(customScriptRoles)} — Click to change` : "Click to upload .json"}
+              </span>
+            </button>
+            <ScriptHelpButton isLightModeActive={isLightModeActive} />
+          </div>
           {customScriptRoles && (
             <button
               id="script-reset-button"

@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
-import WhaleBucketPreferenceCircle from './WhaleBucketPreferenceCircle';
+import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import rolesData from '../../official_roles.json';
 
 

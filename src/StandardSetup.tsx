@@ -10,7 +10,7 @@ import { performStandardAssignment } from './utils/standardAssignment';
 import { getValidationSummary } from './utils/whaleBucketValidation';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import GamePhase from './components/shared/GamePhase';
-import StandardSetupPhase from './components/standard/StandardSetupPhase';
+import StandardSetupPhase from './components/standard/SetupPhase';
 import SetupPlayerEditModal from './components/standard/SetupPlayerEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';

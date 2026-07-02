@@ -136,6 +136,34 @@ describe('computeBalance — Huntsman', () => {
   });
 });
 
+describe('computeBalance — Vigormortis', () => {
+  it('reduces the expected outsider count by 1 and shows the modification', () => {
+    // 12-player base: 7 TF / 2 Out / 2 Minion / 1 Demon. Vigormortis → 1 Out, 8 TF.
+    const roles = [
+      out('recluse'),
+      min('poisoner'), min('scarlet_woman'), dem('vigormortis'),
+      tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'), tf('ravenkeeper'),
+    ];
+    const b = computeBalance(roles, 12);
+    expect(b.modifications).toContain('Vigormortis (-1 Outsider)');
+    expect(b.validOutsiders).toEqual([1]);
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+
+  it('is invalid when the outsider count is not reduced', () => {
+    // Same 12-player game but keeping the base 2 outsiders.
+    const roles = [
+      out('recluse'), out('mutant'),
+      min('poisoner'), min('scarlet_woman'), dem('vigormortis'),
+      tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'),
+    ];
+    const b = computeBalance(roles, 12);
+    expect(b.isOutsiderValid).toBe(false);
+    expect(b.isValid).toBe(false);
+  });
+});
+
 describe('computeBalance — basic distribution', () => {
   it('is valid for a clean 6-player selection with outsider', () => {
     // 6 players base: 3/1/1/1

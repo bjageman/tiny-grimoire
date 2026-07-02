@@ -178,6 +178,7 @@ export function performStandardAssignment(
   if (selectedMinions.some(m => m.id === 'baron')) outsiderModifier += 2;
   if (selectedMinions.some(m => m.id === 'godfather')) outsiderModifier += Math.random() < 0.5 ? 1 : -1;
   if (selectedDemons.some(d => d.id === 'fanggu')) outsiderModifier += 1;
+  if (selectedDemons.some(d => d.id === 'vigormortis')) outsiderModifier -= 1;
 
   let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');

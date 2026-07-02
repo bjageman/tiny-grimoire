@@ -32,3 +32,9 @@ ntfy/
 # Blood on the Clocktower character icons
 public/icons/
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+

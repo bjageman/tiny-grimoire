@@ -15,6 +15,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
+import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
 import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';
@@ -415,35 +416,26 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
             Game Notes
           </h1>
           {isSynced && (
-            <div
+            <HeaderCodeBadge
               onClick={disconnectSync}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Click to disconnect from the Storyteller's live game"
+              isLightModeActive={isLightModeActive}
             >
               Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-            </div>
+            </HeaderCodeBadge>
           )}
         </div>
       }
       headerExtra={
         isSynced ? (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={disconnectSync}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Click to disconnect from the Storyteller's live game"
+            isLightModeActive={isLightModeActive}
           >
             Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          </HeaderCodeBadge>
         ) : undefined
       }
       extraControls={

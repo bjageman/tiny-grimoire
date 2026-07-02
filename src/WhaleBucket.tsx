@@ -19,6 +19,7 @@ import { usePersistedField, readPersistedField } from './hooks/usePersistedField
 import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
 import RoomCodeModal from './components/shared/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
 import { useDialog } from './hooks/useDialog';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
@@ -848,31 +849,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             Whale Buffet
           </h1>
           {phase !== 'game' ? (
-            <div
+            <HeaderCodeBadge
               onClick={() => setShowRoomCodeModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Click to copy join link"
+              isLightModeActive={isLightModeActive}
             >
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-            </div>
+            </HeaderCodeBadge>
           ) : (
-            <div
+            <HeaderCodeBadge
               onClick={() => setShowSyncModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Sync other device as secondary controller"
+              isLightModeActive={isLightModeActive}
             >
               Sync Other Device
-            </div>
+            </HeaderCodeBadge>
           )}
         </div>
       }
@@ -888,31 +879,23 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       headerExtra={
         phase !== 'game' ? (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowRoomCodeModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Click to copy join link"
+            isLightModeActive={isLightModeActive}
           >
             Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          </HeaderCodeBadge>
         ) : (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowSyncModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Sync other device as secondary controller"
+            isLightModeActive={isLightModeActive}
           >
             Sync Other Device
-          </div>
+          </HeaderCodeBadge>
         )
       }
       contentClassName="px-4 pt-6 pb-4"

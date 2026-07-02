@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Check, RotateCcw, Moon, Award, ChevronRight } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import DayNightLabel from './DayNightLabel';
 import type { Player } from '../../types';
 import nightSheet from '../../nightsheet.json';
 import officialRoles from '../../official_roles.json';
@@ -212,15 +213,14 @@ export default function NightOrderWidget({
           <div
             onClick={onToggleTimeOfDay}
             className={cn(
-              "group flex items-center gap-1 px-2.5 py-1 rounded-md text-[8.5px] font-bold tracking-wider uppercase border select-none min-w-[68px] justify-center",
+              "whitespace-nowrap group flex items-center gap-1 px-2.5 py-2.5 rounded-md text-[9px] font-bold tracking-wider uppercase border select-none min-w-[68px] justify-center",
               onToggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
               timeOfDay === 'day'
                 ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
                 : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
             )}
           >
-            <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
-            <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+            <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
             {onToggleTimeOfDay && (
               <ChevronRight size={9} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
             )}

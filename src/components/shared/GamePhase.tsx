@@ -288,12 +288,12 @@ export default function GamePhase({
         {!isSynced && onUpdateDemonBluffs && (
           <div className="rounded-lg border p-3.5 space-y-2.5 bg-gray-900 border-gray-700">
             <div className="flex items-center justify-between">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Demon Bluffs</h4>
+              <h4 className="text-xs uppercase font-bold tracking-wider text-gray-400">Demon Bluffs</h4>
               {demonBluffs.some(b => b) && (
                 <button
                   type="button"
                   onClick={() => setIsBluffOverlayOpen(true)}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
                 >
                   Show Demon
                 </button>
@@ -382,7 +382,7 @@ export default function GamePhase({
                 );
               })}
             </div>
-            <label className="flex items-center gap-1.5 text-[10px] text-gray-400 cursor-pointer select-none pt-0.5">
+            <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none pt-0.5">
               <input
                 type="checkbox"
                 checked={showAllBluffCandidates}
@@ -403,7 +403,7 @@ export default function GamePhase({
               : 'bg-gray-900/40 border-gray-800/80'
           )}>
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-600' : 'text-gray-500'
             )}>Declare Winner</h4>
             <div className="flex gap-2">
@@ -434,7 +434,7 @@ export default function GamePhase({
               : 'bg-gray-900/40 border-gray-800/80'
           )}>
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-600' : 'text-gray-500'
             )}>{travelerCardTitle}</h4>
             <div className="flex flex-col gap-2">
@@ -497,7 +497,7 @@ export default function GamePhase({
         )}>
           <div className="flex justify-between items-center mb-1">
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-655' : 'text-gray-500'
             )}>Grimoire Ledger Reference</h4>
           </div>
@@ -621,14 +621,14 @@ export default function GamePhase({
           )}>
             <div className="flex items-center justify-between">
               <h4 className={cn(
-                'text-[10px] uppercase font-bold tracking-wider',
+                'text-xs uppercase font-bold tracking-wider',
                 isLightModeActive ? 'text-gray-600' : 'text-gray-500'
               )}>Game Log</h4>
               {gameLog && gameLog.length > 0 && (
                 <button
                   type="button"
                   onClick={onDownloadLog}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
                 >
                   Download
                 </button>

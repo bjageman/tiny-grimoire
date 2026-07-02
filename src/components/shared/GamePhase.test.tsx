@@ -204,7 +204,7 @@ describe('GamePhase - Reset Reminders confirmation', () => {
   it('asks for confirmation before clearing reminders, and only clears them once confirmed', () => {
     render(<GamePhase {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Reset Reminders'));
+    fireEvent.click(screen.getByText('Reminders'));
 
     // Not cleared yet — waiting on confirmation
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
@@ -219,7 +219,7 @@ describe('GamePhase - Reset Reminders confirmation', () => {
   it('does not clear reminders when the confirmation is cancelled', () => {
     render(<GamePhase {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Reset Reminders'));
+    fireEvent.click(screen.getByText('Reminders'));
     fireEvent.click(screen.getByText('Cancel'));
 
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();

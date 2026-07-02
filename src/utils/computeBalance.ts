@@ -63,6 +63,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasLunatic)      modifications.push("Lunatic (0 or +1 Demon)");
     if (hasBaron)        modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu)       modifications.push("Fang Gu (+1 Outsider)");
+    if (hasVigormortis)  modifications.push("Vigormortis (-1 Outsider)");
     if (hasBalloonist)   modifications.push("Balloonist (0 or +1 Outsider)");
     if (hasHuntsman)     modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit)       modifications.push("Hermit (0 or -1 Outsider)");

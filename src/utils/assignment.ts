@@ -404,11 +404,12 @@ function assignBaseCharacters(
     for (let adj = 0; adj < 10; adj++) {
       const hasBaron = fullAssignment.some(a => a.role.id === 'baron');
       const hasFangGu = fullAssignment.some(a => a.role.id === 'fanggu');
+      const hasVigormortis = fullAssignment.some(a => a.role.id === 'vigormortis');
       const hasBalloonist = fullAssignment.some(a => a.role.id === 'balloonist');
       const hasGodfather = fullAssignment.some(a => a.role.id === 'godfather');
       const hasHermit = fullAssignment.some(a => a.role.id === 'hermit');
       
-      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0);
+      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
       const gfMods = hasGodfather ? [-1, 1] : [0];

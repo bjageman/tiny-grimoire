@@ -25,7 +25,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return '';
   });
   const [name, setName] = useState(() => {
-    return sessionStorage.getItem('joined-name') || '';
+    return sessionStorage.getItem('joined-name') || localStorage.getItem('botc-joined-name') || '';
   });
   const [playerId] = useState(() => {
     const saved = sessionStorage.getItem('botc-player-id');
@@ -285,6 +285,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       setErrorMsg('Please enter a valid 4-letter code and name.');
       return;
     }
+    localStorage.setItem('botc-joined-name', name);
     setErrorMsg(null);
     setState('checking');
 
@@ -341,7 +342,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
     setCode('');
-    setName('');
+    setName(localStorage.getItem('botc-joined-name') || '');
     setState('join');
     setAssignedRole(null);
     setRevealed(false);

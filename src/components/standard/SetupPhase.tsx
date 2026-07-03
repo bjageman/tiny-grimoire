@@ -49,6 +49,7 @@ interface StandardSetupPhaseProps {
   handleTouchEnd: () => void;
   validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
+  isSecondary?: boolean;
 }
 
 export default function StandardSetupPhase({
@@ -86,6 +87,7 @@ export default function StandardSetupPhase({
   handleTouchEnd,
   validationSummary,
   isLightModeActive,
+  isSecondary,
   remotePlayerCount = 0,
   remotePlayerIds,
   grimoireConfirmed = false,
@@ -150,10 +152,8 @@ export default function StandardSetupPhase({
               title="Click to upload script JSON"
             >
               <span className={cn(
-                "flex items-center gap-1.5 text-base font-extrabold transition-colors",
-                isLightModeActive
-                  ? "text-gray-900 group-hover:text-clocktower-blood"
-                  : "text-white group-hover:text-clocktower-blood"
+                "flex items-center gap-1.5 text-base font-extrabold transition-colors text-white group-hover:text-clocktower-blood",
+                isLightModeActive && "text-gray-900"
               )}>
                 📜 {scriptName}
               </span>
@@ -245,7 +245,12 @@ export default function StandardSetupPhase({
               <button
                 id="setup-reset-button"
                 onClick={resetGame}
-                className="text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all"
+                disabled={isSecondary}
+                className={cn(
+                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  isSecondary && "opacity-40 cursor-not-allowed"
+                )}
+                title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}
               >
                 Reset
               </button>
@@ -260,7 +265,11 @@ export default function StandardSetupPhase({
               onChange={(e) => setNewPlayerName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
               disabled={players.length >= 20}
-              placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+              placeholder={
+                players.length >= 20 
+                  ? "Maximum players reached (20)" 
+                  : "Enter player name in seating order..."
+              }
               autoCapitalize="words"
               className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />

@@ -46,6 +46,7 @@ interface Props {
   scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
   isSynced?: boolean;
+  isSecondary?: boolean;
   enableReminders?: boolean;
   travelerCardTitle?: string;
   demonBluffs?: string[];
@@ -78,6 +79,7 @@ export default function GamePhase({
   scriptAuthor = '',
   customScriptRoles = null,
   isSynced = false,
+  isSecondary = false,
   enableReminders = true,
   travelerCardTitle = 'Add Traveler',
   demonBluffs = [],
@@ -437,7 +439,8 @@ export default function GamePhase({
             'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
             isLightModeActive
               ? 'bg-white/50 border-gray-300'
-              : 'bg-gray-900/40 border-gray-800/80'
+              : 'bg-gray-900/40 border-gray-800/80',
+            isSecondary && 'opacity-40'
           )}>
             <h4 className={cn(
               'text-xs uppercase font-bold tracking-wider',
@@ -446,15 +449,29 @@ export default function GamePhase({
             <div className="flex gap-2">
               <button
                 type="button"
+                disabled={isSecondary}
                 onClick={() => onDeclareWinner('good')}
-                className="flex-1 py-2 rounded text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+                className={cn(
+                  "flex-1 py-2 rounded text-xs font-bold text-white transition-colors",
+                  isSecondary
+                    ? "bg-gray-600 cursor-not-allowed opacity-50"
+                    : "bg-blue-600 hover:bg-blue-500"
+                )}
+                title={isSecondary ? "Declaring a winner is disabled on secondary devices." : undefined}
               >
                 🌟 Good Wins
               </button>
               <button
                 type="button"
+                disabled={isSecondary}
                 onClick={() => onDeclareWinner('evil')}
-                className="flex-1 py-2 rounded text-xs font-bold text-white bg-red-800 hover:bg-red-700 transition-colors"
+                className={cn(
+                  "flex-1 py-2 rounded text-xs font-bold text-white transition-colors",
+                  isSecondary
+                    ? "bg-gray-600 cursor-not-allowed opacity-50"
+                    : "bg-red-800 hover:bg-red-700"
+                )}
+                title={isSecondary ? "Declaring a winner is disabled on secondary devices." : undefined}
               >
                 😈 Evil Wins
               </button>

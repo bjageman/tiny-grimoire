@@ -155,4 +155,21 @@ describe('WhaleBucketPlayerPreferenceModal', () => {
     const modal = container.querySelector('#whalebucket-player-preference-modal')!;
     expect(modal.className).toContain('bg-gray-900');
   });
+
+  it('enables inputs, auto-fill, and team buttons on secondary devices, and disables delete entirely', () => {
+    const { container } = render(
+      <WhaleBucketPlayerPreferenceModal
+        {...defaultProps}
+        isSecondary={true}
+      />
+    );
+
+    // Delete button is disabled
+    expect(container.querySelector('#remove-preference-player-button')).toBeDisabled();
+
+    // Inputs, auto-fill, and team buttons are enabled
+    expect(screen.getByDisplayValue('Player One')).not.toBeDisabled();
+    expect(container.querySelector('#auto-fill-preferences-button')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Townsfolk/i })).not.toBeDisabled();
+  });
 });

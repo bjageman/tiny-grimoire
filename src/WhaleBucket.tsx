@@ -897,15 +897,24 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
         phase !== 'setup'
           ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
-          : remotePlayerIds.size > 0
-            // Synced with players: surface the reset/disconnect choice instead
-            // of silently returning to the Host menu.
-            ? () => setShowResetModal(true)
-            : undefined
+          : isSecondary
+            ? () => {
+                showConfirm(
+                  "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+                  () => {
+                    window.location.hash = '#/host';
+                  }
+                );
+              }
+            : remotePlayerIds.size > 0
+              // Synced with players: surface the reset/disconnect choice instead
+              // of silently returning to the Host menu.
+              ? () => setShowResetModal(true)
+              : undefined
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
@@ -935,8 +944,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
@@ -968,6 +982,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <WhaleBucketSetupPhase
           players={players}
+          isSecondary={isSecondary}
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           allowTravelers={allowTravelers}
@@ -1011,6 +1026,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1098,6 +1115,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           togglePreference={togglePreference}
           autoFillPlayerPreferences={autoFillPlayerPreferences}
           onClose={() => setActivePreferencePlayerId(null)}
+          isSecondary={isSecondary}
         />
       )}
 

@@ -881,15 +881,24 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
         phase !== 'setup'
           ? () => setPhase('setup')
-          : remotePlayerIds.size > 0
-            // Synced with players: don't silently abandon them by returning to
-            // the Host menu — surface the reset/disconnect choice first.
-            ? () => setShowResetModal(true)
-            : undefined
+          : isSecondary
+            ? () => {
+                showConfirm(
+                  "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+                  () => {
+                    window.location.hash = '#/host';
+                  }
+                );
+              }
+            : remotePlayerIds.size > 0
+              // Synced with players: don't silently abandon them by returning to
+              // the Host menu — surface the reset/disconnect choice first.
+              ? () => setShowResetModal(true)
+              : undefined
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
@@ -919,8 +928,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
@@ -952,6 +966,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          isSecondary={isSecondary}
           setPhase={(p) => {
             if (p === 'game') {
               const roleLines = players
@@ -1013,6 +1028,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1108,6 +1125,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
+          isSecondary={isSecondary}
         />
       )}
 

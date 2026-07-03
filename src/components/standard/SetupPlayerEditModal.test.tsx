@@ -152,4 +152,26 @@ describe('SetupPlayerEditModal', () => {
     const modal = container.querySelector('#setup-player-edit-modal')!;
     expect(modal.className).toContain('bg-gray-900');
   });
+
+  it('enables inputs, toggles, and role buttons on secondary devices, and disables delete entirely', () => {
+    const { container } = render(
+      <SetupPlayerEditModal
+        {...defaultProps}
+        isSecondary={true}
+      />
+    );
+
+    // Delete button is disabled
+    expect(container.querySelector('#remove-player-button')).toBeDisabled();
+
+    // Inputs, toggles, role buttons are enabled
+    expect(screen.getByDisplayValue('Alice')).not.toBeDisabled();
+    expect(container.querySelector('#toggle-drunk-button-p1')).not.toBeDisabled();
+    
+    const roleOptions = container.querySelectorAll('button[id^="role-option-"]');
+    expect(roleOptions.length).toBeGreaterThan(0);
+    roleOptions.forEach(btn => {
+      expect(btn).not.toBeDisabled();
+    });
+  });
 });

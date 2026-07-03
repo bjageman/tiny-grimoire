@@ -36,6 +36,7 @@ interface WhaleBucketSetupPhaseProps {
   excludedRoleIds: string[];
   setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
   remotePlayerIds?: Set<string>;
+  isSecondary?: boolean;
 }
 
 export default function WhaleBucketSetupPhase({
@@ -64,6 +65,7 @@ export default function WhaleBucketSetupPhase({
   excludedRoleIds,
   setExcludedRoleIds,
   remotePlayerIds,
+  isSecondary,
 }: WhaleBucketSetupPhaseProps) {
   const [excludeSearchTerm, setExcludeSearchTerm] = useState('');
   const [isExcludeFocused, setIsExcludeFocused] = useState(false);
@@ -115,7 +117,12 @@ export default function WhaleBucketSetupPhase({
               <button
                 id="setup-reset-button"
                 onClick={resetGame}
-                className="text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all"
+                disabled={isSecondary}
+                className={cn(
+                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  isSecondary && "opacity-40 cursor-not-allowed"
+                )}
+                title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}
               >
                 Reset
               </button>
@@ -124,12 +131,17 @@ export default function WhaleBucketSetupPhase({
 
           <div className="flex gap-2 mb-4">
             <input
+              id="new-player-input"
               type="text"
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
               disabled={players.length >= 15}
-              placeholder={players.length >= 15 ? "Maximum players reached (15)" : "Enter player name in seating order..."}
+              placeholder={
+                players.length >= 15 
+                  ? "Maximum players reached (15)" 
+                  : "Enter player name in seating order..."
+              }
               autoCapitalize="words"
               className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />

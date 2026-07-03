@@ -253,7 +253,7 @@ export default function WhaleBucketDraftEditModal({
                   <img
                     src="/icons/lilmonsta.svg"
                     alt=""
-                    className="w-3 h-3 object-contain"
+                    className="w-3.5 h-3.5 object-contain"
                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                   />
                 </span>

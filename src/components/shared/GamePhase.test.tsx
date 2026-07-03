@@ -224,4 +224,23 @@ describe('GamePhase - Reset Reminders confirmation', () => {
 
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
   });
+
+  it('greys out and disables declare winner buttons when isSecondary is true', () => {
+    const onDeclareWinner = vi.fn();
+    render(
+      <GamePhase
+        {...defaultProps}
+        onDeclareWinner={onDeclareWinner}
+        isSecondary={true}
+      />
+    );
+
+    const goodWinsBtn = screen.getByRole('button', { name: /Good Wins/i });
+    const evilWinsBtn = screen.getByRole('button', { name: /Evil Wins/i });
+
+    expect(goodWinsBtn).toBeDisabled();
+    expect(evilWinsBtn).toBeDisabled();
+    expect(goodWinsBtn.className).toContain('opacity-50');
+    expect(evilWinsBtn.className).toContain('opacity-50');
+  });
 });

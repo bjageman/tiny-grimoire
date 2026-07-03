@@ -609,7 +609,9 @@ export default function GamePhase({
                                 ? ['marionette']
                                 : p.isTheLunatic
                                   ? ['lunatic']
-                                  : []);
+                                  : p.isTheLilMonsta
+                                    ? ['lilmonsta']
+                                    : []);
                       if (displayRoles.length === 0) {
                         return <span className="text-gray-500 font-semibold text-[10px]">—</span>;
                       }

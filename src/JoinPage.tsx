@@ -167,13 +167,11 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           sessionStorage.setItem('joined-code', code);
           sessionStorage.setItem('joined-name', name);
           setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
-        } else if (stateRef.current === 'revealed') {
-          // The storyteller is back in setup while this player still shows a
-          // character — they reset the game. Fall back to the lobby. This
-          // backs up the explicit `game_reset` message above in case that one
-          // wasn't received (e.g. the socket was momentarily down).
-          returnToLobby(payload.gameType);
         }
+        // NB: a plain setup_update is NOT treated as a reset. The storyteller
+        // may simply step back to setup to tweak something without wanting to
+        // boot everyone off their character. Only the explicit `game_reset`
+        // command (handled above) returns players to the lobby.
       }
 
       if (payload.excludedRoleIds) {
@@ -186,7 +184,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setCustomScriptRoles(payload.customScriptRoles);
       }
 
-      if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking' || stateRef.current === 'revealed') {
+      if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
         setPlayers(payload.players || []);
       }
     } else if (payload.type === 'code_valid') {

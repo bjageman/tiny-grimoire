@@ -274,10 +274,10 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
-  it('self-heals a revealed player back to the waiting room from a setup_update alone (game_reset missed)', async () => {
-    // No storyteller here — drive the JoinPage directly so we isolate the
-    // self-heal logic: a revealed player who never received `game_reset` but
-    // later gets a setup_update (their role cleared) must fall back to waiting.
+  it('does NOT boot a revealed player off their character on a bare setup_update (storyteller stepped back to setup)', async () => {
+    // Drive the JoinPage directly. A revealed player who receives a plain
+    // setup_update — e.g. the storyteller tapped back to setup to tweak
+    // something — must stay on their character. Only game_reset moves them.
     const gameCode = 'SHLF';
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
@@ -304,12 +304,11 @@ describe('Storyteller Reset Integration', () => {
     });
     expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
 
-    // Now the storyteller reset but Alice missed `game_reset`; only a
-    // setup_update (role cleared) reaches her.
+    // A bare setup_update arrives (storyteller back in setup, no reset).
     deliver({
       type: 'setup_update',
       gameType: 'standard',
-      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: '' }],
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
       scriptName: 'All Roles',
       scriptAuthor: '',
       customScriptRoles: null,
@@ -318,8 +317,9 @@ describe('Storyteller Reset Integration', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    expect(joinPage.container.querySelector('#waiting-screen')).not.toBeNull();
-    expect(joinPage.queryAllByText('Washerwoman').length).toBe(0);
+    // Still on her character, not sent to the waiting room.
+    expect(joinPage.container.querySelector('#waiting-screen')).toBeNull();
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
 
     joinPage.unmount();
   });
@@ -350,7 +350,7 @@ describe('Storyteller Reset Integration', () => {
     tracker.unmount();
   });
 
-  it('game-tracker self-heal: a bare setup_update also returns a joined tracker to the waiting room', async () => {
+  it('does NOT navigate a joined game tracker away on a bare setup_update (storyteller stepped back to setup)', async () => {
     const gameCode = 'TRK2';
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Zoe');
@@ -372,7 +372,8 @@ describe('Storyteller Reset Integration', () => {
         }));
     });
 
-    expect(window.location.hash).toBe('#/join');
+    // Stays in the tracker — a plain setup_update is not a reset.
+    expect(window.location.hash).toBe('#/tracker');
 
     tracker.unmount();
   });

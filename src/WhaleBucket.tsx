@@ -412,7 +412,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   });
 
   const addPlayer = () => {
-    if (players.length >= 20) return;
+    if (players.length >= 15) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     setPlayers([...players, createNewPlayer(name)]);
     setNewPlayerName('');
@@ -427,8 +427,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       showAlert("Please select a traveler role.");
       return;
     }
-    if (players.length >= 20) {
-      showAlert("Maximum players reached (20).");
+    if (players.length >= 15) {
+      showAlert("Maximum players reached (15).");
       return;
     }
     setPlayers([createNewPlayer(newTravelerName, newTravelerRoleId), ...players]);

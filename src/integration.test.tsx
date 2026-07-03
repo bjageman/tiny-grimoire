@@ -616,14 +616,14 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     fireEvent.click(within(storyteller.container).getByText('😈 Evil Wins'));
     fireEvent.click(within(storyteller.container).getByText('Reset Game'));
 
-    // Storyteller broadcast a winner, but never a storyteller_quit — the
-    // session (and the joined player) should stay alive. The setup-update
-    // broadcast is debounced twice (500ms effect + 1000ms inner debounce).
+    // Reset Game sends setup_update immediately (no debounce) and skips the
+    // game_winner broadcast entirely, and never sends storyteller_quit — the
+    // session (and the joined player) should stay alive.
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1700));
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_winner')).toBe(true);
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_winner')).toBe(false);
     expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(false);
 
     // Storyteller dropped back to the setup screen
@@ -663,7 +663,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_winner')).toBe(true);
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_winner')).toBe(false);
     expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(true);
     expect(window.location.hash).toBe('');
 

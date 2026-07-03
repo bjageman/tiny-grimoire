@@ -788,7 +788,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   // alive — clears role assignments and round state, then drops back to
   // setup so the storyteller can run another round with the same group.
   const resetGameKeepConnected = () => {
-    setPlayers(prev => prev.map(p => ({
+    const clearedPlayers = players.map(p => ({
       ...p,
       roleId: undefined,
       roleIds: undefined,
@@ -800,7 +800,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       isTheLilMonsta: false,
       isEvil: undefined,
       notes: undefined,
-    })));
+    }));
+    setPlayers(clearedPlayers);
     setPhase('setup');
     setActiveDraftPlayerId(null);
     setSearchTerm('');
@@ -811,6 +812,18 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setGameLog([]);
     setReminderTokens([]);
     setCheckedItems({});
+
+    // Broadcast the setup reset immediately — this is a deliberate one-off
+    // action, not the kind of rapid-fire update the debounced setup-sync
+    // effect is meant for, so players shouldn't have to wait out its delay.
+    if (sendMessageRef.current) {
+      sendMessageRef.current({
+        type: 'setup_update',
+        gameType: 'whale-bucket',
+        players: clearedPlayers.map(({ notes, ...rest }) => rest),
+        excludedRoleIds,
+      });
+    }
   };
 
   const broadcastWinner = (team: 'good' | 'evil') => {
@@ -819,6 +832,15 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     if (sendMessageRef.current) {
       sendMessageRef.current({ type: 'game_winner', team });
     }
+  };
+
+  // Same as broadcastWinner but skips the network message — used ahead of
+  // Disconnect/Reset Game so there's no game_winner in flight that could
+  // race with (or otherwise interfere with) the setup/quit broadcast that
+  // follows right after.
+  const logWinner = (team: 'good' | 'evil') => {
+    const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';
+    addLogEntry(`Game over ${label}`);
   };
 
   const resetGame = () => {
@@ -1142,12 +1164,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         isLightModeActive={isLightModeActive}
         onCancel={() => setDeclareWinnerPrompt(null)}
         onDisconnect={() => {
-          broadcastWinner(declareWinnerPrompt);
+          logWinner(declareWinnerPrompt);
           setDeclareWinnerPrompt(null);
           performFullReset();
         }}
         onResetKeepConnected={() => {
-          broadcastWinner(declareWinnerPrompt);
+          logWinner(declareWinnerPrompt);
           setDeclareWinnerPrompt(null);
           resetGameKeepConnected();
         }}

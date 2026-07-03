@@ -63,6 +63,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const hasVigormortis = assignedRoles.some(r => r.id === 'vigormortis');
   const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
   const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
+  const hasAlchemist = assignedRoles.some(r => r.id === 'alchemist');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
   const hasHermit = assignedRoles.some(r => r.id === 'hermit');
   const hasSummoner = assignedRoles.some(r => r.id === 'summoner');
@@ -194,6 +195,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const jinxWarnings: string[] = [];
   if (hasChoirboy && !hasKing) jinxWarnings.push("Choirboy in play, but no King assigned.");
   if (hasHuntsman && !hasDamsel) jinxWarnings.push("Huntsman in play, but no Damsel assigned.");
+  if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
   const roleIdFreq: Record<string, number> = {};
   for (const p of players) {

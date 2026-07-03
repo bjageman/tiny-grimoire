@@ -21,6 +21,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const hasFangGu      = has('fanggu');
   const hasBalloonist  = has('balloonist');
   const hasHuntsman    = has('huntsman');
+  const hasAlchemist   = has('alchemist');
   const hasHermit      = has('hermit');
   const hasGodfather   = has('godfather');
   const hasLilMonsta   = has('lilmonsta');
@@ -118,6 +119,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const jinxWarnings: string[] = [];
   if (has('choirboy') && !has('king'))     jinxWarnings.push("Choirboy in play, but no King selected.");
   if (hasHuntsman && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
+  if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
 

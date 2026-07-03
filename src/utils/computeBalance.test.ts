@@ -164,6 +164,20 @@ describe('computeBalance — Vigormortis', () => {
   });
 });
 
+describe('computeBalance — Alchemist', () => {
+  it('warns that the Alchemist ability may affect setup whenever it is selected', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('alchemist'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.jinxWarnings).toContain('Alchemist in play — ability may affect setup.');
+  });
+
+  it('has no Alchemist warning when it is not selected', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.jinxWarnings).not.toContain('Alchemist in play — ability may affect setup.');
+  });
+});
+
 describe('computeBalance — basic distribution', () => {
   it('is valid for a clean 6-player selection with outsider', () => {
     // 6 players base: 3/1/1/1

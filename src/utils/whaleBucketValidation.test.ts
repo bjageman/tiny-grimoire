@@ -146,4 +146,23 @@ describe('whaleBucketValidation utility', () => {
       expect(summary.isValid).toBe(true);
     }
   });
+
+  it('warns that the Alchemist ability may affect setup whenever it is assigned', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'alchemist', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary).not.toBeNull();
+    if (summary) {
+      expect(summary.jinxWarnings).toContain("Alchemist in play — ability may affect setup.");
+    }
+  });
 });

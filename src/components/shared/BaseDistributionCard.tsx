@@ -33,19 +33,19 @@ export default function BaseDistributionCard({
         <div className="grid text-center text-[10px] font-mono grid-cols-4 gap-x-1 gap-y-2.5">
           <div className="min-w-0">
             <div className="text-[9px] font-bold uppercase tracking-wide text-gray-500 font-sans truncate">Townsfolk</div>
-            <div className="font-bold text-lg mt-0.5 text-clocktower-townsfolk">{dist.townsfolk}</div>
+            <div className="font-bold text-lg leading-none mt-0.5 text-clocktower-townsfolk">{dist.townsfolk}</div>
           </div>
           <div className="min-w-0">
             <div className="text-[9px] font-bold uppercase tracking-wide text-gray-500 font-sans truncate">Outsiders</div>
-            <div className="font-bold text-lg mt-0.5 text-clocktower-outsider">{dist.outsider}</div>
+            <div className="font-bold text-lg leading-none mt-0.5 text-clocktower-outsider">{dist.outsider}</div>
           </div>
           <div className="min-w-0">
             <div className="text-[9px] font-bold uppercase tracking-wide text-gray-500 font-sans truncate">Minions</div>
-            <div className="font-bold text-lg mt-0.5 text-clocktower-minion">{dist.minion}</div>
+            <div className="font-bold text-lg leading-none mt-0.5 text-clocktower-minion">{dist.minion}</div>
           </div>
           <div className="min-w-0">
-            <div className="text-[9px] font-bold uppercase  text-gray-500 font-sans truncate">Demons</div>
-            <div className="font-bold text-lg mt-0.5 text-clocktower-demon">{dist.demon}</div>
+            <div className="text-[9px] font-bold uppercase tracking-wide text-gray-500 font-sans truncate">Demons</div>
+            <div className="font-bold text-lg leading-none mt-0.5 text-clocktower-demon">{dist.demon}</div>
           </div>
         </div>
       ) : (

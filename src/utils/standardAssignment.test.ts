@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
+import officialRoles from '../official_roles.json';
 
 describe('performStandardAssignment', () => {
   const mockScriptRoles: Role[] = [
@@ -9,7 +10,7 @@ describe('performStandardAssignment', () => {
     { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
     { id: 'chef', name: 'Chef', team: 'townsfolk' },
     { id: 'empath', name: 'Empath', team: 'townsfolk' },
-    { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+    { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
     { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
     { id: 'drunk', name: 'Drunk', team: 'outsider' },
     { id: 'marionette', name: 'Marionette', team: 'minion' },
@@ -56,8 +57,10 @@ describe('performStandardAssignment', () => {
       const marionettePlayer = result[marionetteIdx];
       expect(marionettePlayer.isTheMarionette).toBe(true);
 
-      // Verify the Marionette has been assigned a fake Townsfolk or Outsider role (thinks they are good)
-      const fakeRole = mockScriptRoles.find(r => r.id === marionettePlayer.roleId);
+      // Verify the Marionette has been assigned a fake Townsfolk or Outsider role (thinks they
+      // are good). The fake identity is drawn from the full official role list (not just this
+      // script's roles) so it never collides with a real assigned character, so look it up there.
+      const fakeRole = (officialRoles as Role[]).find(r => r.id === marionettePlayer.roleId);
       expect(fakeRole).toBeDefined();
       expect(['townsfolk', 'outsider']).toContain(fakeRole?.team);
       expect(marionettePlayer.isEvil).toBe(true);
@@ -82,7 +85,10 @@ describe('performStandardAssignment', () => {
     ];
 
     // Standard 6-player setup has 1 Outsider. Drunk is the only Outsider in mockScriptRoles.
-    const result = performStandardAssignment(players, mockScriptRoles, []);
+    // Exclude Marionette — it can also compete for that single Outsider slot when it fakes as
+    // an Outsider, which would make this single-trial assertion flaky.
+    const scriptWithoutMarionette = mockScriptRoles.filter(r => r.id !== 'marionette');
+    const result = performStandardAssignment(players, scriptWithoutMarionette, []);
     expect(result).not.toBeNull();
     if (!result) return;
 
@@ -91,8 +97,9 @@ describe('performStandardAssignment', () => {
     if (!drunkPlayer) return;
 
     expect(drunkPlayer.isTheDrunk).toBe(true);
-    // Drunk player must think they are a Townsfolk
-    const fakeRole = mockScriptRoles.find(r => r.id === drunkPlayer.roleId);
+    // Drunk player must think they are a Townsfolk — the fake identity is drawn from the full
+    // official role list (not just this script's roles), so look it up there.
+    const fakeRole = (officialRoles as Role[]).find(r => r.id === drunkPlayer.roleId);
     expect(fakeRole?.team).toBe('townsfolk');
   });
 
@@ -111,8 +118,10 @@ describe('performStandardAssignment', () => {
       { id: '6', name: 'Frank', isDead: false },
     ];
 
-    // 6-player setup has 1 Outsider. We filter out 'drunk' so 'lunatic' is the only outsider.
-    const scriptWithLunaticOnlyOutsider = mockScriptWithLunatic.filter(r => r.id !== 'drunk');
+    // 6-player setup has 1 Outsider. We filter out 'drunk' so 'lunatic' is the only outsider,
+    // and 'marionette' since it can also compete for that single Outsider slot when it fakes
+    // as an Outsider, which would make this single-trial assertion flaky.
+    const scriptWithLunaticOnlyOutsider = mockScriptWithLunatic.filter(r => r.id !== 'drunk' && r.id !== 'marionette');
 
     const result = performStandardAssignment(players, scriptWithLunaticOnlyOutsider, []);
     expect(result).not.toBeNull();
@@ -123,8 +132,9 @@ describe('performStandardAssignment', () => {
     if (!lunaticPlayer) return;
 
     expect(lunaticPlayer.isTheLunatic).toBe(true);
-    // Lunatic player must think they are a Demon
-    const fakeRole = mockScriptWithLunatic.find(r => r.id === lunaticPlayer.roleId);
+    // Lunatic player must think they are a Demon — the fake identity is drawn from the full
+    // official role list (not just this script's roles), so look it up there.
+    const fakeRole = (officialRoles as Role[]).find(r => r.id === lunaticPlayer.roleId);
     expect(fakeRole?.team).toBe('demon');
   });
 
@@ -221,7 +231,7 @@ describe('performStandardAssignment', () => {
       r.id !== 'investigator' &&
       r.id !== 'chef' &&
       r.id !== 'empath' &&
-      r.id !== 'fortune_teller' &&
+      r.id !== 'fortuneteller' &&
       r.id !== 'undertaker' &&
       r.id !== 'drunk'
     );
@@ -247,7 +257,7 @@ describe('performStandardAssignment', () => {
     const scriptWithRiot: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
-      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
       { id: 'riot', name: 'Riot', team: 'demon' },
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
     ];
@@ -276,7 +286,7 @@ describe('performStandardAssignment', () => {
     const scriptWithTyphon: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
-      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
       { id: 'lordoftyphon', name: 'Lord of Typhon', team: 'demon' },
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
       { id: 'spy', name: 'Spy', team: 'minion' },
@@ -356,7 +366,10 @@ describe('performStandardAssignment', () => {
     }
   });
 
-  it('should ensure a Damsel is in play if a Huntsman is the Marionette', () => {
+  it('never lets the Marionette fake an identity that a real player already has', () => {
+    // A tiny script (few Townsfolk/Outsider options) is the scenario that used to force the
+    // old "unmatched" fallback into duplicating a real character's identity — e.g. a real
+    // Huntsman assigned to one player AND the Marionette also displaying as "Huntsman".
     const script: Role[] = [
       { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },
       { id: 'damsel', name: 'Damsel', team: 'outsider' },
@@ -366,9 +379,7 @@ describe('performStandardAssignment', () => {
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
 
-    let targetTrialFound = false;
-
-    for (let trial = 0; trial < 100; trial++) {
+    for (let trial = 0; trial < 200; trial++) {
       const players: Player[] = [
         { id: '1', name: 'Alice', isDead: false },
         { id: '2', name: 'Bob', isDead: false },
@@ -382,16 +393,10 @@ describe('performStandardAssignment', () => {
       expect(result).not.toBeNull();
       if (!result) return;
 
-      const huntsmanMarionette = result.find(p => p.roleId === 'huntsman' && p.isTheMarionette);
-      if (huntsmanMarionette) {
-        targetTrialFound = true;
-        const damselPlayer = result.find(p => p.roleId === 'damsel');
-        expect(damselPlayer).toBeDefined();
-        expect(damselPlayer?.id).not.toBe(huntsmanMarionette.id);
-      }
+      const roleIds = result.map(p => p.roleId);
+      const duplicates = roleIds.filter((id, i) => roleIds.indexOf(id) !== i);
+      expect(duplicates).toEqual([]);
     }
-
-    expect(targetTrialFound).toBe(true);
   });
 
   it('should ensure there are no evil players in play when Atheist is in play', () => {
@@ -426,6 +431,73 @@ describe('performStandardAssignment', () => {
         });
       }
     }
+  });
+
+  describe('masquerade roles (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
+    const tfNames = ['washerwoman', 'librarian', 'investigator', 'chef', 'empath', 'fortuneteller', 'undertaker', 'monk', 'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor'];
+    const baseTownsfolk = tfNames.map(id => ({ id, name: id, team: 'townsfolk' as const }));
+    const recluse: Role = { id: 'recluse', name: 'Recluse', team: 'outsider' };
+    const drunkRole: Role = { id: 'drunk', name: 'Drunk', team: 'outsider' };
+    const lunaticRole: Role = { id: 'lunatic', name: 'Lunatic', team: 'outsider' };
+    const marionetteRole: Role = { id: 'marionette', name: 'Marionette', team: 'minion' };
+    const poisoner: Role = { id: 'poisoner', name: 'Poisoner', team: 'minion' };
+    const imp: Role = { id: 'imp', name: 'Imp', team: 'demon' };
+    const lilMonstaRole: Role = { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' };
+
+    const scripts: Record<string, Role[]> = {
+      marionetteOnly: [...baseTownsfolk, recluse, marionetteRole, imp],
+      marionetteAndDrunk: [...baseTownsfolk, recluse, drunkRole, marionetteRole, poisoner, imp],
+      lunaticOnly: [...baseTownsfolk, recluse, lunaticRole, poisoner, imp],
+      lilMonstaOnly: [...baseTownsfolk, recluse, poisoner, marionetteRole, imp, lilMonstaRole],
+      everything: [...baseTownsfolk, recluse, drunkRole, lunaticRole, marionetteRole, poisoner, imp, lilMonstaRole],
+    };
+
+    for (const [label, script] of Object.entries(scripts)) {
+      it(`produces no duplicate role IDs (${label})`, () => {
+        for (const n of [5, 6, 8, 12]) {
+          for (let trial = 0; trial < 40; trial++) {
+            const players: Player[] = Array.from({ length: n }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+            const result = performStandardAssignment(players, script, []);
+            if (!result) continue;
+            expect(result.length).toBe(n);
+            const roleIds = result.map(p => p.roleId);
+            expect(roleIds.every(Boolean)).toBe(true);
+            const duplicates = roleIds.filter((id, i) => roleIds.indexOf(id) !== i);
+            expect(duplicates).toEqual([]);
+          }
+        }
+      });
+    }
+
+    it('does not add an extra real Outsider when the Marionette displays as an Outsider (6-player: 3TF/1OUT/1MIN/1DEM)', () => {
+      const script = [...baseTownsfolk, recluse, marionetteRole, imp];
+      const teamOf = (id?: string) => script.find(r => r.id === id)?.team;
+
+      let fakedOutsiderAtLeastOnce = false;
+      for (let trial = 0; trial < 400; trial++) {
+        const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+        const result = performStandardAssignment(players, script, []);
+        if (!result) continue;
+
+        const marionettePlayer = result.find(p => p.isTheMarionette);
+        expect(marionettePlayer).toBeDefined();
+        if (!marionettePlayer) continue;
+
+        if (marionettePlayer.roleId === 'recluse') {
+          fakedOutsiderAtLeastOnce = true;
+          // The only script Outsider (Recluse) is the Marionette's fake identity here, so no
+          // OTHER player should be a genuine (non-Marionette) Outsider.
+          const realOutsiders = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'outsider');
+          expect(realOutsiders).toHaveLength(0);
+          // Reducing Outsider without a compensating change elsewhere leaves one seat short of
+          // 6; fillToCount pads it with an extra Townsfolk (its default fallback pool), so 4
+          // real Townsfolk end up in play, not 3.
+          const realTownsfolk = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'townsfolk');
+          expect(realTownsfolk).toHaveLength(4);
+        }
+      }
+      expect(fakedOutsiderAtLeastOnce).toBe(true);
+    });
   });
 });
 

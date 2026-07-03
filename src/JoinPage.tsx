@@ -88,6 +88,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
   const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>([]);
   const [scriptName, setScriptName] = useState("All Roles");
+  const [scriptAuthor, setScriptAuthor] = useState("");
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -121,6 +122,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     dayNumber?: number;
     excludedRoleIds?: string[];
     scriptName?: string;
+    scriptAuthor?: string;
     customScriptRoles?: Role[];
   }
 
@@ -180,6 +182,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
+      }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
@@ -206,12 +211,18 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
+      }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
+      }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
@@ -936,6 +947,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptAuthor={scriptAuthor}
       isLightModeActive={isLight}
     />
 

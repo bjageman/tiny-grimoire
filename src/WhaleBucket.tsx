@@ -20,6 +20,7 @@ import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
 import RoomCodeModal from './components/shared/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
+import ResetGameModal from './components/shared/ResetGameModal';
 import { useDialog } from './hooks/useDialog';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
@@ -129,6 +130,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
 
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
@@ -754,34 +756,86 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const resetGame = () => {
-    showConfirm('Are you sure you want to reset the game? This clears all players and settings.', async () => {
-      if (sendMessageRef.current) {
-        try {
-          await sendMessageRef.current({ type: 'storyteller_quit' });
-        } catch (e) {
-          console.error('Failed to notify players on reset:', e);
-        }
+  const performFullReset = async () => {
+    if (sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on reset:', e);
       }
-      setPlayers([]);
-      setPhase('setup');
-      setActiveDraftPlayerId(null);
-      setSearchTerm('');
-      setTimeOfDay('night');
-      setDayNumber(1);
-      setIsLilMonstaGame(false);
-      setReminderTokens([]);
-      setCheckedItems({});
-      setRemotePlayerIds(new Set());
-      localStorage.removeItem(STORAGE_KEY);
-      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('whale-bucket-game-code', newCode);
-      const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('whale-bucket-sync-code', newSync);
-      setGameCode(newCode);
-      setSyncCode(newSync);
-      window.location.hash = '';
-    }, 'Reset Game');
+    }
+    setPlayers([]);
+    setPhase('setup');
+    setActiveDraftPlayerId(null);
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setRemotePlayerIds(new Set());
+    localStorage.removeItem(STORAGE_KEY);
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('whale-bucket-game-code', newCode);
+    const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('whale-bucket-sync-code', newSync);
+    setGameCode(newCode);
+    setSyncCode(newSync);
+    window.location.hash = '';
+  };
+
+  // Reset the round but keep the sync session (and every connected player)
+  // alive. Player preferences are retained; only role assignments and
+  // per-round state are cleared. Every synced player is told to return to the
+  // waiting room so they'll get a fresh character when the grimoire reopens.
+  const resetGameKeepConnected = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: undefined,
+      roleIds: undefined,
+      isDead: false,
+      hasDeadVote: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+      notes: undefined,
+      // Wipe preferences so everyone re-picks fresh for the next round.
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+    setPlayers(clearedPlayers);
+    setPhase('setup');
+    setActiveDraftPlayerId(null);
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+
+    // Broadcast immediately (no debounce): the explicit reset command first,
+    // then a setup_update carrying the cleared roster as a backup that pulls
+    // any player who missed the command back to the preferences picker.
+    if (sendMessageRef.current) {
+      sendMessageRef.current({ type: 'game_reset', gameType: 'whale-bucket' });
+      sendMessageRef.current({
+        type: 'setup_update',
+        gameType: 'whale-bucket',
+        players: clearedPlayers.map(({ notes, ...rest }) => rest),
+        excludedRoleIds,
+      });
+    }
+  };
+
+  const resetGame = () => {
+    if (remotePlayerIds.size > 0) {
+      setShowResetModal(true);
+    } else {
+      showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
+    }
   };
 
   const resetDead = () => {
@@ -1099,6 +1153,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
         syncOnly={true}
+      />
+    )}
+    {showResetModal && (
+      <ResetGameModal
+        remotePlayerCount={remotePlayerIds.size}
+        isLightModeActive={isLightModeActive}
+        onCancel={() => setShowResetModal(false)}
+        onKeepPlayers={() => {
+          setShowResetModal(false);
+          resetGameKeepConnected();
+        }}
+        onDisconnect={() => {
+          setShowResetModal(false);
+          performFullReset();
+        }}
       />
     )}
     </>

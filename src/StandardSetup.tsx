@@ -21,6 +21,7 @@ import DialogModal from './components/shared/DialogModal';
 import { useDialog } from './hooks/useDialog';
 import RoomCodeModal from './components/shared/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
+import ResetGameModal from './components/shared/ResetGameModal';
 
 type Phase = 'setup' | 'game';
 
@@ -63,6 +64,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
 
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
@@ -144,36 +146,90 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const resetGame = () => {
-    showConfirm('Are you sure you want to reset the game? This clears all players and settings.', async () => {
-      if (sendMessageRef.current) {
-        try {
-          await sendMessageRef.current({ type: 'storyteller_quit' });
-        } catch (e) {
-          console.error('Failed to notify players on reset:', e);
-        }
+  const performFullReset = async () => {
+    if (sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on reset:', e);
       }
-      setPlayers([]);
-      setPhase('setup');
-      setSearchTerm('');
-      setTimeOfDay('night');
-      setDayNumber(1);
-      setIsLilMonstaGame(false);
-      setScriptName("All Roles");
-      setCustomScriptRoles(null);
-      setDemonBluffs([]);
-      setGameLog([]);
-      setReminderTokens([]);
-      setCheckedItems({});
-      localStorage.removeItem(STORAGE_KEY);
-      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('standard-botc-game-code', newCode);
-      const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('standard-botc-sync-code', newSync);
-      window.location.hash = '';
-      setGameCode(newCode);
-      setSyncCode(newSync);
-    }, 'Reset Game');
+    }
+    setPlayers([]);
+    setPhase('setup');
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setScriptName("All Roles");
+    setCustomScriptRoles(null);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setRemotePlayerIds(new Set());
+    localStorage.removeItem(STORAGE_KEY);
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-game-code', newCode);
+    const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-sync-code', newSync);
+    window.location.hash = '';
+    setGameCode(newCode);
+    setSyncCode(newSync);
+  };
+
+  // Reset the round but keep the sync session (and every connected player)
+  // alive. Clears role assignments and per-round state, drops back to setup,
+  // and — most importantly — tells every synced player to return to the
+  // waiting room so they'll get a fresh character when the grimoire reopens.
+  const resetGameKeepConnected = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: '',
+      roleIds: undefined,
+      isDead: false,
+      hasDeadVote: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+      notes: undefined,
+    }));
+    setPlayers(clearedPlayers);
+    setPhase('setup');
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setGrimoireConfirmed(false);
+
+    // Broadcast immediately (no debounce): first the explicit reset command,
+    // then a setup_update carrying the cleared roster + script. The reset
+    // command is the primary signal; the setup_update doubles as a backup that
+    // pulls any player who missed it back to the waiting room.
+    if (sendMessageRef.current) {
+      sendMessageRef.current({ type: 'game_reset', gameType: 'standard' });
+      sendMessageRef.current({
+        type: 'setup_update',
+        gameType: 'standard',
+        players: clearedPlayers.map(({ notes, ...rest }) => rest),
+        scriptName,
+        scriptAuthor,
+        customScriptRoles,
+      });
+    }
+  };
+
+  const resetGame = () => {
+    if (remotePlayerIds.size > 0) {
+      setShowResetModal(true);
+    } else {
+      showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
+    }
   };
 
   const resetDead = () => {
@@ -1073,6 +1129,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
         syncOnly={true}
+      />
+    )}
+    {showResetModal && (
+      <ResetGameModal
+        remotePlayerCount={remotePlayerIds.size}
+        isLightModeActive={isLightModeActive}
+        onCancel={() => setShowResetModal(false)}
+        onKeepPlayers={() => {
+          setShowResetModal(false);
+          resetGameKeepConnected();
+        }}
+        onDisconnect={() => {
+          setShowResetModal(false);
+          performFullReset();
+        }}
       />
     )}
     </>

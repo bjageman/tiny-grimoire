@@ -64,6 +64,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const handleIncomingMessage = (data: unknown) => {
     const payload = data as {
       type: string;
+      gameType?: 'standard' | 'whale-bucket';
       players?: Player[];
       timeOfDay?: 'night' | 'day';
       dayNumber?: number;
@@ -71,6 +72,23 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
     };
+    // The storyteller reset the game but kept everyone connected. A player who
+    // had opened this game tracker from a join session must go back to the
+    // JoinPage lobby so they get a fresh character when the grimoire reopens:
+    // the waiting room for Standard, or the (reset) preferences picker for
+    // Whale Bucket. `game_reset` is the explicit signal; a bare `setup_update`
+    // (storyteller back in setup) is the backup in case `game_reset` was
+    // missed. Both only apply to joined sessions.
+    const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
+    const returnHash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+    if (payload.type === 'game_reset') {
+      if (joinedFromLobby) window.location.hash = returnHash;
+      return;
+    }
+    if (payload.type === 'setup_update' && joinedFromLobby) {
+      window.location.hash = returnHash;
+      return;
+    }
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.players) {
         setPlayers((currentPlayers) => {

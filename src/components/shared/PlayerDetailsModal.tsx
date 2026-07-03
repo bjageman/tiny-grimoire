@@ -124,8 +124,9 @@ export default function PlayerDetailsModal({
     if (p.isTheDrunk) return ['drunk'];
     if (p.isTheMarionette) return ['marionette'];
     if (p.isTheLunatic) return ['lunatic'];
+    if (p.isTheLilMonsta) return ['lilmonsta'];
     return [];
-  }, [allowMultipleRoles, p.roleIds, p.roleId, p.isTheDrunk, p.isTheMarionette, p.isTheLunatic]);
+  }, [allowMultipleRoles, p.roleIds, p.roleId, p.isTheDrunk, p.isTheMarionette, p.isTheLunatic, p.isTheLilMonsta]);
 
   return (
     <>

@@ -4,6 +4,7 @@ import { ChevronRight, RotateCcw, RotateCw } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
 import DayNightLabel from './DayNightLabel';
@@ -649,9 +650,13 @@ export default function GrimoireBoard({
                               ? ['marionette']
                               : p.isTheLunatic
                                 ? ['lunatic']
-                                : [null]);
+                                : p.isTheLilMonsta
+                                  ? ['lilmonsta']
+                                  : [null]);
                     return displayRoles.map((roleId, idx) => {
-                      const roleObj = roleId ? rolesData.find((r) => r.id === roleId) : null;
+                      const roleObj = roleId 
+                        ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
+                        : null;
                       const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
                       const isEvil = p.isEvil !== undefined
                         ? p.isEvil

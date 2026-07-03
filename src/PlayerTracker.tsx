@@ -46,6 +46,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   // Script states
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
+  const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +68,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       timeOfDay?: 'night' | 'day';
       dayNumber?: number;
       scriptName?: string;
+      scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
     };
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
@@ -105,6 +107,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
+      }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
@@ -210,10 +215,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       dayNumber,
       customScriptRoles,
       scriptName,
+      scriptAuthor,
       gameNotes,
       code: gameCode || undefined,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, gameNotes, gameCode]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -300,7 +306,6 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           ...p,
           roleId: roleIds[0] || undefined,
           roleIds: roleIds,
-          isEvil: undefined,
           isTheDrunk: false,
           isTheMarionette: false,
           isTheLunatic: false,
@@ -349,9 +354,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     parseScriptFile(file)
-      .then(({ name, roles }) => {
+      .then(({ name, author, roles }) => {
         setCustomScriptRoles(roles);
         setScriptName(name);
+        setScriptAuthor(author);
       })
       .catch(err => showAlert((err as Error).message));
   };
@@ -359,6 +365,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptName("All Roles");
+    setScriptAuthor("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -457,6 +464,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           players={players}
           customScriptRoles={customScriptRoles}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           addPlayer={addPlayer}
@@ -521,6 +529,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onResetTime={isSynced ? undefined : resetTime}
           showNightOrder={false}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
           isSynced={isSynced}
           enableReminders={false}

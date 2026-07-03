@@ -89,6 +89,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   // Script states
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
+  const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => {
     const loadedSelectedIds = readPersistedField<string[] | null>(STORAGE_KEY, 'selectedCharacterIds', null);
@@ -130,11 +131,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           gameType: 'standard',
           players: listToBroadcast.map(({ notes, ...rest }) => rest),
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
     }, 1000);
-  }, [scriptName, customScriptRoles]);
+  }, [scriptName, scriptAuthor, customScriptRoles]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -225,6 +227,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           playerId: payload.id,
           playerName: payload.name,
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
@@ -280,6 +283,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           timeOfDay,
           dayNumber,
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
@@ -301,10 +305,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         timeOfDay,
         dayNumber,
         scriptName,
+        scriptAuthor,
         customScriptRoles
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, customScriptRoles, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
@@ -326,13 +331,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     dayNumber,
     customScriptRoleIds: customScriptRoles ? customScriptRoles.map(r => r.id) : null,
     scriptName,
+    scriptAuthor,
     isLilMonstaGame,
     demonBluffs,
     reminderTokens,
     checkedItems,
     rotationOffset,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -358,6 +364,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setDayNumber(incoming.dayNumber || 1);
       setCustomScriptRoles(customScriptRolesResolved);
       setScriptName(incoming.scriptName || "All Roles");
+      setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
@@ -366,7 +373,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles,
-    setScriptName, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
   ]);
 
   useStorytellerSync({
@@ -393,6 +400,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       dayNumber,
       customScriptRoles,
       scriptName,
+      scriptAuthor,
       isLilMonstaGame,
       demonBluffs,
       gameLog,
@@ -401,7 +409,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       selectedCharacterIds: [...selectedCharacterIds],
       rotationOffset,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
 
   const toggleTimeOfDay = () => {
     setCheckedItems({});
@@ -696,9 +704,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     parseScriptFile(file)
-      .then(({ name, roles }) => {
+      .then(({ name, author, roles }) => {
         setCustomScriptRoles(roles);
         setScriptName(name);
+        setScriptAuthor(author);
       })
       .catch(err => showAlert((err as Error).message));
   };
@@ -706,6 +715,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptName("All Roles");
+    setScriptAuthor("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -881,6 +891,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           }}
           customScriptRoles={customScriptRoles}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           selectedCharacterIds={selectedCharacterIds}
           setSelectedCharacterIds={setSelectedCharacterIds}
           newPlayerName={newPlayerName}
@@ -943,6 +954,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onResetDead={resetDead}
           onResetTime={resetTime}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {

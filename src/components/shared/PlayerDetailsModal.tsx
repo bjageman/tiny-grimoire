@@ -567,37 +567,35 @@ export default function PlayerDetailsModal({
            >
              {p.isDead ? 'Dead' : 'Alive'}
            </button>
+           <button
+             id="detail-alignment-toggle-button"
+             type="button"
+             onClick={(e) => { e.stopPropagation(); onToggleEvil(p.id); }}
+             className={cn(
+               'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
+               !isEvil
+                 ? 'bg-clocktower-townsfolk border-clocktower-townsfolk/40 text-white hover:bg-blue-600'
+                 : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
+             )}
+           >
+             {isEvil ? '👿 Evil' : '😇 Good'}
+           </button>
            {!allowMultipleRoles && (
-             <>
-               <button
-                 id="detail-alignment-toggle-button"
-                 type="button"
-                 onClick={(e) => { e.stopPropagation(); onToggleEvil(p.id); }}
-                 className={cn(
-                   'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
-                   !isEvil
-                     ? 'bg-clocktower-townsfolk border-clocktower-townsfolk/40 text-white hover:bg-blue-600'
-                     : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
-                 )}
-               >
-                 {isEvil ? '👿 Evil' : '😇 Good'}
-               </button>
-               <button
-                 id="detail-drunk-poisoned-toggle-button"
-                 type="button"
-                 onClick={(e) => { e.stopPropagation(); onToggleDrunkOrPoisoned(p.id); }}
-                 className={cn(
-                   'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
-                   p.isDrunkOrPoisoned
-                     ? 'bg-purple-600 border-purple-600/40 text-white hover:bg-purple-700'
-                     : isLightModeActive
-                       ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
-                       : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
-                 )}
-               >
-                 🤢 Drunk/Poisoned
-               </button>
-             </>
+             <button
+               id="detail-drunk-poisoned-toggle-button"
+               type="button"
+               onClick={(e) => { e.stopPropagation(); onToggleDrunkOrPoisoned(p.id); }}
+               className={cn(
+                 'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
+                 p.isDrunkOrPoisoned
+                   ? 'bg-purple-600 border-purple-600/40 text-white hover:bg-purple-700'
+                   : isLightModeActive
+                     ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
+                     : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
+               )}
+             >
+               🤢 Drunk/Poisoned
+             </button>
            )}
          </div>
 

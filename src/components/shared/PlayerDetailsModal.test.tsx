@@ -122,9 +122,9 @@ describe('PlayerDetailsModal', () => {
     expect(defaultProps.onToggleEvil).toHaveBeenCalledWith('p1');
   });
 
-  it('hides the alignment and drunk/poisoned toggles when allowMultipleRoles is true', () => {
+  it('keeps the alignment toggle but hides the drunk/poisoned toggle when allowMultipleRoles is true', () => {
     render(<PlayerDetailsModal {...defaultProps} allowMultipleRoles={true} />);
-    expect(screen.queryByText('😇 Good')).toBeNull();
+    expect(screen.queryByText('😇 Good')).not.toBeNull();
     expect(screen.queryByText('🤢 Drunk/Poisoned')).toBeNull();
   });
 

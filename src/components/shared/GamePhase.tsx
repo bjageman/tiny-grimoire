@@ -5,7 +5,6 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import type { Player, Role, PlacedReminder } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
-import { getScriptStats } from '../../utils/scriptUtils';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from './ScriptCharactersModal';
@@ -41,6 +40,7 @@ interface Props {
   selectionRoles?: Role[];
   showNightOrder?: boolean;
   scriptName?: string;
+  scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
   isSynced?: boolean;
   enableReminders?: boolean;
@@ -70,6 +70,7 @@ export default function GamePhase({
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
+  scriptAuthor = '',
   customScriptRoles = null,
   isSynced = false,
   enableReminders = true,
@@ -277,9 +278,9 @@ export default function GamePhase({
           )}>
             📜 {scriptName}
           </span>
-          {customScriptRoles && (
+          {customScriptRoles && scriptAuthor && (
             <span className="text-[10px] text-gray-500 font-medium">
-              {getScriptStats(customScriptRoles)}
+              by {scriptAuthor}
             </span>
           )}
         </button>
@@ -654,7 +655,7 @@ export default function GamePhase({
         onClose={() => setIsScriptModalOpen(false)}
         scriptName={scriptName}
         roles={sortedRoles}
-        scriptStats={customScriptRoles ? getScriptStats(customScriptRoles) : undefined}
+        scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
       />
 

@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Shuffle, Upload, CheckCircle, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import { getScriptStats } from '../../utils/scriptUtils';
 import rolesData from '../../roles.json';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
@@ -15,6 +14,7 @@ interface StandardSetupPhaseProps {
   players: Player[];
   customScriptRoles: Role[] | null;
   scriptName: string;
+  scriptAuthor: string;
   selectedCharacterIds: Set<string>;
   setSelectedCharacterIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   newPlayerName: string;
@@ -53,6 +53,7 @@ export default function StandardSetupPhase({
   players,
   customScriptRoles,
   scriptName,
+  scriptAuthor,
   selectedCharacterIds,
   setSelectedCharacterIds,
   newPlayerName,
@@ -154,7 +155,7 @@ export default function StandardSetupPhase({
               </span>
               <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
                 <Upload size={12} />
-                {customScriptRoles ? `${getScriptStats(customScriptRoles)} — Click to change` : "Click to upload .json"}
+                {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Click to upload .json"}
               </span>
             </button>
             <ScriptHelpButton isLightModeActive={isLightModeActive} />
@@ -479,7 +480,7 @@ export default function StandardSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
-      scriptStats={customScriptRoles ? getScriptStats(customScriptRoles) : undefined}
+      scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />
     <SelectCharactersModal

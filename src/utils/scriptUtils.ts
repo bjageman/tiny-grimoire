@@ -2,22 +2,13 @@ import type { Role } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 
-export function getScriptStats(roles: Role[] | null): string {
-  if (!roles) return '';
-  const tf = roles.filter(r => r.team === 'townsfolk').length;
-  const o = roles.filter(r => r.team === 'outsider').length;
-  const m = roles.filter(r => r.team === 'minion').length;
-  const d = roles.filter(r => r.team === 'demon').length;
-  return `${tf} TF / ${o} O / ${m} M / ${d} D`;
-}
-
 export function generateGameCode(): string {
   return Array.from({ length: 4 }, () =>
     String.fromCharCode(65 + Math.floor(Math.random() * 26))
   ).join('');
 }
 
-export function parseScriptFile(file: File): Promise<{ name: string; roles: Role[] }> {
+export function parseScriptFile(file: File): Promise<{ name: string; author: string; roles: Role[] }> {
   const allRoles = rolesData as Role[];
   const official = officialRoles as { id: string; name: string; team: string }[];
 
@@ -32,11 +23,12 @@ export function parseScriptFile(file: File): Promise<{ name: string; roles: Role
         }
 
         const metaObj = parsed.find(
-          (item: unknown): item is { id: string; name?: string } =>
+          (item: unknown): item is { id: string; name?: string; author?: string } =>
             !!item && typeof item === 'object' && 'id' in item &&
             (item as { id: unknown }).id === '_meta'
-        ) as { id: string; name?: string } | undefined;
+        ) as { id: string; name?: string; author?: string } | undefined;
         const name = metaObj?.name || file.name.replace('.json', '');
+        const author = metaObj?.author || '';
 
         const parsedRoles = parsed
           .map((item: unknown) => {
@@ -87,7 +79,7 @@ export function parseScriptFile(file: File): Promise<{ name: string; roles: Role
           return;
         }
 
-        resolve({ name, roles: parsedRoles });
+        resolve({ name, author, roles: parsedRoles });
       } catch {
         reject(new Error('Failed to parse JSON script file.'));
       }

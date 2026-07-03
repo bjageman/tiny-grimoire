@@ -10,7 +10,7 @@ interface Props {
   onClose: () => void;
   scriptName: string;
   roles: Role[];
-  scriptStats?: string;
+  scriptAuthor?: string;
   isLightModeActive: boolean;
 }
 
@@ -22,7 +22,7 @@ const TEAMS = [
   { key: 'traveler',  label: '🟣 Travelers', color: 'text-clocktower-traveler',  border: 'border-clocktower-traveler/15',  hover: 'hover:border-clocktower-traveler/30'  },
 ] as const;
 
-export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptStats, isLightModeActive }: Props) {
+export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptAuthor, isLightModeActive }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
@@ -80,11 +80,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
         >
           <div className="flex justify-between items-start gap-4 mb-4">
             <div>
-              <h3 className={cn("font-display font-bold text-xl leading-tight flex items-center gap-2 tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
-                <Scroll size={20} className={isLightModeActive ? "text-clocktower-blood" : "text-clocktower-townsfolk"} />
+              <h3 className={cn("font-display font-bold text-xl leading-tight tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
+                <Scroll size={20} className={cn("inline-block align-middle mr-2 -mt-1", isLightModeActive ? "text-clocktower-blood" : "text-clocktower-townsfolk")} />
                 {scriptName}
+                {scriptAuthor && <span className="text-xs font-medium text-gray-500 ml-2 align-middle">by {scriptAuthor}</span>}
               </h3>
-              {scriptStats && <p className="text-xs text-gray-500 font-medium mt-1">{scriptStats}</p>}
             </div>
             <button
               type="button"

@@ -156,21 +156,32 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const disconnectSync = () => {
-    showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', () => {
-      sessionStorage.removeItem('joined-code');
-      sessionStorage.removeItem('joined-name');
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          delete parsed.code;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-        } catch (e) {
-          console.error(e);
-        }
+  const clearSyncSession = () => {
+    sessionStorage.removeItem('joined-code');
+    sessionStorage.removeItem('joined-name');
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        delete parsed.code;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        console.error(e);
       }
-      setGameCode(null);
+    }
+    setGameCode(null);
+  };
+
+  const disconnectSync = () => {
+    showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
+  };
+
+  // Back-button guard: a synced player about to leave to the main menu is
+  // asked to confirm first (cancel keeps them in the session).
+  const confirmDisconnectAndLeave = () => {
+    showConfirm("Disconnect from this synced session and return to the main menu?", () => {
+      clearSyncSession();
+      window.location.hash = '';
     }, 'Disconnect Sync');
   };
 
@@ -428,8 +439,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/" : undefined}
-      onBack={phase !== 'setup' ? () => setPhase('setup') : undefined}
+      backHref={phase === 'setup' && !isSynced ? "#/" : undefined}
+      onBack={
+        phase !== 'setup'
+          ? () => setPhase('setup')
+          : isSynced
+            // Synced tracker: confirm before leaving so a stray back press
+            // doesn't silently drop the player out of the game.
+            ? confirmDisconnectAndLeave
+            : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">

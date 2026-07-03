@@ -895,8 +895,16 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/host" : undefined}
-      onBack={phase !== 'setup' ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); } : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      onBack={
+        phase !== 'setup'
+          ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
+          : remotePlayerIds.size > 0
+            // Synced with players: surface the reset/disconnect choice instead
+            // of silently returning to the Host menu.
+            ? () => setShowResetModal(true)
+            : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">

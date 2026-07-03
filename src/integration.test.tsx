@@ -249,6 +249,63 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('a synced storyteller pressing back at setup gets the reset modal, not a silent exit', async () => {
+    localStorage.setItem('standard-botc-game-code', 'BGRD');
+    localStorage.setItem('standard-botc-sync-code', 'BGRS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: '' }],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    sessionStorage.setItem('joined-code', 'BGRD');
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    // With a connected player, the back control is an in-app button (no href).
+    const backBtn = storyteller.container.querySelector('#page-back-button')!;
+    expect(backBtn.tagName).toBe('BUTTON');
+    fireEvent.click(backBtn);
+
+    expect(storyteller.container.querySelector('#reset-game-modal')).not.toBeNull();
+
+    // Cancel keeps the storyteller in the game (still on #/standard).
+    fireEvent.click(within(storyteller.container).getByText('Cancel'));
+    expect(storyteller.container.querySelector('#reset-game-modal')).toBeNull();
+    expect(window.location.hash).toBe('#/standard');
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('a synced game-tracker player pressing back at setup gets the disconnect confirm, not a silent exit', async () => {
+    sessionStorage.setItem('joined-code', 'TBCK');
+    sessionStorage.setItem('joined-name', 'Zoe');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({ players: [], phase: 'setup', code: 'TBCK' }));
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+
+    const backBtn = tracker.container.querySelector('#page-back-button')!;
+    expect(backBtn.tagName).toBe('BUTTON');
+    fireEvent.click(backBtn);
+
+    // Disconnect Sync confirm shows; cancel keeps them on the tracker.
+    expect(within(tracker.container).getByText(/Disconnect from this synced session and return to the main menu/i)).toBeInTheDocument();
+    fireEvent.click(tracker.container.querySelector('#dialog-cancel-button')!);
+    expect(window.location.hash).toBe('#/tracker');
+
+    tracker.unmount();
+  });
+
   it('Keep Players resets to setup and sends the revealed player back to the waiting room', async () => {
     const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
     expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);

@@ -1,5 +1,6 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
+import masterRoles from '../official_roles.json';
 
 const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
@@ -193,6 +194,22 @@ export function performStandardAssignment(
     targetOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
   }
 
+  // Marionette still fully counts as the 1 Minion it is (selectedMinions is unchanged below) —
+  // but it also displays as a Townsfolk-or-Outsider. If it displays as the Outsider, there
+  // should be no OTHER real Outsider (its own seat covers that slot), so reduce the real
+  // Outsider count by 1 with no compensation elsewhere. If it displays as Townsfolk, the
+  // Townsfolk count is unaffected either way — Townsfolk is a large enough pool that one extra
+  // apparent Townsfolk doesn't need to be tracked as a distribution change.
+  const hasMarionette = !bypassAdjustments && selectedMinions.some(m => m.id === 'marionette');
+  let marionetteFakeTeam: 'townsfolk' | 'outsider' | null = null;
+  if (hasMarionette) {
+    const canFakeOutsider = targetOutsiders > 0;
+    marionetteFakeTeam = canFakeOutsider && Math.random() < 0.5 ? 'outsider' : 'townsfolk';
+    if (marionetteFakeTeam === 'outsider') {
+      targetOutsiders -= 1;
+    }
+  }
+
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
@@ -242,6 +259,66 @@ export function performStandardAssignment(
   fillToCount(finalRolesList, baseCount, tfs, tfs[0], outs[0], mins[0], dems[0]);
 
   const roleIdsInPlay = new Set(finalRolesList.map(r => r.id));
+
+  // Pick the Marionette's displayed identity now that the real role list is fully finalized
+  // (including any fillToCount padding). Its team's real target was already reduced by 1 above
+  // (with the freed slot handed to the other good team), so a non-colliding, not-actually-
+  // in-play character from that same team is guaranteed to exist in the script's own pool —
+  // no need to reach outside it, and the real Townsfolk/Outsider/Minion/Demon counts used for
+  // balance aren't perturbed. Falls back to the full official role list only in the (should be
+  // unreachable) case the script pool is somehow exhausted anyway.
+  let marionetteFakeRole: Role | null = null;
+  if (hasMarionette && marionetteFakeTeam) {
+    const scriptPool = marionetteFakeTeam === 'outsider' ? outs : tfs;
+    const scriptCandidates = scriptPool.filter(r => !roleIdsInPlay.has(r.id) && r.id !== 'drunk');
+    if (scriptCandidates.length > 0) {
+      marionetteFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
+    } else {
+      const masterCandidates = (masterRoles as Role[]).filter(r =>
+        r.team === marionetteFakeTeam && !roleIdsInPlay.has(r.id) && r.id !== 'drunk'
+      );
+      marionetteFakeRole = masterCandidates.length > 0
+        ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]
+        : null;
+    }
+  }
+
+  // Same reasoning for the Drunk's fake Townsfolk identity: draw from the full official role
+  // list (post fillToCount, so padding is accounted for) rather than just this script's
+  // townsfolk, guaranteeing a non-colliding "not-in-play" character.
+  const hasDrunkInPlay = finalRolesList.some(r => r.id === 'drunk');
+  let drunkFakeRole: Role | null = null;
+  if (hasDrunkInPlay) {
+    const candidates = (masterRoles as Role[]).filter(r =>
+      r.team === 'townsfolk' && !roleIdsInPlay.has(r.id) && r.id !== marionetteFakeRole?.id
+    );
+    drunkFakeRole = candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : null;
+  }
+
+  // Lil' Monsta displays as a Minion (it's secretly the Demon), so its fake identity is drawn
+  // the same way — from the full official role list, excluding whatever's really in play.
+  const hasLilMonstaInPlay = finalRolesList.some(r => r.id === 'lilmonsta');
+  let lilMonstaFakeRole: Role | null = null;
+  if (hasLilMonstaInPlay) {
+    const candidates = (masterRoles as Role[]).filter(r => r.team === 'minion' && !roleIdsInPlay.has(r.id));
+    lilMonstaFakeRole = candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : null;
+  }
+
+  // Lunatic displays as the Demon (it's secretly an Outsider). Exclude the real Demon so the
+  // Lunatic can't coincidentally be told it's the exact same Demon that's actually in play.
+  const hasLunaticInPlay = finalRolesList.some(r => r.id === 'lunatic');
+  let lunaticFakeRole: Role | null = null;
+  if (hasLunaticInPlay) {
+    const candidates = (masterRoles as Role[]).filter(r => r.team === 'demon' && !roleIdsInPlay.has(r.id));
+    lunaticFakeRole = candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : null;
+  }
+
   const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
   const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
 
@@ -355,24 +432,28 @@ export function performStandardAssignment(
 
     if (roleId === 'drunk') {
       isTheDrunk = true;
-      const unmatchedTFs = tfs.filter(t => !roleIdsInPlay.has(t.id));
-      const fakeTF = unmatchedTFs.length > 0
-        ? unmatchedTFs[Math.floor(Math.random() * unmatchedTFs.length)]
-        : tfs[Math.floor(Math.random() * tfs.length)];
+      const fakeTF = drunkFakeRole
+        ?? tfs.filter(t => !roleIdsInPlay.has(t.id))[0]
+        ?? tfs[Math.floor(Math.random() * tfs.length)];
       roleId = fakeTF?.id ?? roleId;
     } else if (roleId === 'marionette') {
       isTheMarionette = true;
-      const unmatchedGoods = [...tfs, ...outs].filter(g => !roleIdsInPlay.has(g.id));
-      const matchedGood = unmatchedGoods[Math.floor(Math.random() * unmatchedGoods.length)] || tfs[0];
+      const matchedGood = marionetteFakeRole
+        ?? [...tfs, ...outs].filter(g => !roleIdsInPlay.has(g.id))[0]
+        ?? tfs[0];
       roleId = matchedGood.id;
     } else if (roleId === 'lunatic') {
       isTheLunatic = true;
-      const matchedDemon = dems[Math.floor(Math.random() * dems.length)] || dems[0];
+      const matchedDemon = lunaticFakeRole
+        ?? dems.filter(d => !roleIdsInPlay.has(d.id))[0]
+        ?? dems[Math.floor(Math.random() * dems.length)]
+        ?? dems[0];
       roleId = matchedDemon.id;
     } else if (roleId === 'lilmonsta') {
       isTheLilMonsta = true;
-      const unmatchedMinions = mins.filter(m => !roleIdsInPlay.has(m.id));
-      const matchedMinion = unmatchedMinions[Math.floor(Math.random() * unmatchedMinions.length)] || mins[0];
+      const matchedMinion = lilMonstaFakeRole
+        ?? mins.filter(m => !roleIdsInPlay.has(m.id))[0]
+        ?? mins[0];
       roleId = matchedMinion.id;
     }
 

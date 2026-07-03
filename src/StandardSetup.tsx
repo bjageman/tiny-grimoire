@@ -892,10 +892,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       toggleTheme={toggleTheme}
       backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
-        phase !== 'setup'
-          ? () => setPhase('setup')
-          : isSecondary
-            ? confirmDisconnect
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => setPhase('setup')
             : remotePlayerIds.size > 0
               // Synced with players: don't silently abandon them by returning to
               // the Host menu — surface the reset/disconnect choice first.

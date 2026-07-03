@@ -909,10 +909,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       toggleTheme={toggleTheme}
       backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
-        phase !== 'setup'
-          ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
-          : isSecondary
-            ? confirmDisconnect
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
             : remotePlayerIds.size > 0
               // Synced with players: surface the reset/disconnect choice instead
               // of silently returning to the Host menu.

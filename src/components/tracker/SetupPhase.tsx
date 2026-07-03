@@ -97,7 +97,7 @@ export default function PlayerTrackerSetupPhase({
                 {customScriptRoles ? "📜" : "🌐"} {scriptName}
               </span>
               <span className="text-[10px] text-gray-500 font-medium">
-                {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Synced from Storyteller` : "Active Script (Synced from Storyteller)"}
+                {scriptAuthor ? `by ${scriptAuthor} — Synced from Storyteller` : customScriptRoles ? "Custom script — Synced from Storyteller" : "Active Script (Synced from Storyteller)"}
               </span>
             </div>
           ) : (

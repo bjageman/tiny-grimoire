@@ -296,7 +296,7 @@ export default function GamePhase({
           )}>
             📜 {scriptName}
           </span>
-          {customScriptRoles && scriptAuthor && (
+          {scriptAuthor && (
             <span className="text-[10px] text-gray-500 font-medium">
               by {scriptAuthor}
             </span>

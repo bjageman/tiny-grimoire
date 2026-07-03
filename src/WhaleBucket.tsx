@@ -114,8 +114,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     players.forEach(p => {
       const prefParts: string[] = [];
       (['townsfolk', 'outsider', 'minion', 'demon'] as const).forEach(team => {
-        const prefs = p.preferences[team];
-        if (prefs.length > 0) {
+        const prefs = p.preferences?.[team];
+        if (prefs && prefs.length > 0) {
           const names = prefs.map(id => roleMap.get(id)?.name ?? id).join(', ');
           prefParts.push(`${teamLabels[team]}: ${names}`);
         }
@@ -486,7 +486,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const togglePreference = (playerId: string, team: Role['team'], roleId: string) => {
     setPlayers(prev => prev.map(p => {
       if (p.id !== playerId) return p;
-      const current = p.preferences[team] || [];
+      const current = p.preferences?.[team] || [];
       const newPrefs = current.includes(roleId) ? [] : [roleId];
       return {
         ...p,
@@ -502,12 +502,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const allRoles = rolesData as Role[];
     setPlayers(prev => prev.map(p => {
       if (playerId !== undefined && p.id !== playerId) return p;
+      const prefs = p.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
       const newPrefs = {
-        townsfolk: p.preferences.townsfolk.length > 0 ? [...p.preferences.townsfolk] : [],
-        outsider: p.preferences.outsider.length > 0 ? [...p.preferences.outsider] : [],
-        minion: p.preferences.minion.length > 0 ? [...p.preferences.minion] : [],
-        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : [],
-        traveler: p.preferences.traveler?.length > 0 ? [...p.preferences.traveler] : []
+        townsfolk: prefs.townsfolk.length > 0 ? [...prefs.townsfolk] : [],
+        outsider: prefs.outsider.length > 0 ? [...prefs.outsider] : [],
+        minion: prefs.minion.length > 0 ? [...prefs.minion] : [],
+        demon: prefs.demon.length > 0 ? [...prefs.demon] : [],
+        traveler: prefs.traveler?.length > 0 ? [...prefs.traveler] : []
       };
       
       const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
@@ -608,7 +609,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     let newPlayers = players.map(p => {
       if (p.id === id) {
         const role = (rolesData as Role[]).find(r => r.id === roleId);
-        const isPref = role ? (p.preferences[role.team] || []).includes(roleId) : false;
+        const isPref = role ? (p.preferences?.[role.team] || []).includes(roleId) : false;
         return {
           ...p,
           roleId: roleId || undefined,
@@ -860,6 +861,15 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
+  const confirmDisconnect = useCallback(() => {
+    showConfirm(
+      "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+      () => {
+        window.location.hash = '#/host';
+      }
+    );
+  }, [showConfirm]);
+
   // Details Modal variables
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
   const modalRoleObj = modalPlayer ? (() => {
@@ -897,22 +907,32 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
-        phase !== 'setup'
-          ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
-          : remotePlayerIds.size > 0
-            // Synced with players: surface the reset/disconnect choice instead
-            // of silently returning to the Host menu.
-            ? () => setShowResetModal(true)
-            : undefined
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
+            : remotePlayerIds.size > 0
+              // Synced with players: surface the reset/disconnect choice instead
+              // of silently returning to the Host menu.
+              ? () => setShowResetModal(true)
+              : undefined
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Whale Buffet
           </h1>
-          {phase !== 'game' ? (
+          {isSecondary ? (
+            <HeaderCodeBadge
+              onClick={confirmDisconnect}
+              title="Click to disconnect secondary storyteller device"
+              isLightModeActive={isLightModeActive}
+            >
+              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+            </HeaderCodeBadge>
+          ) : phase !== 'game' ? (
             <HeaderCodeBadge
               onClick={() => setShowRoomCodeModal(true)}
               title="Click to copy join link"
@@ -935,14 +955,28 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
       }
       headerExtra={
-        phase !== 'game' ? (
+        isSecondary ? (
+          <HeaderCodeBadge
+            mobile
+            onClick={confirmDisconnect}
+            title="Click to disconnect secondary storyteller device"
+            isLightModeActive={isLightModeActive}
+          >
+            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+          </HeaderCodeBadge>
+        ) : phase !== 'game' ? (
           <HeaderCodeBadge
             mobile
             onClick={() => setShowRoomCodeModal(true)}
@@ -968,6 +1002,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <WhaleBucketSetupPhase
           players={players}
+          isSecondary={isSecondary}
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           allowTravelers={allowTravelers}
@@ -1011,6 +1046,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1098,6 +1135,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           togglePreference={togglePreference}
           autoFillPlayerPreferences={autoFillPlayerPreferences}
           onClose={() => setActivePreferencePlayerId(null)}
+          isSecondary={isSecondary}
         />
       )}
 

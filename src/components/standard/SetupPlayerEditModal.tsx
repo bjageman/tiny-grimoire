@@ -21,6 +21,7 @@ interface SetupPlayerEditModalProps {
   togglePlayerTheMarionette: (id: string) => void;
   togglePlayerTheLunatic: (id: string) => void;
   togglePlayerTheLilMonsta: (id: string) => void;
+  isSecondary?: boolean;
   onClose: () => void;
 }
 
@@ -48,6 +49,7 @@ export default function SetupPlayerEditModal({
   togglePlayerTheLunatic,
   togglePlayerTheLilMonsta,
   onClose,
+  isSecondary,
 }: SetupPlayerEditModalProps) {
   useScrollLock();
   const isMobile = useIsMobile();
@@ -123,27 +125,40 @@ export default function SetupPlayerEditModal({
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            id="remove-player-button"
-            type="button"
-            onClick={() => { removePlayer(player.id); onClose(); }}
-            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
-            title="Remove player"
-          >
-            <Trash2 size={16} />
-          </button>
-          <input
-            id="edit-player-name-input"
-            type="text"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-          />
+          {(() => {
+            const isSecondaryDevice = !!isSecondary;
+            return (
+              <>
+                <button
+                  id="remove-player-button"
+                  type="button"
+                  disabled={isSecondaryDevice}
+                  onClick={() => { if (!isSecondaryDevice) { removePlayer(player.id); onClose(); } }}
+                  className={cn(
+                    "shrink-0 p-2 rounded border border-gray-800 transition-colors",
+                    isSecondaryDevice 
+                      ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40" 
+                      : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+                  )}
+                  title={isSecondaryDevice ? "This action is disabled on secondary devices." : "Remove player"}
+                >
+                  <Trash2 size={16} />
+                </button>
+                <input
+                  id="edit-player-name-input"
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+                  autoFocus={!isMobile}
+                  autoCapitalize="words"
+                  placeholder="Player name"
+                  className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+                />
+              </>
+            );
+          })()}
         </div>
 
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (

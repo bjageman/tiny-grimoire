@@ -844,6 +844,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
+  const confirmDisconnect = useCallback(() => {
+    showConfirm(
+      "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+      () => {
+        window.location.hash = '#/host';
+      }
+    );
+  }, [showConfirm]);
+
   // Modal logic details
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
   const modalRoleObj = modalPlayer ? (() => {
@@ -881,22 +890,32 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
-        phase !== 'setup'
-          ? () => setPhase('setup')
-          : remotePlayerIds.size > 0
-            // Synced with players: don't silently abandon them by returning to
-            // the Host menu — surface the reset/disconnect choice first.
-            ? () => setShowResetModal(true)
-            : undefined
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => setPhase('setup')
+            : remotePlayerIds.size > 0
+              // Synced with players: don't silently abandon them by returning to
+              // the Host menu — surface the reset/disconnect choice first.
+              ? () => setShowResetModal(true)
+              : undefined
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Standard
           </h1>
-          {phase === 'setup' ? (
+          {isSecondary ? (
+            <HeaderCodeBadge
+              onClick={confirmDisconnect}
+              title="Click to disconnect secondary storyteller device"
+              isLightModeActive={isLightModeActive}
+            >
+              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+            </HeaderCodeBadge>
+          ) : phase === 'setup' ? (
             <HeaderCodeBadge
               onClick={() => setShowRoomCodeModal(true)}
               title="Click to share room"
@@ -919,14 +938,28 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
       }
       headerExtra={
-        phase === 'setup' ? (
+        isSecondary ? (
+          <HeaderCodeBadge
+            mobile
+            onClick={confirmDisconnect}
+            title="Click to disconnect secondary storyteller device"
+            isLightModeActive={isLightModeActive}
+          >
+            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+          </HeaderCodeBadge>
+        ) : phase === 'setup' ? (
           <HeaderCodeBadge
             mobile
             onClick={() => setShowRoomCodeModal(true)}
@@ -952,6 +985,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          isSecondary={isSecondary}
           setPhase={(p) => {
             if (p === 'game') {
               const roleLines = players
@@ -1013,6 +1047,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1108,6 +1144,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
+          isSecondary={isSecondary}
         />
       )}
 

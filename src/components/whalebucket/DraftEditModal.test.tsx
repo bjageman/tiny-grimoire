@@ -36,4 +36,33 @@ describe('WhaleBucketDraftEditModal', () => {
     const modal = container.querySelector('#whalebucket-draft-edit-modal')!;
     expect(modal.className).toContain('bg-gray-900');
   });
+
+  it('enables character selection and special role toggles when isSecondary is true', () => {
+    const aliceWithRole: Player = {
+      id: 'p1',
+      name: 'Alice',
+      isDead: false,
+      roleId: 'washerwoman',
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    };
+    const { container } = render(
+      <WhaleBucketDraftEditModal
+        {...defaultProps}
+        players={[aliceWithRole]}
+        isLightModeActive={false}
+      />
+    );
+
+    // Check if the role option buttons are enabled
+    const roleOptions = container.querySelectorAll('button[id^="role-option-"]');
+    expect(roleOptions.length).toBeGreaterThan(0);
+    roleOptions.forEach(btn => {
+      expect(btn).not.toBeDisabled();
+    });
+
+    // Check if "The Drunk" toggle is enabled
+    const drunkButton = Array.from(container.querySelectorAll('button')).find(el => el.textContent?.includes('The Drunk'));
+    expect(drunkButton).toBeDefined();
+    expect(drunkButton).not.toBeDisabled();
+  });
 });

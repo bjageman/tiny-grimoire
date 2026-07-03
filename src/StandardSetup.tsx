@@ -295,7 +295,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           if (exists) {
             return prev.map(p =>
               (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, pronouns: payload.pronouns }
+                ? { ...p, id: payload.id, pronouns: payload.pronouns }
                 : p
             );
           }
@@ -316,7 +316,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         const updatedPlayers = isExistingPlayer
           ? players.map(p =>
               (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, pronouns: payload.pronouns }
+                ? { ...p, id: payload.id, pronouns: payload.pronouns }
                 : p
             )
           : (payload.checkOnly ? players : [
@@ -881,8 +881,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/host" : undefined}
-      onBack={phase !== 'setup' ? () => setPhase('setup') : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 ? "#/host" : undefined}
+      onBack={
+        phase !== 'setup'
+          ? () => setPhase('setup')
+          : remotePlayerIds.size > 0
+            // Synced with players: don't silently abandon them by returning to
+            // the Host menu — surface the reset/disconnect choice first.
+            ? () => setShowResetModal(true)
+            : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { GripVertical, Search, X, Scale } from 'lucide-react';
+import { GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
@@ -9,6 +9,7 @@ import officialRoles from '../../official_roles.json';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from './ScriptCharactersModal';
+import BaseDistributionCard from './BaseDistributionCard';
 import DialogModal from './DialogModal';
 import { useDialog } from '../../hooks/useDialog';
 
@@ -58,6 +59,8 @@ interface Props {
   onSetCheckedItems?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 export default function GamePhase({
@@ -88,6 +91,8 @@ export default function GamePhase({
   onSetCheckedItems,
   rotationOffset,
   onRotationChange,
+  notes,
+  onNotesChange,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -256,6 +261,23 @@ export default function GamePhase({
             onSetCheckedItems={onSetCheckedItems}
           />
         )}
+        {onNotesChange && (
+          <div className="hidden md:block landscape:block space-y-1.5">
+            <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+            <textarea
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              placeholder="Write anything here — deductions, suspicions, reminders..."
+              rows={5}
+              className={cn(
+                'w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none transition-colors leading-relaxed',
+                isLightModeActive
+                  ? 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-gray-400'
+                  : 'bg-gray-900/60 border-gray-800 text-gray-200 placeholder-gray-600 focus:border-gray-600'
+              )}
+            />
+          </div>
+        )}
       </div>
 
       {/* Column 2: Controls */}
@@ -296,53 +318,11 @@ export default function GamePhase({
           const baseCount = players.length - travelerCountInPlay;
           const dist = getDistribution(baseCount);
           return (
-            <div
-              id="standard-base-distribution"
-              className={cn(
-                "border rounded-lg p-3 space-y-2.5 transition-colors duration-300 text-left",
-                isLightModeActive
-                  ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-                  : "bg-gray-900/90 border-gray-800"
-              )}
-            >
-              <div className="flex items-center gap-1.5">
-                <Scale size={16} className={isLightModeActive ? "text-gray-700" : "text-gray-300"} />
-                <span className={cn(
-                  "font-semibold text-xs tracking-wide uppercase",
-                  isLightModeActive ? "text-gray-700" : "text-gray-300"
-                )}>
-                  Standard Base Distribution
-                </span>
-              </div>
-              <div className={cn(
-                "grid text-center text-[10px] font-mono border-t pt-2.5",
-                isLightModeActive ? "border-gray-200" : "border-gray-800",
-                (dist.traveler > 0 || travelerCountInPlay > 0) ? "grid-cols-5 gap-1" : "grid-cols-4 gap-2"
-              )}>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-townsfolk">{dist.townsfolk}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Outsider</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-outsider">{dist.outsider}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Minion</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-minion">{dist.minion}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-demon">{dist.demon}</div>
-                </div>
-                {(dist.traveler > 0 || travelerCountInPlay > 0) && (
-                  <div>
-                    <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
-                    <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">{travelerCountInPlay > 0 ? travelerCountInPlay : dist.traveler}</div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <BaseDistributionCard
+              playerCount={players.length}
+              dist={dist}
+              isLightModeActive={isLightModeActive}
+            />
           );
         })()}
 
@@ -771,6 +751,24 @@ export default function GamePhase({
         </div>
       )}
     </div>
+
+    {onNotesChange && (
+      <div className="md:hidden landscape:hidden mt-6 space-y-1.5">
+        <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+        <textarea
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder="Write anything here — deductions, suspicions, reminders..."
+          rows={5}
+          className={cn(
+            'w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none transition-colors leading-relaxed',
+            isLightModeActive
+              ? 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-gray-400'
+              : 'bg-gray-900/60 border-gray-800 text-gray-200 placeholder-gray-600 focus:border-gray-600'
+          )}
+        />
+      </div>
+    )}
     </>
   );
 }

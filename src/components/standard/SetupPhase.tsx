@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Shuffle, Upload, CheckCircle, AlertTriangle, Package, Scale } from 'lucide-react';
+import { Plus, Shuffle, Upload, CheckCircle, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
-import { getDistribution } from '../../constants';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import type { ValidationSummary } from '../../utils/whaleBucketValidation';
 
@@ -374,72 +373,6 @@ export default function StandardSetupPhase({
             )}
           </div>
         )}
-
-
-        {/* Distribution Card */}
-        <div
-          id="standard-base-distribution"
-          className={cn(
-            "border rounded-lg p-3 space-y-2.5 transition-colors duration-300 text-left",
-            isLightModeActive
-              ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-              : "bg-gray-900/90 border-gray-800"
-          )}
-        >
-          <div className="flex items-center gap-1.5">
-            <Scale size={16} className={isLightModeActive ? "text-gray-700" : "text-gray-300"} />
-            <span className={cn(
-              "font-semibold text-xs tracking-wide uppercase",
-              isLightModeActive ? "text-gray-700" : "text-gray-300"
-            )}>
-              Standard Base Distribution
-            </span>
-          </div>
-
-          {players.length >= 5 ? (() => {
-            const travelerCountInPlay = players.filter(p => {
-              if (!p.roleId) return false;
-              const r = (rolesData as Role[]).find(role => role.id === p.roleId);
-              return r?.team === 'traveler';
-            }).length;
-            const baseCount = players.length - travelerCountInPlay;
-            const dist = getDistribution(baseCount);
-            return (
-              <div className={cn(
-                "grid text-center text-[10px] font-mono border-t pt-2.5",
-                isLightModeActive ? "border-gray-200" : "border-gray-800",
-                (dist.traveler > 0 || travelerCountInPlay > 0) ? "grid-cols-5 gap-1" : "grid-cols-4 gap-2"
-              )}>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-townsfolk">{dist.townsfolk}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Outsider</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-outsider">{dist.outsider}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Minion</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-minion">{dist.minion}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-demon">{dist.demon}</div>
-                </div>
-                {(dist.traveler > 0 || travelerCountInPlay > 0) && (
-                  <div>
-                    <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
-                    <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">{travelerCountInPlay > 0 ? travelerCountInPlay : dist.traveler}</div>
-                  </div>
-                )}
-              </div>
-            );
-          })() : (
-            <p className={cn("text-xs italic pt-1", isLightModeActive ? "text-gray-500" : "text-gray-500")}>Add at least 5 players to view distribution.</p>
-          )}
-        </div>
-
-
         <button
           id="open-grimoire-button"
           disabled={!allAssigned}

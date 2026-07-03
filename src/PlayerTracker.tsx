@@ -71,6 +71,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
+      playerId?: string;
     };
     // Only an explicit reset returns a joined game-tracker player to the
     // JoinPage lobby (waiting room for Standard, reset preferences picker for
@@ -145,6 +146,24 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         }
       }
       setGameCode(null);
+    } else if (payload.type === 'booted') {
+      const myPlayerId = sessionStorage.getItem('botc-player-id');
+      if (payload.playerId === myPlayerId) {
+        showAlert('You have been booted from the game room. Reverting to local tracker.');
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            delete parsed.code;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        setGameCode(null);
+      }
     }
   };
 

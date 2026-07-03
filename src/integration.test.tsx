@@ -293,6 +293,59 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('sends a player who opened the game tracker (from a join) back to the join waiting room on game_reset', async () => {
+    // A joined player who taps "Open Player Game Tracker" navigates to
+    // #/tracker (the PlayerTracker component), leaving JoinPage entirely. On a
+    // keep-connected reset it must return to the #/join waiting room.
+    const gameCode = 'TRKR';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Storyteller reset (kept players): the explicit reset command arrives.
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({ type: 'game_reset', gameType: 'standard' }));
+    });
+
+    expect(window.location.hash).toBe('#/join');
+
+    tracker.unmount();
+  });
+
+  it('game-tracker self-heal: a bare setup_update also returns a joined tracker to the waiting room', async () => {
+    const gameCode = 'TRK2';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({
+          type: 'setup_update',
+          gameType: 'standard',
+          players: [{ id: 'p1', name: 'Zoe', isDead: false, roleId: '' }],
+          scriptName: 'All Roles',
+        }));
+    });
+
+    expect(window.location.hash).toBe('#/join');
+
+    tracker.unmount();
+  });
+
   it('Disconnect from the reset modal fully ends the session', async () => {
     const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
 

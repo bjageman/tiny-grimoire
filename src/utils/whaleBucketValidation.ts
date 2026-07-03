@@ -60,6 +60,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const hasBaron = assignedRoles.some(r => r.id === 'baron');
   const hasGodfather = assignedRoles.some(r => r.id === 'godfather');
   const hasFangGu = assignedRoles.some(r => r.id === 'fanggu');
+  const hasVigormortis = assignedRoles.some(r => r.id === 'vigormortis');
   const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
   const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
@@ -90,6 +91,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
     modifications.push("Atheist (No Evil players)");
     if (hasBaron) modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu) modifications.push("Fang Gu (+1 Outsider)");
+    if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
     if (hasBalloonist) modifications.push("Balloonist (0 or +1 Outsider)");
     if (hasHuntsman) modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit) modifications.push("Hermit (0 or -1 Outsider)");
@@ -112,6 +114,9 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
     }
     if (hasFangGu) {
       modifications.push("Fang Gu (+1 Outsider)");
+    }
+    if (hasVigormortis) {
+      modifications.push("Vigormortis (-1 Outsider)");
     }
     if (hasBalloonist) {
       modifications.push("Balloonist (0 or +1 Outsider)");
@@ -142,7 +147,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const balMods = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const huntMods = (hasHuntsman && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const hermMods = (hasHermit && !hasLegion && !hasRiot) ? [-1, 0] : [0];
-  const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0));
+  const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0));
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion || hasRiot) {
@@ -178,7 +183,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
 
   // For backward compatibility / display fallback
-  const expectedOutsider = base.outsider + fixedOutsiderDelta;
+  const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
   const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
   
   // Jinx checks

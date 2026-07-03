@@ -913,7 +913,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             >
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
             </HeaderCodeBadge>
-          ) : (
+          ) : !isSecondary ? (
             <HeaderCodeBadge
               onClick={() => setShowSyncModal(true)}
               title="Sync other device as secondary controller"
@@ -921,7 +921,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             >
               Sync Other Device
             </HeaderCodeBadge>
-          )}
+          ) : null}
         </div>
       }
       extraControls={

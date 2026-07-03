@@ -6,7 +6,6 @@ import rolesData from '../../roles.json';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
-import { getDistribution } from '../../constants';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import type { ValidationSummary } from '../../utils/whaleBucketValidation';
 
@@ -374,48 +373,6 @@ export default function StandardSetupPhase({
             )}
           </div>
         )}
-
-
-        {/* Distribution Card */}
-        <section id="standard-base-distribution" className="bg-gray-900 p-4 rounded-lg border border-gray-800">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Standard Base Distribution</h3>
-          {players.length >= 5 ? (() => {
-            const travelerCountInPlay = players.filter(p => {
-              if (!p.roleId) return false;
-              const r = (rolesData as Role[]).find(role => role.id === p.roleId);
-              return r?.team === 'traveler';
-            }).length;
-            const baseCount = players.length - travelerCountInPlay;
-            const dist = getDistribution(baseCount);
-            return (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-townsfolk">
-                    TF: {dist.townsfolk}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-outsider">
-                    O: {dist.outsider}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-minion">
-                    M: {dist.minion}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-demon">
-                    D: {dist.demon}
-                  </div>
-                </div>
-                {(dist.traveler > 0 || travelerCountInPlay > 0) && (
-                  <div className="text-center text-xs font-semibold p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-traveler">
-                    Travelers: {travelerCountInPlay > 0 ? travelerCountInPlay : dist.traveler}
-                  </div>
-                )}
-              </div>
-            );
-          })() : (
-            <p className="text-sm text-gray-500 italic">Add at least 5 players to view distribution.</p>
-          )}
-        </section>
-
-
         <button
           id="open-grimoire-button"
           disabled={!allAssigned}

@@ -2,12 +2,14 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from './ScriptCharactersModal';
+import BaseDistributionCard from './BaseDistributionCard';
 import DialogModal from './DialogModal';
 import { useDialog } from '../../hooks/useDialog';
 
@@ -57,6 +59,8 @@ interface Props {
   onSetCheckedItems?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 export default function GamePhase({
@@ -87,6 +91,8 @@ export default function GamePhase({
   onSetCheckedItems,
   rotationOffset,
   onRotationChange,
+  notes,
+  onNotesChange,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -255,6 +261,23 @@ export default function GamePhase({
             onSetCheckedItems={onSetCheckedItems}
           />
         )}
+        {onNotesChange && (
+          <div className="hidden md:block landscape:block space-y-1.5">
+            <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+            <textarea
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              placeholder="Write anything here. Deductions, suspicions, reminders..."
+              rows={5}
+              className={cn(
+                'w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none transition-colors leading-relaxed',
+                isLightModeActive
+                  ? 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-gray-400'
+                  : 'bg-gray-900/60 border-gray-800 text-gray-200 placeholder-gray-600 focus:border-gray-600'
+              )}
+            />
+          </div>
+        )}
       </div>
 
       {/* Column 2: Controls */}
@@ -284,6 +307,24 @@ export default function GamePhase({
             </span>
           )}
         </button>
+
+        {/* Standard Base Distribution */}
+        {players.length >= 5 && (() => {
+          const travelerCountInPlay = players.filter(p => {
+            if (!p.roleId) return false;
+            const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+            return r?.team === 'traveler';
+          }).length;
+          const baseCount = players.length - travelerCountInPlay;
+          const dist = getDistribution(baseCount);
+          return (
+            <BaseDistributionCard
+              playerCount={players.length}
+              dist={dist}
+              isLightModeActive={isLightModeActive}
+            />
+          );
+        })()}
 
         {/* Demon Bluffs — always dark, unaffected by theme */}
         {!isSynced && onUpdateDemonBluffs && (
@@ -710,6 +751,24 @@ export default function GamePhase({
         </div>
       )}
     </div>
+
+    {onNotesChange && (
+      <div className="md:hidden landscape:hidden mt-6 space-y-1.5">
+        <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+        <textarea
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder="Write anything here. Deductions, suspicions, reminders..."
+          rows={5}
+          className={cn(
+            'w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none transition-colors leading-relaxed',
+            isLightModeActive
+              ? 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-gray-400'
+              : 'bg-gray-900/60 border-gray-800 text-gray-200 placeholder-gray-600 focus:border-gray-600'
+          )}
+        />
+      </div>
+    )}
     </>
   );
 }

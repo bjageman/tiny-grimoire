@@ -5,6 +5,7 @@ import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
+import BaseDistributionCard from '../shared/BaseDistributionCard';
 import rolesData from '../../official_roles.json';
 
 
@@ -254,46 +255,25 @@ export default function WhaleBucketSetupPhase({
           )}
         </div>
 
-        <section id="standard-base-distribution" className="bg-gray-900 p-4 rounded-lg border border-gray-855">
-          <h3 className="text-xs font-bold text-gray-555 uppercase tracking-wider mb-2.5 text-left">Standard Base Distribution</h3>
-          {players.length >= 5 ? (() => {
-            const travelerPlayersCount = players.filter(p => {
-              if (allowTravelers && p.preferences.traveler && p.preferences.traveler.length > 0) {
-                return true;
-              }
-              return false;
-            }).length;
-            const minTravelers = players.length > 15 ? players.length - 15 : 0;
-            const actualTravelers = Math.max(travelerPlayersCount, minTravelers);
-            const baseCount = players.length - actualTravelers;
-            const dist = getDistribution(baseCount);
-            return (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-townsfolk">
-                    TS: {dist.townsfolk}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-outsider">
-                    O: {dist.outsider}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-minion">
-                    M: {dist.minion}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-demon">
-                    D: {dist.demon}
-                  </div>
-                </div>
-                {(dist.traveler > 0 || actualTravelers > 0) && (
-                  <div className="text-center text-xs font-semibold p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-traveler">
-                    Travelers: {actualTravelers > 0 ? actualTravelers : dist.traveler}
-                  </div>
-                )}
-              </div>
-            );
-          })() : (
-            <p className="text-xs text-gray-500 italic text-left">Add at least 5 players to view distribution.</p>
-          )}
-        </section>
+        {(() => {
+          const travelerPlayersCount = players.filter(p => {
+            if (allowTravelers && p.preferences.traveler && p.preferences.traveler.length > 0) {
+              return true;
+            }
+            return false;
+          }).length;
+          const minTravelers = players.length > 15 ? players.length - 15 : 0;
+          const actualTravelers = Math.max(travelerPlayersCount, minTravelers);
+          const baseCount = players.length - actualTravelers;
+          const dist = getDistribution(baseCount);
+          return (
+            <BaseDistributionCard
+              playerCount={players.length}
+              dist={dist}
+              isLightModeActive={isLightModeActive}
+            />
+          );
+        })()}
 
 
         <button

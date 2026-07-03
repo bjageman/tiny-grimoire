@@ -830,6 +830,14 @@ export default function GrimoireBoard({
                       LIL' MONSTA
                     </span>
                   )}
+                  {p.isEvil && !p.isTheDrunk && !p.isTheMarionette && !p.isTheLunatic && !p.isTheLilMonsta && (
+                    <span
+                      style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
+                      className="absolute bottom-0 bg-clocktower-blood text-white font-black border-clocktower-blood/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
+                    >
+                      EVIL
+                    </span>
+                  )}
                   {p.isDrunkOrPoisoned && (
                     <div
                       style={{

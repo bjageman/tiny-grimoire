@@ -300,7 +300,6 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           ...p,
           roleId: roleIds[0] || undefined,
           roleIds: roleIds,
-          isEvil: undefined,
           isTheDrunk: false,
           isTheMarionette: false,
           isTheLunatic: false,

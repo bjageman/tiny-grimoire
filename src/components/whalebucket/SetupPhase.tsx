@@ -280,7 +280,7 @@ export default function WhaleBucketSetupPhase({
 
         {(() => {
           const travelerPlayersCount = players.filter(p => {
-            if (allowTravelers && p.preferences.traveler && p.preferences.traveler.length > 0) {
+            if (allowTravelers && p.preferences?.traveler && p.preferences.traveler.length > 0) {
               return true;
             }
             return false;

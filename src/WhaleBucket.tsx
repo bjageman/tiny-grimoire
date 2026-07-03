@@ -486,7 +486,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const togglePreference = (playerId: string, team: Role['team'], roleId: string) => {
     setPlayers(prev => prev.map(p => {
       if (p.id !== playerId) return p;
-      const current = p.preferences[team] || [];
+      const current = p.preferences?.[team] || [];
       const newPrefs = current.includes(roleId) ? [] : [roleId];
       return {
         ...p,
@@ -502,12 +502,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const allRoles = rolesData as Role[];
     setPlayers(prev => prev.map(p => {
       if (playerId !== undefined && p.id !== playerId) return p;
+      const prefs = p.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
       const newPrefs = {
-        townsfolk: p.preferences.townsfolk.length > 0 ? [...p.preferences.townsfolk] : [],
-        outsider: p.preferences.outsider.length > 0 ? [...p.preferences.outsider] : [],
-        minion: p.preferences.minion.length > 0 ? [...p.preferences.minion] : [],
-        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : [],
-        traveler: p.preferences.traveler?.length > 0 ? [...p.preferences.traveler] : []
+        townsfolk: prefs.townsfolk.length > 0 ? [...prefs.townsfolk] : [],
+        outsider: prefs.outsider.length > 0 ? [...prefs.outsider] : [],
+        minion: prefs.minion.length > 0 ? [...prefs.minion] : [],
+        demon: prefs.demon.length > 0 ? [...prefs.demon] : [],
+        traveler: prefs.traveler?.length > 0 ? [...prefs.traveler] : []
       };
       
       const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
@@ -608,7 +609,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     let newPlayers = players.map(p => {
       if (p.id === id) {
         const role = (rolesData as Role[]).find(r => r.id === roleId);
-        const isPref = role ? (p.preferences[role.team] || []).includes(roleId) : false;
+        const isPref = role ? (p.preferences?.[role.team] || []).includes(roleId) : false;
         return {
           ...p,
           roleId: roleId || undefined,

@@ -77,7 +77,7 @@ export default function WhaleBucketPlayerPreferenceModal({
         r.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-    const currentRoleId = player.preferences[pickingTeam]?.[0];
+    const currentRoleId = player.preferences?.[pickingTeam]?.[0];
 
     return (
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
@@ -259,7 +259,7 @@ export default function WhaleBucketPlayerPreferenceModal({
 
         <div className="overflow-y-auto overscroll-contain flex-1 space-y-2">
           {visibleTeams.map(team => {
-            const roleId = player.preferences[team]?.[0];
+            const roleId = player.preferences?.[team]?.[0];
             const roleObj = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined;
             return (
               <button

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:scale": "node --experimental-websocket scripts/test-portal-scale.js",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "simulate": "node scripts/simulate-players.js"
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",

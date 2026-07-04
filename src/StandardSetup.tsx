@@ -819,19 +819,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   // Un-assign every player's character (and any special-role state), keeping
   // the players themselves — the Standard analog of Whale Bucket's "Clear All".
   const clearAllRoles = () => {
-    setPlayers(prev => prev.map(p => ({
-      ...p,
-      roleId: '',
-      roleIds: undefined,
-      isDead: false,
-      hasDeadVote: false,
-      isTheDrunk: false,
-      isTheMarionette: false,
-      isTheLunatic: false,
-      isTheLilMonsta: false,
-      isEvil: undefined,
-    })));
-    setIsLilMonstaGame(false);
+    showConfirm('Clear all assigned roles? This keeps players but removes their character assignments.', () => {
+      setPlayers(prev => prev.map(p => ({
+        ...p,
+        roleId: '',
+        roleIds: undefined,
+        isDead: false,
+        hasDeadVote: false,
+        isTheDrunk: false,
+        isTheMarionette: false,
+        isTheLunatic: false,
+        isTheLilMonsta: false,
+        isEvil: undefined,
+      })));
+      setIsLilMonstaGame(false);
+    }, 'Clear All Roles');
   };
 
 

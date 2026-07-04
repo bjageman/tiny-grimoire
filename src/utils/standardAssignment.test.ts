@@ -476,12 +476,11 @@ describe('performStandardAssignment', () => {
       });
     }
 
-    it('does not add an extra real Outsider when the Marionette displays as an Outsider (6-player: 3TF/1OUT/1MIN/1DEM)', () => {
+    it('always bluffs as a Townsfolk and leaves the real Outsider/Townsfolk counts untouched (6-player: 3TF/1OUT/1MIN/1DEM)', () => {
       const script = [...baseTownsfolk, recluse, marionetteRole, imp];
       const teamOf = (id?: string) => script.find(r => r.id === id)?.team;
 
-      let fakedOutsiderAtLeastOnce = false;
-      for (let trial = 0; trial < 400; trial++) {
+      for (let trial = 0; trial < 100; trial++) {
         const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
         const result = performStandardAssignment(players, script, []);
         if (!result) continue;
@@ -490,20 +489,17 @@ describe('performStandardAssignment', () => {
         expect(marionettePlayer).toBeDefined();
         if (!marionettePlayer) continue;
 
-        if (marionettePlayer.roleId === 'recluse') {
-          fakedOutsiderAtLeastOnce = true;
-          // The only script Outsider (Recluse) is the Marionette's fake identity here, so no
-          // OTHER player should be a genuine (non-Marionette) Outsider.
-          const realOutsiders = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'outsider');
-          expect(realOutsiders).toHaveLength(0);
-          // Reducing Outsider without a compensating change elsewhere leaves one seat short of
-          // 6; fillToCount pads it with an extra Townsfolk (its default fallback pool), so 4
-          // real Townsfolk end up in play, not 3.
-          const realTownsfolk = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'townsfolk');
-          expect(realTownsfolk).toHaveLength(4);
-        }
+        // Townsfolk is available on this script, so the Marionette must always bluff as one.
+        expect(teamOf(marionettePlayer.roleId)).toBe('townsfolk');
+
+        // The Marionette doesn't alter the real bag composition: the standard 1 Outsider / 3
+        // Townsfolk for 6 players stays intact alongside it.
+        const realOutsiders = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'outsider');
+        expect(realOutsiders).toHaveLength(1);
+
+        const realTownsfolk = result.filter(p => !p.isTheMarionette && teamOf(p.roleId) === 'townsfolk');
+        expect(realTownsfolk).toHaveLength(3);
       }
-      expect(fakedOutsiderAtLeastOnce).toBe(true);
     });
   });
 });

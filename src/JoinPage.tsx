@@ -179,14 +179,20 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.excludedRoleIds) {
         setExcludedRoleIds(payload.excludedRoleIds);
       }
-      if (payload.scriptName) {
-        setScriptName(payload.scriptName);
-      }
-      if (payload.scriptAuthor !== undefined) {
-        setScriptAuthor(payload.scriptAuthor);
-      }
-      if (payload.customScriptRoles !== undefined) {
-        setCustomScriptRoles(payload.customScriptRoles);
+      if (payload.gameType === 'whale-bucket') {
+        setScriptName("All Roles");
+        setScriptAuthor("");
+        setCustomScriptRoles(null);
+      } else {
+        if (payload.scriptName) {
+          setScriptName(payload.scriptName);
+        }
+        if (payload.scriptAuthor !== undefined) {
+          setScriptAuthor(payload.scriptAuthor);
+        }
+        if (payload.customScriptRoles !== undefined) {
+          setCustomScriptRoles(payload.customScriptRoles);
+        }
       }
 
       if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
@@ -208,24 +214,36 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.excludedRoleIds) {
         setExcludedRoleIds(payload.excludedRoleIds);
       }
-      if (payload.scriptName) {
-        setScriptName(payload.scriptName);
-      }
-      if (payload.scriptAuthor !== undefined) {
-        setScriptAuthor(payload.scriptAuthor);
-      }
-      if (payload.customScriptRoles !== undefined) {
-        setCustomScriptRoles(payload.customScriptRoles);
+      if (payload.gameType === 'whale-bucket') {
+        setScriptName("All Roles");
+        setScriptAuthor("");
+        setCustomScriptRoles(null);
+      } else {
+        if (payload.scriptName) {
+          setScriptName(payload.scriptName);
+        }
+        if (payload.scriptAuthor !== undefined) {
+          setScriptAuthor(payload.scriptAuthor);
+        }
+        if (payload.customScriptRoles !== undefined) {
+          setCustomScriptRoles(payload.customScriptRoles);
+        }
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
-      if (payload.scriptName) {
-        setScriptName(payload.scriptName);
-      }
-      if (payload.scriptAuthor !== undefined) {
-        setScriptAuthor(payload.scriptAuthor);
-      }
-      if (payload.customScriptRoles !== undefined) {
-        setCustomScriptRoles(payload.customScriptRoles);
+      if (payload.gameType === 'whale-bucket') {
+        setScriptName("All Roles");
+        setScriptAuthor("");
+        setCustomScriptRoles(null);
+      } else {
+        if (payload.scriptName) {
+          setScriptName(payload.scriptName);
+        }
+        if (payload.scriptAuthor !== undefined) {
+          setScriptAuthor(payload.scriptAuthor);
+        }
+        if (payload.customScriptRoles !== undefined) {
+          setCustomScriptRoles(payload.customScriptRoles);
+        }
       }
       if (payload.players) {
         setPlayers(payload.players);

@@ -496,6 +496,52 @@ describe('Storyteller Reset Integration', () => {
     tracker.unmount();
   });
 
+  it('Whale Bucket: script switches back to All Roles when joining a whale bucket session', async () => {
+    // Seed the player tracker with a custom script name locally
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Zoe', isDead: false }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+      scriptName: 'Trouble Brewing',
+      customScriptRoles: [{ id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk', ability: 'xyz' }]
+    }));
+
+    const gameCode = 'WBTR';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Verify initially it has 'Trouble Brewing'
+    expect(tracker.getByText(/Trouble Brewing/i)).toBeInTheDocument();
+
+    // Storyteller updates game state (Whale Bucket mode, but does NOT send script info)
+    // This simulates current behavior where WhaleBucket.tsx doesn't send scriptName etc.
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({
+          type: 'game_update',
+          gameType: 'whale-bucket',
+          players: [{ id: 'p1', name: 'Zoe', isDead: false }],
+          timeOfDay: 'night',
+          dayNumber: 1
+        }));
+    });
+
+    // The script should switch back to 'All Roles' when we join/receive update from whale bucket
+    // Note: since current code doesn't switch back, this should fail.
+    expect(tracker.queryByText(/Trouble Brewing/i)).toBeNull();
+    expect(tracker.getByText(/All Roles/i)).toBeInTheDocument();
+
+    tracker.unmount();
+  });
+
   it('JoinPage mounted with ?returnTo=preferences lands directly on the picker', async () => {
     sessionStorage.setItem('joined-code', 'WBLD');
     sessionStorage.setItem('joined-name', 'Zoe');

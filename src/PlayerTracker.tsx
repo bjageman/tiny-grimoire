@@ -119,14 +119,20 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       if (payload.dayNumber !== undefined) {
         setDayNumber(payload.dayNumber);
       }
-      if (payload.scriptName) {
-        setScriptName(payload.scriptName);
-      }
-      if (payload.scriptAuthor !== undefined) {
-        setScriptAuthor(payload.scriptAuthor);
-      }
-      if (payload.customScriptRoles !== undefined) {
-        setCustomScriptRoles(payload.customScriptRoles);
+      if (payload.gameType === 'whale-bucket') {
+        setScriptName("All Roles");
+        setScriptAuthor("");
+        setCustomScriptRoles(null);
+      } else {
+        if (payload.scriptName) {
+          setScriptName(payload.scriptName);
+        }
+        if (payload.scriptAuthor !== undefined) {
+          setScriptAuthor(payload.scriptAuthor);
+        }
+        if (payload.customScriptRoles !== undefined) {
+          setCustomScriptRoles(payload.customScriptRoles);
+        }
       }
     } else if (payload.type === 'game_winner') {
       const team = (payload as { type: string; team: string }).team;

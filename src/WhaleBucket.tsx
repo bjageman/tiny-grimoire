@@ -141,7 +141,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Exclusion states
-  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', ['drunk', 'marionette', 'lunatic']);
+  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', ['drunk', 'marionette', 'lunatic', 'atheist', 'legion', 'riot']);
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
@@ -156,7 +156,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           type: 'setup_update',
           gameType: 'whale-bucket',
           players: listToBroadcast.map(({ notes, ...rest }) => rest),
-          excludedRoleIds
+          excludedRoleIds,
+          scriptName: 'All Roles',
+          scriptAuthor: '',
+          customScriptRoles: null
         });
       }
     }, 1000);
@@ -207,7 +210,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           gameType: 'whale-bucket',
           playerId: payload.id,
           playerName: payload.name,
-          excludedRoleIds
+          excludedRoleIds,
+          scriptName: 'All Roles',
+          scriptAuthor: '',
+          customScriptRoles: null
         });
       }
 
@@ -292,9 +298,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       if (phase === 'game' && sendMessageRef.current) {
         sendMessageRef.current({
           type: 'game_update',
+          gameType: 'whale-bucket',
           players: players.map(({ notes, ...rest }) => rest),
           timeOfDay,
-          dayNumber
+          dayNumber,
+          scriptName: 'All Roles',
+          scriptAuthor: '',
+          customScriptRoles: null
         });
       }
     }
@@ -311,9 +321,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     if (!isSecondary && phase === 'game' && sendMessage) {
       sendMessage({
         type: 'game_update',
+        gameType: 'whale-bucket',
         players: players.map(({ notes, ...rest }) => rest),
         timeOfDay,
-        dayNumber
+        dayNumber,
+        scriptName: 'All Roles',
+        scriptAuthor: '',
+        customScriptRoles: null
       });
     }
   }, [phase, players, timeOfDay, dayNumber, sendMessage, isSecondary]);
@@ -356,7 +370,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setDayNumber(incoming.dayNumber || 1);
       setAllowTravelers(incoming.allowTravelers ?? false);
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
-      setExcludedRoleIds(incoming.excludedRoleIds || ['drunk', 'marionette', 'lunatic']);
+      setExcludedRoleIds(incoming.excludedRoleIds || ['drunk', 'marionette', 'lunatic', 'atheist', 'legion', 'riot']);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
@@ -829,6 +843,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         gameType: 'whale-bucket',
         players: clearedPlayers.map(({ notes, ...rest }) => rest),
         excludedRoleIds,
+        scriptName: 'All Roles',
+        scriptAuthor: '',
+        customScriptRoles: null
       });
     }
   };

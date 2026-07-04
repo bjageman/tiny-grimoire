@@ -7,7 +7,7 @@ import { TEAM_ORDER } from './types';
 import { parseScriptFile } from './utils/scriptUtils';
 
 import { performStandardAssignment } from './utils/standardAssignment';
-import { getValidationSummary } from './utils/whaleBucketValidation';
+import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import GamePhase from './components/shared/GamePhase';
 import StandardSetupPhase from './components/standard/SetupPhase';

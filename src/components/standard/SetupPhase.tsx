@@ -8,7 +8,7 @@ import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
-import type { ValidationSummary } from '../../utils/whaleBucketValidation';
+import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
   players: Player[];

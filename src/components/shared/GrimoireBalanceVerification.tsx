@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import type { ValidationSummary } from '../../utils/whaleBucketValidation';
+import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface GrimoireBalanceVerificationProps {
   validationSummary: ValidationSummary;

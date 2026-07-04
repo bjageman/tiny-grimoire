@@ -85,13 +85,37 @@ describe('computeBalance — Drunk', () => {
 });
 
 describe('computeBalance — Marionette', () => {
-  it('needs no extra Townsfolk selected — it occupies a real slot at assignment time instead', () => {
-    // 8-player base: 5/1/1/1. Marionette counts as minion; no tfDelta.
-    const roles = [out('recluse'), min('marionette'), dem('imp'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier')];
+  it('requires +1 TF for Marionette fake identity (tfDelta = 1), same as Drunk', () => {
+    // 8-player base: 5/1/1/1. validTownsfolk = (8-1-1-1) + 1 = 6.
+    // 5 TF selected → invalid; 6 TF selected → valid.
+    const fiveTf = [out('recluse'), min('marionette'), dem('imp'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier')];
+    const sixTf  = [...fiveTf, tf('virgin')];
+
+    expect(computeBalance(fiveTf, 8).isTownsfolkValid).toBe(false);
+    expect(computeBalance(sixTf, 8).isTownsfolkValid).toBe(true);
+  });
+
+  it('shows "Marionette (+1 Townsfolk)" in modifications and is fully valid with the extra TF', () => {
+    const roles = [out('recluse'), min('marionette'), dem('imp'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('virgin')];
     const b = computeBalance(roles, 8);
-    expect(b.isTownsfolkValid).toBe(true);
-    expect(b.modifications).not.toContain('Marionette (+1 Townsfolk)');
+    expect(b.modifications).toContain('Marionette (+1 Townsfolk)');
     expect(b.isValid).toBe(true);
+  });
+
+  it('stacks with Drunk: both selected together need +2 Townsfolk, not +1', () => {
+    // 8-player base: 5/1/1/1. Drunk fills the 1 outsider slot; Marionette is the 1 minion slot.
+    // validTownsfolk = (8-1-1-1) + 2 = 7.
+    const withOnlyOneExtra = [
+      out('drunk'), min('marionette'), dem('imp'),
+      tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('virgin'),
+    ];
+    const withBothExtras = [...withOnlyOneExtra, tf('slayer')];
+
+    expect(computeBalance(withOnlyOneExtra, 8).isTownsfolkValid).toBe(false);
+    const b = computeBalance(withBothExtras, 8);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.modifications).toContain('Drunk (+1 Townsfolk)');
+    expect(b.modifications).toContain('Marionette (+1 Townsfolk)');
   });
 });
 

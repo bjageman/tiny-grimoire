@@ -31,6 +31,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const hasKazali      = has('kazali');
   const hasXaan        = has('xaan');
   const hasLunatic     = has('lunatic');
+  const hasMarionette  = has('marionette');
 
   let expectedDemon  = base.demon;
   let expectedMinion = base.minion;
@@ -69,6 +70,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasHermit)       modifications.push("Hermit (0 or -1 Outsider)");
     if (hasGodfather)    modifications.push("Godfather (+1 or -1 Outsider)");
     if (hasDrunk)        modifications.push("Drunk (+1 Townsfolk)");
+    if (hasMarionette)   modifications.push("Marionette (+1 Townsfolk)");
   }
 
   if (hasKazali) { expectedMinion = 0; modifications.push("Kazali (0 Minions)", "Kazali (Any Outsider count)"); }
@@ -76,10 +78,10 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   expectedDemon = Math.max(0, expectedDemon);
 
-  // Drunk needs 1 extra Townsfolk selected (for the role it impersonates). Marionette instead
-  // occupies one of the real Townsfolk/Outsider slots directly during assignment, so it needs
-  // no extra selection here — see standardAssignment.ts.
-  const tfDelta = !hasLegion && !hasRiot && hasDrunk ? 1 : 0;
+  // Drunk and Marionette each need their own extra Townsfolk selected beyond the real target
+  // count, to serve as a fake identity without colliding with an actual in-play Townsfolk (or,
+  // if both are selected, with each other's fake identity) — see standardAssignment.ts.
+  const tfDelta = (hasLegion || hasRiot) ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
 
   const gfMods   = (hasGodfather  && !hasLegion && !hasRiot) ? [-1, 1] : [0];
   const balMods  = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1]  : [0];

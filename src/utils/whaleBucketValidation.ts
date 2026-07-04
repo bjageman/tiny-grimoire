@@ -214,6 +214,16 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   if (hasHuntsman && !hasDamsel) jinxWarnings.push("Huntsman in play, but no Damsel assigned.");
   if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
+  // Drunk/Marionette/Lunatic are always supposed to display as a different, fake character —
+  // if a player's shown icon is literally one of these three, their true identity is exposed.
+  const revealingMasqueradeIds = new Set(['drunk', 'marionette', 'lunatic']);
+  for (const p of players) {
+    if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {
+      const role = (rolesData as Role[]).find(r => r.id === p.roleId);
+      jinxWarnings.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
+    }
+  }
+
   const roleIdFreq: Record<string, number> = {};
   for (const p of players) {
     if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;

@@ -366,7 +366,7 @@ describe('performStandardAssignment', () => {
     }
   });
 
-  it('never lets the Marionette fake an identity that a real player already has', () => {
+  it('ensures the Marionette\'s fake identity is always on the script, even if it must duplicate a character in play', () => {
     // A tiny script (few Townsfolk/Outsider options) is the scenario that used to force the
     // old "unmatched" fallback into duplicating a real character's identity — e.g. a real
     // Huntsman assigned to one player AND the Marionette also displaying as "Huntsman".
@@ -378,6 +378,8 @@ describe('performStandardAssignment', () => {
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
+
+    const scriptIds = new Set(script.map(r => r.id));
 
     for (let trial = 0; trial < 200; trial++) {
       const players: Player[] = [
@@ -393,9 +395,12 @@ describe('performStandardAssignment', () => {
       expect(result).not.toBeNull();
       if (!result) return;
 
-      const roleIds = result.map(p => p.roleId);
-      const duplicates = roleIds.filter((id, i) => roleIds.indexOf(id) !== i);
-      expect(duplicates).toEqual([]);
+      const marionettePlayer = result.find(p => p.isTheMarionette);
+      expect(marionettePlayer).toBeDefined();
+      if (!marionettePlayer) continue;
+
+      // The Marionette's fake role must be on the script
+      expect(scriptIds.has(marionettePlayer.roleId!)).toBe(true);
     }
   });
 
@@ -453,7 +458,8 @@ describe('performStandardAssignment', () => {
     };
 
     for (const [label, script] of Object.entries(scripts)) {
-      it(`produces no duplicate role IDs (${label})`, () => {
+      it(`produces only script role IDs (${label})`, () => {
+        const scriptIds = new Set(script.map(r => r.id));
         for (const n of [5, 6, 8, 12]) {
           for (let trial = 0; trial < 40; trial++) {
             const players: Player[] = Array.from({ length: n }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
@@ -462,8 +468,9 @@ describe('performStandardAssignment', () => {
             expect(result.length).toBe(n);
             const roleIds = result.map(p => p.roleId);
             expect(roleIds.every(Boolean)).toBe(true);
-            const duplicates = roleIds.filter((id, i) => roleIds.indexOf(id) !== i);
-            expect(duplicates).toEqual([]);
+            
+            // All faked role IDs must be on the script
+            expect(roleIds.every(id => scriptIds.has(id!))).toBe(true);
           }
         }
       });

@@ -566,13 +566,27 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
       if (assigned && assigned.role.id === 'lunatic') {
         isTheLunatic = true;
-        const demons = (rolesData as Role[]).filter(r => r.team === 'demon');
-        const chosenDemon = demons[Math.floor(Math.random() * demons.length)] || { id: 'imp' };
+        const assignedDemonIds = result.filter(r => r.role.team === 'demon').map(r => r.role.id);
+        const candidates = (rolesData as Role[]).filter(r => 
+          r.team === 'demon' && 
+          !excludedRoleIds.includes(r.id) && 
+          !assignedDemonIds.includes(r.id)
+        );
+        const fallbackCandidates = (rolesData as Role[]).filter(r => r.team === 'demon' && !excludedRoleIds.includes(r.id));
+        const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'imp' }]);
+        const chosenDemon = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
         roleId = chosenDemon.id;
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
-        const minions = (rolesData as Role[]).filter(r => r.team === 'minion');
-        const chosenMinion = minions[Math.floor(Math.random() * minions.length)] || { id: 'poisoner' };
+        const assignedMinionIds = result.filter(r => r.role.team === 'minion').map(r => r.role.id);
+        const candidates = (rolesData as Role[]).filter(r => 
+          r.team === 'minion' && 
+          !excludedRoleIds.includes(r.id) && 
+          !assignedMinionIds.includes(r.id)
+        );
+        const fallbackCandidates = (rolesData as Role[]).filter(r => r.team === 'minion' && !excludedRoleIds.includes(r.id));
+        const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'poisoner' }]);
+        const chosenMinion = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
         roleId = chosenMinion.id;
       }
 

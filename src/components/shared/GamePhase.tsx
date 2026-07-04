@@ -2,13 +2,15 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
-import { getScriptStats } from '../../utils/scriptUtils';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from './ScriptCharactersModal';
+import BaseDistributionCard from './BaseDistributionCard';
+import AutoResizeTextarea from './AutoResizeTextarea';
 import DialogModal from './DialogModal';
 import { useDialog } from '../../hooks/useDialog';
 
@@ -41,8 +43,10 @@ interface Props {
   selectionRoles?: Role[];
   showNightOrder?: boolean;
   scriptName?: string;
+  scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
   isSynced?: boolean;
+  isSecondary?: boolean;
   enableReminders?: boolean;
   travelerCardTitle?: string;
   demonBluffs?: string[];
@@ -57,6 +61,8 @@ interface Props {
   onSetCheckedItems?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 export default function GamePhase({
@@ -70,8 +76,10 @@ export default function GamePhase({
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
+  scriptAuthor = '',
   customScriptRoles = null,
   isSynced = false,
+  isSecondary = false,
   enableReminders = true,
   travelerCardTitle = 'Add Traveler',
   demonBluffs = [],
@@ -86,6 +94,8 @@ export default function GamePhase({
   onSetCheckedItems,
   rotationOffset,
   onRotationChange,
+  notes,
+  onNotesChange,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -254,6 +264,17 @@ export default function GamePhase({
             onSetCheckedItems={onSetCheckedItems}
           />
         )}
+        {onNotesChange && (
+          <div className="hidden md:block landscape:block space-y-1.5">
+            <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+            <AutoResizeTextarea
+              value={notes ?? ''}
+              onChange={onNotesChange}
+              placeholder="Write anything here. Deductions, suspicions, reminders..."
+              isLightModeActive={isLightModeActive}
+            />
+          </div>
+        )}
       </div>
 
       {/* Column 2: Controls */}
@@ -277,23 +298,41 @@ export default function GamePhase({
           )}>
             📜 {scriptName}
           </span>
-          {customScriptRoles && (
+          {scriptAuthor && (
             <span className="text-[10px] text-gray-500 font-medium">
-              {getScriptStats(customScriptRoles)}
+              by {scriptAuthor}
             </span>
           )}
         </button>
+
+        {/* Standard Base Distribution */}
+        {players.length >= 5 && (() => {
+          const travelerCountInPlay = players.filter(p => {
+            if (!p.roleId) return false;
+            const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+            return r?.team === 'traveler';
+          }).length;
+          const baseCount = players.length - travelerCountInPlay;
+          const dist = getDistribution(baseCount);
+          return (
+            <BaseDistributionCard
+              playerCount={players.length}
+              dist={dist}
+              isLightModeActive={isLightModeActive}
+            />
+          );
+        })()}
 
         {/* Demon Bluffs — always dark, unaffected by theme */}
         {!isSynced && onUpdateDemonBluffs && (
           <div className="rounded-lg border p-3.5 space-y-2.5 bg-gray-900 border-gray-700">
             <div className="flex items-center justify-between">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Demon Bluffs</h4>
+              <h4 className="text-xs uppercase font-bold tracking-wider text-gray-400">Demon Bluffs</h4>
               {demonBluffs.some(b => b) && (
                 <button
                   type="button"
                   onClick={() => setIsBluffOverlayOpen(true)}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
                 >
                   Show Demon
                 </button>
@@ -382,7 +421,7 @@ export default function GamePhase({
                 );
               })}
             </div>
-            <label className="flex items-center gap-1.5 text-[10px] text-gray-400 cursor-pointer select-none pt-0.5">
+            <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none pt-0.5">
               <input
                 type="checkbox"
                 checked={showAllBluffCandidates}
@@ -400,24 +439,39 @@ export default function GamePhase({
             'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
             isLightModeActive
               ? 'bg-white/50 border-gray-300'
-              : 'bg-gray-900/40 border-gray-800/80'
+              : 'bg-gray-900/40 border-gray-800/80',
+            isSecondary && 'opacity-40'
           )}>
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-600' : 'text-gray-500'
             )}>Declare Winner</h4>
             <div className="flex gap-2">
               <button
                 type="button"
+                disabled={isSecondary}
                 onClick={() => onDeclareWinner('good')}
-                className="flex-1 py-2 rounded text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+                className={cn(
+                  "flex-1 py-2 rounded text-xs font-bold text-white transition-colors",
+                  isSecondary
+                    ? "bg-gray-600 cursor-not-allowed opacity-50"
+                    : "bg-blue-600 hover:bg-blue-500"
+                )}
+                title={isSecondary ? "Declaring a winner is disabled on secondary devices." : undefined}
               >
                 🌟 Good Wins
               </button>
               <button
                 type="button"
+                disabled={isSecondary}
                 onClick={() => onDeclareWinner('evil')}
-                className="flex-1 py-2 rounded text-xs font-bold text-white bg-red-800 hover:bg-red-700 transition-colors"
+                className={cn(
+                  "flex-1 py-2 rounded text-xs font-bold text-white transition-colors",
+                  isSecondary
+                    ? "bg-gray-600 cursor-not-allowed opacity-50"
+                    : "bg-red-800 hover:bg-red-700"
+                )}
+                title={isSecondary ? "Declaring a winner is disabled on secondary devices." : undefined}
               >
                 😈 Evil Wins
               </button>
@@ -434,7 +488,7 @@ export default function GamePhase({
               : 'bg-gray-900/40 border-gray-800/80'
           )}>
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-600' : 'text-gray-500'
             )}>{travelerCardTitle}</h4>
             <div className="flex flex-col gap-2">
@@ -497,7 +551,7 @@ export default function GamePhase({
         )}>
           <div className="flex justify-between items-center mb-1">
             <h4 className={cn(
-              'text-[10px] uppercase font-bold tracking-wider',
+              'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-655' : 'text-gray-500'
             )}>Grimoire Ledger Reference</h4>
           </div>
@@ -572,7 +626,9 @@ export default function GamePhase({
                                 ? ['marionette']
                                 : p.isTheLunatic
                                   ? ['lunatic']
-                                  : []);
+                                  : p.isTheLilMonsta
+                                    ? ['lilmonsta']
+                                    : []);
                       if (displayRoles.length === 0) {
                         return <span className="text-gray-500 font-semibold text-[10px]">—</span>;
                       }
@@ -621,14 +677,14 @@ export default function GamePhase({
           )}>
             <div className="flex items-center justify-between">
               <h4 className={cn(
-                'text-[10px] uppercase font-bold tracking-wider',
+                'text-xs uppercase font-bold tracking-wider',
                 isLightModeActive ? 'text-gray-600' : 'text-gray-500'
               )}>Game Log</h4>
               {gameLog && gameLog.length > 0 && (
                 <button
                   type="button"
                   onClick={onDownloadLog}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
+                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
                 >
                   Download
                 </button>
@@ -654,7 +710,7 @@ export default function GamePhase({
         onClose={() => setIsScriptModalOpen(false)}
         scriptName={scriptName}
         roles={sortedRoles}
-        scriptStats={customScriptRoles ? getScriptStats(customScriptRoles) : undefined}
+        scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
       />
 
@@ -709,6 +765,18 @@ export default function GamePhase({
         </div>
       )}
     </div>
+
+    {onNotesChange && (
+      <div className="md:hidden landscape:hidden mt-6 space-y-1.5">
+        <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
+        <AutoResizeTextarea
+          value={notes ?? ''}
+          onChange={onNotesChange}
+          placeholder="Write anything here. Deductions, suspicions, reminders..."
+          isLightModeActive={isLightModeActive}
+        />
+      </div>
+    )}
     </>
   );
 }

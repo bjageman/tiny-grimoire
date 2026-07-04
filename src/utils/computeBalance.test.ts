@@ -85,14 +85,13 @@ describe('computeBalance — Drunk', () => {
 });
 
 describe('computeBalance — Marionette', () => {
-  it('requires +1 TF for Marionette fake identity (tfDelta = 1)', () => {
-    // 8-player base: 5/1/1/1. Marionette counts as minion; tfDelta adds 1.
-    // validTownsfolk = (8-1-1-1) + 1 = 6.
-    const withoutExtra = [out('recluse'), min('marionette'), dem('imp'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier')];
-    const withExtra    = [...withoutExtra, tf('slayer')];
-
-    expect(computeBalance(withoutExtra, 8).isTownsfolkValid).toBe(false); // 5 TF, need 6
-    expect(computeBalance(withExtra,    8).isTownsfolkValid).toBe(true);  // 6 TF
+  it('needs no extra Townsfolk selected — it occupies a real slot at assignment time instead', () => {
+    // 8-player base: 5/1/1/1. Marionette counts as minion; no tfDelta.
+    const roles = [out('recluse'), min('marionette'), dem('imp'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier')];
+    const b = computeBalance(roles, 8);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.modifications).not.toContain('Marionette (+1 Townsfolk)');
+    expect(b.isValid).toBe(true);
   });
 });
 
@@ -161,6 +160,20 @@ describe('computeBalance — Vigormortis', () => {
     const b = computeBalance(roles, 12);
     expect(b.isOutsiderValid).toBe(false);
     expect(b.isValid).toBe(false);
+  });
+});
+
+describe('computeBalance — Alchemist', () => {
+  it('warns that the Alchemist ability may affect setup whenever it is selected', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('alchemist'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.jinxWarnings).toContain('Alchemist in play — ability may affect setup.');
+  });
+
+  it('has no Alchemist warning when it is not selected', () => {
+    const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'), out('recluse'), min('poisoner'), dem('imp')];
+    const b = computeBalance(roles, 8);
+    expect(b.jinxWarnings).not.toContain('Alchemist in play — ability may affect setup.');
   });
 });
 

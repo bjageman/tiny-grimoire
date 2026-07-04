@@ -19,6 +19,7 @@ interface WhaleBucketPlayerPreferenceModalProps {
   removePlayer: (id: string) => void;
   togglePreference: (playerId: string, team: Role['team'], roleId: string) => void;
   autoFillPlayerPreferences: (playerId: string) => void;
+  isSecondary?: boolean;
   onClose: () => void;
 }
 
@@ -49,6 +50,7 @@ export default function WhaleBucketPlayerPreferenceModal({
   removePlayer,
   togglePreference,
   autoFillPlayerPreferences,
+  isSecondary,
   onClose,
 }: WhaleBucketPlayerPreferenceModalProps) {
   useScrollLock();
@@ -75,7 +77,7 @@ export default function WhaleBucketPlayerPreferenceModal({
         r.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-    const currentRoleId = player.preferences[pickingTeam]?.[0];
+    const currentRoleId = player.preferences?.[pickingTeam]?.[0];
 
     return (
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
@@ -210,32 +212,45 @@ export default function WhaleBucketPlayerPreferenceModal({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            id="remove-preference-player-button"
-            type="button"
-            onClick={() => { removePlayer(player.id); onClose(); }}
-            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
-            title="Remove player"
-          >
-            <Trash2 size={16} />
-          </button>
-          <input
-            id="edit-preference-player-name-input"
-            type="text"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-          />
+          {(() => {
+            const isSecondaryDevice = !!isSecondary;
+            return (
+              <>
+                <button
+                  id="remove-preference-player-button"
+                  type="button"
+                  disabled={isSecondaryDevice}
+                  onClick={() => { if (!isSecondaryDevice) { removePlayer(player.id); onClose(); } }}
+                  className={cn(
+                    "shrink-0 p-2 rounded border border-gray-800 transition-colors",
+                    isSecondaryDevice 
+                      ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40" 
+                      : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+                  )}
+                  title={isSecondaryDevice ? "This action is disabled on secondary devices." : "Remove player"}
+                >
+                  <Trash2 size={16} />
+                </button>
+                <input
+                  id="edit-preference-player-name-input"
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+                  autoFocus={!isMobile}
+                  autoCapitalize="words"
+                  placeholder="Player name"
+                  className="flex-1 min-w-0 bg-gray-955 border border-gray-855 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+                />
+              </>
+            );
+          })()}
           <button
             id="auto-fill-preferences-button"
             type="button"
             onClick={() => autoFillPlayerPreferences(player.id)}
-            className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-clocktower-townsfolk hover:border-clocktower-townsfolk/40 transition-colors"
+            className="shrink-0 p-2 rounded border border-gray-855 text-gray-500 hover:text-clocktower-townsfolk hover:border-clocktower-townsfolk/40 transition-colors"
             title="Auto-fill remaining preferences"
           >
             <Shuffle size={16} />
@@ -244,7 +259,7 @@ export default function WhaleBucketPlayerPreferenceModal({
 
         <div className="overflow-y-auto overscroll-contain flex-1 space-y-2">
           {visibleTeams.map(team => {
-            const roleId = player.preferences[team]?.[0];
+            const roleId = player.preferences?.[team]?.[0];
             const roleObj = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined;
             return (
               <button

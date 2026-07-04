@@ -25,7 +25,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return '';
   });
   const [name, setName] = useState(() => {
-    return sessionStorage.getItem('joined-name') || '';
+    return sessionStorage.getItem('joined-name') || localStorage.getItem('botc-joined-name') || '';
   });
   const [playerId] = useState(() => {
     const saved = sessionStorage.getItem('botc-player-id');
@@ -35,14 +35,37 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return newId;
   });
 
+  // A Whale Bucket player who reset from the game tracker is routed here as
+  // `#/join?returnTo=preferences` — land them straight on the (fresh) picker.
+  const [returnToPrefs] = useState(() => {
+    const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+    return params.get('returnTo') === 'preferences';
+  });
+
   const [state, setState] = useState<'join' | 'checking' | 'preferences' | 'waiting' | 'revealed' | 'tracker'>(() => {
     const savedCode = sessionStorage.getItem('joined-code');
     const savedName = sessionStorage.getItem('joined-name');
-    if (savedCode && savedName) return 'waiting';
+    if (savedCode && savedName) return returnToPrefs ? 'preferences' : 'waiting';
     return 'join';
   });
 
-  const [gameType, setGameType] = useState<'standard' | 'whale-bucket'>('standard');
+  // Mirror `state` in a ref so the socket message handler always reads the
+  // latest committed value rather than a stale closure — realtime messages can
+  // arrive between a render and the effect that re-binds the handler.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // Strip the one-shot ?returnTo param so a later refresh doesn't force the
+  // player back onto the preferences screen after they've moved on.
+  useEffect(() => {
+    if (returnToPrefs) {
+      window.history.replaceState(null, '', '#/join');
+    }
+  }, [returnToPrefs]);
+
+  const [gameType, setGameType] = useState<'standard' | 'whale-bucket'>(() => returnToPrefs ? 'whale-bucket' : 'standard');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [assignedRole, setAssignedRole] = useState<Role | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -65,6 +88,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
   const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>([]);
   const [scriptName, setScriptName] = useState("All Roles");
+  const [scriptAuthor, setScriptAuthor] = useState("");
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -98,30 +122,58 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     dayNumber?: number;
     excludedRoleIds?: string[];
     scriptName?: string;
+    scriptAuthor?: string;
     customScriptRoles?: Role[];
   }
 
+  // Send this player back to the lobby after the storyteller resets the game
+  // but keeps everyone connected. Unconditional by design: it's a direct
+  // command, not something inferred from the current UI state, which is what
+  // makes it reliable. Whale Bucket players return to the preferences picker
+  // (with a fresh, empty selection); Standard players return to the waiting
+  // room.
+  const returnToLobby = (resetGameType: 'standard' | 'whale-bucket' = 'standard') => {
+    setAssignedRole(null);
+    setRevealed(false);
+    sessionStorage.setItem('joined-code', code);
+    sessionStorage.setItem('joined-name', name);
+    if (resetGameType === 'whale-bucket') {
+      setPrefs({ townsfolk: [], outsider: [], minion: [], demon: [] });
+      setGameType('whale-bucket');
+      setState('preferences');
+    } else {
+      setState('waiting');
+    }
+  };
+
   const handleMessage = (data: unknown) => {
     const payload = data as GamePayload;
+    if (payload.type === 'game_reset') {
+      // Explicit "storyteller reset, stay connected" signal. Always obey it,
+      // regardless of what screen this player is currently on.
+      returnToLobby(payload.gameType);
+      return;
+    }
     if (payload.type === 'setup_update') {
       const me = payload.players?.find(
         (pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId
       );
-
       if (me) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
         setGameType(payload.gameType);
 
-        if (state === 'checking') {
-          if (payload.gameType === 'whale-bucket') {
-            setState('preferences');
-          } else {
-            setState('waiting');
-            sessionStorage.setItem('joined-code', code);
-            sessionStorage.setItem('joined-name', name);
-          }
+        if (stateRef.current === 'checking') {
+          // Persist the session as soon as we're in the room (both modes) so a
+          // later game tracker / reset can reliably resume the join.
+          sessionStorage.setItem('joined-code', code);
+          sessionStorage.setItem('joined-name', name);
+          setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
         }
+        // NB: a plain setup_update is NOT treated as a reset. The storyteller
+        // may simply step back to setup to tweak something without wanting to
+        // boot everyone off their character. Only the explicit `game_reset`
+        // command (handled above) returns players to the lobby.
       }
 
       if (payload.excludedRoleIds) {
@@ -130,11 +182,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
+      }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
 
-      if (state === 'waiting' || state === 'preferences' || state === 'checking') {
+      if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
         setPlayers(payload.players || []);
       }
     } else if (payload.type === 'code_valid') {
@@ -143,14 +198,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
         setGameType(payload.gameType);
 
-        if (state === 'checking') {
-          if (payload.gameType === 'whale-bucket') {
-            setState('preferences');
-          } else {
-            setState('waiting');
-            sessionStorage.setItem('joined-code', code);
-            sessionStorage.setItem('joined-name', name);
-          }
+        if (stateRef.current === 'checking') {
+          sessionStorage.setItem('joined-code', code);
+          sessionStorage.setItem('joined-name', name);
+          setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
         }
       }
 
@@ -160,12 +211,18 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
+      }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
+      }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
@@ -181,7 +238,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             const rObj = (rolesData as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
               setAssignedRole(rObj);
-              if (state === 'waiting' || state === 'preferences') {
+              if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
                 setState('revealed');
               }
             }
@@ -206,10 +263,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const { isConnected, sendMessage } = useGameSocket(code, handleMessage);
 
-  // Keep player entry in the storyteller list synchronized on connection/reconnection
+  // Keep player entry in the storyteller list synchronized on connection/reconnection.
+  // 'preferences' is included so a Whale Bucket player who lands on the picker
+  // after a reset re-announces and receives the current excludedRoleIds/script.
   useEffect(() => {
     if (isConnected && code && name) {
-      if (state === 'waiting' || state === 'revealed' || state === 'tracker') {
+      if (state === 'waiting' || state === 'revealed' || state === 'tracker' || state === 'preferences') {
         sendMessage({
           type: 'player_join',
           name: name,
@@ -226,6 +285,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       setErrorMsg('Please enter a valid 4-letter code and name.');
       return;
     }
+    localStorage.setItem('botc-joined-name', name);
     setErrorMsg(null);
     setState('checking');
 
@@ -282,7 +342,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
     setCode('');
-    setName('');
+    setName(localStorage.getItem('botc-joined-name') || '');
     setState('join');
     setAssignedRole(null);
     setRevealed(false);
@@ -888,6 +948,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptAuthor={scriptAuthor}
       isLightModeActive={isLight}
     />
 

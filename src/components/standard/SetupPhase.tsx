@@ -1,20 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Shuffle, Upload, CheckCircle, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import { getScriptStats } from '../../utils/scriptUtils';
 import rolesData from '../../roles.json';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
-import { getDistribution } from '../../constants';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
+import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
 import type { ValidationSummary } from '../../utils/whaleBucketValidation';
 
 interface StandardSetupPhaseProps {
   players: Player[];
   customScriptRoles: Role[] | null;
   scriptName: string;
+  scriptAuthor: string;
   selectedCharacterIds: Set<string>;
   setSelectedCharacterIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   newPlayerName: string;
@@ -25,6 +25,8 @@ interface StandardSetupPhaseProps {
   clearCustomScript: () => void;
   randomlyAssignRoles: () => void;
   randomlyAssignWithRoles: (roles: Role[]) => void;
+  clearAllRoles: () => void;
+  resetGame: () => void;
   scriptRoles: Role[];
   setActivePlayerId: (id: string | null) => void;
   setSearchTerm: (term: string) => void;
@@ -47,12 +49,14 @@ interface StandardSetupPhaseProps {
   handleTouchEnd: () => void;
   validationSummary: ValidationSummary | null;
   isLightModeActive: boolean;
+  isSecondary?: boolean;
 }
 
 export default function StandardSetupPhase({
   players,
   customScriptRoles,
   scriptName,
+  scriptAuthor,
   selectedCharacterIds,
   setSelectedCharacterIds,
   newPlayerName,
@@ -63,6 +67,8 @@ export default function StandardSetupPhase({
   clearCustomScript,
   randomlyAssignRoles,
   randomlyAssignWithRoles,
+  clearAllRoles,
+  resetGame,
   scriptRoles,
   setActivePlayerId,
   setSearchTerm,
@@ -81,6 +87,7 @@ export default function StandardSetupPhase({
   handleTouchEnd,
   validationSummary,
   isLightModeActive,
+  isSecondary,
   remotePlayerCount = 0,
   remotePlayerIds,
   grimoireConfirmed = false,
@@ -145,16 +152,14 @@ export default function StandardSetupPhase({
               title="Click to upload script JSON"
             >
               <span className={cn(
-                "flex items-center gap-1.5 text-base font-extrabold transition-colors",
-                isLightModeActive
-                  ? "text-gray-900 group-hover:text-clocktower-blood"
-                  : "text-white group-hover:text-clocktower-blood"
+                "flex items-center gap-1.5 text-base font-extrabold transition-colors text-white group-hover:text-clocktower-blood",
+                isLightModeActive && "text-gray-900"
               )}>
                 📜 {scriptName}
               </span>
               <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
                 <Upload size={12} />
-                {customScriptRoles ? `${getScriptStats(customScriptRoles)} — Click to change` : "Click to upload .json"}
+                {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Click to upload .json"}
               </span>
             </button>
             <ScriptHelpButton isLightModeActive={isLightModeActive} />
@@ -226,7 +231,31 @@ export default function StandardSetupPhase({
       {/* Section B: Players & Roles list */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
-          <h2 className="font-display text-lg font-bold tracking-wider uppercase text-gray-300 mb-4">Setup ({players.length} Players)</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-display text-lg font-bold tracking-wider uppercase text-gray-300">Setup ({players.length} Players)</h2>
+            <div className="flex gap-2">
+              {players.length > 0 && (
+                <button
+                  onClick={clearAllRoles}
+                  className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                >
+                  Clear All
+                </button>
+              )}
+              <button
+                id="setup-reset-button"
+                onClick={resetGame}
+                disabled={isSecondary}
+                className={cn(
+                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  isSecondary && "opacity-40 cursor-not-allowed"
+                )}
+                title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
 
           <div className="flex gap-2 mb-4">
             <input
@@ -236,9 +265,13 @@ export default function StandardSetupPhase({
               onChange={(e) => setNewPlayerName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
               disabled={players.length >= 20}
-              placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+              placeholder={
+                players.length >= 20 
+                  ? "Maximum players reached (20)" 
+                  : "Enter player name in seating order..."
+              }
               autoCapitalize="words"
-              className="flex-1 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button 
               id="add-player-button"
@@ -280,141 +313,8 @@ export default function StandardSetupPhase({
       <div className="md:col-start-2 md:row-start-2 space-y-6 w-full">
         {/* Validation Summary */}
         {validationSummary && players.length >= 5 && (
-          <div
-            id="grimoire-balance-verification"
-            className={cn(
-              "border rounded-lg p-3 space-y-2.5 transition-colors duration-300 text-left",
-              isLightModeActive
-                ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-                : "bg-gray-900/90 border-gray-800"
-            )}
-          >
-            <div className="flex items-center gap-1.5">
-              {validationSummary.isValid ? (
-                <CheckCircle size={16} className="text-clocktower-outsider" />
-              ) : (
-                <AlertTriangle size={16} className="text-clocktower-minion" />
-              )}
-              <span className={cn(
-                "font-semibold text-xs tracking-wide uppercase",
-                isLightModeActive ? "text-gray-700" : "text-gray-300"
-              )}>
-                Grimoire Balance Verification
-              </span>
-            </div>
-
-            {validationSummary.modifications.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {validationSummary.modifications.map((m, idx) => (
-                  <span
-                    key={idx}
-                    className={cn(
-                      "text-[9px] border px-1.5 py-0.5 rounded font-medium transition-colors duration-300",
-                      isLightModeActive
-                        ? "bg-clocktower-blood/5 border-clocktower-blood/20 text-clocktower-blood"
-                        : "bg-clocktower-blood/10 border-clocktower-blood/30 text-clocktower-parchment/80"
-                    )}
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className={cn(
-              "grid text-center text-[10px] font-mono border-t pt-2.5",
-              isLightModeActive ? "border-gray-200" : "border-gray-800",
-              validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
-                ? "grid-cols-5 gap-1"
-                : "grid-cols-4 gap-2"
-            )}>
-              <div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
-                <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-                  {validationSummary.counts.townsfolk} / {validationSummary.expectedTownsfolkLabel}
-                </div>
-              </div>
-              <div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Outsider</div>
-                <div className={cn("font-bold text-xs mt-0.5", validationSummary.isOutsiderValid ? "text-clocktower-outsider" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-                  {validationSummary.counts.outsider} / {validationSummary.expectedOutsiderLabel}
-                </div>
-              </div>
-              <div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Minion</div>
-                <div className={cn("font-bold text-xs mt-0.5", validationSummary.isMinionValid ? "text-clocktower-minion" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-                  {validationSummary.counts.minion} / {validationSummary.expected.minion}
-                </div>
-              </div>
-              <div>
-                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
-                <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-                  {validationSummary.counts.demon} / {validationSummary.expected.demon}
-                </div>
-              </div>
-              {(validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0) && (
-                <div>
-                  <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
-                  <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
-                    {validationSummary.counts.traveler} / {validationSummary.expected.traveler}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {validationSummary.jinxWarnings.length > 0 && (
-              <div className={cn("border-t pt-2 space-y-1", isLightModeActive ? "border-gray-200" : "border-gray-800")}>
-                {validationSummary.jinxWarnings.map((w, idx) => (
-                  <div key={idx} className={cn("text-[10px] flex items-center gap-1 font-medium", isLightModeActive ? "text-amber-700" : "text-yellow-500")}>
-                    <AlertTriangle size={10} /> {w}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
         )}
-
-
-        {/* Distribution Card */}
-        <section id="standard-base-distribution" className="bg-gray-900 p-4 rounded-lg border border-gray-800">
-          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Standard Base Distribution</h3>
-          {players.length >= 5 ? (() => {
-            const travelerCountInPlay = players.filter(p => {
-              if (!p.roleId) return false;
-              const r = (rolesData as Role[]).find(role => role.id === p.roleId);
-              return r?.team === 'traveler';
-            }).length;
-            const baseCount = players.length - travelerCountInPlay;
-            const dist = getDistribution(baseCount);
-            return (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-townsfolk">
-                    TF: {dist.townsfolk}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-outsider">
-                    O: {dist.outsider}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-minion">
-                    M: {dist.minion}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-demon">
-                    D: {dist.demon}
-                  </div>
-                </div>
-                {(dist.traveler > 0 || travelerCountInPlay > 0) && (
-                  <div className="text-center text-xs font-semibold p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-traveler">
-                    Travelers: {travelerCountInPlay > 0 ? travelerCountInPlay : dist.traveler}
-                  </div>
-                )}
-              </div>
-            );
-          })() : (
-            <p className="text-sm text-gray-500 italic">Add at least 5 players to view distribution.</p>
-          )}
-        </section>
-
-
         <button
           id="open-grimoire-button"
           disabled={!allAssigned}
@@ -479,7 +379,7 @@ export default function StandardSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
-      scriptStats={customScriptRoles ? getScriptStats(customScriptRoles) : undefined}
+      scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />
     <SelectCharactersModal

@@ -44,4 +44,16 @@ describe('CharacterAssignmentCircle', () => {
     render(<CharacterAssignmentCircle {...defaultProps} remotePlayerIds={new Set(['p2'])} />);
     expect(screen.getByText('Bob')).toBeInTheDocument();
   });
+
+  it('enables dragging when isSecondary is true', () => {
+    const { container } = render(
+      <CharacterAssignmentCircle
+        {...defaultProps}
+      />
+    );
+
+    // Draggable attribute should be true
+    const playerTokenDiv = container.querySelector('[data-drag-index="0"]');
+    expect(playerTokenDiv).toHaveAttribute('draggable', 'true');
+  });
 });

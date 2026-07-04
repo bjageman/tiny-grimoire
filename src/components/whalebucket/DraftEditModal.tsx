@@ -63,10 +63,10 @@ export default function WhaleBucketDraftEditModal({
   const isLunaticSelectedElsewhere = players.some(pl => pl.id !== player.id && pl.isTheLunatic);
 
   const preferredIds = [
-    ...(player.preferences.townsfolk || []),
-    ...(player.preferences.outsider || []),
-    ...(player.preferences.minion || []),
-    ...(player.preferences.demon || []),
+    ...(player.preferences?.townsfolk || []),
+    ...(player.preferences?.outsider || []),
+    ...(player.preferences?.minion || []),
+    ...(player.preferences?.demon || []),
   ];
 
   const filteredRoles = (rolesData as Role[]).filter(r =>
@@ -253,7 +253,7 @@ export default function WhaleBucketDraftEditModal({
                   <img
                     src="/icons/lilmonsta.svg"
                     alt=""
-                    className="w-3 h-3 object-contain"
+                    className="w-3.5 h-3.5 object-contain"
                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                   />
                 </span>

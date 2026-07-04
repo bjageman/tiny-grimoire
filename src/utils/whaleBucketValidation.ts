@@ -63,12 +63,23 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const hasVigormortis = assignedRoles.some(r => r.id === 'vigormortis');
   const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
   const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
+  const hasAlchemist = assignedRoles.some(r => r.id === 'alchemist');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
   const hasHermit = assignedRoles.some(r => r.id === 'hermit');
   const hasSummoner = assignedRoles.some(r => r.id === 'summoner');
   const hasLordOfTyphon = assignedRoles.some(r => r.id === 'lordoftyphon');
   const hasKazali = assignedRoles.some(r => r.id === 'kazali');
   const hasXaan = assignedRoles.some(r => r.id === 'xaan');
+
+  // Marionette's own seat is always tallied as a Minion (see `counts` above). If it displays
+  // as the Outsider, there's no other real Outsider this game, so the expected Outsider count
+  // drops by 1 with no compensation elsewhere. If it displays as Townsfolk, nothing changes —
+  // Townsfolk is a large enough pool that one extra apparent Townsfolk isn't tracked here.
+  const marionettePlayer = players.find(p => p.isTheMarionette);
+  const marionetteFakeTeam = marionettePlayer
+    ? (rolesData as Role[]).find(r => r.id === marionettePlayer.roleId)?.team
+    : undefined;
+  const marionetteOutsiderDelta = marionetteFakeTeam === 'outsider' ? -1 : 0;
   
   let expectedDemon = base.demon;
   let expectedMinion = base.minion;
@@ -130,8 +141,11 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
     if (hasGodfather) {
       modifications.push("Godfather (+1 or -1 Outsider)");
     }
+    if (marionetteFakeTeam === 'outsider') {
+      modifications.push("Marionette displays as Outsider (-1 Outsider)");
+    }
   }
-  
+
   if (hasKazali) {
     expectedMinion = 0;
     modifications.push("Kazali (0 Minions)");
@@ -147,7 +161,11 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const balMods = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const huntMods = (hasHuntsman && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const hermMods = (hasHermit && !hasLegion && !hasRiot) ? [-1, 0] : [0];
-  const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0));
+  const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta);
+  // Townsfolk's expected count is derived from Outsider's below (it's "whatever's left"), but
+  // the Marionette's -1 Outsider shift is NOT supposed to bump Townsfolk up to compensate — so
+  // this mirrors fixedOutsiderDelta minus the Marionette term specifically for that derivation.
+  const fixedOutsiderDeltaForTownsfolk = fixedOutsiderDelta - marionetteOutsiderDelta;
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion || hasRiot) {
@@ -171,11 +189,11 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   }
 
   const validOutsiders = Array.from(possibleOutsiderCounts).sort((a, b) => a - b);
-  const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out));
+  const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out + marionetteOutsiderDelta));
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
   const isOutsiderValid = validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
+  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider + marionetteOutsiderDelta;
   const isDemonValid = counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
@@ -184,7 +202,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
-  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
+  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDeltaForTownsfolk);
   
   // Jinx checks
   const hasChoirboy = assignedRoles.some(r => r.id === 'choirboy');
@@ -194,6 +212,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   const jinxWarnings: string[] = [];
   if (hasChoirboy && !hasKing) jinxWarnings.push("Choirboy in play, but no King assigned.");
   if (hasHuntsman && !hasDamsel) jinxWarnings.push("Huntsman in play, but no Damsel assigned.");
+  if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
   const roleIdFreq: Record<string, number> = {};
   for (const p of players) {

@@ -204,7 +204,7 @@ describe('GamePhase - Reset Reminders confirmation', () => {
   it('asks for confirmation before clearing reminders, and only clears them once confirmed', () => {
     render(<GamePhase {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Reset Reminders'));
+    fireEvent.click(screen.getByText('Reminders'));
 
     // Not cleared yet — waiting on confirmation
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
@@ -219,9 +219,28 @@ describe('GamePhase - Reset Reminders confirmation', () => {
   it('does not clear reminders when the confirmation is cancelled', () => {
     render(<GamePhase {...defaultProps} />);
 
-    fireEvent.click(screen.getByText('Reset Reminders'));
+    fireEvent.click(screen.getByText('Reminders'));
     fireEvent.click(screen.getByText('Cancel'));
 
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
+  });
+
+  it('greys out and disables declare winner buttons when isSecondary is true', () => {
+    const onDeclareWinner = vi.fn();
+    render(
+      <GamePhase
+        {...defaultProps}
+        onDeclareWinner={onDeclareWinner}
+        isSecondary={true}
+      />
+    );
+
+    const goodWinsBtn = screen.getByRole('button', { name: /Good Wins/i });
+    const evilWinsBtn = screen.getByRole('button', { name: /Evil Wins/i });
+
+    expect(goodWinsBtn).toBeDisabled();
+    expect(evilWinsBtn).toBeDisabled();
+    expect(goodWinsBtn.className).toContain('opacity-50');
+    expect(evilWinsBtn.className).toContain('opacity-50');
   });
 });

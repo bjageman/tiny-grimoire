@@ -12,11 +12,15 @@ import PlayerTrackerSetupPhase from './components/tracker/SetupPhase';
 import PlayerTrackerNameEditModal from './components/tracker/NameEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
+import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
+import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
 import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';
+
+const STORAGE_KEY = 'player-tracker-botc-game';
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -24,55 +28,11 @@ interface SetupProps {
 }
 
 export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
-  const [players, setPlayers] = useState<Player[]>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.players || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
-  const [phase, setPhase] = useState<Phase>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.phase || 'setup';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'setup';
-  });
+  const [players, setPlayers] = usePersistedField<Player[]>(STORAGE_KEY, 'players', []);
+  const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.timeOfDay || 'night';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'night';
-  });
-  const [dayNumber, setDayNumber] = useState<number>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.dayNumber || 1;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 1;
-  });
+  const [timeOfDay, setTimeOfDay] = usePersistedField<'night' | 'day'>(STORAGE_KEY, 'timeOfDay', 'night');
+  const [dayNumber, setDayNumber] = usePersistedField<number>(STORAGE_KEY, 'dayNumber', 1);
 
   // Traveler states
   const [newTravelerName, setNewTravelerName] = useState('');
@@ -85,67 +45,46 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
   // Script states
-  const [scriptName, setScriptName] = useState<string>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.scriptName || "All Roles";
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return "All Roles";
-  });
-  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.customScriptRoles || null;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return null;
-  });
+  const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
+  const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
+  const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [gameCode, setGameCode] = useState<string | null>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.code) return parsed.code;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return sessionStorage.getItem('joined-code') || null;
-  });
+  const [gameCode, setGameCode] = useState<string | null>(() =>
+    readPersistedField<string | null>(STORAGE_KEY, 'code', null) || sessionStorage.getItem('joined-code') || null
+  );
 
   const isSynced = !!gameCode;
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
-  const [gameNotes, setGameNotes] = useState<string>(() => {
-    const saved = localStorage.getItem('player-tracker-botc-game');
-    if (saved) {
-      try { return JSON.parse(saved).gameNotes || ''; } catch { return ''; }
-    }
-    return '';
-  });
+  const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
 
   const handleIncomingMessage = (data: unknown) => {
     const payload = data as {
       type: string;
+      gameType?: 'standard' | 'whale-bucket';
       players?: Player[];
       timeOfDay?: 'night' | 'day';
       dayNumber?: number;
       scriptName?: string;
+      scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
+      playerId?: string;
     };
+    // Only an explicit reset returns a joined game-tracker player to the
+    // JoinPage lobby (waiting room for Standard, reset preferences picker for
+    // Whale Bucket). A plain setup_update is NOT a reset: the storyteller may
+    // just step back to setup to tweak something, and that should leave players
+    // on their character / tracker untouched.
+    const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
+    if (payload.type === 'game_reset') {
+      if (joinedFromLobby) {
+        window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+      }
+      return;
+    }
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.players) {
         setPlayers((currentPlayers) => {
@@ -183,6 +122,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
+      if (payload.scriptAuthor !== undefined) {
+        setScriptAuthor(payload.scriptAuthor);
+      }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
       }
@@ -193,17 +135,35 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
-      const saved = localStorage.getItem('player-tracker-botc-game');
+      const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           delete parsed.code;
-          localStorage.setItem('player-tracker-botc-game', JSON.stringify(parsed));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
         } catch (e) {
           console.error(e);
         }
       }
       setGameCode(null);
+    } else if (payload.type === 'booted') {
+      const myPlayerId = sessionStorage.getItem('botc-player-id');
+      if (payload.playerId === myPlayerId) {
+        showAlert('You have been booted from the game room. Reverting to local tracker.');
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            delete parsed.code;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        setGameCode(null);
+      }
     }
   };
 
@@ -215,21 +175,32 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const disconnectSync = () => {
-    showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', () => {
-      sessionStorage.removeItem('joined-code');
-      sessionStorage.removeItem('joined-name');
-      const saved = localStorage.getItem('player-tracker-botc-game');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          delete parsed.code;
-          localStorage.setItem('player-tracker-botc-game', JSON.stringify(parsed));
-        } catch (e) {
-          console.error(e);
-        }
+  const clearSyncSession = () => {
+    sessionStorage.removeItem('joined-code');
+    sessionStorage.removeItem('joined-name');
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        delete parsed.code;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        console.error(e);
       }
-      setGameCode(null);
+    }
+    setGameCode(null);
+  };
+
+  const disconnectSync = () => {
+    showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
+  };
+
+  // Back-button guard: a synced player about to leave to the main menu is
+  // asked to confirm first (cancel keeps them in the session).
+  const confirmDisconnectAndLeave = () => {
+    showConfirm("Disconnect from this synced session and return to the main menu?", () => {
+      clearSyncSession();
+      window.location.hash = '';
     }, 'Disconnect Sync');
   };
 
@@ -241,7 +212,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       setDayNumber(1);
       setScriptName("All Roles");
       setCustomScriptRoles(null);
-      localStorage.removeItem('player-tracker-botc-game');
+      localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setGameNotes('');
@@ -280,17 +251,18 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
       phase,
       timeOfDay,
       dayNumber,
       customScriptRoles,
       scriptName,
+      scriptAuthor,
       gameNotes,
       code: gameCode || undefined,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, gameNotes, gameCode]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -377,7 +349,6 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           ...p,
           roleId: roleIds[0] || undefined,
           roleIds: roleIds,
-          isEvil: undefined,
           isTheDrunk: false,
           isTheMarionette: false,
           isTheLunatic: false,
@@ -426,9 +397,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     parseScriptFile(file)
-      .then(({ name, roles }) => {
+      .then(({ name, author, roles }) => {
         setCustomScriptRoles(roles);
         setScriptName(name);
+        setScriptAuthor(author);
       })
       .catch(err => showAlert((err as Error).message));
   };
@@ -436,6 +408,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptName("All Roles");
+    setScriptAuthor("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -485,43 +458,42 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/" : undefined}
-      onBack={phase !== 'setup' ? () => setPhase('setup') : undefined}
+      backHref={phase === 'setup' && !isSynced ? "#/" : undefined}
+      onBack={
+        phase !== 'setup'
+          ? () => setPhase('setup')
+          : isSynced
+            // Synced tracker: confirm before leaving so a stray back press
+            // doesn't silently drop the player out of the game.
+            ? confirmDisconnectAndLeave
+            : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Game Notes
           </h1>
           {isSynced && (
-            <div
+            <HeaderCodeBadge
               onClick={disconnectSync}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Click to disconnect from the Storyteller's live game"
+              isLightModeActive={isLightModeActive}
             >
               Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-            </div>
+            </HeaderCodeBadge>
           )}
         </div>
       }
       headerExtra={
         isSynced ? (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={disconnectSync}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Click to disconnect from the Storyteller's live game"
+            isLightModeActive={isLightModeActive}
           >
             Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          </HeaderCodeBadge>
         ) : undefined
       }
       extraControls={
@@ -543,6 +515,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           players={players}
           customScriptRoles={customScriptRoles}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           addPlayer={addPlayer}
@@ -607,28 +580,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onResetTime={isSynced ? undefined : resetTime}
           showNightOrder={false}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
           isSynced={isSynced}
           enableReminders={false}
+          notes={gameNotes}
+          onNotesChange={setGameNotes}
         />
-      )}
-
-      {phase === 'game' && (
-        <div className="mt-2 space-y-1.5">
-          <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
-          <textarea
-            value={gameNotes}
-            onChange={(e) => setGameNotes(e.target.value)}
-            placeholder="Write anything here — deductions, suspicions, reminders..."
-            rows={5}
-            className={cn(
-              'w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none transition-colors leading-relaxed',
-              isLightModeActive
-                ? 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 focus:border-gray-400'
-                : 'bg-gray-900/60 border-gray-800 text-gray-200 placeholder-gray-600 focus:border-gray-600'
-            )}
-          />
-        </div>
       )}
 
       {/* Player Details Modal */}

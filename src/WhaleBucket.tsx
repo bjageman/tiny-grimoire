@@ -15,9 +15,12 @@ import WhaleBucketDraftEditModal from './components/whalebucket/DraftEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
+import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
 import RoomCodeModal from './components/shared/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
+import ResetGameModal from './components/shared/ResetGameModal';
 import { useDialog } from './hooks/useDialog';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
@@ -25,6 +28,8 @@ export type Player = Omit<BasePlayer, 'preferences'> & {
 };
 
 type Phase = 'setup' | 'draft' | 'game';
+
+const STORAGE_KEY = 'whale-bucket-game';
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -57,105 +62,29 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   });
 
   const [players, setPlayers] = useState<Player[]>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const p = parsed.players || [];
-        type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Partial<Player['preferences']> };
-        return p.map((player: SavedPlayer) => ({
-          ...player,
-          preferences: {
-            townsfolk: player.preferences?.townsfolk || [],
-            outsider: player.preferences?.outsider || [],
-            minion: player.preferences?.minion || [],
-            demon: player.preferences?.demon || [],
-            traveler: player.preferences?.traveler || []
-          }
-        }));
-      } catch (e) {
-        console.error(e);
+    type SavedPlayer = Omit<Player, 'preferences'> & { preferences?: Partial<Player['preferences']> };
+    return readPersistedField<SavedPlayer[]>(STORAGE_KEY, 'players', []).map(player => ({
+      ...player,
+      preferences: {
+        townsfolk: player.preferences?.townsfolk || [],
+        outsider: player.preferences?.outsider || [],
+        minion: player.preferences?.minion || [],
+        demon: player.preferences?.demon || [],
+        traveler: player.preferences?.traveler || []
       }
-    }
-    return [];
+    }));
   });
-  const [isLilMonstaGame, setIsLilMonstaGame] = useState<boolean>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.isLilMonstaGame || false;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return false;
-  });
-  const [phase, setPhase] = useState<Phase>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.phase || 'setup';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'setup';
-  });
+  const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
+  const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDraftPlayerId, setActiveDraftPlayerId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.timeOfDay || 'night';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'night';
-  });
-  const [dayNumber, setDayNumber] = useState<number>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.dayNumber || 1;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 1;
-  });
+  const [timeOfDay, setTimeOfDay] = usePersistedField<'night' | 'day'>(STORAGE_KEY, 'timeOfDay', 'night');
+  const [dayNumber, setDayNumber] = usePersistedField<number>(STORAGE_KEY, 'dayNumber', 1);
 
   // Traveler states
-  const [allowTravelers, setAllowTravelers] = useState<boolean>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.allowTravelers || false;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return false;
-  });
-  const [gameLog, setGameLog] = useState<string[]>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.gameLog || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [allowTravelers, setAllowTravelers] = usePersistedField<boolean>(STORAGE_KEY, 'allowTravelers', false);
+  const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
   // Refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
@@ -169,7 +98,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const label = useTod === 'night' ? `Night ${useDn}` : `Day ${useDn}`;
     const clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
-  }, []);
+  }, [setGameLog]);
 
   const handleStartGame = useCallback(() => {
     const roleMap = new Map((rolesData as Role[]).map(r => [r.id, r]));
@@ -185,8 +114,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     players.forEach(p => {
       const prefParts: string[] = [];
       (['townsfolk', 'outsider', 'minion', 'demon'] as const).forEach(team => {
-        const prefs = p.preferences[team];
-        if (prefs.length > 0) {
+        const prefs = p.preferences?.[team];
+        if (prefs && prefs.length > 0) {
           const names = prefs.map(id => roleMap.get(id)?.name ?? id).join(', ');
           prefParts.push(`${teamLabels[team]}: ${names}`);
         }
@@ -197,63 +126,22 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     });
 
     setPhase('game');
-  }, [players, addLogEntry]);
+  }, [players, addLogEntry, setPhase]);
 
-  const [demonBluffs, setDemonBluffs] = useState<string[]>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.demonBluffs || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
 
-  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        return JSON.parse(saved).reminderTokens || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
 
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        return JSON.parse(saved).checkedItems || {};
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return {};
-  });
+  const [checkedItems, setCheckedItems] = usePersistedField<Record<string, boolean>>(STORAGE_KEY, 'checkedItems', {});
 
   const [newTravelerName, setNewTravelerName] = useState('');
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Exclusion states
-  const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('whale-bucket-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.excludedRoleIds || ['drunk', 'marionette', 'lunatic'];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return ['drunk', 'marionette', 'lunatic'];
-  });
+  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', ['drunk', 'marionette', 'lunatic']);
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
@@ -275,18 +163,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [excludedRoleIds]);
 
   // Preference modal states
-  const [rotationOffset, setRotationOffset] = useState<number>(() => {
-    const saved = localStorage.getItem('whalebucket-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.rotationOffset || 0;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 0;
-  });
+  const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
   const [activePreferencePlayerId, setActivePreferencePlayerId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isSearchingRole, setIsSearchingRole] = useState(false);
@@ -343,6 +220,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
                 return {
                   ...p,
+                  id: payload.id,
                   preferences: payload.preferences || p.preferences,
                   pronouns: payload.pronouns,
                 };
@@ -379,6 +257,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
               return {
                 ...p,
+                id: payload.id,
                 preferences: payload.preferences || p.preferences,
                 pronouns: payload.pronouns,
               };
@@ -475,7 +354,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setPhase(incoming.phase || 'setup');
       setTimeOfDay(incoming.timeOfDay || 'night');
       setDayNumber(incoming.dayNumber || 1);
-      setAllowTravelers(incoming.allowTravelers !== undefined ? incoming.allowTravelers : true);
+      setAllowTravelers(incoming.allowTravelers ?? false);
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
       setExcludedRoleIds(incoming.excludedRoleIds || ['drunk', 'marionette', 'lunatic']);
       setDemonBluffs(incoming.demonBluffs || []);
@@ -483,7 +362,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
     }
-  }, [syncState]);
+  }, [
+    syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+  ]);
 
   useStorytellerSync({
     isSecondary,
@@ -494,7 +376,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('whale-bucket-game', JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
       phase,
       timeOfDay,
@@ -506,8 +388,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       demonBluffs,
       reminderTokens,
       checkedItems,
+      rotationOffset,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset]);
 
   const toggleTimeOfDay = () => {
     setCheckedItems({});
@@ -533,7 +416,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   });
 
   const addPlayer = () => {
-    if (players.length >= 20) return;
+    if (players.length >= 15) return;
     const name = newPlayerName.trim() || `Player #${players.length + 1}`;
     setPlayers([...players, createNewPlayer(name)]);
     setNewPlayerName('');
@@ -548,8 +431,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       showAlert("Please select a traveler role.");
       return;
     }
-    if (players.length >= 20) {
-      showAlert("Maximum players reached (20).");
+    if (players.length >= 15) {
+      showAlert("Maximum players reached (15).");
       return;
     }
     setPlayers([createNewPlayer(newTravelerName, newTravelerRoleId), ...players]);
@@ -603,7 +486,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const togglePreference = (playerId: string, team: Role['team'], roleId: string) => {
     setPlayers(prev => prev.map(p => {
       if (p.id !== playerId) return p;
-      const current = p.preferences[team] || [];
+      const current = p.preferences?.[team] || [];
       const newPrefs = current.includes(roleId) ? [] : [roleId];
       return {
         ...p,
@@ -619,12 +502,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const allRoles = rolesData as Role[];
     setPlayers(prev => prev.map(p => {
       if (playerId !== undefined && p.id !== playerId) return p;
+      const prefs = p.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
       const newPrefs = {
-        townsfolk: p.preferences.townsfolk.length > 0 ? [...p.preferences.townsfolk] : [],
-        outsider: p.preferences.outsider.length > 0 ? [...p.preferences.outsider] : [],
-        minion: p.preferences.minion.length > 0 ? [...p.preferences.minion] : [],
-        demon: p.preferences.demon.length > 0 ? [...p.preferences.demon] : [],
-        traveler: p.preferences.traveler?.length > 0 ? [...p.preferences.traveler] : []
+        townsfolk: prefs.townsfolk.length > 0 ? [...prefs.townsfolk] : [],
+        outsider: prefs.outsider.length > 0 ? [...prefs.outsider] : [],
+        minion: prefs.minion.length > 0 ? [...prefs.minion] : [],
+        demon: prefs.demon.length > 0 ? [...prefs.demon] : [],
+        traveler: prefs.traveler?.length > 0 ? [...prefs.traveler] : []
       };
       
       const teams: ('townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler')[] = ['townsfolk', 'outsider', 'minion', 'demon'];
@@ -725,7 +609,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     let newPlayers = players.map(p => {
       if (p.id === id) {
         const role = (rolesData as Role[]).find(r => r.id === roleId);
-        const isPref = role ? (p.preferences[role.team] || []).includes(roleId) : false;
+        const isPref = role ? (p.preferences?.[role.team] || []).includes(roleId) : false;
         return {
           ...p,
           roleId: roleId || undefined,
@@ -875,34 +759,86 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const resetGame = () => {
-    showConfirm('Are you sure you want to reset the game? This clears all players and settings.', async () => {
-      if (sendMessageRef.current) {
-        try {
-          await sendMessageRef.current({ type: 'storyteller_quit' });
-        } catch (e) {
-          console.error('Failed to notify players on reset:', e);
-        }
+  const performFullReset = async () => {
+    if (sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on reset:', e);
       }
-      setPlayers([]);
-      setPhase('setup');
-      setActiveDraftPlayerId(null);
-      setSearchTerm('');
-      setTimeOfDay('night');
-      setDayNumber(1);
-      setIsLilMonstaGame(false);
-      setReminderTokens([]);
-      setCheckedItems({});
-      setRemotePlayerIds(new Set());
-      localStorage.removeItem('whale-bucket-game');
-      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('whale-bucket-game-code', newCode);
-      const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('whale-bucket-sync-code', newSync);
-      setGameCode(newCode);
-      setSyncCode(newSync);
-      window.location.hash = '';
-    }, 'Reset Game');
+    }
+    setPlayers([]);
+    setPhase('setup');
+    setActiveDraftPlayerId(null);
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setRemotePlayerIds(new Set());
+    localStorage.removeItem(STORAGE_KEY);
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('whale-bucket-game-code', newCode);
+    const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('whale-bucket-sync-code', newSync);
+    setGameCode(newCode);
+    setSyncCode(newSync);
+    window.location.hash = '';
+  };
+
+  // Reset the round but keep the sync session (and every connected player)
+  // alive. Player preferences are retained; only role assignments and
+  // per-round state are cleared. Every synced player is told to return to the
+  // waiting room so they'll get a fresh character when the grimoire reopens.
+  const resetGameKeepConnected = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: undefined,
+      roleIds: undefined,
+      isDead: false,
+      hasDeadVote: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+      notes: undefined,
+      // Wipe preferences so everyone re-picks fresh for the next round.
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+    setPlayers(clearedPlayers);
+    setPhase('setup');
+    setActiveDraftPlayerId(null);
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+
+    // Broadcast immediately (no debounce): the explicit reset command first,
+    // then a setup_update carrying the cleared roster as a backup that pulls
+    // any player who missed the command back to the preferences picker.
+    if (sendMessageRef.current) {
+      sendMessageRef.current({ type: 'game_reset', gameType: 'whale-bucket' });
+      sendMessageRef.current({
+        type: 'setup_update',
+        gameType: 'whale-bucket',
+        players: clearedPlayers.map(({ notes, ...rest }) => rest),
+        excludedRoleIds,
+      });
+    }
+  };
+
+  const resetGame = () => {
+    if (remotePlayerIds.size > 0) {
+      setShowResetModal(true);
+    } else {
+      showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
+    }
   };
 
   const resetDead = () => {
@@ -924,6 +860,15 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
+
+  const confirmDisconnect = useCallback(() => {
+    showConfirm(
+      "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+      () => {
+        window.location.hash = '#/host';
+      }
+    );
+  }, [showConfirm]);
 
   // Details Modal variables
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
@@ -962,39 +907,47 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/host" : undefined}
-      onBack={phase !== 'setup' ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); } : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
+      onBack={
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
+            : remotePlayerIds.size > 0
+              // Synced with players: surface the reset/disconnect choice instead
+              // of silently returning to the Host menu.
+              ? () => setShowResetModal(true)
+              : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Whale Buffet
           </h1>
-          {phase !== 'game' ? (
-            <div
+          {isSecondary ? (
+            <HeaderCodeBadge
+              onClick={confirmDisconnect}
+              title="Click to disconnect secondary storyteller device"
+              isLightModeActive={isLightModeActive}
+            >
+              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+            </HeaderCodeBadge>
+          ) : phase !== 'game' ? (
+            <HeaderCodeBadge
               onClick={() => setShowRoomCodeModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Click to copy join link"
+              isLightModeActive={isLightModeActive}
             >
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-            </div>
+            </HeaderCodeBadge>
           ) : (
-            <div
+            <HeaderCodeBadge
               onClick={() => setShowSyncModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Sync other device as secondary controller"
+              isLightModeActive={isLightModeActive}
             >
               Sync Other Device
-            </div>
+            </HeaderCodeBadge>
           )}
         </div>
       }
@@ -1002,39 +955,45 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
       }
       headerExtra={
-        phase !== 'game' ? (
-          <div
+        isSecondary ? (
+          <HeaderCodeBadge
+            mobile
+            onClick={confirmDisconnect}
+            title="Click to disconnect secondary storyteller device"
+            isLightModeActive={isLightModeActive}
+          >
+            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+          </HeaderCodeBadge>
+        ) : phase !== 'game' ? (
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowRoomCodeModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Click to copy join link"
+            isLightModeActive={isLightModeActive}
           >
             Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          </HeaderCodeBadge>
         ) : (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowSyncModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Sync other device as secondary controller"
+            isLightModeActive={isLightModeActive}
           >
             Sync Other Device
-          </div>
+          </HeaderCodeBadge>
         )
       }
       contentClassName="px-4 pt-6 pb-4"
@@ -1043,6 +1002,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <WhaleBucketSetupPhase
           players={players}
+          isSecondary={isSecondary}
           newPlayerName={newPlayerName}
           setNewPlayerName={setNewPlayerName}
           allowTravelers={allowTravelers}
@@ -1060,8 +1020,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           addPlayer={addPlayer}
           autoFillAllPreferences={autoFillAllPreferences}
           clearAllPreferences={clearAllPreferences}
+          resetGame={resetGame}
           setActivePreferencePlayerId={setActivePreferencePlayerId}
           runAssignment={runAssignment}
+          onManuallyAssign={() => setPhase('draft')}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}
@@ -1085,6 +1047,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1135,10 +1099,18 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           }}
           onLogEvent={addLogEntry}
           onDeclareWinner={(team) => {
-            const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';
-            addLogEntry(`Game over ${label}`);
-            if (sendMessageRef.current) {
-              sendMessageRef.current({ type: 'game_winner', team });
+            const broadcast = () => {
+              const label = team === 'good' ? '🌟 Good wins!' : '😈 Evil wins!';
+              addLogEntry(`Game over ${label}`);
+              if (sendMessageRef.current) {
+                sendMessageRef.current({ type: 'game_winner', team });
+              }
+            };
+            if (remotePlayerIds.size > 0) {
+              const teamLabel = team === 'good' ? 'Good' : 'Evil';
+              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'}.`, broadcast);
+            } else {
+              broadcast();
             }
           }}
           reminderTokens={reminderTokens}
@@ -1164,6 +1136,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           togglePreference={togglePreference}
           autoFillPlayerPreferences={autoFillPlayerPreferences}
           onClose={() => setActivePreferencePlayerId(null)}
+          isSecondary={isSecondary}
         />
       )}
 
@@ -1230,6 +1203,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
         syncOnly={true}
+      />
+    )}
+    {showResetModal && (
+      <ResetGameModal
+        remotePlayerCount={remotePlayerIds.size}
+        isLightModeActive={isLightModeActive}
+        onCancel={() => setShowResetModal(false)}
+        onKeepPlayers={() => {
+          setShowResetModal(false);
+          resetGameKeepConnected();
+        }}
+        onDisconnect={() => {
+          setShowResetModal(false);
+          performFullReset();
+        }}
       />
     )}
     </>

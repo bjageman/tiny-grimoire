@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act, within } from '@testing-library/react';
 import { useEffect } from 'react';
 import StandardSetup from './StandardSetup';
+import WhaleBucket from './WhaleBucket';
 import PlayerTracker from './PlayerTracker';
 import JoinPage from './JoinPage';
 import type { PlacedReminder } from './types';
@@ -163,6 +164,366 @@ describe('Storyteller Reset Integration', () => {
 
     unmountStoryteller();
     unmountJoinPage();
+  });
+
+  // Renders a storyteller mid-game with one revealed remote player (Alice),
+  // returning handles plus Alice's current JoinPage screen state.
+  async function renderGameWithRevealedPlayer() {
+    localStorage.setItem('standard-botc-game-code', 'RKMP');
+    localStorage.setItem('standard-botc-sync-code', 'RSNC');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    }));
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code')!;
+
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    // Let the join round-trip complete: Alice announces herself, the
+    // storyteller registers her + broadcasts the game, Alice reveals.
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    return { storyteller, joinPage, gameCode };
+  }
+
+  it('opens the reset choice modal (not a plain confirm) when a player is connected', async () => {
+    const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
+
+    // Alice should be revealed as her character
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
+
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+
+    expect(storyteller.container.querySelector('#reset-game-modal')).not.toBeNull();
+    expect(within(storyteller.container).getByText('Keep Players')).toBeInTheDocument();
+    expect(within(storyteller.container).getByText('Disconnect')).toBeInTheDocument();
+    expect(within(storyteller.container).getByText('Cancel')).toBeInTheDocument();
+
+    // Cancel closes it and sends nothing
+    fireEvent.click(within(storyteller.container).getByText('Cancel'));
+    expect(storyteller.container.querySelector('#reset-game-modal')).toBeNull();
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_reset')).toBe(false);
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(false);
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('the setup-header Reset button opens the same reset choice modal', async () => {
+    // Storyteller in setup phase with one connected player.
+    localStorage.setItem('standard-botc-game-code', 'STUP');
+    localStorage.setItem('standard-botc-sync-code', 'STUS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    sessionStorage.setItem('joined-code', 'STUP');
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    // The header line reset button lives in the setup phase.
+    const setupResetBtn = storyteller.container.querySelector('#setup-reset-button');
+    expect(setupResetBtn).not.toBeNull();
+    fireEvent.click(setupResetBtn!);
+
+    expect(storyteller.container.querySelector('#reset-game-modal')).not.toBeNull();
+    expect(within(storyteller.container).getByText('Keep Players')).toBeInTheDocument();
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('a synced storyteller pressing back at setup gets the reset modal, not a silent exit', async () => {
+    localStorage.setItem('standard-botc-game-code', 'BGRD');
+    localStorage.setItem('standard-botc-sync-code', 'BGRS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: '' }],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    sessionStorage.setItem('joined-code', 'BGRD');
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    // With a connected player, the back control is an in-app button (no href).
+    const backBtn = storyteller.container.querySelector('#page-back-button')!;
+    expect(backBtn.tagName).toBe('BUTTON');
+    fireEvent.click(backBtn);
+
+    expect(storyteller.container.querySelector('#reset-game-modal')).not.toBeNull();
+
+    // Cancel keeps the storyteller in the game (still on #/standard).
+    fireEvent.click(within(storyteller.container).getByText('Cancel'));
+    expect(storyteller.container.querySelector('#reset-game-modal')).toBeNull();
+    expect(window.location.hash).toBe('#/standard');
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('a synced game-tracker player pressing back at setup gets the disconnect confirm, not a silent exit', async () => {
+    sessionStorage.setItem('joined-code', 'TBCK');
+    sessionStorage.setItem('joined-name', 'Zoe');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({ players: [], phase: 'setup', code: 'TBCK' }));
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+
+    const backBtn = tracker.container.querySelector('#page-back-button')!;
+    expect(backBtn.tagName).toBe('BUTTON');
+    fireEvent.click(backBtn);
+
+    // Disconnect Sync confirm shows; cancel keeps them on the tracker.
+    expect(within(tracker.container).getByText(/Disconnect from this synced session and return to the main menu/i)).toBeInTheDocument();
+    fireEvent.click(tracker.container.querySelector('#dialog-cancel-button')!);
+    expect(window.location.hash).toBe('#/tracker');
+
+    tracker.unmount();
+  });
+
+  it('Keep Players resets to setup and sends the revealed player back to the waiting room', async () => {
+    const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
+
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(within(storyteller.container).getByText('Keep Players'));
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Storyteller emitted the explicit reset command, kept the session alive
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'game_reset')).toBe(true);
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(false);
+
+    // Storyteller is back on the setup screen with the player retained
+    expect(within(storyteller.container).getByText(/Setup \(1 Players\)/i)).toBeInTheDocument();
+
+    // Alice is back in the waiting room, no longer showing a character
+    expect(joinPage.container.querySelector('#waiting-screen')).not.toBeNull();
+    expect(joinPage.queryAllByText('Washerwoman').length).toBe(0);
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('does NOT boot a revealed player off their character on a bare setup_update (storyteller stepped back to setup)', async () => {
+    // Drive the JoinPage directly. A revealed player who receives a plain
+    // setup_update — e.g. the storyteller tapped back to setup to tweak
+    // something — must stay on their character. Only game_reset moves them.
+    const gameCode = 'SHLF';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const deliver = (payload: Record<string, unknown>) => act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage(payload));
+    });
+
+    // Reveal Alice via a game_update carrying her role.
+    deliver({
+      type: 'game_update',
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      timeOfDay: 'night',
+      dayNumber: 1,
+      scriptName: 'All Roles',
+    });
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
+
+    // A bare setup_update arrives (storyteller back in setup, no reset).
+    deliver({
+      type: 'setup_update',
+      gameType: 'standard',
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      scriptName: 'All Roles',
+      scriptAuthor: '',
+      customScriptRoles: null,
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Still on her character, not sent to the waiting room.
+    expect(joinPage.container.querySelector('#waiting-screen')).toBeNull();
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
+
+    joinPage.unmount();
+  });
+
+  it('sends a player who opened the game tracker (from a join) back to the join waiting room on game_reset', async () => {
+    // A joined player who taps "Open Player Game Tracker" navigates to
+    // #/tracker (the PlayerTracker component), leaving JoinPage entirely. On a
+    // keep-connected reset it must return to the #/join waiting room.
+    const gameCode = 'TRKR';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Storyteller reset (kept players): the explicit reset command arrives.
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({ type: 'game_reset', gameType: 'standard' }));
+    });
+
+    expect(window.location.hash).toBe('#/join');
+
+    tracker.unmount();
+  });
+
+  it('does NOT navigate a joined game tracker away on a bare setup_update (storyteller stepped back to setup)', async () => {
+    const gameCode = 'TRK2';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({
+          type: 'setup_update',
+          gameType: 'standard',
+          players: [{ id: 'p1', name: 'Zoe', isDead: false, roleId: '' }],
+          scriptName: 'All Roles',
+        }));
+    });
+
+    // Stays in the tracker — a plain setup_update is not a reset.
+    expect(window.location.hash).toBe('#/tracker');
+
+    tracker.unmount();
+  });
+
+  it('Whale Bucket: game_reset sends a revealed player to the (empty) preferences picker', async () => {
+    const gameCode = 'WBRS';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const deliver = (payload: Record<string, unknown>) => act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage(payload));
+    });
+
+    // Reveal Zoe, then the storyteller does a keep-connected reset.
+    deliver({
+      type: 'game_update',
+      players: [{ id: 'p1', name: 'Zoe', isDead: false, roleId: 'washerwoman' }],
+      timeOfDay: 'night',
+      dayNumber: 1,
+      scriptName: 'All Roles',
+    });
+    expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
+
+    deliver({ type: 'game_reset', gameType: 'whale-bucket' });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+
+    // Back on the preferences picker, no longer showing a character.
+    expect(joinPage.getByText('Submit Your Preferences')).toBeInTheDocument();
+    expect(joinPage.queryAllByText('Washerwoman').length).toBe(0);
+
+    joinPage.unmount();
+  });
+
+  it('Whale Bucket: a joined game tracker routes to the preferences picker on reset', async () => {
+    const gameCode = 'WBTR';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({ type: 'game_reset', gameType: 'whale-bucket' }));
+    });
+
+    expect(window.location.hash).toBe('#/join?returnTo=preferences');
+
+    tracker.unmount();
+  });
+
+  it('JoinPage mounted with ?returnTo=preferences lands directly on the picker', async () => {
+    sessionStorage.setItem('joined-code', 'WBLD');
+    sessionStorage.setItem('joined-name', 'Zoe');
+    window.location.hash = '#/join?returnTo=preferences';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    expect(joinPage.getByText('Submit Your Preferences')).toBeInTheDocument();
+    // The one-shot param is stripped so a refresh won't re-force the picker.
+    expect(window.location.hash).toBe('#/join');
+
+    joinPage.unmount();
+  });
+
+  it('Disconnect from the reset modal fully ends the session', async () => {
+    const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
+
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(within(storyteller.container).getByText('Disconnect'));
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(true);
+    expect(window.location.hash).toBe('');
+    expect(joinPage.getByText('The Storyteller has quit the session.')).toBeInTheDocument();
+
+    storyteller.unmount();
+    joinPage.unmount();
   });
 });
 
@@ -489,6 +850,114 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(alice).toBeDefined();
     expect(alice!.roleId).toBe('empath');
     expect(alice!.isEvil).toBe(true);
+
+    storyteller.unmount();
+  });
+
+  it('warns before declaring a winner when a player is synced in (regression check)', async () => {
+    const PLAYERS = [
+      { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+    ];
+
+    seedPrimary({
+      players: PLAYERS,
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    });
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code');
+
+    // Alice joins remotely, matching the existing seeded player by name
+    sessionStorage.setItem('joined-code', gameCode!);
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    fireEvent.click(within(storyteller.container).getByText('🌟 Good Wins'));
+
+    expect(within(storyteller.container).getByText(/Declare Good the winner\?/i)).toBeInTheDocument();
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('warns before declaring a winner in Whale Bucket mode too (parity with Standard)', async () => {
+    const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman', preferences }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    }));
+
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('whale-bucket-game-code');
+
+    sessionStorage.setItem('joined-code', gameCode!);
+    sessionStorage.setItem('joined-name', 'Alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    fireEvent.click(within(storyteller.container).getByText('🌟 Good Wins'));
+
+    expect(within(storyteller.container).getByText(/Declare Good the winner\?/i)).toBeInTheDocument();
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('Whale Bucket: manual-assign-characters-button transitions to draft and retains assigned characters', async () => {
+    // 1. Render with 0 players to verify disabled state
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/whale-bucket';
+    let storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+    let manualBtn = storyteller.container.querySelector('#manual-assign-characters-button');
+    expect(manualBtn).not.toBeNull();
+    expect(manualBtn).toBeDisabled();
+    storyteller.unmount();
+
+    // 2. Render with players, one having an assigned character
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [
+        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+        { id: 'p2', name: 'Bob', isDead: false },
+      ],
+      phase: 'setup',
+    }));
+    storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    manualBtn = storyteller.container.querySelector('#manual-assign-characters-button');
+    expect(manualBtn).not.toBeNull();
+    expect(manualBtn).not.toBeDisabled();
+
+    // Click "Manually Assign"
+    fireEvent.click(manualBtn!);
+
+    // Should transition to draft (Character Assignment) phase
+    expect(storyteller.getByText(/2. Character Assignment/i)).toBeInTheDocument();
+
+    // Bob still has no character, so "Open Grimoire" is disabled
+    const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
+    expect(openGrimBtn).toBeDisabled();
 
     storyteller.unmount();
   });

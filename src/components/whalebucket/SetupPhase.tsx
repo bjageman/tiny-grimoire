@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Edit } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
+import BaseDistributionCard from '../shared/BaseDistributionCard';
 import rolesData from '../../official_roles.json';
 
 
@@ -28,12 +29,15 @@ interface WhaleBucketSetupPhaseProps {
   addPlayer: () => void;
   autoFillAllPreferences: () => void;
   clearAllPreferences: () => void;
+  resetGame: () => void;
   setActivePreferencePlayerId: (id: string | null) => void;
   runAssignment: () => void;
+  onManuallyAssign: () => void;
   isLightModeActive: boolean;
   excludedRoleIds: string[];
   setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
   remotePlayerIds?: Set<string>;
+  isSecondary?: boolean;
 }
 
 export default function WhaleBucketSetupPhase({
@@ -55,12 +59,15 @@ export default function WhaleBucketSetupPhase({
   addPlayer,
   autoFillAllPreferences,
   clearAllPreferences,
+  resetGame,
   setActivePreferencePlayerId,
   runAssignment,
+  onManuallyAssign,
   isLightModeActive,
   excludedRoleIds,
   setExcludedRoleIds,
   remotePlayerIds,
+  isSecondary,
 }: WhaleBucketSetupPhaseProps) {
   const [excludeSearchTerm, setExcludeSearchTerm] = useState('');
   const [isExcludeFocused, setIsExcludeFocused] = useState(false);
@@ -91,42 +98,61 @@ export default function WhaleBucketSetupPhase({
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Character Preferences ({players.length})</h2>
-            {players.length > 0 && (
-              <div className="flex gap-2">
-                <button 
-                  onClick={autoFillAllPreferences} 
-                  className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
-                >
-                  Auto-Fill All
-                </button>
-                <button 
-                  onClick={clearAllPreferences} 
-                  className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
-                >
-                  Clear All
-                </button>
-              </div>
-            )}
+            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup ({players.length} Players)</h2>
+            <div className="flex gap-2">
+              {players.length > 0 && (
+                <>
+                  <button
+                    onClick={autoFillAllPreferences}
+                    className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
+                  >
+                    Auto-Fill All
+                  </button>
+                  <button
+                    onClick={clearAllPreferences}
+                    className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                  >
+                    Clear All
+                  </button>
+                </>
+              )}
+              <button
+                id="setup-reset-button"
+                onClick={resetGame}
+                disabled={isSecondary}
+                className={cn(
+                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  isSecondary && "opacity-40 cursor-not-allowed"
+                )}
+                title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-2 mb-4">
             <input
+              id="new-player-input"
               type="text"
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-              disabled={players.length >= 20}
-              placeholder={players.length >= 20 ? "Maximum players reached (20)" : "Enter player name in seating order..."}
+              disabled={players.length >= 15}
+              placeholder={
+                players.length >= 15 
+                  ? "Maximum players reached (15)" 
+                  : "Enter player name in seating order..."
+              }
               autoCapitalize="words"
               className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <button 
-              onClick={addPlayer} 
-              disabled={players.length >= 20}
+            <button
+              onClick={addPlayer}
+              disabled={players.length >= 15}
               className={cn(
                 "px-4 py-2 rounded transition-colors text-white",
-                players.length >= 20 
+                players.length >= 15
                   ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
                   : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
               )}
@@ -254,56 +280,45 @@ export default function WhaleBucketSetupPhase({
           )}
         </div>
 
-        <section id="standard-base-distribution" className="bg-gray-900 p-4 rounded-lg border border-gray-855">
-          <h3 className="text-xs font-bold text-gray-555 uppercase tracking-wider mb-2.5 text-left">Standard Base Distribution</h3>
-          {players.length >= 5 ? (() => {
-            const travelerPlayersCount = players.filter(p => {
-              if (allowTravelers && p.preferences.traveler && p.preferences.traveler.length > 0) {
-                return true;
-              }
-              return false;
-            }).length;
-            const minTravelers = players.length > 15 ? players.length - 15 : 0;
-            const actualTravelers = Math.max(travelerPlayersCount, minTravelers);
-            const baseCount = players.length - actualTravelers;
-            const dist = getDistribution(baseCount);
-            return (
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-townsfolk">
-                    TS: {dist.townsfolk}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-outsider">
-                    O: {dist.outsider}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-minion">
-                    M: {dist.minion}
-                  </div>
-                  <div className="p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-demon">
-                    D: {dist.demon}
-                  </div>
-                </div>
-                {(dist.traveler > 0 || actualTravelers > 0) && (
-                  <div className="text-center text-xs font-semibold p-2 rounded bg-gray-955/40 border border-gray-800 text-clocktower-traveler">
-                    Travelers: {actualTravelers > 0 ? actualTravelers : dist.traveler}
-                  </div>
-                )}
-              </div>
-            );
-          })() : (
-            <p className="text-xs text-gray-500 italic text-left">Add at least 5 players to view distribution.</p>
-          )}
-        </section>
+        {(() => {
+          const travelerPlayersCount = players.filter(p => {
+            if (allowTravelers && p.preferences?.traveler && p.preferences.traveler.length > 0) {
+              return true;
+            }
+            return false;
+          }).length;
+          const minTravelers = players.length > 15 ? players.length - 15 : 0;
+          const actualTravelers = Math.max(travelerPlayersCount, minTravelers);
+          const baseCount = players.length - actualTravelers;
+          const dist = getDistribution(baseCount);
+          return (
+            <BaseDistributionCard
+              playerCount={players.length}
+              dist={dist}
+              isLightModeActive={isLightModeActive}
+            />
+          );
+        })()}
 
 
-        <button
-          id="random-assign-characters-button"
-          disabled={players.length < 5}
-          onClick={runAssignment}
-          className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
-        >
-          <Sparkles size={16} /> Randomly Assign Characters
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            id="random-assign-characters-button"
+            disabled={players.length < 5}
+            onClick={runAssignment}
+            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+          >
+            <Sparkles size={16} /> Randomly Assign Characters
+          </button>
+          <button
+            id="manual-assign-characters-button"
+            disabled={players.length === 0}
+            onClick={onManuallyAssign}
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+          >
+            <Edit size={16} /> Manually Assign
+          </button>
+        </div>
       </div>
     </div>
   );

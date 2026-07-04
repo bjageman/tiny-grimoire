@@ -4,8 +4,10 @@ import { ChevronRight, RotateCcw, RotateCw } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
+import DayNightLabel from './DayNightLabel';
 
 interface GrimoireBoardProps {
   players: Player[];
@@ -296,22 +298,21 @@ export default function GrimoireBoard({
   return (
     <>
     <div className="w-full flex flex-col items-center">
-      {/* Controls + info rows share a 3-column grid so badges align under buttons */}
-      <div className="w-full px-4 mb-2 max-w-[450px] md:max-w-none grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 gap-y-1.5">
-        {/* Row 1: buttons */}
+      {/* Row 1: buttons, in their own fixed-proportion grid so their width never depends on badge content */}
+      <div className="w-full px-4 mb-1.5 max-w-[450px] md:max-w-none grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3">
         {onResetTime ? (
           <button
             id="grimoire-reset-time-button"
             onClick={onResetTime}
             className={cn(
-              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
+              "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
             )}
             title="Reset back to Night 1"
           >
-            Reset Time
+            <RotateCcw className="w-3 h-3" /> Time
           </button>
         ) : <div />}
 
@@ -321,13 +322,13 @@ export default function GrimoireBoard({
               id="grimoire-reset-reminders-button"
               onClick={onRemoveAllReminders}
               className={cn(
-                "px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none",
+                "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
                 isLightModeActive
                   ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                   : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
               )}
             >
-              Reset Reminders
+              <RotateCcw className="w-3 h-3 shrink-0" /> <span className="text-[9px] md:text-[11px]">Reminders</span>
             </button>
           )}
         </div>
@@ -337,43 +338,43 @@ export default function GrimoireBoard({
             id="grimoire-reset-dead-button"
             onClick={onResetDead}
             className={cn(
-              "w-full px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
+              "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
               isLightModeActive
                 ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                 : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
             )}
             title="Mark everyone as alive"
           >
-            Reset Dead
+            <RotateCcw className="w-3 h-3" /> Dead
           </button>
         ) : <div />}
+      </div>
 
-        {/* Row 2: info badges — mobile only */}
+      {/* Row 2: info badges — mobile only. Independent flex row so label width is sized to its
+          own content, not tied to the button row's fixed column widths. */}
+      <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
         <div
           id="grimoire-info-row"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group md:hidden w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border",
+            "group flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border whitespace-nowrap",
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
-          <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+          <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
           {!isSynced && toggleTimeOfDay && (
             <ChevronRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
           )}
         </div>
 
-        <div className="md:hidden" /> {/* keep center column empty */}
-
         <div
           id="grimoire-alive-badge-mobile"
           onClick={onResetDead}
           className={cn(
-            "md:hidden w-full flex items-center justify-center px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity",
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
@@ -401,15 +402,14 @@ export default function GrimoireBoard({
           id="grimoire-time-badge"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center",
+            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          <span>{timeOfDay === 'day' ? '☀️' : '🌙'}</span>
-          <span>{timeOfDay === 'day' ? 'Day' : 'Night'} {dayNumber}</span>
+          <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
           {!isSynced && toggleTimeOfDay && (
             <ChevronRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
           )}
@@ -650,9 +650,13 @@ export default function GrimoireBoard({
                               ? ['marionette']
                               : p.isTheLunatic
                                 ? ['lunatic']
-                                : [null]);
+                                : p.isTheLilMonsta
+                                  ? ['lilmonsta']
+                                  : [null]);
                     return displayRoles.map((roleId, idx) => {
-                      const roleObj = roleId ? rolesData.find((r) => r.id === roleId) : null;
+                      const roleObj = roleId 
+                        ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
+                        : null;
                       const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
                       const isEvil = p.isEvil !== undefined
                         ? p.isEvil
@@ -752,7 +756,7 @@ export default function GrimoireBoard({
                           {/* Centered character icon */}
                           {roleObj && (
                             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none select-none">
-                              <div className="w-[50%] h-[50%] flex items-center justify-center">
+                              <div className="w-[65%] h-[65%] flex items-center justify-center">
                                 <img
                                   src={`/icons/${roleObj.id}.svg`}
                                   alt={roleObj.name}

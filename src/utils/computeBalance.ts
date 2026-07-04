@@ -21,6 +21,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const hasFangGu      = has('fanggu');
   const hasBalloonist  = has('balloonist');
   const hasHuntsman    = has('huntsman');
+  const hasAlchemist   = has('alchemist');
   const hasHermit      = has('hermit');
   const hasGodfather   = has('godfather');
   const hasLilMonsta   = has('lilmonsta');
@@ -30,7 +31,6 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const hasKazali      = has('kazali');
   const hasXaan        = has('xaan');
   const hasLunatic     = has('lunatic');
-  const hasMarionette  = has('marionette');
 
   let expectedDemon  = base.demon;
   let expectedMinion = base.minion;
@@ -68,7 +68,6 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasHuntsman)     modifications.push("Huntsman (0 or +1 Outsider)");
     if (hasHermit)       modifications.push("Hermit (0 or -1 Outsider)");
     if (hasGodfather)    modifications.push("Godfather (+1 or -1 Outsider)");
-    if (hasMarionette)   modifications.push("Marionette (+1 Townsfolk)");
     if (hasDrunk)        modifications.push("Drunk (+1 Townsfolk)");
   }
 
@@ -77,8 +76,10 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   expectedDemon = Math.max(0, expectedDemon);
 
-  // Drunk and Marionette each need 1 extra character in the selection (for the role they impersonate).
-  const tfDelta = !hasLegion && !hasRiot ? ((hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0)) : 0;
+  // Drunk needs 1 extra Townsfolk selected (for the role it impersonates). Marionette instead
+  // occupies one of the real Townsfolk/Outsider slots directly during assignment, so it needs
+  // no extra selection here — see standardAssignment.ts.
+  const tfDelta = !hasLegion && !hasRiot && hasDrunk ? 1 : 0;
 
   const gfMods   = (hasGodfather  && !hasLegion && !hasRiot) ? [-1, 1] : [0];
   const balMods  = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1]  : [0];
@@ -118,6 +119,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const jinxWarnings: string[] = [];
   if (has('choirboy') && !has('king'))     jinxWarnings.push("Choirboy in play, but no King selected.");
   if (hasHuntsman && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
+  if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
 

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Sun, Moon, ArrowLeft, GitBranch, Coffee } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -39,6 +39,61 @@ export default function PageLayout({
       document.documentElement.classList.remove('theme-light');
     };
   }, [isLight]);
+
+  // Makes the Android/browser back button behave the same as the on-screen
+  // back button whenever it triggers an in-app action (onBack) rather than
+  // a real navigation (backHref). We keep a buffer history entry pushed
+  // (same URL, marker state) so the back gesture pops it instead of leaving
+  // the page, and run onBack instead.
+  const onBackRef = useRef(onBack);
+  useEffect(() => {
+    onBackRef.current = onBack;
+  });
+  const hasInAppBack = !!onBack;
+  const hasInAppBackRef = useRef(hasInAppBack);
+  useEffect(() => {
+    hasInAppBackRef.current = hasInAppBack;
+  });
+
+  // Runs after every commit (no dependency array) so it re-arms the buffer
+  // once it's consumed by a back-press — needed for chained in-app phases
+  // (e.g. WhaleBucket's game -> draft -> setup) where onBack stays truthy
+  // across the pop. The history.state check keeps this a no-op otherwise.
+  useEffect(() => {
+    if (!hasInAppBack) return;
+    const currentState = window.history.state as { pageLayoutBackBuffer?: boolean } | null;
+    if (!currentState?.pageLayoutBackBuffer) {
+      window.history.pushState({ pageLayoutBackBuffer: true }, '', window.location.href);
+    }
+  });
+
+  useEffect(() => {
+    // A genuine back-through-our-buffer pop never changes the URL (we push
+    // the buffer with the current href), so it never fires 'hashchange'.
+    // Some environments (older WebViews, jsdom) incorrectly fire 'popstate'
+    // for plain hash assignments too — those are always paired with a
+    // 'hashchange' in the same tick, so deferring one microtask lets us
+    // tell the two apart and ignore the latter.
+    let hashChangedSincePop = false;
+    const handleHashChange = () => {
+      hashChangedSincePop = true;
+    };
+    const handlePopState = () => {
+      if (!hasInAppBackRef.current) return;
+      hashChangedSincePop = false;
+      queueMicrotask(() => {
+        if (!hashChangedSincePop && hasInAppBackRef.current) {
+          onBackRef.current?.();
+        }
+      });
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const backButtonClass = cn(
     "absolute left-4 p-1.5 rounded-full transition-all flex items-center justify-center",

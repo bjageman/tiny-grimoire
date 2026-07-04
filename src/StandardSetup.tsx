@@ -15,12 +15,17 @@ import SetupPlayerEditModal from './components/standard/SetupPlayerEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
+import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
 import { useDialog } from './hooks/useDialog';
 import RoomCodeModal from './components/shared/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
+import ResetGameModal from './components/shared/ResetGameModal';
 
 type Phase = 'setup' | 'game';
+
+const STORAGE_KEY = 'standard-botc-game';
 
 const generateId = (): string =>
   typeof crypto.randomUUID === 'function'
@@ -59,95 +64,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
 
-  const [reminderTokens, setReminderTokens] = useState<PlacedReminder[]>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        return JSON.parse(saved).reminderTokens || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
 
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        return JSON.parse(saved).checkedItems || {};
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return {};
-  });
+  const [checkedItems, setCheckedItems] = usePersistedField<Record<string, boolean>>(STORAGE_KEY, 'checkedItems', {});
 
-  const [players, setPlayers] = useState<Player[]>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.players || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
-  const [isLilMonstaGame, setIsLilMonstaGame] = useState<boolean>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.isLilMonstaGame || false;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return false;
-  });
-  const [phase, setPhase] = useState<Phase>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.phase || 'setup';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'setup';
-  });
+  const [players, setPlayers] = usePersistedField<Player[]>(STORAGE_KEY, 'players', []);
+  const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
+  const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [newPlayerName, setNewPlayerName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
-  const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.timeOfDay || 'night';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 'night';
-  });
-  const [dayNumber, setDayNumber] = useState<number>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.dayNumber || 1;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 1;
-  });
+  const [timeOfDay, setTimeOfDay] = usePersistedField<'night' | 'day'>(STORAGE_KEY, 'timeOfDay', 'night');
+  const [dayNumber, setDayNumber] = usePersistedField<number>(STORAGE_KEY, 'dayNumber', 1);
 
   // Traveler states
   const [newTravelerName, setNewTravelerName] = useState('');
@@ -159,73 +90,19 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
   // Script states
-  const [scriptName, setScriptName] = useState<string>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.scriptName || "All Roles";
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return "All Roles";
-  });
-  const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.customScriptRoles || null;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return null;
-  });
+  const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
+  const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
+  const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    let loadedRoles: Role[] | null = null;
-    let loadedSelectedIds: string[] | null = null;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        loadedRoles = parsed.customScriptRoles || null;
-        loadedSelectedIds = parsed.selectedCharacterIds || null;
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    const loadedSelectedIds = readPersistedField<string[] | null>(STORAGE_KEY, 'selectedCharacterIds', null);
     if (loadedSelectedIds) {
       return new Set(loadedSelectedIds);
     }
-    const scriptRoles = loadedRoles || (rolesData as Role[]);
+    const scriptRoles = readPersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null) || (rolesData as Role[]);
     return new Set(scriptRoles.map(r => r.id));
   });
-  const [demonBluffs, setDemonBluffs] = useState<string[]>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.demonBluffs || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
-  const [gameLog, setGameLog] = useState<string[]>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.gameLog || [];
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
+  const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
   // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
@@ -239,20 +116,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const label = useTod === 'night' ? `Night ${useDn}` : `Day ${useDn}`;
     const clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setGameLog(prev => [...prev, `[${label} · ${clock}] ${message}`]);
-  }, []);
+  }, [setGameLog]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [rotationOffset, setRotationOffset] = useState<number>(() => {
-    const saved = localStorage.getItem('standard-botc-game');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.rotationOffset || 0;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return 0;
-  });
+  const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
 
@@ -267,11 +133,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           gameType: 'standard',
           players: listToBroadcast.map(({ notes, ...rest }) => rest),
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
     }, 1000);
-  }, [scriptName, customScriptRoles]);
+  }, [scriptName, scriptAuthor, customScriptRoles]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -279,36 +146,90 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setModalRoleSearch('');
   };
 
-  const resetGame = () => {
-    showConfirm('Are you sure you want to reset the game? This clears all players and settings.', async () => {
-      if (sendMessageRef.current) {
-        try {
-          await sendMessageRef.current({ type: 'storyteller_quit' });
-        } catch (e) {
-          console.error('Failed to notify players on reset:', e);
-        }
+  const performFullReset = async () => {
+    if (sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on reset:', e);
       }
-      setPlayers([]);
-      setPhase('setup');
-      setSearchTerm('');
-      setTimeOfDay('night');
-      setDayNumber(1);
-      setIsLilMonstaGame(false);
-      setScriptName("All Roles");
-      setCustomScriptRoles(null);
-      setDemonBluffs([]);
-      setGameLog([]);
-      setReminderTokens([]);
-      setCheckedItems({});
-      localStorage.removeItem('standard-botc-game');
-      const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('standard-botc-game-code', newCode);
-      const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
-      localStorage.setItem('standard-botc-sync-code', newSync);
-      window.location.hash = '';
-      setGameCode(newCode);
-      setSyncCode(newSync);
-    }, 'Reset Game');
+    }
+    setPlayers([]);
+    setPhase('setup');
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setScriptName("All Roles");
+    setCustomScriptRoles(null);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setRemotePlayerIds(new Set());
+    localStorage.removeItem(STORAGE_KEY);
+    const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-game-code', newCode);
+    const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
+    localStorage.setItem('standard-botc-sync-code', newSync);
+    window.location.hash = '';
+    setGameCode(newCode);
+    setSyncCode(newSync);
+  };
+
+  // Reset the round but keep the sync session (and every connected player)
+  // alive. Clears role assignments and per-round state, drops back to setup,
+  // and — most importantly — tells every synced player to return to the
+  // waiting room so they'll get a fresh character when the grimoire reopens.
+  const resetGameKeepConnected = () => {
+    const clearedPlayers = players.map(p => ({
+      ...p,
+      roleId: '',
+      roleIds: undefined,
+      isDead: false,
+      hasDeadVote: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+      notes: undefined,
+    }));
+    setPlayers(clearedPlayers);
+    setPhase('setup');
+    setSearchTerm('');
+    setTimeOfDay('night');
+    setDayNumber(1);
+    setIsLilMonstaGame(false);
+    setDemonBluffs([]);
+    setGameLog([]);
+    setReminderTokens([]);
+    setCheckedItems({});
+    setGrimoireConfirmed(false);
+
+    // Broadcast immediately (no debounce): first the explicit reset command,
+    // then a setup_update carrying the cleared roster + script. The reset
+    // command is the primary signal; the setup_update doubles as a backup that
+    // pulls any player who missed it back to the waiting room.
+    if (sendMessageRef.current) {
+      sendMessageRef.current({ type: 'game_reset', gameType: 'standard' });
+      sendMessageRef.current({
+        type: 'setup_update',
+        gameType: 'standard',
+        players: clearedPlayers.map(({ notes, ...rest }) => rest),
+        scriptName,
+        scriptAuthor,
+        customScriptRoles,
+      });
+    }
+  };
+
+  const resetGame = () => {
+    if (remotePlayerIds.size > 0) {
+      setShowResetModal(true);
+    } else {
+      showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
+    }
   };
 
   const resetDead = () => {
@@ -362,6 +283,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           playerId: payload.id,
           playerName: payload.name,
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
@@ -373,7 +295,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           if (exists) {
             return prev.map(p =>
               (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, pronouns: payload.pronouns }
+                ? { ...p, id: payload.id, pronouns: payload.pronouns }
                 : p
             );
           }
@@ -394,7 +316,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         const updatedPlayers = isExistingPlayer
           ? players.map(p =>
               (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, pronouns: payload.pronouns }
+                ? { ...p, id: payload.id, pronouns: payload.pronouns }
                 : p
             )
           : (payload.checkOnly ? players : [
@@ -417,6 +339,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           timeOfDay,
           dayNumber,
           scriptName,
+          scriptAuthor,
           customScriptRoles
         });
       }
@@ -438,10 +361,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         timeOfDay,
         dayNumber,
         scriptName,
+        scriptAuthor,
         customScriptRoles
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, customScriptRoles, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
@@ -463,13 +387,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     dayNumber,
     customScriptRoleIds: customScriptRoles ? customScriptRoles.map(r => r.id) : null,
     scriptName,
+    scriptAuthor,
     isLilMonstaGame,
     demonBluffs,
     reminderTokens,
     checkedItems,
     rotationOffset,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -495,13 +420,17 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setDayNumber(incoming.dayNumber || 1);
       setCustomScriptRoles(customScriptRolesResolved);
       setScriptName(incoming.scriptName || "All Roles");
+      setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
     }
-  }, [syncState]);
+  }, [
+    syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles,
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+  ]);
 
   useStorytellerSync({
     isSecondary,
@@ -520,21 +449,23 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('standard-botc-game', JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
       phase,
       timeOfDay,
       dayNumber,
       customScriptRoles,
       scriptName,
+      scriptAuthor,
       isLilMonstaGame,
       demonBluffs,
       gameLog,
       reminderTokens,
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
+      rotationOffset,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
 
   const toggleTimeOfDay = () => {
     setCheckedItems({});
@@ -829,9 +760,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     parseScriptFile(file)
-      .then(({ name, roles }) => {
+      .then(({ name, author, roles }) => {
         setCustomScriptRoles(roles);
         setScriptName(name);
+        setScriptAuthor(author);
       })
       .catch(err => showAlert((err as Error).message));
   };
@@ -839,6 +771,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptName("All Roles");
+    setScriptAuthor("");
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -883,6 +816,24 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
 
+  // Un-assign every player's character (and any special-role state), keeping
+  // the players themselves — the Standard analog of Whale Bucket's "Clear All".
+  const clearAllRoles = () => {
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      roleId: '',
+      roleIds: undefined,
+      isDead: false,
+      hasDeadVote: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+    })));
+    setIsLilMonstaGame(false);
+  };
+
 
 
   const validationSummary = useMemo(() => {
@@ -892,6 +843,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
+
+  const confirmDisconnect = useCallback(() => {
+    showConfirm(
+      "Disconnect secondary device? This will stop syncing with the primary grimoire.",
+      () => {
+        window.location.hash = '#/host';
+      }
+    );
+  }, [showConfirm]);
 
   // Modal logic details
   const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
@@ -930,39 +890,47 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' ? "#/host" : undefined}
-      onBack={phase !== 'setup' ? () => setPhase('setup') : undefined}
+      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
+      onBack={
+        isSecondary
+          ? confirmDisconnect
+          : phase !== 'setup'
+            ? () => setPhase('setup')
+            : remotePlayerIds.size > 0
+              // Synced with players: don't silently abandon them by returning to
+              // the Host menu — surface the reset/disconnect choice first.
+              ? () => setShowResetModal(true)
+              : undefined
+      }
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
             Standard
           </h1>
-          {phase === 'setup' ? (
-            <div
+          {isSecondary ? (
+            <HeaderCodeBadge
+              onClick={confirmDisconnect}
+              title="Click to disconnect secondary storyteller device"
+              isLightModeActive={isLightModeActive}
+            >
+              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+            </HeaderCodeBadge>
+          ) : phase === 'setup' ? (
+            <HeaderCodeBadge
               onClick={() => setShowRoomCodeModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Click to share room"
+              isLightModeActive={isLightModeActive}
             >
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-            </div>
+            </HeaderCodeBadge>
           ) : (
-            <div
+            <HeaderCodeBadge
               onClick={() => setShowSyncModal(true)}
-              className={cn(
-                "hidden md:flex cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none items-baseline gap-1",
-                isLightModeActive
-                  ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-              )}
               title="Sync other device as secondary controller"
+              isLightModeActive={isLightModeActive}
             >
               Sync Other Device
-            </div>
+            </HeaderCodeBadge>
           )}
         </div>
       }
@@ -970,39 +938,45 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <button
           id="reset-game-button"
           onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
+          disabled={isSecondary}
+          className={cn(
+            "p-2 transition-colors",
+            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
+            isSecondary && "opacity-40 cursor-not-allowed"
+          )}
+          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
         >
           <Undo2 size={20} />
         </button>
       }
       headerExtra={
-        phase === 'setup' ? (
-          <div
+        isSecondary ? (
+          <HeaderCodeBadge
+            mobile
+            onClick={confirmDisconnect}
+            title="Click to disconnect secondary storyteller device"
+            isLightModeActive={isLightModeActive}
+          >
+            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+          </HeaderCodeBadge>
+        ) : phase === 'setup' ? (
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowRoomCodeModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Click to share room"
+            isLightModeActive={isLightModeActive}
           >
             Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
-          </div>
+          </HeaderCodeBadge>
         ) : (
-          <div
+          <HeaderCodeBadge
+            mobile
             onClick={() => setShowSyncModal(true)}
-            className={cn(
-              "md:hidden cursor-pointer text-xs font-bold px-2 py-0.5 rounded border transition-all duration-200 select-none flex items-baseline gap-1",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850"
-            )}
             title="Sync other device as secondary controller"
+            isLightModeActive={isLightModeActive}
           >
             Sync Other Device
-          </div>
+          </HeaderCodeBadge>
         )
       }
       contentClassName="px-4 pt-6 pb-4"
@@ -1011,6 +985,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          isSecondary={isSecondary}
           setPhase={(p) => {
             if (p === 'game') {
               const roleLines = players
@@ -1032,6 +1007,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           }}
           customScriptRoles={customScriptRoles}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           selectedCharacterIds={selectedCharacterIds}
           setSelectedCharacterIds={setSelectedCharacterIds}
           newPlayerName={newPlayerName}
@@ -1042,6 +1018,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           clearCustomScript={clearCustomScript}
           randomlyAssignRoles={randomlyAssignRoles}
           randomlyAssignWithRoles={randomlyAssignWithRoles}
+          clearAllRoles={clearAllRoles}
+          resetGame={resetGame}
           scriptRoles={customScriptRoles || (rolesData as Role[])}
           setActivePlayerId={setActivePlayerId}
           setSearchTerm={setSearchTerm}
@@ -1069,6 +1047,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'game' && (
         <GamePhase
           players={players}
+          isSynced={false}
+          isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
           newTravelerName={newTravelerName}
@@ -1094,6 +1074,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onResetDead={resetDead}
           onResetTime={resetTime}
           scriptName={scriptName}
+          scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {
@@ -1163,6 +1144,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
+          isSecondary={isSecondary}
         />
       )}
 
@@ -1212,6 +1194,21 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         onClose={() => setShowSyncModal(false)}
         isLightModeActive={isLightModeActive}
         syncOnly={true}
+      />
+    )}
+    {showResetModal && (
+      <ResetGameModal
+        remotePlayerCount={remotePlayerIds.size}
+        isLightModeActive={isLightModeActive}
+        onCancel={() => setShowResetModal(false)}
+        onKeepPlayers={() => {
+          setShowResetModal(false);
+          resetGameKeepConnected();
+        }}
+        onDisconnect={() => {
+          setShowResetModal(false);
+          performFullReset();
+        }}
       />
     )}
     </>

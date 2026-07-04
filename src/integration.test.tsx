@@ -916,6 +916,52 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     joinPage.unmount();
   });
 
+  it('Whale Bucket: manual-assign-characters-button transitions to draft and retains assigned characters', async () => {
+    // 1. Render with 0 players to verify disabled state
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/whale-bucket';
+    let storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+    let manualBtn = storyteller.container.querySelector('#manual-assign-characters-button');
+    expect(manualBtn).not.toBeNull();
+    expect(manualBtn).toBeDisabled();
+    storyteller.unmount();
+
+    // 2. Render with players, one having an assigned character
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [
+        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+        { id: 'p2', name: 'Bob', isDead: false },
+      ],
+      phase: 'setup',
+    }));
+    storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    manualBtn = storyteller.container.querySelector('#manual-assign-characters-button');
+    expect(manualBtn).not.toBeNull();
+    expect(manualBtn).not.toBeDisabled();
+
+    // Click "Manually Assign"
+    fireEvent.click(manualBtn!);
+
+    // Should transition to draft (Character Assignment) phase
+    expect(storyteller.getByText(/2. Character Assignment/i)).toBeInTheDocument();
+
+    // Bob still has no character, so "Open Grimoire" is disabled
+    const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
+    expect(openGrimBtn).toBeDisabled();
+
+    storyteller.unmount();
+  });
+
   it('persists both name and notes when edited together and the modal is closed (regression: stale-closure race)', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },

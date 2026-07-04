@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getValidationSummary } from './whaleBucketValidation';
+import { getValidationSummary } from './validationSummary';
 import type { Player } from '../types';
 
-describe('whaleBucketValidation utility', () => {
+describe('validationSummary utility', () => {
   it('should return null for empty player list', () => {
     expect(getValidationSummary([])).toBeNull();
   });

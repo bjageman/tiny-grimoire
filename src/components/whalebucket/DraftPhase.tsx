@@ -4,7 +4,7 @@ import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
 import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
 
-import type { ValidationSummary } from '../../utils/whaleBucketValidation';
+import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface WhaleBucketDraftPhaseProps {
   players: Player[];

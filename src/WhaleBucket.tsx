@@ -5,7 +5,7 @@ import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { TEAM_ORDER } from './types';
 import { assignCharacters } from './utils/assignment';
-import { getValidationSummary } from './utils/whaleBucketValidation';
+import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
 import WhaleBucketDraftPhase from './components/whalebucket/DraftPhase';

@@ -194,21 +194,9 @@ export function performStandardAssignment(
     targetOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
   }
 
-  // Marionette still fully counts as the 1 Minion it is (selectedMinions is unchanged below) —
-  // but it also displays as a Townsfolk-or-Outsider. If it displays as the Outsider, there
-  // should be no OTHER real Outsider (its own seat covers that slot), so reduce the real
-  // Outsider count by 1 with no compensation elsewhere. If it displays as Townsfolk, the
-  // Townsfolk count is unaffected either way — Townsfolk is a large enough pool that one extra
-  // apparent Townsfolk doesn't need to be tracked as a distribution change.
+  // Marionette fully counts as the 1 Minion it is (selectedMinions is unchanged below) and does
+  // not otherwise alter the real Outsider/Townsfolk counts.
   const hasMarionette = !bypassAdjustments && selectedMinions.some(m => m.id === 'marionette');
-  let marionetteFakeTeam: 'townsfolk' | 'outsider' | null = null;
-  if (hasMarionette) {
-    const canFakeOutsider = targetOutsiders > 0;
-    marionetteFakeTeam = canFakeOutsider && Math.random() < 0.5 ? 'outsider' : 'townsfolk';
-    if (marionetteFakeTeam === 'outsider') {
-      targetOutsiders -= 1;
-    }
-  }
 
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
@@ -267,19 +255,26 @@ export function performStandardAssignment(
   // no need to reach outside it, and the real Townsfolk/Outsider/Minion/Demon counts used for
   // balance aren't perturbed. Falls back to the full official role list only in the (should be
   // unreachable) case the script pool is somehow exhausted anyway.
+  // Marionette bluffs as a Townsfolk by default. It only bluffs as an Outsider if the script has
+  // no Townsfolk at all to draw from — a true last resort that should be unreachable on any real
+  // script, since every script has Townsfolk characters.
+  const marionetteFakeTeam: 'townsfolk' | 'outsider' | null = !hasMarionette
+    ? null
+    : tfs.length > 0 ? 'townsfolk' : (outs.length > 0 ? 'outsider' : null);
+
   let marionetteFakeRole: Role | null = null;
-  if (hasMarionette && marionetteFakeTeam) {
+  if (marionetteFakeTeam) {
     const scriptPool = marionetteFakeTeam === 'outsider' ? outs : tfs;
-    const scriptCandidates = scriptPool.filter(r => !roleIdsInPlay.has(r.id) && r.id !== 'drunk');
+    const scriptCandidates = scriptPool.filter(r => !roleIdsInPlay.has(r.id) && r.id !== 'drunk' && r.id !== 'lunatic');
     if (scriptCandidates.length > 0) {
       marionetteFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
     } else {
-      const scriptFallback = scriptPool.filter(r => r.id !== 'drunk');
+      const scriptFallback = scriptPool.filter(r => r.id !== 'drunk' && r.id !== 'lunatic');
       if (scriptFallback.length > 0) {
         marionetteFakeRole = scriptFallback[Math.floor(Math.random() * scriptFallback.length)];
       } else {
         const masterCandidates = (masterRoles as Role[]).filter(r =>
-          r.team === marionetteFakeTeam && !roleIdsInPlay.has(r.id) && r.id !== 'drunk'
+          r.team === marionetteFakeTeam && !roleIdsInPlay.has(r.id) && r.id !== 'drunk' && r.id !== 'lunatic'
         );
         marionetteFakeRole = masterCandidates.length > 0
           ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]

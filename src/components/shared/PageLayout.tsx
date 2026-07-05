@@ -96,20 +96,20 @@ export default function PageLayout({
   }, []);
 
   const backButtonClass = cn(
-    "absolute left-4 p-1.5 rounded-full transition-all flex items-center justify-center",
+    "absolute left-4 md:left-8 lg:left-12 p-1.5 rounded-full transition-all flex items-center justify-center",
     isLight ? "text-gray-700 hover:text-gray-900 hover:bg-black/5" : "text-gray-400 hover:text-white hover:bg-white/10"
   );
 
   return (
     <div id="page-root" className={cn(
-      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-5xl landscape:max-w-5xl",
+      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-[1600px] max-md:landscape:max-w-5xl",
       isLight ? "bg-clocktower-parchment text-clocktower-night" : "bg-clocktower-night text-clocktower-parchment"
     )}>
       <header id="page-header" className={cn(
         "relative flex flex-col items-center justify-center pb-3 w-full pt-4",
         headerExtra && "gap-2.5",
       )}>
-        <div className="relative flex justify-center items-center w-full min-h-[36px] px-4">
+        <div className="relative flex justify-center items-center w-full min-h-[36px] px-4 md:px-8 lg:px-12">
           {backHref && (
             <a id="page-back-button" href={backHref} className={backButtonClass} title="Back">
               <ArrowLeft size={24} />
@@ -127,7 +127,7 @@ export default function PageLayout({
             </h1>
           )}
 
-          <div id="page-header-controls" className="absolute right-4 flex items-center gap-1">
+          <div id="page-header-controls" className="absolute right-4 md:right-8 lg:right-12 flex items-center gap-1">
             <button
               id="theme-toggle-button"
               onClick={toggleTheme}
@@ -142,19 +142,19 @@ export default function PageLayout({
 
         {headerExtra}
 
-        <div className="flex items-center gap-2.5 w-full px-4 mt-1.5">
+        <div className="flex items-center gap-2.5 w-full px-4 md:px-8 lg:px-12 mt-1.5">
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />
           <span className={cn("text-[8px] leading-none", isLight ? "text-clocktower-blood/40" : "text-clocktower-gold/50")}>◆</span>
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />
         </div>
       </header>
 
-      <div id="page-content" className={contentClassName ?? "flex-1 flex flex-col pt-8 px-4 pb-4"}>
+      <div id="page-content" className={contentClassName ?? "flex-1 flex flex-col pt-8 px-4 md:px-8 lg:px-12 pb-4"}>
         {children}
       </div>
 
       <footer id="page-footer" className={cn(
-        "flex justify-between items-center py-4 px-4 border-t",
+        "flex justify-between items-center py-4 px-4 md:px-8 lg:px-12 border-t",
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
         <p className={cn("text-xs", isLight ? "text-gray-400" : "text-gray-600")}>

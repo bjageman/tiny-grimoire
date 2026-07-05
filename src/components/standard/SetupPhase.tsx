@@ -125,9 +125,9 @@ export default function StandardSetupPhase({
 
   return (
     <>
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] xl:grid-cols-[2fr_1fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
       {/* Section A: Script & Randomization */}
-      <div className="md:col-start-2 md:row-start-1 space-y-6 w-full">
+      <div id="standard-setup-controls-container" className="md:col-start-2 md:row-start-1 space-y-6 w-full">
         <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
           <div className="flex flex-col gap-2">
             <input

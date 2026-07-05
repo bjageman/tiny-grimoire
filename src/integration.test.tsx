@@ -104,8 +104,8 @@ describe('Storyteller Reset Integration', () => {
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
 
-    // Verify storyteller hash is reset to home (main menu)
-    expect(window.location.hash).toBe('');
+    // Verify storyteller returns to the mode's setup page (not home)
+    expect(window.location.hash).toBe('#/standard');
 
     // Verify player client received 'storyteller_quit' message and reverted UI
     expect(tracker.getByText('The Storyteller has quit the session. Reverting to local tracker.')).toBeInTheDocument();
@@ -155,8 +155,8 @@ describe('Storyteller Reset Integration', () => {
       await new Promise((resolve) => setTimeout(resolve, 30));
     });
 
-    // Verify storyteller hash is reset to home (main menu)
-    expect(window.location.hash).toBe('');
+    // Verify storyteller returns to the mode's setup page (not home)
+    expect(window.location.hash).toBe('#/standard');
 
     // Verify JoinPage was notified and reverted back to the join screen
     expect(joinPage.getByText('The Storyteller has quit the session.')).toBeInTheDocument();
@@ -519,7 +519,7 @@ describe('Storyteller Reset Integration', () => {
     });
 
     expect(sentPayloads.some(p => (p.payload as { type?: string }).type === 'storyteller_quit')).toBe(true);
-    expect(window.location.hash).toBe('');
+    expect(window.location.hash).toBe('#/standard');
     expect(joinPage.getByText('The Storyteller has quit the session.')).toBeInTheDocument();
 
     storyteller.unmount();

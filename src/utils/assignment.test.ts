@@ -157,7 +157,7 @@ describe('assignCharacters', () => {
     }
   });
 
-  it('should assign Riot to all demons and minions in a Riot setup', () => {
+  it('treats Riot as a normal single Demon at setup — its "Minions become Riot" transformation happens on day 3 during play, not here', () => {
     const roles: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
@@ -178,41 +178,13 @@ describe('assignCharacters', () => {
     expect(result).not.toBeNull();
     if (!result) return;
 
-    // Check count of Riot
+    // 5-player base distribution: 3 Townsfolk / 1 Minion / 1 Demon — Riot fills the 1 Demon
+    // seat exactly like any other Demon would, no distribution changes.
     const riotAssignments = result.filter(r => r.role.id === 'riot');
-    // 5 players = 1 demon + 1 minion = 2 Riot
-    expect(riotAssignments.length).toBe(2);
-  });
+    expect(riotAssignments.length).toBe(1);
 
-  it('should respect Townsfolk preference over Riot assignment if possible', () => {
-    const roles: Role[] = [
-      { id: 'chef', name: 'Chef', team: 'townsfolk' },
-      { id: 'empath', name: 'Empath', team: 'townsfolk' },
-      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
-      { id: 'riot', name: 'Riot', team: 'demon' },
-      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
-    ];
-
-    // Bob wants chef (townsfolk). If Charlie wants Riot, Charlie should be Riot.
-    // In a 5-player game, 2 players are Riot. Even if Bob is randomly selected first,
-    // his preference for Townsfolk should protect him from being assigned Riot,
-    // leaving Riot to neutral/Riot-preferring players (Alice, Charlie, David, Eve).
-    for (let run = 0; run < 20; run++) {
-      const players: Player[] = [
-        { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
-        { id: '2', name: 'Bob', isDead: false, preferences: { townsfolk: ['chef'], outsider: [], minion: [], demon: [], traveler: [] } },
-        { id: '3', name: 'Charlie', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: ['riot'], traveler: [] } },
-        { id: '4', name: 'David', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
-        { id: '5', name: 'Eve', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
-      ];
-
-      const result = assignCharacters(players, roles);
-      expect(result).not.toBeNull();
-      if (!result) return;
-
-      const bobAssignment = result.find(r => r.player.id === '2');
-      expect(bobAssignment?.role.id).not.toBe('riot');
-    }
+    const minionAssignments = result.filter(r => r.role.id === 'poisoner');
+    expect(minionAssignments.length).toBe(1);
   });
 
   it('should place Lord of Typhon and minions in a contiguous line with Typhon in the middle', () => {

@@ -253,7 +253,7 @@ describe('performStandardAssignment', () => {
     }
   });
 
-  it('should assign Riot to demon + minion count players and Townsfolk to the rest in standard randomization', () => {
+  it('treats Riot as a normal single Demon at setup — its "Minions become Riot" transformation happens on day 3 during play, not here', () => {
     const scriptWithRiot: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
@@ -274,12 +274,16 @@ describe('performStandardAssignment', () => {
     expect(result).not.toBeNull();
     if (!result) return;
 
+    // 5-player base distribution: 3 Townsfolk / 1 Minion / 1 Demon — Riot fills the 1 Demon
+    // seat exactly like any other Demon would, no distribution changes.
     const riotCount = result.filter(p => p.roleId === 'riot').length;
-    // 5 players = 1 demon + 1 minion = 2 Riot
-    expect(riotCount).toBe(2);
+    expect(riotCount).toBe(1);
 
-    const nonRiotCount = result.filter(p => p.roleId && p.roleId !== 'riot').length;
-    expect(nonRiotCount).toBe(3);
+    const minionCount = result.filter(p => p.roleId === 'poisoner').length;
+    expect(minionCount).toBe(1);
+
+    const townsfolkCount = result.filter(p => ['chef', 'empath', 'fortuneteller'].includes(p.roleId ?? '')).length;
+    expect(townsfolkCount).toBe(3);
   });
 
   it('should place Lord of Typhon contiguously with its minions in standard randomization', () => {

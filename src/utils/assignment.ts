@@ -126,10 +126,9 @@ function assignBaseCharacters(
 
   const selectRoleForPlayer = (player: Player, team: Role['team'], usedRoleIds: Set<string>): { role: Role; fromPref: boolean } => {
     const prefs = player.preferences?.[team] || [];
-    const availablePrefs = prefs.filter(id => 
-      !usedRoleIds.has(id) && 
-      id !== 'legion' && 
-      id !== 'riot' && 
+    const availablePrefs = prefs.filter(id =>
+      !usedRoleIds.has(id) &&
+      id !== 'legion' &&
       id !== 'atheist' &&
       id !== 'drunk' &&
       id !== 'marionette'
@@ -141,11 +140,10 @@ function assignBaseCharacters(
       if (role) return { role, fromPref: true };
     }
     
-    const teamRoles = allRoles.filter(r => 
-      r.team === team && 
+    const teamRoles = allRoles.filter(r =>
+      r.team === team &&
       !usedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
-      r.id !== 'riot' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
       r.id !== 'marionette'
@@ -155,10 +153,9 @@ function assignBaseCharacters(
       return { role, fromPref: false };
     }
     
-    const fallbackRoles = allRoles.filter(r => 
+    const fallbackRoles = allRoles.filter(r =>
       r.team === team &&
       r.id !== 'legion' &&
-      r.id !== 'riot' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
       r.id !== 'marionette'
@@ -189,13 +186,14 @@ function assignBaseCharacters(
     }
   }
 
-  let mode: 'normal' | 'legion' | 'riot' | 'atheist' = 'normal';
+  // Riot's "Minions become Riot" transformation happens on day 3 during play, not at setup
+  // ([setup: false] on the character, unlike Legion's setup-time "[Most players are Legion]") —
+  // so at initial assignment it's just a normal single Demon, no distribution changes.
+  let mode: 'normal' | 'legion' | 'atheist' = 'normal';
   if (isAtheistActive) {
     mode = 'atheist';
   } else if (chosenDemon?.id === 'legion') {
     mode = 'legion';
-  } else if (chosenDemon?.id === 'riot') {
-    mode = 'riot';
   }
 
   if (mode === 'legion') {
@@ -220,45 +218,6 @@ function assignBaseCharacters(
         player: { ...p, isEvil: true },
         role: legionRole,
         fromPref: !!p.preferences?.demon.includes('legion')
-      });
-    }
-
-    // Assign Townsfolk to the goodPlayers, honoring their preferences
-    for (const p of goodPlayers) {
-      const { role, fromPref } = selectRoleForPlayer(p, 'townsfolk', usedRoleIds);
-      usedRoleIds.add(role.id);
-      assignment.push({
-        player: { ...p, isEvil: undefined },
-        role,
-        fromPref
-      });
-    }
-
-    return assignment;
-  }
-
-  if (mode === 'riot') {
-    const D = 1 + base.minion;
-    const usedRoleIds = new Set<string>();
-    const assignment: AssignmentResult[] = [];
-    const riotRole = allRoles.find(r => r.id === 'riot')!;
-
-    // Categorize players based on preferences to respect good-preferring players
-    const goodPreferring = initialShuffledPlayers.filter(p => (p.preferences?.townsfolk || []).length > 0 && !(p.preferences?.demon || []).includes('riot'));
-    const riotPreferring = initialShuffledPlayers.filter(p => (p.preferences?.demon || []).includes('riot'));
-    const neutral = initialShuffledPlayers.filter(p => !goodPreferring.some(gp => gp.id === p.id) && !riotPreferring.some(rp => rp.id === p.id));
-
-    // Prioritize good-preferring players for Townsfolk roles, then neutral, then riot-preferring as fallback
-    const candidatesForGood = [...goodPreferring, ...neutral, ...riotPreferring];
-    const goodPlayers = candidatesForGood.slice(0, N - D);
-    const riotPlayers = candidatesForGood.slice(N - D);
-
-    // Assign Riot to the riotPlayers
-    for (const p of riotPlayers) {
-      assignment.push({
-        player: { ...p, isEvil: true },
-        role: riotRole,
-        fromPref: !!p.preferences?.demon.includes('riot')
       });
     }
 
@@ -551,7 +510,7 @@ function assignBaseCharacters(
       }
       let duplicateCheck = true;
       for (const id in roleCounts) {
-        if (roleCounts[id] > 1 && id !== 'legion' && id !== 'riot') {
+        if (roleCounts[id] > 1 && id !== 'legion') {
           duplicateCheck = false;
         }
       }

@@ -15,7 +15,6 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   };
 
   const hasLegion      = has('legion');
-  const hasRiot        = has('riot');
   const hasAtheist     = has('atheist');
   const hasBaron       = has('baron');
   const hasFangGu      = has('fanggu');
@@ -42,11 +41,6 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     expectedDemon  = L;
     expectedMinion = 0;
     modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
-  } else if (hasRiot) {
-    const D = 1 + base.minion;
-    expectedDemon  = D;
-    expectedMinion = 0;
-    modifications.push(`Riot active (${D} Demons, 0 Minions/Outsiders)`);
   } else if (hasAtheist) {
     expectedDemon  = 0;
     expectedMinion = 0;
@@ -81,16 +75,16 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   // Drunk and Marionette each need their own extra Townsfolk selected beyond the real target
   // count, to serve as a fake identity without colliding with an actual in-play Townsfolk (or,
   // if both are selected, with each other's fake identity) — see standardAssignment.ts.
-  const tfDelta = (hasLegion || hasRiot) ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
+  const tfDelta = hasLegion ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
 
-  const gfMods   = (hasGodfather  && !hasLegion && !hasRiot) ? [-1, 1] : [0];
-  const balMods  = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1]  : [0];
-  const huntMods = (hasHuntsman   && !hasLegion && !hasRiot) ? [0, 1]  : [0];
-  const hermMods = (hasHermit     && !hasLegion && !hasRiot) ? [-1, 0] : [0];
-  const fixedDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0));
+  const gfMods   = (hasGodfather  && !hasLegion) ? [-1, 1] : [0];
+  const balMods  = (hasBalloonist && !hasLegion) ? [0, 1]  : [0];
+  const huntMods = (hasHuntsman   && !hasLegion) ? [0, 1]  : [0];
+  const hermMods = (hasHermit     && !hasLegion) ? [-1, 0] : [0];
+  const fixedDelta = hasLegion ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0));
 
   const possibleOutsiders = new Set<number>();
-  if (hasLegion || hasRiot) {
+  if (hasLegion) {
     possibleOutsiders.add(0);
   } else if (hasKazali || hasXaan) {
     const max = Math.max(0, playerCount - expectedDemon - expectedMinion);

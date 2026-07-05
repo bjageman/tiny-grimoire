@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getValidationSummary } from './whaleBucketValidation';
+import { getValidationSummary } from './validationSummary';
 import type { Player } from '../types';
 
-describe('whaleBucketValidation utility', () => {
+describe('validationSummary utility', () => {
   it('should return null for empty player list', () => {
     expect(getValidationSummary([])).toBeNull();
   });
@@ -15,7 +15,7 @@ describe('whaleBucketValidation utility', () => {
       { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false }, // townsfolk
       { id: '4', name: 'Player 4', roleId: 'chef', isDead: false }, // townsfolk
       { id: '5', name: 'Player 5', roleId: 'empath', isDead: false }, // townsfolk
-      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false }, // outsider
+      { id: '6', name: 'Player 6', roleId: 'monk', isDead: false, isTheDrunk: true }, // outsider (Drunk, displayed as a fake Monk)
       { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false }, // minion
       { id: '8', name: 'Player 8', roleId: 'imp', isDead: false }, // demon
     ];
@@ -214,6 +214,53 @@ describe('whaleBucketValidation utility', () => {
         expect(summary.isOutsiderValid).toBe(true);
         expect(summary.isTownsfolkValid).toBe(false);
         expect(summary.modifications).toContain('Marionette displays as Outsider (-1 Outsider)');
+      }
+    });
+  });
+
+  describe('masquerade identity exposure', () => {
+    const basePlayers: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'poisoner', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'imp', isDead: false },
+    ];
+
+    it('warns when a player is displayed as the Drunk itself', () => {
+      const players: Player[] = [...basePlayers.slice(0, 5), { id: '7', name: 'Gina', roleId: 'drunk', isDead: false, isTheDrunk: true }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.jinxWarnings).toContain('Gina is displayed as Drunk itself, revealing their true identity.');
+      }
+    });
+
+    it('warns when a player is displayed as the Marionette itself', () => {
+      const players: Player[] = [...basePlayers.slice(0, 5), { id: '7', name: 'Gina', roleId: 'marionette', isDead: false, isTheMarionette: true }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.jinxWarnings).toContain('Gina is displayed as Marionette itself, revealing their true identity.');
+      }
+    });
+
+    it('warns when a player is displayed as the Lunatic itself', () => {
+      const players: Player[] = [...basePlayers.slice(0, 5), { id: '7', name: 'Gina', roleId: 'lunatic', isDead: false, isTheLunatic: true }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.jinxWarnings).toContain('Gina is displayed as Lunatic itself, revealing their true identity.');
+      }
+    });
+
+    it('does not warn when the Drunk is properly disguised as a different Townsfolk', () => {
+      const players: Player[] = [...basePlayers.slice(0, 5), { id: '7', name: 'Gina', roleId: 'monk', isDead: false, isTheDrunk: true }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.jinxWarnings.some(w => w.includes('revealing their true identity'))).toBe(false);
       }
     });
   });

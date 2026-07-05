@@ -187,6 +187,22 @@ describe('computeBalance — Vigormortis', () => {
   });
 });
 
+describe('computeBalance — Riot', () => {
+  it('does not change the expected distribution — its transformation happens on day 3, not at setup', () => {
+    // 8-player base: 5 TF / 1 Out / 1 Minion / 1 Demon. Riot is just a normal single Demon here.
+    const roles = [
+      out('recluse'),
+      min('poisoner'), dem('riot'),
+      tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'),
+    ];
+    const b = computeBalance(roles, 8);
+    expect(b.modifications.some(m => m.toLowerCase().includes('riot'))).toBe(false);
+    expect(b.expectedDemon).toBe(1);
+    expect(b.expectedMinion).toBe(1);
+    expect(b.isValid).toBe(true);
+  });
+});
+
 describe('computeBalance — Alchemist', () => {
   it('warns that the Alchemist ability may affect setup whenever it is selected', () => {
     const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('alchemist'), out('recluse'), min('poisoner'), dem('imp')];

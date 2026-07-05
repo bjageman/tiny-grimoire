@@ -7,7 +7,7 @@ import { TEAM_ORDER } from './types';
 import { parseScriptFile } from './utils/scriptUtils';
 
 import { performStandardAssignment } from './utils/standardAssignment';
-import { getValidationSummary } from './utils/whaleBucketValidation';
+import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import GamePhase from './components/shared/GamePhase';
 import StandardSetupPhase from './components/standard/SetupPhase';
@@ -172,7 +172,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     localStorage.setItem('standard-botc-game-code', newCode);
     const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('standard-botc-sync-code', newSync);
-    window.location.hash = '';
+    // Both the reset-game confirm and the synced "disconnect" path land on
+    // this mode's setup page (not home) — phase is already 'setup'.
+    window.location.hash = '#/standard';
     setGameCode(newCode);
     setSyncCode(newSync);
   };
@@ -981,7 +983,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      contentClassName="px-4 pt-6 pb-4"
+      contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
     >
 
       {phase === 'setup' && (

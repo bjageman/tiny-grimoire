@@ -145,19 +145,12 @@ export function performStandardAssignment(
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'legion');
   }
 
-  const riotRole = dems.find(d => d.id === 'riot');
-  const hasRiot = !!(riotRole && chosenDemonAtTop && chosenDemonAtTop.id === 'riot');
+  // Riot's "Minions become Riot" transformation happens on day 3 during play, not at setup
+  // ([setup: false] on the character, unlike Legion's setup-time "[Most players are Legion]") —
+  // so at initial assignment it's just a normal single Demon, no distribution changes.
 
-  if (hasRiot && riotRole) {
-    const D = 1 + base.minion;
-    const finalRolesList = shuffle([...Array(D).fill(riotRole), ...shuffle(tfs).slice(0, baseCount - D)]);
-    fillToCount(finalRolesList, baseCount, tfs, tfs[0], dems[0]);
-    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
-    return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'riot');
-  }
-
-  // Normal / non-Legion / non-Riot setup
-  const nonLegionDemons = dems.filter(d => d.id !== 'legion' && d.id !== 'riot');
+  // Normal / non-Legion setup
+  const nonLegionDemons = dems.filter(d => d.id !== 'legion');
   const chosenDemon = shuffle(nonLegionDemons)[0];
 
   const hasLordOfTyphon = chosenDemon && chosenDemon.id === 'lordoftyphon';

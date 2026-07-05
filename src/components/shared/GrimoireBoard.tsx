@@ -64,6 +64,7 @@ export default function GrimoireBoard({
   const [playerTopIndex, setPlayerTopIndex] = useState<Record<string, number>>({});
   const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
+  const [boardWidth, setBoardWidth] = useState<number>(0);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -76,6 +77,7 @@ export default function GrimoireBoard({
       const rect = boardElement.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         setBoardAspect(rect.height / rect.width);
+        setBoardWidth(rect.width);
       }
     };
 
@@ -132,89 +134,98 @@ export default function GrimoireBoard({
     const count = players.length;
     const isDesktop = boardAspect < 1.15;
 
+    // On desktop the board grows to fill its (now wider) column. Token sizes
+    // were hand-tuned in px against a fixed baseline width, so scale them by
+    // how much wider the board actually is. Floored at 1x so this never
+    // shrinks anything on mobile/landscape (where the board is capped at the
+    // baseline) — only enlarges on true desktop where md: lifts the width cap.
+    const baseline = count <= 6 ? 560 : 680;
+    const s = Math.max(1, boardWidth / baseline);
+    const px = (v: number) => `${+(v * s).toFixed(2)}px`;
+
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-[560px] md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-full md:max-w-[760px] md:h-[540px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: isDesktop
-          ? { width: '140px', height: '140px' } as CSSProperties
+          ? { width: px(140), height: px(140) } as CSSProperties
           : { width: '30cqw', height: '30cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '1.8cqw', height: '1.8cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '23.5px', maxWidth: '130px', marginTop: '2.8px' } as CSSProperties
+          ? { fontSize: px(23.5), maxWidth: px(130), marginTop: px(2.8) } as CSSProperties
           : { fontSize: '4.8cqw', maxWidth: '28cqw', marginTop: '0.5cqw' } as CSSProperties,
         roleStyle: isDesktop
-          ? { fontSize: '18.5px', maxWidth: '130px', marginTop: '0px' } as CSSProperties
+          ? { fontSize: px(18.5), maxWidth: px(130), marginTop: '0px' } as CSSProperties
           : { fontSize: '3.8cqw', maxWidth: '28cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 16,
         tooltipClass: "top-18",
         centerBtnStyle: isDesktop
-          ? { width: '140px', height: '140px' } as CSSProperties
+          ? { width: px(140), height: px(140) } as CSSProperties
           : { width: '30cqw', height: '30cqw' } as CSSProperties,
         centerText1Style: isDesktop
-          ? { fontSize: '23.5px' } as CSSProperties
+          ? { fontSize: px(23.5) } as CSSProperties
           : { fontSize: '4.8cqw' } as CSSProperties,
         centerText2Style: isDesktop
-          ? { fontSize: '18.5px', marginTop: '1px' } as CSSProperties
+          ? { fontSize: px(18.5), marginTop: px(1) } as CSSProperties
           : { fontSize: '3.8cqw', marginTop: '0.2cqw' } as CSSProperties,
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:max-w-[920px] md:h-[560px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[34px]",
         radiusX: 40,
         radiusY: 38,
         btnStyle: isDesktop
-          ? { width: '130px', height: '130px' } as CSSProperties
+          ? { width: px(130), height: px(130) } as CSSProperties
           : { width: '26cqw', height: '26cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '1.5cqw', height: '1.5cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '22.3px', maxWidth: '118px', marginTop: '2.5px' } as CSSProperties
+          ? { fontSize: px(22.3), maxWidth: px(118), marginTop: px(2.5) } as CSSProperties
           : { fontSize: '4.3cqw', maxWidth: '24cqw', marginTop: '0.4cqw' } as CSSProperties,
         roleStyle: isDesktop
-          ? { fontSize: '17.3px', maxWidth: '118px', marginTop: '0px' } as CSSProperties
+          ? { fontSize: px(17.3), maxWidth: px(118), marginTop: '0px' } as CSSProperties
           : { fontSize: '3.4cqw', maxWidth: '24cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 14,
         tooltipClass: "top-16",
         centerBtnStyle: isDesktop
-          ? { width: '130px', height: '130px' } as CSSProperties
+          ? { width: px(130), height: px(130) } as CSSProperties
           : { width: '26cqw', height: '26cqw' } as CSSProperties,
         centerText1Style: isDesktop
-          ? { fontSize: '22.3px' } as CSSProperties
+          ? { fontSize: px(22.3) } as CSSProperties
           : { fontSize: '4.0cqw' } as CSSProperties,
         centerText2Style: isDesktop
-          ? { fontSize: '17.8px', marginTop: '1px' } as CSSProperties
+          ? { fontSize: px(17.8), marginTop: px(1) } as CSSProperties
           : { fontSize: '3.2cqw', marginTop: '0.2cqw' } as CSSProperties,
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:max-w-[920px] md:h-[560px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[40px]",
         radiusX: 42,
         radiusY: 40,
         btnStyle: isDesktop
-          ? { width: '112px', height: '112px' } as CSSProperties
+          ? { width: px(112), height: px(112) } as CSSProperties
           : { width: '21cqw', height: '21cqw' } as CSSProperties,
         dotStyle: { top: '6%', width: '1.2cqw', height: '1.2cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '20.4px', maxWidth: '102px', marginTop: '2.0px' } as CSSProperties
+          ? { fontSize: px(20.4), maxWidth: px(102), marginTop: px(2.0) } as CSSProperties
           : { fontSize: '3.7cqw', maxWidth: '19cqw', marginTop: '0.3cqw' } as CSSProperties,
         roleStyle: isDesktop
-          ? { fontSize: '15.6px', maxWidth: '102px', marginTop: '0px' } as CSSProperties
+          ? { fontSize: px(15.6), maxWidth: px(102), marginTop: '0px' } as CSSProperties
           : { fontSize: '2.8cqw', maxWidth: '19cqw', marginTop: '0cqw' } as CSSProperties,
         charLimit: 12,
         tooltipClass: "top-14",
         centerBtnStyle: isDesktop
-          ? { width: '115px', height: '115px' } as CSSProperties
+          ? { width: px(115), height: px(115) } as CSSProperties
           : { width: '21cqw', height: '21cqw' } as CSSProperties,
         centerText1Style: isDesktop
-          ? { fontSize: '21.0px' } as CSSProperties
+          ? { fontSize: px(21.0) } as CSSProperties
           : { fontSize: '3.1cqw' } as CSSProperties,
         centerText2Style: isDesktop
-          ? { fontSize: '17.0px', marginTop: '1px' } as CSSProperties
+          ? { fontSize: px(17.0), marginTop: px(1) } as CSSProperties
           : { fontSize: '2.5cqw', marginTop: '0.2cqw' } as CSSProperties,
       };
     }
-  }, [players.length, boardAspect]);
+  }, [players.length, boardAspect, boardWidth]);
 
   const dynamicRadiusX = useMemo(() => {
     return grimoireConfig.radiusX;

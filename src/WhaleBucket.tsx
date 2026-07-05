@@ -798,7 +798,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     localStorage.setItem('whale-bucket-sync-code', newSync);
     setGameCode(newCode);
     setSyncCode(newSync);
-    window.location.hash = '';
+    // Both the reset-game confirm and the synced "disconnect" path land on
+    // this mode's setup page (not home) — phase is already 'setup'.
+    window.location.hash = '#/whale-bucket';
   };
 
   // Reset the round but keep the sync session (and every connected player)
@@ -1010,7 +1012,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      contentClassName="px-4 pt-6 pb-4"
+      contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
     >
 
       {phase === 'setup' && (

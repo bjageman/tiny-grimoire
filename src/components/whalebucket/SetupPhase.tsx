@@ -91,7 +91,7 @@ export default function WhaleBucketSetupPhase({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[5fr_3fr] xl:grid-cols-[2fr_1fr] md:grid-rows-[auto_1fr] md:items-start animate-fadeIn">
 
 
       {/* Section B: Players & Role Preferences */}
@@ -183,7 +183,7 @@ export default function WhaleBucketSetupPhase({
       </div>
 
       {/* Section C: Distribution & Assign Button */}
-      <div className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
+      <div id="whalebucket-setup-controls-container" className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
         {/* Exclude Characters Widget */}
         <div className={cn(
           "p-4 rounded-lg border flex flex-col gap-3 transition-colors duration-300",

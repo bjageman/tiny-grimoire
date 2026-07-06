@@ -20,7 +20,7 @@
     "@lucide/lab": "^0.1.2",
     "antigravity-usage": "^0.2.9",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.22.0",
+    "lucide-react": "^1.23.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-qr-code": "^2.2.0",

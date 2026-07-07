@@ -68,6 +68,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none select-none">
           <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
             <img
+              key={role.id}
               src={`/icons/${role.id}.svg`}
               alt={role.name}
               className={cn('w-full h-full object-contain', isDead ? 'grayscale opacity-15' : 'opacity-35')}

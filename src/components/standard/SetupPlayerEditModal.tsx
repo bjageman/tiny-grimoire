@@ -317,6 +317,7 @@ export default function SetupPlayerEditModal({
                 <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
                   <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
                     <img
+                      key={role.id}
                       src={`/icons/${role.id}.svg`}
                       alt={role.name}
                       className="w-3.5 h-3.5 object-contain"

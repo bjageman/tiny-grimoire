@@ -804,7 +804,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   assignedRole.team === 'demon' && "border-clocktower-demon",
                   assignedRole.team === 'traveler' && "border-clocktower-traveler"
                 )}>
-                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
+                  <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
                 </div>
 
                 <div className="flex gap-2 justify-center items-center mb-3">

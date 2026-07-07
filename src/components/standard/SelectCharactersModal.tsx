@@ -195,6 +195,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                           />
                           <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                             <img
+                              key={role.id}
                               src={`/icons/${role.id}.svg`}
                               alt=""
                               className="w-3.5 h-3.5 object-contain"

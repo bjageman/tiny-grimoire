@@ -137,7 +137,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                         )}
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                          <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
                             onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                         </span>
                         <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
@@ -177,7 +177,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 t === 'demon'     && "border-clocktower-demon shadow-clocktower-demon/20",
                 t === 'traveler'  && "border-clocktower-traveler shadow-clocktower-traveler/20",
               )}>
-                <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={roleIconFallback(selectedRole, t === 'minion' || t === 'demon')} />
+                <img key={selectedRole.id} src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={roleIconFallback(selectedRole, t === 'minion' || t === 'demon')} />
               </div>
               <h4 className={cn(
                 "text-2xl font-black mt-4 tracking-wide",

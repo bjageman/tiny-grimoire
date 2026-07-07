@@ -376,6 +376,7 @@ export default function PlayerDetailsModal({
                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
                               <div className="w-[80%] h-[80%] flex items-center justify-center">
                                 <img
+                                  key={rObj.id}
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
                                   className="w-full h-full object-contain"
@@ -469,6 +470,7 @@ export default function PlayerDetailsModal({
                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
                               <div className="w-[80%] h-[80%] flex items-center justify-center">
                                 <img
+                                  key={rObj.id}
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
                                   className="w-full h-full object-contain"
@@ -708,6 +710,7 @@ function RoleList({
             <div className="flex items-center min-w-0 flex-1 gap-2 mr-2">
               <span className="w-5.5 h-5.5 bg-white rounded-full flex items-center justify-center shrink-0">
                 <img
+                  key={role.id}
                   src={`/icons/${role.id}.svg`}
                   alt={role.name}
                   className="w-4 h-4 object-contain"

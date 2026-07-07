@@ -2,6 +2,16 @@
 
 A comprehensive web app for running **Blood on the Clocktower** in-person. Storytellers manage the full game through an interactive digital grimoire, while players join live sessions from their own devices by syncing with the town square in real time to receive their character token and track the game state.
 
+## Demo
+
+### Full Walkthrough — Desktop Storyteller View + Live Mobile Sync
+
+https://github.com/user-attachments/assets/1cab8e4c-9188-4c05-8126-9c9e35267691
+
+### Mobile Player Experience
+
+https://github.com/user-attachments/assets/0a98e577-8801-45fe-856c-12f75dbfe337
+
 ## Core Features
 
 ### Auto-Distribution Algorithm

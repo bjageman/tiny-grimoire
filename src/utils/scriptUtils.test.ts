@@ -58,4 +58,42 @@ describe('parseScriptFile', () => {
     expect(custom?.name).toBe('Mycustomrole');
     expect(custom?.team).toBe('outsider');
   });
+
+  it('preserves ability text and image URLs for a custom role', async () => {
+    const file = makeFile([
+      'washerwoman',
+      {
+        id: 'hawker',
+        name: 'Hawker',
+        team: 'outsider',
+        image: ['https://example.com/hawker-good.png', 'https://example.com/hawker-evil.png'],
+        ability: 'You start knowing a false statement. If you die, it becomes true.',
+        reminders: ['?', '?', '?'],
+      },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    const custom = roles.find(r => r.id === 'hawker');
+    expect(custom?.ability).toBe('You start knowing a false statement. If you die, it becomes true.');
+    expect(custom?.image).toEqual(['https://example.com/hawker-good.png', 'https://example.com/hawker-evil.png']);
+  });
+
+  it('does not attach ability/image fields for a known official role', async () => {
+    const file = makeFile(['washerwoman']);
+    const { roles } = await parseScriptFile(file);
+    const washerwoman = roles.find(r => r.id === 'washerwoman');
+    expect(washerwoman?.ability).toBeUndefined();
+    expect(washerwoman?.image).toBeUndefined();
+  });
+
+  it('omits ability/image when missing or malformed on a custom role', async () => {
+    const file = makeFile([
+      'washerwoman',
+      { id: 'noextras', name: 'No Extras', team: 'townsfolk' },
+      { id: 'badimage', name: 'Bad Image', team: 'townsfolk', image: 'not-an-array' },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    expect(roles.find(r => r.id === 'noextras')?.ability).toBeUndefined();
+    expect(roles.find(r => r.id === 'noextras')?.image).toBeUndefined();
+    expect(roles.find(r => r.id === 'badimage')?.image).toBeUndefined();
+  });
 });

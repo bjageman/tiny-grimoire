@@ -3,8 +3,8 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { Search, Trash2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
 
 interface SetupPlayerEditModalProps {
   activePlayerId: string;
@@ -61,7 +61,7 @@ export default function SetupPlayerEditModal({
 
   if (!player) return null;
 
-  const roleObj = (rolesData as Role[]).find(r => r.id === player.roleId);
+  const roleObj = selectionRoles.find(r => r.id === player.roleId);
 
   const hasDrunkInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'drunk');
   const hasMarionetteInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'marionette');
@@ -71,8 +71,8 @@ export default function SetupPlayerEditModal({
   const N = players.length;
   const leftNeighbor = players[(index - 1 + N) % N];
   const rightNeighbor = players[(index + 1) % N];
-  const leftRoleObj = (rolesData as Role[]).find(r => r.id === leftNeighbor?.roleId);
-  const rightRoleObj = (rolesData as Role[]).find(r => r.id === rightNeighbor?.roleId);
+  const leftRoleObj = selectionRoles.find(r => r.id === leftNeighbor?.roleId);
+  const rightRoleObj = selectionRoles.find(r => r.id === rightNeighbor?.roleId);
   const isNextToDemon = (leftRoleObj?.team === 'demon' && !leftNeighbor?.isTheLunatic)
     || (rightRoleObj?.team === 'demon' && !rightNeighbor?.isTheLunatic);
 
@@ -295,7 +295,7 @@ export default function SetupPlayerEditModal({
                       src={`/icons/${role.id}.svg`}
                       alt={role.name}
                       className="w-3.5 h-3.5 object-contain"
-                      onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                      onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                     />
                   </span>
                   <span className={cn(

@@ -85,12 +85,21 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
                   .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(' ');
 
+            const ability = typeof itemObj.ability === 'string' && itemObj.ability.trim()
+              ? itemObj.ability
+              : undefined;
+            const image = Array.isArray(itemObj.image) && itemObj.image.every(u => typeof u === 'string')
+              ? itemObj.image as string[]
+              : undefined;
+
             unknownRoles.push({ id: item.id, name: displayName });
 
             return {
               id: item.id.toLowerCase(),
               name: displayName,
               team,
+              ...(ability && { ability }),
+              ...(image && { image }),
             };
           });
 

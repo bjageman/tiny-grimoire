@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { Search, X, Scroll } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import officialRoles from '../../official_roles.json';
 
@@ -137,7 +138,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                       >
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                           <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
-                            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
+                            onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                         </span>
                         <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
                       </button>
@@ -155,7 +156,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
       {/* Role detail modal */}
       {selectedRole && (() => {
-        const abilityText = (officialRoles as Array<{ id: string; ability?: string }>).find(r => r.id === selectedRole.id)?.ability ?? "Ability description not found.";
+        const abilityText = selectedRole.ability
+          ?? (officialRoles as Array<{ id: string; ability?: string }>).find(r => r.id === selectedRole.id)?.ability
+          ?? "Ability description not found.";
         const t = selectedRole.team;
         return (
           <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setSelectedRole(null)}>
@@ -174,7 +177,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 t === 'demon'     && "border-clocktower-demon shadow-clocktower-demon/20",
                 t === 'traveler'  && "border-clocktower-traveler shadow-clocktower-traveler/20",
               )}>
-                <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
+                <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={roleIconFallback(selectedRole, t === 'minion' || t === 'demon')} />
               </div>
               <h4 className={cn(
                 "text-2xl font-black mt-4 tracking-wide",

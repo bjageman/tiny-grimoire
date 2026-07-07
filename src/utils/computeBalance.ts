@@ -1,5 +1,8 @@
 import { getDistribution } from '../constants';
+import officialRolesData from '../official_roles.json';
 import type { Role } from '../types';
+
+const OFFICIAL_ROLE_IDS = new Set((officialRolesData as { id: string }[]).map(r => r.id));
 
 export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const base = getDistribution(playerCount);
@@ -116,6 +119,11 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (has('choirboy') && !has('king'))     jinxWarnings.push("Choirboy in play, but no King selected.");
   if (hasHuntsman && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
   if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
+
+  const customRolesInPlay = selectedRoles.filter(r => !OFFICIAL_ROLE_IDS.has(r.id));
+  if (customRolesInPlay.length > 0) {
+    jinxWarnings.push(`Custom: ${customRolesInPlay.map(r => r.name).join(', ')} — adjust setup manually.`);
+  }
 
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
 

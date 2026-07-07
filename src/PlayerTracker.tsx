@@ -50,6 +50,18 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
+  const selectionRoles = useMemo(() => {
+    const roles = [...currentScriptRoles];
+    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    for (const traveler of allTravelers) {
+      if (!roles.some(r => r.id === traveler.id)) {
+        roles.push(traveler);
+      }
+    }
+    return roles;
+  }, [currentScriptRoles]);
+
   const [gameCode, setGameCode] = useState<string | null>(() =>
     readPersistedField<string | null>(STORAGE_KEY, 'code', null) || sessionStorage.getItem('joined-code') || null
   );
@@ -378,7 +390,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const togglePlayerEvil = (id: string) => {
     setPlayers(prev => prev.map(p => {
       if (p.id === id) {
-        const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+        const roleObj = selectionRoles.find(r => r.id === p.roleId);
         const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
         const currentEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
         return { ...p, isEvil: !currentEvil };
@@ -416,24 +428,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
-
-  const selectionRoles = useMemo(() => {
-    const roles = [...currentScriptRoles];
-    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
-    for (const traveler of allTravelers) {
-      if (!roles.some(r => r.id === traveler.id)) {
-        roles.push(traveler);
-      }
-    }
-    return roles;
-  }, [currentScriptRoles]);
-
   const isLightModeActive = theme === 'light';
 
   // Details Modal helpers
   const modalPlayer = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? ((rolesData as Role[]).find(r => r.id === modalPlayer.roleId) || undefined) : undefined;
+  const modalRoleObj = modalPlayer ? (selectionRoles.find(r => r.id === modalPlayer.roleId) || undefined) : undefined;
   const currentIndex = selectedPlayerId ? players.findIndex(p => p.id === selectedPlayerId) : -1;
   const prevPlayerId = currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
   const nextPlayerId = currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
@@ -599,6 +598,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           players={players}
           roleObj={modalRoleObj}
           filteredModalRoles={filteredModalRoles}
+          allRoles={selectionRoles}
           isSearchingRole={isSearchingRole}
           modalRoleSearch={modalRoleSearch}
           isLightModeActive={isLightModeActive}

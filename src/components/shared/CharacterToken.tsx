@@ -1,4 +1,5 @@
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 
 interface CharacterTokenProps {
@@ -70,7 +71,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
               src={`/icons/${role.id}.svg`}
               alt={role.name}
               className={cn('w-full h-full object-contain', isDead ? 'grayscale opacity-15' : 'opacity-35')}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              onError={roleIconFallback(role, evil)}
             />
           </div>
         </div>

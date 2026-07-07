@@ -2,6 +2,10 @@ export interface Role {
   id: string;
   name: string;
   team: 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler';
+  /** Only set for custom/homebrew roles carrying their own ability text from the uploaded script. */
+  ability?: string;
+  /** Only set for custom/homebrew roles: [good-token image URL, evil-token image URL] from the uploaded script. */
+  image?: string[];
 }
 
 export interface PlayerPreferences {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { X, Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { computeBalance } from '../../utils/computeBalance';
@@ -197,7 +198,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                               src={`/icons/${role.id}.svg`}
                               alt=""
                               className="w-3.5 h-3.5 object-contain"
-                              onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                             />
                           </span>
                           <span className={cn("font-semibold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>

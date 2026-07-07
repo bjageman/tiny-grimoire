@@ -23,6 +23,7 @@ interface CharacterAssignmentCircleProps {
   handleTouchMove: (e: React.TouchEvent) => void;
   handleTouchEnd: () => void;
   remotePlayerIds?: Set<string>;
+  selectionRoles?: Role[];
 }
 
 export default function CharacterAssignmentCircle({
@@ -42,6 +43,7 @@ export default function CharacterAssignmentCircle({
   handleTouchMove,
   handleTouchEnd,
   remotePlayerIds,
+  selectionRoles,
 }: CharacterAssignmentCircleProps) {
   const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
 
@@ -61,7 +63,7 @@ export default function CharacterAssignmentCircle({
       >
         {players.map((p, index) => {
           const pos = positions[index] ?? { left: 50, top: 50 };
-          const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+          const roleObj = (selectionRoles ?? (rolesData as Role[])).find(r => r.id === p.roleId);
           const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
           const isEvil = p.isTheLunatic ? false : p.isTheMarionette ? true : defaultEvil;
           const isDropTarget = dragOverIndex === index && draggedIndex !== index;

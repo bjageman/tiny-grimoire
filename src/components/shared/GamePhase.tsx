@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
@@ -114,14 +115,14 @@ export default function GamePhase({
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
     const targetName = players.find(p => p.id === targetPlayerId)?.name ?? targetPlayerId;
-    const charName = (rolesData as Role[]).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
+    const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
     onLogEvent?.(`Reminder "${text} (${charName})" placed on ${targetName}`);
   };
   const handleRemoveReminder = (reminderId: string) => {
     const token = reminderTokens.find(r => r.id === reminderId);
     if (token) {
       const targetName = players.find(p => p.id === token.targetPlayerId)?.name ?? token.targetPlayerId;
-      const charName = (rolesData as Role[]).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
+      const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
       onLogEvent?.(`Reminder "${token.text} (${charName})" removed from ${targetName}`);
     }
     setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
@@ -141,7 +142,7 @@ export default function GamePhase({
     players.forEach(p => {
       const displayRoles = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
       displayRoles.forEach(roleId => {
-        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+        const rObj = baseRoles.find(r => r.id === roleId);
         if (rObj && rObj.team === 'traveler' && !roles.some(r => r.id === rObj.id)) {
           roles.push(rObj);
         }
@@ -168,8 +169,8 @@ export default function GamePhase({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [customScriptRoles, assignedRoleIds, showAllBluffCandidates]);
 
-  const officialRoleAbility = (id: string) =>
-    (officialRoles as (Role & { ability?: string })[]).find(r => r.id === id)?.ability;
+  const officialRoleAbility = (role: Pick<Role, 'id' | 'ability'>) =>
+    role.ability ?? (officialRoles as (Role & { ability?: string })[]).find(r => r.id === role.id)?.ability;
 
   const bluffTeamLabel: Record<Role['team'], string> = {
     townsfolk: 'Townsfolk',
@@ -199,7 +200,7 @@ export default function GamePhase({
     if (!bluffSearch.trim()) return bluffCandidates;
     const q = bluffSearch.toLowerCase();
     return bluffCandidates.filter(r =>
-      r.name.toLowerCase().includes(q) || officialRoleAbility(r.id)?.toLowerCase().includes(q)
+      r.name.toLowerCase().includes(q) || officialRoleAbility(r)?.toLowerCase().includes(q)
     );
   }, [bluffCandidates, bluffSearch]);
 
@@ -315,7 +316,7 @@ export default function GamePhase({
         {players.length >= 5 && (() => {
           const travelerCountInPlay = players.filter(p => {
             if (!p.roleId) return false;
-            const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+            const r = (customScriptRoles || (rolesData as Role[])).find(role => role.id === p.roleId);
             return r?.team === 'traveler';
           }).length;
           const baseCount = players.length - travelerCountInPlay;
@@ -347,7 +348,7 @@ export default function GamePhase({
             <div className="flex flex-col gap-1.5">
               {[0, 1, 2].map(slot => {
                 const roleId = demonBluffs[slot] || '';
-                const role = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : null;
+                const role = roleId ? grimoireRolesData.find(r => r.id === roleId) : null;
                 return (
                   <div key={slot} className="relative">
                     {bluffPickerSlot === slot ? (
@@ -400,7 +401,7 @@ export default function GamePhase({
                           {role ? (
                             <span className="flex items-center gap-1.5">
                               <div className="w-5 h-5 shrink-0 rounded-full bg-white flex items-center justify-center p-0.5">
-                                <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                                <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                               </div>
                               <span>{role.name}</span>
                               <span className={cn('text-[10px] font-semibold', bluffTeamTextColor[role.team])}>
@@ -563,7 +564,7 @@ export default function GamePhase({
           </div>
           <div className="grid grid-cols-1 gap-1.5 text-xs">
             {players.map((p, index) => {
-              const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+              const rObj = grimoireRolesData.find(r => r.id === p.roleId);
               return (
                 <div
                   id={`ledger-player-${p.id}`}
@@ -639,7 +640,7 @@ export default function GamePhase({
                         return <span className="text-gray-500 font-semibold text-[10px]">—</span>;
                       }
                       return displayRoles.map((roleId) => {
-                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                        const rObj = grimoireRolesData.find(r => r.id === roleId);
                         if (!rObj) return null;
                         return (
                           <span
@@ -655,7 +656,7 @@ export default function GamePhase({
                           >
                             <span className="w-4.5 h-4.5 bg-white rounded-full flex items-center justify-center shrink-0">
                               <img src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
-                                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
+                                onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')} />
                             </span>
                             <span className="truncate">{rObj.name}</span>
                           </span>
@@ -731,7 +732,7 @@ export default function GamePhase({
           <div className="flex flex-col gap-5 w-full max-w-sm">
             {[0, 1, 2].map(slot => {
               const roleId = demonBluffs[slot] || '';
-              const role = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : null;
+              const role = roleId ? grimoireRolesData.find(r => r.id === roleId) : null;
               const overlayColor = role ? bluffTeamOverlayColor[role.team] : null;
               return (
                 <div
@@ -748,7 +749,7 @@ export default function GamePhase({
                           src={`/icons/${role.id}.svg`}
                           alt={role.name}
                           className="w-full h-full object-contain"
-                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -756,8 +757,8 @@ export default function GamePhase({
                           'text-2xl font-extrabold',
                           overlayColor?.text
                         )}>{role.name}</p>
-                        {officialRoleAbility(role.id) && (
-                          <p className="text-sm text-gray-300 mt-1 leading-snug">{officialRoleAbility(role.id)}</p>
+                        {officialRoleAbility(role) && (
+                          <p className="text-sm text-gray-300 mt-1 leading-snug">{officialRoleAbility(role)}</p>
                         )}
                       </div>
                     </>

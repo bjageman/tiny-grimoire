@@ -2,6 +2,8 @@ import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
 import rolesData from '../official_roles.json';
 
+const OFFICIAL_ROLE_IDS = new Set((rolesData as Role[]).map(r => r.id));
+
 export interface ValidationSummary {
   base: { townsfolk: number; outsider: number; minion: number; demon: number; traveler: number };
   counts: { townsfolk: number; outsider: number; minion: number; demon: number; traveler: number };
@@ -18,13 +20,13 @@ export interface ValidationSummary {
   expectedTownsfolkLabel: string;
 }
 
-export function getValidationSummary(players: Player[]): ValidationSummary | null {
+export function getValidationSummary(players: Player[], allRoles: Role[] = rolesData as Role[]): ValidationSummary | null {
   if (players.length === 0) return null;
-  
+
   const N = players.length;
   const travelerCount = players.filter(p => {
     if (!p.roleId) return false;
-    const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+    const r = allRoles.find(role => role.id === p.roleId);
     return r?.team === 'traveler';
   }).length;
   const baseCount = N - travelerCount;
@@ -41,7 +43,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
       } else if (p.roleId === 'lilmonsta') {
         acc.minion++;
       } else {
-        const role = (rolesData as Role[]).find(r => r.id === p.roleId);
+        const role = allRoles.find(r => r.id === p.roleId);
         if (role) acc[role.team]++;
       }
     }
@@ -49,10 +51,10 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveler: 0 });
   
   const assignedRoles = players.map(p => {
-    if (p.isTheMarionette) return (rolesData as Role[]).find(r => r.id === 'marionette');
-    if (p.isTheDrunk) return (rolesData as Role[]).find(r => r.id === 'drunk');
-    if (p.isTheLunatic) return (rolesData as Role[]).find(r => r.id === 'lunatic');
-    return (rolesData as Role[]).find(r => r.id === p.roleId);
+    if (p.isTheMarionette) return allRoles.find(r => r.id === 'marionette');
+    if (p.isTheDrunk) return allRoles.find(r => r.id === 'drunk');
+    if (p.isTheLunatic) return allRoles.find(r => r.id === 'lunatic');
+    return allRoles.find(r => r.id === p.roleId);
   }).filter(Boolean) as Role[];
   const hasLegion = assignedRoles.some(r => r.id === 'legion');
   const hasRiot = assignedRoles.some(r => r.id === 'riot');
@@ -77,7 +79,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   // Townsfolk is a large enough pool that one extra apparent Townsfolk isn't tracked here.
   const marionettePlayer = players.find(p => p.isTheMarionette);
   const marionetteFakeTeam = marionettePlayer
-    ? (rolesData as Role[]).find(r => r.id === marionettePlayer.roleId)?.team
+    ? allRoles.find(r => r.id === marionettePlayer.roleId)?.team
     : undefined;
   const marionetteOutsiderDelta = marionetteFakeTeam === 'outsider' ? -1 : 0;
   
@@ -214,12 +216,18 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   if (hasHuntsman && !hasDamsel) jinxWarnings.push("Huntsman in play, but no Damsel assigned.");
   if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
 
+  const customRolesAssigned = assignedRoles.filter(r => !OFFICIAL_ROLE_IDS.has(r.id));
+  if (customRolesAssigned.length > 0) {
+    const uniqueNames = [...new Set(customRolesAssigned.map(r => r.name))];
+    jinxWarnings.push(`Custom: ${uniqueNames.join(', ')} — adjust setup manually.`);
+  }
+
   // Drunk/Marionette/Lunatic are always supposed to display as a different, fake character —
   // if a player's shown icon is literally one of these three, their true identity is exposed.
   const revealingMasqueradeIds = new Set(['drunk', 'marionette', 'lunatic']);
   for (const p of players) {
     if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {
-      const role = (rolesData as Role[]).find(r => r.id === p.roleId);
+      const role = allRoles.find(r => r.id === p.roleId);
       jinxWarnings.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
     }
   }
@@ -231,7 +239,7 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   }
   for (const [roleId, count] of Object.entries(roleIdFreq)) {
     if (count > 1 && roleId !== 'legion') {
-      const role = (rolesData as Role[]).find(r => r.id === roleId);
+      const role = allRoles.find(r => r.id === roleId);
       jinxWarnings.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
     }
   }
@@ -239,13 +247,13 @@ export function getValidationSummary(players: Player[]): ValidationSummary | nul
   // Marionette check: each Marionette must neighbor at least one Demon
   const basePlayersInOrder = players.filter(p => {
     if (!p.roleId) return true;
-    const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+    const r = allRoles.find(role => role.id === p.roleId);
     return r?.team !== 'traveler';
   });
   const marionettePlayers = basePlayersInOrder.filter(p => p.isTheMarionette);
   const demonPlayers = basePlayersInOrder.filter(p => {
     if (!p.roleId || p.isTheMarionette || p.isTheDrunk || p.isTheLunatic) return false;
-    const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+    const r = allRoles.find(role => role.id === p.roleId);
     return r?.team === 'demon';
   });
 

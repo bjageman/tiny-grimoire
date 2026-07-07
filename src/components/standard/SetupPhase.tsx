@@ -305,6 +305,7 @@ export default function StandardSetupPhase({
             setActivePlayerId={setActivePlayerId}
             setSearchTerm={setSearchTerm}
             remotePlayerIds={remotePlayerIds}
+            selectionRoles={sortedRoles}
           />
         </section>
       </div>

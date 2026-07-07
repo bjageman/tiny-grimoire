@@ -385,7 +385,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     phase,
     timeOfDay,
     dayNumber,
-    customScriptRoleIds: customScriptRoles ? customScriptRoles.map(r => r.id) : null,
+    customScriptRoles,
     scriptName,
     scriptAuthor,
     isLilMonstaGame,
@@ -398,18 +398,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
-    const customScriptRolesResolved = incoming.customScriptRoleIds
-      ? incoming.customScriptRoleIds.map((id: string) => {
-          const matched = (rolesData as Role[]).find(r => r.id === id);
-          if (matched) return matched;
-          return {
-            id,
-            name: id.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-            team: 'townsfolk' as const
-          };
-        })
-      : null;
-
     const localStateStr = JSON.stringify(syncState);
     const incomingStateStr = JSON.stringify(incoming);
 
@@ -418,7 +406,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setPhase(incoming.phase || 'setup');
       setTimeOfDay(incoming.timeOfDay || 'night');
       setDayNumber(incoming.dayNumber || 1);
-      setCustomScriptRoles(customScriptRolesResolved);
+      setCustomScriptRoles(incoming.customScriptRoles ?? null);
       setScriptName(incoming.scriptName || "All Roles");
       setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
@@ -568,7 +556,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const updatePlayerRole = (id: string, roleId: string) => {
     const player = players.find(p => p.id === id);
-    const oldRole = player?.roleId ? (rolesData as Role[]).find(r => r.id === player.roleId) : undefined;
+    const oldRole = player?.roleId ? (customScriptRoles || (rolesData as Role[])).find(r => r.id === player.roleId) : undefined;
     const defaultEvil = oldRole ? (oldRole.team === 'minion' || oldRole.team === 'demon') : false;
     const currentAlignment = player 
       ? (player.isEvil !== undefined 
@@ -582,7 +570,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
     if (phase === 'game') {
       if (player && player.roleId !== (roleId || undefined)) {
-        const newRole = (rolesData as Role[]).find(r => r.id === roleId);
+        const newRole = (customScriptRoles || (rolesData as Role[])).find(r => r.id === roleId);
         if (oldRole && newRole) {
           addLogEntry(`${player.name} changed from ${oldRole.name} to ${newRole.name}`);
         } else if (newRole) {
@@ -658,14 +646,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const togglePlayerEvil = (id: string) => {
     const player = players.find(p => p.id === id);
     if (player) {
-      const roleObj = (rolesData as Role[]).find(r => r.id === player.roleId);
+      const roleObj = (customScriptRoles || (rolesData as Role[])).find(r => r.id === player.roleId);
       const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
       const currentEvil = player.isEvil !== undefined ? player.isEvil : defaultEvil;
       addLogEntry(`${player.name} marked as ${!currentEvil ? 'Evil' : 'Good'}`);
     }
     setPlayers(prev => prev.map(p => {
       if (p.id === id) {
-        const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+        const roleObj = (customScriptRoles || (rolesData as Role[])).find(r => r.id === p.roleId);
         const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
         const currentEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
         return { ...p, isEvil: !currentEvil };
@@ -843,8 +831,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players);
-  }, [players]);
+    return getValidationSummary(players, selectionRoles);
+  }, [players, selectionRoles]);
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
@@ -869,7 +857,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         : modalPlayer.isTheLunatic
           ? (modalPlayer.roleId || 'lunatic')
           : modalPlayer.roleId;
-    return (rolesData as Role[]).find(r => r.id === actualRoleId);
+    return selectionRoles.find(r => r.id === actualRoleId);
   })() : undefined;
   const filteredModalRoles = selectionRoles
     .filter(r =>
@@ -997,7 +985,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
               const roleLines = players
                 .filter(pl => pl.roleId)
                 .map(pl => {
-                  const r = (rolesData as Role[]).find(ro => ro.id === pl.roleId);
+                  const r = (customScriptRoles || (rolesData as Role[])).find(ro => ro.id === pl.roleId);
                   const modifiers = [
                     pl.isTheLunatic && 'Lunatic',
                     pl.isTheMarionette && 'Marionette',
@@ -1087,7 +1075,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             setDemonBluffs(bluffs);
             const filled = bluffs.filter(Boolean);
             if (filled.length === 3) {
-              const names = filled.map(id => (rolesData as Role[]).find(r => r.id === id)?.name ?? id);
+              const names = filled.map(id => (customScriptRoles || (rolesData as Role[])).find(r => r.id === id)?.name ?? id);
               addLogEntry(`Demon bluffs set: ${names.join(', ')}`);
             }
           }}
@@ -1161,6 +1149,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           players={players}
           roleObj={modalRoleObj}
           filteredModalRoles={filteredModalRoles}
+          allRoles={selectionRoles}
           isSearchingRole={isSearchingRole}
           modalRoleSearch={modalRoleSearch}
           isLightModeActive={isLightModeActive}

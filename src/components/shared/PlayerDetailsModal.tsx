@@ -4,6 +4,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
@@ -54,6 +55,8 @@ interface PlayerDetailsModalProps {
   onUpdateNotes?: (id: string, notes: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
   onLogEvent?: (msg: string) => void;
+  /** Full current-script role list (including custom/homebrew roles), used to resolve candidate role tokens in allowMultipleRoles mode. */
+  allRoles?: Role[];
 }
 
 const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
@@ -85,6 +88,7 @@ export default function PlayerDetailsModal({
   onUpdateNotes,
   onUpdatePronouns,
   onLogEvent,
+  allRoles = [],
 }: PlayerDetailsModalProps) {
   useScrollLock();
   const originalName = useRef('');
@@ -99,6 +103,10 @@ export default function PlayerDetailsModal({
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
   const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
   const officialRole = roleObj ? officialRoles.find(r => r.id === roleObj.id) : undefined;
+  const roleAbility = roleObj?.ability ?? officialRole?.ability;
+
+  const resolveRole = (roleId: string) =>
+    allRoles.find(r => r.id === roleId) ?? (rolesData as Role[]).find(r => r.id === roleId);
 
   const teamFill = (team: Role['team']) => ({
     townsfolk: 'fill-clocktower-townsfolk',
@@ -337,7 +345,7 @@ export default function PlayerDetailsModal({
                     {/* Player Tracker Row Layout with separate buttons */}
                     <div className="flex flex-row justify-center items-center gap-4 select-none w-full flex-wrap">
                       {displayRoles.map((roleId) => {
-                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                        const rObj = resolveRole(roleId);
                         if (!rObj) return null;
                         return (
                           <button
@@ -371,7 +379,7 @@ export default function PlayerDetailsModal({
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
                                   className="w-full h-full object-contain"
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
                                 />
                               </div>
                             </div>
@@ -436,7 +444,7 @@ export default function PlayerDetailsModal({
                   <div className="flex flex-col items-center space-y-3 w-full">
                     <div className="relative flex items-center justify-center select-none transition-all duration-300 w-36 h-36">
                       {displayRoles.map((roleId) => {
-                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                        const rObj = resolveRole(roleId);
                         if (!rObj) return null;
                         return (
                           <div key={roleId} className="absolute inset-0">
@@ -464,7 +472,7 @@ export default function PlayerDetailsModal({
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
                                   className="w-full h-full object-contain"
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
                                 />
                               </div>
                             </div>
@@ -496,13 +504,13 @@ export default function PlayerDetailsModal({
           )}
 
            {/* Ability text display (only for standard single role mode) */}
-           {!allowMultipleRoles && roleObj && officialRole?.ability && !isSearchingRole && (
+           {!allowMultipleRoles && roleObj && roleAbility && !isSearchingRole && (
              <div className="text-center px-4 mt-2">
                <p className={cn(
                  'text-xs leading-relaxed italic font-medium',
                  isLightModeActive ? 'text-gray-650' : 'text-gray-300'
                )}>
-                 "{officialRole.ability}"
+                 "{roleAbility}"
                </p>
              </div>
            )}
@@ -703,7 +711,7 @@ function RoleList({
                   src={`/icons/${role.id}.svg`}
                   alt={role.name}
                   className="w-4 h-4 object-contain"
-                  onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                  onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                 />
               </span>
               <span className={cn(

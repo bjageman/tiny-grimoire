@@ -4,6 +4,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useIsMobile } from './hooks/useIsMobile';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
+import { roleIconFallback } from './utils/roleIcon';
 import { ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, Settings, CheckCircle2, RotateCcw, Plus, Search, Moon, Scroll, QrCode } from 'lucide-react';
 import type { Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/ScriptCharactersModal';
@@ -235,7 +236,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         const me = payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
         if (me) {
           if (me.roleId) {
-            const rObj = (rolesData as Role[]).find(r => r.id === me.roleId);
+            const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (rolesData as Role[]);
+            const rObj = effectiveRoles.find(r => r.id === me.roleId);
             if (rObj) {
               setAssignedRole(rObj);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
@@ -802,7 +804,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                   assignedRole.team === 'demon' && "border-clocktower-demon",
                   assignedRole.team === 'traveler' && "border-clocktower-traveler"
                 )}>
-                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" />
+                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
                 </div>
 
                 <div className="flex gap-2 justify-center items-center mb-3">
@@ -831,7 +833,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
                 {/* Role ability summary */}
                 <p className="text-xs text-gray-400 mt-3 max-w-[90%] leading-relaxed">
-                  {(rolesData as Array<{ id: string; ability: string }>).find((r) => r.id === assignedRole.id)?.ability}
+                  {assignedRole.ability ?? (rolesData as Array<{ id: string; ability: string }>).find((r) => r.id === assignedRole.id)?.ability}
                 </p>
               </div>
             </div>

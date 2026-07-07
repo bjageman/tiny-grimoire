@@ -1075,6 +1075,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           handleTouchEnd={handleTouchEnd}
           onResetDead={resetDead}
           onResetTime={resetTime}
+          remotePlayerIds={remotePlayerIds}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
@@ -1145,6 +1146,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheMarionette={togglePlayerTheMarionette}
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
+          onUpdatePronouns={updatePlayerPronouns}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
           isSecondary={isSecondary}
         />

@@ -17,9 +17,12 @@ interface WhaleBucketDraftEditModalProps {
   togglePlayerTheMarionette: (id: string) => void;
   togglePlayerTheLunatic: (id: string) => void;
   togglePlayerTheLilMonsta: (id: string) => void;
+  onUpdatePronouns?: (id: string, pronouns: string) => void;
   isLightModeActive: boolean;
   onClose: () => void;
 }
+
+const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
 
 export default function WhaleBucketDraftEditModal({
   activeDraftPlayerId,
@@ -31,6 +34,7 @@ export default function WhaleBucketDraftEditModal({
   togglePlayerTheMarionette,
   togglePlayerTheLunatic,
   togglePlayerTheLilMonsta,
+  onUpdatePronouns,
   isLightModeActive,
   onClose,
 }: WhaleBucketDraftEditModalProps) {
@@ -166,6 +170,27 @@ export default function WhaleBucketDraftEditModal({
             Close
           </button>
         </div>
+
+        {onUpdatePronouns && (
+          <select
+            id="setup-player-pronouns-select"
+            value={player.pronouns || ''}
+            onChange={(e) => onUpdatePronouns(player.id, e.target.value)}
+            className={cn(
+              'rounded px-2 py-1.5 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer self-start',
+              isLightModeActive
+                ? 'bg-white border-gray-300 text-gray-600'
+                : 'bg-gray-955 border-gray-800 text-gray-400'
+            )}
+          >
+            <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
+            {PRONOUN_OPTIONS.map(option => (
+              <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )}
 
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
           <div className="flex flex-wrap gap-1.5">

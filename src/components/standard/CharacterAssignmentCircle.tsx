@@ -125,6 +125,17 @@ export default function CharacterAssignmentCircle({
                   <span className="break-words whitespace-normal">{p.name}</span>
                 </span>
 
+                {p.pronouns && (
+                  <span
+                    style={{
+                      fontSize: `${parseFloat(getDynamicFontSize(p.name)) * 0.75}${getDynamicFontSize(p.name).replace(/[0-9.]/g, '')}`,
+                    }}
+                    className="text-[#555] font-medium leading-none select-none z-20 relative"
+                  >
+                    {p.pronouns}
+                  </span>
+                )}
+
                 {p.isTheDrunk && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-1.5 py-0.5 rounded text-[9px] font-black bg-yellow-600 text-black border border-yellow-700 shadow-sm leading-none whitespace-nowrap">
                     DRUNK

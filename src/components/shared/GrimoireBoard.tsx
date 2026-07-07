@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, RotateCcw, RotateCw } from 'lucide-react';
+import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
@@ -28,6 +28,7 @@ interface GrimoireBoardProps {
   onRemoveAllReminders?: () => void;
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
+  remotePlayerIds?: Set<string>;
 }
 
 export default function GrimoireBoard({
@@ -47,6 +48,7 @@ export default function GrimoireBoard({
   onRemoveAllReminders,
   rotationOffset: controlledRotation,
   onRotationChange,
+  remotePlayerIds,
 }: GrimoireBoardProps) {
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
@@ -738,11 +740,14 @@ export default function GrimoireBoard({
                         : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                     }}
                     className={cn(
-                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none break-words whitespace-normal max-w-[82%] inline-block align-middle",
+                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle",
                       p.isDead ? "line-through text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
                     )}
                   >
-                    {p.name}
+                    {remotePlayerIds?.has(p.id) && (
+                      <Wifi size={10} className="shrink-0" strokeWidth={3} />
+                    )}
+                    <span className="break-words whitespace-normal">{p.name}</span>
                   </span>
 
                   {p.pronouns && (

@@ -1088,6 +1088,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setNewTravelerRoleId={setNewTravelerRoleId}
           onResetDead={resetDead}
           onResetTime={resetTime}
+          remotePlayerIds={remotePlayerIds}
           travelerCardTitle="Add Traveler (Late Arrival)"
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {
@@ -1151,6 +1152,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           removePlayer={removePlayer}
           togglePreference={togglePreference}
           autoFillPlayerPreferences={autoFillPlayerPreferences}
+          onUpdatePronouns={updatePlayerPronouns}
           onClose={() => setActivePreferencePlayerId(null)}
           isSecondary={isSecondary}
         />
@@ -1168,6 +1170,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheMarionette={togglePlayerTheMarionette}
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
+          onUpdatePronouns={updatePlayerPronouns}
           isLightModeActive={isLightModeActive}
           onClose={() => { setActiveDraftPlayerId(null); setSearchTerm(''); }}
         />

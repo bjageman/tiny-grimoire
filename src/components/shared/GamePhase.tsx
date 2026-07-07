@@ -39,6 +39,7 @@ interface Props {
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
+  remotePlayerIds?: Set<string>;
   // Optional / mode-specific
   selectionRoles?: Role[];
   showNightOrder?: boolean;
@@ -73,6 +74,7 @@ export default function GamePhase({
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   handleTouchStart, handleTouchMove, handleTouchEnd,
   onResetDead, onResetTime,
+  remotePlayerIds,
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
@@ -272,6 +274,7 @@ export default function GamePhase({
             onResetTime={onResetTime}
             isSynced={isSynced}
             isLightModeActive={isLightModeActive}
+            remotePlayerIds={remotePlayerIds}
             reminderTokens={enableReminders ? reminderTokens : []}
             onAddReminder={enableReminders && !isSynced ? handleAddReminder : undefined}
             onRemoveReminder={enableReminders && !isSynced ? handleRemoveReminder : undefined}

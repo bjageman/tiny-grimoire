@@ -227,6 +227,33 @@ export default function GamePhase({
     onUpdateDemonBluffs(arr);
   };
 
+  const renderScriptButton = (id: string, visibilityClassName: string) => (
+    <button
+      id={id}
+      type="button"
+      onClick={() => setIsScriptModalOpen(true)}
+      className={cn(
+        visibilityClassName,
+        "flex-col w-full border py-3.5 px-4 rounded-lg items-center justify-center gap-1 text-center transition-colors duration-300 cursor-pointer focus:outline-none hover:opacity-90 active:scale-[0.98]",
+        isLightModeActive
+          ? "bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-800"
+          : "bg-gray-955 border-gray-800 hover:bg-gray-900 text-gray-300"
+      )}
+    >
+      <span className={cn(
+        "flex items-center gap-1.5 text-base font-extrabold transition-colors",
+        isLightModeActive ? "text-gray-900" : "text-white"
+      )}>
+        📜 {scriptName}
+      </span>
+      {scriptAuthor && (
+        <span className="text-[10px] text-gray-500 font-medium">
+          by {scriptAuthor}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
@@ -253,6 +280,7 @@ export default function GamePhase({
             onRotationChange={onRotationChange}
           />
         </div>
+        {renderScriptButton('game-script-button-mobile', 'flex md:hidden landscape:hidden')}
         {showNightOrder && (
           <NightOrderWidget
             players={players}
@@ -281,29 +309,7 @@ export default function GamePhase({
       <div id="grimoire-controls-container" className="space-y-6">
 
         {/* Active Script Display */}
-        <button
-          id="game-script-button"
-          type="button"
-          onClick={() => setIsScriptModalOpen(true)}
-          className={cn(
-            "w-full border py-3.5 px-4 rounded-lg flex flex-col items-center justify-center gap-1 text-center transition-colors duration-300 cursor-pointer focus:outline-none hover:opacity-90 active:scale-[0.98]",
-            isLightModeActive
-              ? "bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-800"
-              : "bg-gray-955 border-gray-800 hover:bg-gray-900 text-gray-300"
-          )}
-        >
-          <span className={cn(
-            "flex items-center gap-1.5 text-base font-extrabold transition-colors",
-            isLightModeActive ? "text-gray-900" : "text-white"
-          )}>
-            📜 {scriptName}
-          </span>
-          {scriptAuthor && (
-            <span className="text-[10px] text-gray-500 font-medium">
-              by {scriptAuthor}
-            </span>
-          )}
-        </button>
+        {renderScriptButton('game-script-button', 'hidden md:flex landscape:flex')}
 
         {/* Standard Base Distribution */}
         {players.length >= 5 && (() => {

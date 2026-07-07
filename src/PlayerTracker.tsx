@@ -210,14 +210,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       setPhase('setup');
       setTimeOfDay('night');
       setDayNumber(1);
-      setScriptName("All Roles");
-      setCustomScriptRoles(null);
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setGameNotes('');
       setGameCode(null);
-      window.location.hash = '';
+      window.location.hash = '#/tracker';
     }, 'Reset Tracker');
   };
 
@@ -536,6 +534,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           handleTouchMove={handleTouchMove}
           handleTouchEnd={handleTouchEnd}
           isSynced={isSynced}
+          resetGame={resetGame}
         />
       )}
 

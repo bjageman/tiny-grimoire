@@ -343,7 +343,8 @@ export default function PlayerDetailsModal({
                           <button
                             key={roleId}
                             type="button"
-                            onClick={() => onSetSearchingRole(true)}
+                            onClick={() => onUpdateRoles?.(p.id, displayRoles.filter(id => id !== roleId))}
+                            title="Remove character"
                             className="relative w-24 h-24 shrink-0 transition-all duration-200 hover:scale-110 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
                           >
                             <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
@@ -365,7 +366,7 @@ export default function PlayerDetailsModal({
                               </text>
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[47%] h-[47%] flex items-center justify-center">
+                              <div className="w-[80%] h-[80%] flex items-center justify-center">
                                 <img
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
@@ -458,7 +459,7 @@ export default function PlayerDetailsModal({
                               </text>
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[47%] h-[47%] flex items-center justify-center">
+                              <div className="w-[80%] h-[80%] flex items-center justify-center">
                                 <img
                                   src={`/icons/${rObj.id}.svg`}
                                   alt={rObj.name}
@@ -493,45 +494,6 @@ export default function PlayerDetailsModal({
               </button>
             )
           )}
-
-           {/* Selected character tags with delete button (Player Tracker mode) */}
-           {allowMultipleRoles && displayRoles.length > 0 && !isSearchingRole && (
-             <div className="flex flex-wrap gap-1.5 justify-center mt-4 px-4 relative z-30">
-               {displayRoles.map((roleId) => {
-                 const rObj = (rolesData as Role[]).find(r => r.id === roleId);
-                 if (!rObj) return null;
-                 return (
-                   <button
-                     key={roleId}
-                     type="button"
-                     onClick={() => {
-                       if (onUpdateRoles) {
-                         onUpdateRoles(p.id, displayRoles.filter(id => id !== roleId));
-                       }
-                     }}
-                     className={cn(
-                       "inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded border shadow-sm transition-all cursor-pointer select-none",
-                       isLightModeActive
-                         ? "bg-gray-100 border-gray-300 text-clocktower-night hover:bg-red-50 hover:text-red-600 hover:border-red-300"
-                         : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-red-950/30 hover:text-red-400 hover:border-red-900/50"
-                     )}
-                     title="Remove character"
-                   >
-                     <span className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shrink-0">
-                       <img
-                         src={`/icons/${rObj.id}.svg`}
-                         alt={rObj.name}
-                         className="w-2.5 h-2.5 object-contain"
-                         onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                       />
-                     </span>
-                     <span>{rObj.name}</span>
-                     <span className="text-red-500 font-black ml-0.5 text-xs">×</span>
-                   </button>
-                 );
-               })}
-             </div>
-           )}
 
            {/* Ability text display (only for standard single role mode) */}
            {!allowMultipleRoles && roleObj && officialRole?.ability && !isSearchingRole && (

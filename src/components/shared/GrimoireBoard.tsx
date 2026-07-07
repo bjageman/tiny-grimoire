@@ -8,6 +8,8 @@ import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
 import DayNightLabel from './DayNightLabel';
+import CharacterToken from './CharacterToken';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 interface GrimoireBoardProps {
   players: Player[];
@@ -67,6 +69,8 @@ export default function GrimoireBoard({
   const [boardWidth, setBoardWidth] = useState<number>(0);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
+  const isMobile = useIsMobile();
+  const reminderTokenSizePct = isMobile ? 32 : 26;
   const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,14 +125,6 @@ export default function GrimoireBoard({
 
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
-
-  const teamFill = (team: Role['team']) => ({
-    townsfolk: 'fill-clocktower-townsfolk',
-    outsider: 'fill-clocktower-outsider',
-    minion: 'fill-clocktower-minion',
-    demon: 'fill-clocktower-demon',
-    traveler: 'fill-clocktower-traveler',
-  }[team] ?? 'fill-gray-500');
 
   const grimoireConfig = useMemo(() => {
     const count = players.length;
@@ -559,8 +555,8 @@ export default function GrimoireBoard({
                     left: `calc(50% + ${(inwardDx * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
                     top: `calc(50% + ${(inwardDy * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
                     transform: 'translate(-50%, -50%)',
-                    width: '23%',
-                    height: '23%',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
                   }}
                   onTouchStart={(e) => e.stopPropagation()}
@@ -597,8 +593,8 @@ export default function GrimoireBoard({
                     left: `calc(50% + ${reminderLeft.toFixed(1)}%)`,
                     top: `calc(50% + ${reminderTop.toFixed(1)}%)`,
                     transform: 'translate(-50%, -50%)',
-                    width: '23%',
-                    height: '23%',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
                   }}
                 >
@@ -608,7 +604,10 @@ export default function GrimoireBoard({
                     e.stopPropagation();
                     setSelectedReminder(reminder);
                   }}
-                  className="w-full h-full rounded-full bg-gray-200 border-2 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-125 hover:shadow-md"
+                  className={cn(
+                    "w-full h-full rounded-full bg-gray-200 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-125 hover:shadow-md",
+                    isMobile ? "border" : "border-2"
+                  )}
                   title={reminder.text}
                 >
                   <img
@@ -715,71 +714,15 @@ export default function GrimoireBoard({
                             touchStartedFannedRef.current = false;
                           }}
                         >
-                          {/* SVG representing the token */}
-                          <svg viewBox="0 0 200 200" className={cn("w-full h-full absolute inset-0 z-0 select-none pointer-events-none", p.isDead && "opacity-60")}>
-                            <defs>
-                              <path id={`topTextPath-${p.id}-${idx}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                              <path id={`bottomTextPath-${p.id}-${idx}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                            </defs>
-                            
-                            {/* Token background circle */}
-                            <circle
-                              cx="100"
-                              cy="100"
-                              r="90"
-                              fill={p.isDead ? "#e4e4e7" : "#ffffff"}
-                              className={cn(
-                                "stroke-[6px]",
-                                isEvil ? "stroke-clocktower-minion" : "stroke-clocktower-townsfolk"
-                              )}
-                            />
-                            
-                            {/* Inner ring */}
-                            <circle
-                              cx="100"
-                              cy="100"
-                              r="58"
-                              fill="none"
-                              stroke="#e4e4e7"
-                              strokeWidth="1"
-                              strokeDasharray="3 3"
-                            />
-                            
-                            {roleObj && (
-                              <>
-                                {/* Curved Character Name */}
-                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(roleObj.team))}>
-                                  <textPath href={`#topTextPath-${p.id}-${idx}`} startOffset="50%" textAnchor="middle">
-                                    {roleObj.name}
-                                  </textPath>
-                                </text>
-                                
-                                {/* Curved Character Type */}
-                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(roleObj.team))}>
-                                  <textPath href={`#bottomTextPath-${p.id}-${idx}`} startOffset="50%" textAnchor="middle">
-                                    {roleObj.team}
-                                  </textPath>
-                                </text>
-                              </>
-                            )}
-                          </svg>
-
-                          {/* Centered character icon */}
-                          {roleObj && (
-                            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none select-none">
-                              <div className="w-[65%] h-[65%] flex items-center justify-center">
-                                <img
-                                  src={`/icons/${roleObj.id}.svg`}
-                                  alt={roleObj.name}
-                                  className={cn(
-                                    "w-full h-full object-contain transition-all duration-200 select-none",
-                                    p.isDead ? "grayscale opacity-15" : "opacity-35"
-                                  )}
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
-                              </div>
-                            </div>
-                          )}
+                          <CharacterToken
+                            role={roleObj}
+                            isEvil={isEvil}
+                            isDead={p.isDead}
+                            iconSizePct={80}
+                            blankRing
+                            idPrefix={`${p.id}-${idx}`}
+                            className="absolute inset-0"
+                          />
                         </div>
                       );
                     });

@@ -160,8 +160,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
-    setScriptName("All Roles");
-    setCustomScriptRoles(null);
     setDemonBluffs([]);
     setGameLog([]);
     setReminderTokens([]);

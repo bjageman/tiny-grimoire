@@ -181,13 +181,13 @@ describe('PlayerTracker', () => {
     expect(screen.getByPlaceholderText('Enter player name in seating order...')).toBeInTheDocument();
   });
 
-  it('resets the tracker and returns to the main menu when clicking the reset button', () => {
+  it('resets the tracker and returns to setup when clicking the reset button', () => {
     window.location.hash = '#/tracker';
 
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
-    const resetButton = screen.getByTitle('Reset game');
-    fireEvent.click(resetButton);
+    const resetButton = document.getElementById('reset-game-button');
+    fireEvent.click(resetButton!);
 
     // Confirm modal should appear
     expect(screen.getByText('Are you sure you want to reset the tracker? This clears all players and settings.')).toBeInTheDocument();
@@ -195,6 +195,6 @@ describe('PlayerTracker', () => {
     // Click Confirm
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    expect(window.location.hash).toBe('');
+    expect(window.location.hash).toBe('#/tracker');
   });
 });

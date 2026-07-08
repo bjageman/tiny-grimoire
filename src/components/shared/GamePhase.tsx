@@ -156,7 +156,13 @@ export default function GamePhase({
         }
       });
     });
-    return roles.sort((a, b) => a.name.localeCompare(b.name));
+    return roles.sort((a, b) => {
+      const idxA = baseRoles.findIndex(r => r.id === a.id);
+      const idxB = baseRoles.findIndex(r => r.id === b.id);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);

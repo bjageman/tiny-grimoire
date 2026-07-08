@@ -369,7 +369,7 @@ describe('PlayerTracker', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     // No share code yet — nothing should be pending
-    expect(screen.queryByAltText('Summoning...')).toBeNull();
+    expect(screen.queryByTestId('loading-screen')).toBeNull();
 
     // The user opens a share link in this same, already-mounted tab (e.g.
     // from a message app) — a plain hash navigation, not a fresh page load
@@ -378,7 +378,7 @@ describe('PlayerTracker', () => {
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
 
-    expect(screen.getByAltText('Summoning...')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-screen')).toBeInTheDocument();
 
     window.location.hash = hash;
   });

@@ -7,7 +7,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.05);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Summoning/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Summoning/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-blood');
     expect(await screen.findByAltText(/Summoning/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/summoner.svg');
@@ -19,7 +21,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.2);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Grinding/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Grinding/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-blood');
     expect(await screen.findByAltText(/Grinding/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/organgrinder.svg');
@@ -31,7 +35,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.35);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Ticking/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Ticking/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-townsfolk');
     expect(await screen.findByAltText(/Ticking/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/clockmaker.svg');
@@ -43,7 +49,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Imagining/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Imagining/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-townsfolk');
     expect(await screen.findByAltText(/Imagining/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/lunatic.svg');
@@ -55,7 +63,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.65);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Investigating/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Investigating/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-townsfolk');
     expect(await screen.findByAltText(/Investigating/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/investigator.svg');
@@ -67,7 +77,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.8);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Rioting/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Rioting/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-blood');
     expect(await screen.findByAltText(/Rioting/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/riot.svg');
@@ -79,7 +91,9 @@ describe('LoadingScreen', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.95);
     render(<LoadingScreen isLight={false} />);
 
-    expect(await screen.findByText(/Gossiping/i)).toBeInTheDocument();
+    const text = await screen.findByText(/Gossiping/i);
+    expect(text).toBeInTheDocument();
+    expect(text).toHaveClass('text-clocktower-townsfolk');
     expect(await screen.findByAltText(/Gossiping/i)).toBeInTheDocument();
     const img = screen.getByRole('img');
     expect(img.getAttribute('src')).toBe('/icons/gossip.svg');

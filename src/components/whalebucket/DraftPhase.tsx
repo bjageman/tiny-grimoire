@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Shuffle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';

@@ -350,7 +350,20 @@ describe('validationSummary utility', () => {
       const summary = getValidationSummary(players, scriptRoles);
       expect(summary).not.toBeNull();
       if (summary) {
-        expect(summary.failures).toContain('Chef is not on the script.');
+        expect(summary.failures).toContain('1 character is not on the script.');
+      }
+
+      // 2 missing characters (chef and poisoner are missing)
+      const scriptRoles2: Role[] = [
+        { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk', ability: '' },
+        { id: 'librarian', name: 'Librarian', team: 'townsfolk', ability: '' },
+        { id: 'investigator', name: 'Investigator', team: 'townsfolk', ability: '' },
+        { id: 'imp', name: 'Imp', team: 'demon', ability: '' },
+      ];
+      const summary2 = getValidationSummary(players, scriptRoles2);
+      expect(summary2).not.toBeNull();
+      if (summary2) {
+        expect(summary2.failures).toContain('2 characters are not on the script.');
       }
     });
   });

@@ -293,9 +293,10 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
       }
     }
   }
-  for (const roleId of missingRoleIds) {
-    const resolved = (rolesData as Role[]).find(r => r.id === roleId);
-    failures.push(`${resolved?.name ?? roleId} is not on the script.`);
+  if (missingRoleIds.size === 1) {
+    failures.push("1 character is not on the script.");
+  } else if (missingRoleIds.size > 1) {
+    failures.push(`${missingRoleIds.size} characters are not on the script.`);
   }
 
   

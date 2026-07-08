@@ -830,10 +830,11 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    // Enter character search/selection mode
+    // Enter character search/selection mode if not already there
     const changeRoleBtn = storyteller.container.querySelector('#detail-change-role-button');
-    expect(changeRoleBtn).not.toBeNull();
-    fireEvent.click(changeRoleBtn!);
+    if (changeRoleBtn) {
+      fireEvent.click(changeRoleBtn);
+    }
 
     // Update Alice's role to Empath
     const empathBtn = storyteller.container.querySelector('#detail-role-option-empath');

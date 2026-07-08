@@ -14,14 +14,17 @@ export default function LoadingScreen({ isLight }: LoadingScreenProps) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const isSummoner = Math.random() < 0.5;
-      if (!isSummoner) {
-        setConfig({
-          icon: '/icons/organgrinder.svg',
-          text: 'Grinding...',
-          alt: 'Grinding...',
-        });
-      }
+      const list = [
+        { icon: '/icons/summoner.svg', text: 'Summoning...', alt: 'Summoning...' },
+        { icon: '/icons/organgrinder.svg', text: 'Grinding...', alt: 'Grinding...' },
+        { icon: '/icons/clockmaker.svg', text: 'Ticking...', alt: 'Ticking...' },
+        { icon: '/icons/lunatic.svg', text: 'Imagining...', alt: 'Imagining...' },
+        { icon: '/icons/investigator.svg', text: 'Investigating...', alt: 'Investigating...' },
+        { icon: '/icons/riot.svg', text: 'Rioting...', alt: 'Rioting...' },
+        { icon: '/icons/gossip.svg', text: 'Gossiping...', alt: 'Gossiping...' },
+      ];
+      const chosen = list[Math.floor(Math.random() * list.length)];
+      setConfig(chosen);
     }, 0);
     return () => clearTimeout(timer);
   }, []);

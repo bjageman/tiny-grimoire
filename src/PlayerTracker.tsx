@@ -468,6 +468,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       const orderA = TEAM_ORDER[a.team] ?? 99;
       const orderB = TEAM_ORDER[b.team] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
+
+      // Sort by order in script JSON
+      const indexA = selectionRoles.findIndex((r) => r.id === a.id);
+      const indexB = selectionRoles.findIndex((r) => r.id === b.id);
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
       return a.name.localeCompare(b.name);
     });
 

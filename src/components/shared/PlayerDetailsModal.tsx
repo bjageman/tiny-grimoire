@@ -5,7 +5,7 @@ import { useBufferedField } from '../../hooks/useBufferedField';
 import { ChevronLeft, ChevronRight, X, Search, Trash2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
-import type { Role } from '../../types';
+import { TEAM_ORDER, type Role } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
 import DialogModal from './DialogModal';
@@ -100,11 +100,26 @@ export default function PlayerDetailsModal({
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const displayRolesList = useMemo(() => {
-    if (allowMultipleRoles && sortAlphabetically) {
-      return [...filteredModalRoles].sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return filteredModalRoles;
-  }, [filteredModalRoles, allowMultipleRoles, sortAlphabetically]);
+    return [...filteredModalRoles].sort((a, b) => {
+      // 1. Keep teams separated
+      const orderA = TEAM_ORDER[a.team] ?? 99;
+      const orderB = TEAM_ORDER[b.team] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+
+      // 2. Sort within team
+      if (allowMultipleRoles && sortAlphabetically) {
+        return a.name.localeCompare(b.name);
+      } else {
+        // Sort by script JSON order (using allRoles)
+        const indexA = allRoles.findIndex((r) => r.id === a.id);
+        const indexB = allRoles.findIndex((r) => r.id === b.id);
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        return a.name.localeCompare(b.name);
+      }
+    });
+  }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();

@@ -206,15 +206,17 @@ describe('PlayerDetailsModal', () => {
   });
 
   it('tracker details modal replaces search cancel button with sort toggle and sorts roles when clicked', () => {
+    const testRoles: Role[] = [
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+    ];
     const { container } = render(
       <PlayerDetailsModal
         {...defaultProps}
         allowMultipleRoles={true}
         isSearchingRole={true}
-        filteredModalRoles={[
-          { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
-          { id: 'chef', name: 'Chef', team: 'townsfolk' },
-        ]}
+        allRoles={testRoles}
+        filteredModalRoles={testRoles}
       />
     );
 

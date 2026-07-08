@@ -264,4 +264,70 @@ describe('validationSummary utility', () => {
       }
     });
   });
+
+  describe('warnings vs failures split', () => {
+    const basePlayers: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'poisoner', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'imp', isDead: false },
+    ];
+
+    it('puts Huntsman/Damsel and Choirboy/King setup issues under failures, not warnings', () => {
+      const players: Player[] = [...basePlayers, { id: '7', name: 'Gina', roleId: 'huntsman', isDead: false }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.failures).toContain('Huntsman in play, but no Damsel assigned.');
+        expect(summary.warnings).not.toContain('Huntsman in play, but no Damsel assigned.');
+      }
+
+      const players2: Player[] = [...basePlayers, { id: '7', name: 'Gina', roleId: 'choirboy', isDead: false }];
+      const summary2 = getValidationSummary(players2);
+      expect(summary2).not.toBeNull();
+      if (summary2) {
+        expect(summary2.failures).toContain('Choirboy in play, but no King assigned.');
+        expect(summary2.warnings).not.toContain('Choirboy in play, but no King assigned.');
+      }
+    });
+
+    it('puts Alchemist and custom roles under warnings, not failures', () => {
+      const players: Player[] = [...basePlayers, { id: '7', name: 'Gina', roleId: 'alchemist', isDead: false }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.warnings).toContain('Alchemist in play — ability may affect setup.');
+        expect(summary.failures).not.toContain('Alchemist in play — ability may affect setup.');
+      }
+    });
+
+    it('puts duplicate characters under failures, not warnings', () => {
+      const players: Player[] = [...basePlayers, { id: '7', name: 'Gina', roleId: 'chef', isDead: false }];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.failures).toContain('Chef is assigned to 2 players.');
+        expect(summary.warnings).not.toContain('Chef is assigned to 2 players.');
+      }
+    });
+
+    it('puts Marionette placement issues under failures, not warnings', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false, isTheMarionette: true },
+        { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'poisoner', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'imp', isDead: false }, // Demon is far from Marionette (Player 2)
+      ];
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.failures).toContain('Marionette (Player 2) must be sitting next to the Demon.');
+        expect(summary.warnings).not.toContain('Marionette (Player 2) must be sitting next to the Demon.');
+      }
+    });
+  });
 });

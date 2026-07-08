@@ -1210,6 +1210,48 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     storyteller.unmount();
   });
+
+  it('disables Open Grimoire when there are failures, and enables it when override failures checkbox is checked', async () => {
+    const PLAYERS = [
+      { id: 'p1', name: 'Alice', roleId: 'imp' },
+      { id: 'p2', name: 'Bob', roleId: 'washerwoman' },
+      { id: 'p3', name: 'Carol', roleId: 'empath' },
+      { id: 'p4', name: 'Dave', roleId: 'poisoner' },
+      { id: 'p5', name: 'Eve', roleId: 'imp' } // Duplicate Imp!
+    ];
+    
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: PLAYERS,
+      phase: 'setup',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    }));
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    // Retrieve the Open Grimoire button
+    const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
+    expect(openGrimBtn).not.toBeNull();
+    // It should be disabled because there is a duplicate Imp (which is a failure)
+    expect(openGrimBtn).toBeDisabled();
+
+    // Verify the override checkbox is present
+    const overrideCheckbox = storyteller.container.querySelector('#override-failures-checkbox') as HTMLInputElement;
+    expect(overrideCheckbox).not.toBeNull();
+    expect(overrideCheckbox.checked).toBe(false);
+
+    // Check the checkbox
+    await act(async () => {
+      fireEvent.click(overrideCheckbox);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // The button should now be enabled
+    expect(openGrimBtn).not.toBeDisabled();
+
+    storyteller.unmount();
+  });
 });
 
 describe('Storyteller Notes Privacy', () => {

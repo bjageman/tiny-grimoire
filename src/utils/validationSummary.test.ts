@@ -468,6 +468,22 @@ describe('validationSummary utility', () => {
       const summary4 = getValidationSummary(tooManyDemons);
       expect(summary4?.failures).toContain('Too many Demons: expected 1, but got 2.');
     });
+
+    it('should correctly apply setup modifications when a setup-modifying role is a Drunk/Marionette fake identity', () => {
+      const playersWith2Outsiders: Player[] = [
+        { id: '1', name: 'P1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'P2', roleId: 'librarian', isDead: false },
+        { id: '3', name: 'P3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'P4', roleId: 'chef', isDead: false },
+        { id: '5', name: 'P5', roleId: 'balloonist', isDead: false, isTheMarionette: true },
+        { id: '6', name: 'P6', roleId: 'butler', isDead: false },
+        { id: '7', name: 'P7', roleId: 'recluse', isDead: false },
+        { id: '8', name: 'P8', roleId: 'imp', isDead: false },
+      ];
+      const summary = getValidationSummary(playersWith2Outsiders);
+      expect(summary?.isOutsiderValid).toBe(true);
+      expect(summary?.failures.some(f => f.includes('Outsiders'))).toBe(false);
+    });
   });
 });
 

@@ -65,11 +65,11 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   const hasGodfather = assignedRoles.some(r => r.id === 'godfather');
   const hasFangGu = assignedRoles.some(r => r.id === 'fanggu');
   const hasVigormortis = assignedRoles.some(r => r.id === 'vigormortis');
-  const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
-  const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
-  const hasAlchemist = assignedRoles.some(r => r.id === 'alchemist');
+  const hasBalloonist = players.some(p => p.roleId === 'balloonist');
+  const hasHuntsman = players.some(p => p.roleId === 'huntsman');
+  const hasAlchemist = players.some(p => p.roleId === 'alchemist');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
-  const hasHermit = assignedRoles.some(r => r.id === 'hermit');
+  const hasHermit = players.some(p => p.roleId === 'hermit');
   const hasSummoner = assignedRoles.some(r => r.id === 'summoner');
   const hasLordOfTyphon = assignedRoles.some(r => r.id === 'lordoftyphon');
   const hasKazali = assignedRoles.some(r => r.id === 'kazali');
@@ -209,9 +209,9 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDeltaForTownsfolk);
   
   // Jinx checks
-  const hasChoirboy = assignedRoles.some(r => r.id === 'choirboy');
-  const hasKing = assignedRoles.some(r => r.id === 'king');
-  const hasDamsel = assignedRoles.some(r => r.id === 'damsel');
+  const hasChoirboy = players.some(p => p.roleId === 'choirboy');
+  const hasKing = players.some(p => p.roleId === 'king');
+  const hasDamsel = players.some(p => p.roleId === 'damsel');
   
   const warnings: string[] = [];
   const failures: string[] = [];

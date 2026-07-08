@@ -632,7 +632,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
               title="Click to disconnect from the Storyteller's live game"
               isLightModeActive={isLightModeActive}
             >
-              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+              Syncing with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
             </HeaderCodeBadge>
           ) : (
             <HeaderCodeBadge
@@ -653,7 +653,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
             title="Click to disconnect from the Storyteller's live game"
             isLightModeActive={isLightModeActive}
           >
-            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
+            Syncing with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
           </HeaderCodeBadge>
         ) : (
           <HeaderCodeBadge

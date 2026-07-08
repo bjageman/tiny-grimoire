@@ -623,6 +623,50 @@ describe('performStandardAssignment', () => {
         expect(uniqueRoleIds.size).toBe(6);
       }
     });
+
+    it('should assign different traveler characters to travelers when player count is > 15', () => {
+      const players: Player[] = Array.from({ length: 18 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+      const travelerRoles: Role[] = [
+        { id: 'beggar', name: 'Beggar', team: 'traveler' },
+        { id: 'barista', name: 'Barista', team: 'traveler' },
+        { id: 'harlot', name: 'Harlot', team: 'traveler' },
+        { id: 'butcher', name: 'Butcher', team: 'traveler' },
+      ];
+      const selectionRoles = [...mockScriptRoles, ...travelerRoles];
+      const result = performStandardAssignment(players, mockScriptRoles, selectionRoles);
+      expect(result).not.toBeNull();
+      if (!result) return;
+
+      const assignedTravelers = result.filter(p => travelerRoles.some(t => t.id === p.roleId));
+      expect(assignedTravelers.length).toBe(3);
+
+      const assignedTravelerRoleIds = assignedTravelers.map(p => p.roleId);
+      const uniqueTravelerRoleIds = new Set(assignedTravelerRoleIds);
+      expect(uniqueTravelerRoleIds.size).toBe(3);
+    });
+
+    it('should keep a manually assigned traveler as a traveler when auto-assign is run', () => {
+      const players: Player[] = Array.from({ length: 8 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+      players[3].roleId = 'gunslinger';
+
+      const travelerRoles: Role[] = [
+        { id: 'beggar', name: 'Beggar', team: 'traveler' },
+        { id: 'gunslinger', name: 'Gunslinger', team: 'traveler' },
+      ];
+      const selectionRoles = [...mockScriptRoles, ...travelerRoles];
+      const result = performStandardAssignment(players, mockScriptRoles, selectionRoles);
+      expect(result).not.toBeNull();
+      if (!result) return;
+
+      const p3 = result.find(p => p.id === '3');
+      expect(p3).toBeDefined();
+      expect(p3?.roleId).toBe('gunslinger');
+
+      const assignedTravelers = result.filter(p => travelerRoles.some(t => t.id === p.roleId));
+      expect(assignedTravelers.length).toBe(1);
+    });
   });
 });
+
+
 

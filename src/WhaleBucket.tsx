@@ -976,7 +976,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               title="Click to disconnect secondary storyteller device"
               isLightModeActive={isLightModeActive}
             >
-              Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+              Syncing with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
             </HeaderCodeBadge>
           ) : phase !== 'game' ? (
             <HeaderCodeBadge
@@ -1020,7 +1020,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             title="Click to disconnect secondary storyteller device"
             isLightModeActive={isLightModeActive}
           >
-            Sync with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
+            Syncing with <span className="text-clocktower-blood font-mono uppercase tracking-wider">{syncCode}</span>
           </HeaderCodeBadge>
         ) : phase !== 'game' ? (
           <HeaderCodeBadge

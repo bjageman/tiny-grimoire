@@ -169,16 +169,14 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [isSearchingRole, setIsSearchingRole] = useState(false);
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
-  useEffect(() => {
+  const [prevSelectedPlayerId, setPrevSelectedPlayerId] = useState<string | null>(null);
+  if (selectedPlayerId !== prevSelectedPlayerId) {
+    setPrevSelectedPlayerId(selectedPlayerId);
     if (selectedPlayerId) {
       const p = players.find(player => player.id === selectedPlayerId);
-      if (p && !p.roleId) {
-        setIsSearchingRole(true);
-      } else {
-        setIsSearchingRole(false);
-      }
+      setIsSearchingRole(p ? !p.roleId : false);
     }
-  }, [selectedPlayerId, players]);
+  }
 
   // Drag and drop states
   const {

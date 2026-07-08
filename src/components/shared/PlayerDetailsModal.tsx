@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
@@ -96,6 +96,7 @@ export default function PlayerDetailsModal({
   const [editedName, setEditedName] = useBufferedField(p.id, p.name, onUpdateName);
   const [editedNotes, setEditedNotes] = useBufferedField(p.id, p.notes ?? '', (id, notes) => onUpdateNotes?.(id, notes));
   const isMobile = useIsMobile();
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();
@@ -350,43 +351,60 @@ export default function PlayerDetailsModal({
                         const rObj = resolveRole(roleId);
                         if (!rObj) return null;
                         return (
-                          <button
-                            key={roleId}
-                            type="button"
-                            onClick={() => onUpdateRoles?.(p.id, displayRoles.filter(id => id !== roleId))}
-                            title="Remove character"
-                            className="relative w-24 h-24 shrink-0 transition-all duration-200 hover:scale-110 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
-                          >
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
-                              <defs>
-                                <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                              </defs>
-                              <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                              <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                              <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.name}
-                                </textPath>
-                              </text>
-                              <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.team}
-                                </textPath>
-                              </text>
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                <img
-                                  key={rObj.id}
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                />
+                          <div key={roleId} className="relative w-24 h-24 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRole(rObj)}
+                              title={`${rObj.name} - View Details`}
+                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
+                            >
+                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
+                                <defs>
+                                  <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+                                  <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+                                </defs>
+                                <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
+                                <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.name}
+                                  </textPath>
+                                </text>
+                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.team}
+                                  </textPath>
+                                </text>
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                                <div className="w-[80%] h-[80%] flex items-center justify-center">
+                                  <img
+                                    key={rObj.id}
+                                    src={`/icons/${rObj.id}.svg`}
+                                    alt={rObj.name}
+                                    className="w-full h-full object-contain"
+                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          </button>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateRoles?.(p.id, displayRoles.filter(id => id !== roleId));
+                              }}
+                              title="Remove character"
+                              className={cn(
+                                "absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow border text-xs font-bold z-30 cursor-pointer hover:scale-110 active:scale-95",
+                                isLightModeActive
+                                  ? "bg-white border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700"
+                              )}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
                         );
                       })}
                       {displayRoles.length < 3 && (
@@ -431,61 +449,98 @@ export default function PlayerDetailsModal({
                 )}
               </div>
             ) : (
-              /* Standard grimoire single button */
-              <button
-                id="detail-change-role-button"
-                type="button"
-                onClick={() => onSetSearchingRole(true)}
-                className={cn(
-                  'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative',
-                  isLightModeActive
-                    ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
-                    : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
-                )}
-              >
-                {displayRoles.length > 0 ? (
+              /* Standard grimoire single button or display */
+              displayRoles.length > 0 ? (
+                <div
+                  id="detail-change-role-button"
+                  onClick={() => onSetSearchingRole(true)}
+                  className={cn(
+                    'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative cursor-pointer',
+                    isLightModeActive
+                      ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
+                      : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
+                  )}
+                >
                   <div className="flex flex-col items-center space-y-3 w-full">
-                    <div className="relative flex items-center justify-center select-none transition-all duration-300 w-36 h-36">
+                    <div className="relative flex items-center justify-center select-none w-36 h-36">
                       {displayRoles.map((roleId) => {
                         const rObj = resolveRole(roleId);
                         if (!rObj) return null;
                         return (
-                          <div key={roleId} className="absolute inset-0">
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
-                              <defs>
-                                <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                              </defs>
-                              <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                              <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                              <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.name}
-                                </textPath>
-                              </text>
-                              <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.team}
-                                </textPath>
-                              </text>
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                <img
-                                  key={rObj.id}
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                />
+                          <div key={roleId} className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRole(rObj);
+                              }}
+                              title={`${rObj.name} - View Details`}
+                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
+                            >
+                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
+                                <defs>
+                                  <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+                                  <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+                                </defs>
+                                <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
+                                <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.name}
+                                  </textPath>
+                                </text>
+                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
+                                  <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                    {rObj.team}
+                                  </textPath>
+                                </text>
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                                <div className="w-[80%] h-[80%] flex items-center justify-center">
+                                  <img
+                                    key={rObj.id}
+                                    src={`/icons/${rObj.id}.svg`}
+                                    alt={rObj.name}
+                                    className="w-full h-full object-contain"
+                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
+                                  />
+                                </div>
                               </div>
-                            </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateRole(p.id, '');
+                              }}
+                              title="Remove character"
+                              className={cn(
+                                "absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow border text-xs font-bold z-30 cursor-pointer hover:scale-110 active:scale-95",
+                                isLightModeActive
+                                  ? "bg-white border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700"
+                              )}
+                            >
+                              <X size={12} />
+                            </button>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                ) : (
+                </div>
+              ) : (
+                <button
+                  id="detail-change-role-button"
+                  type="button"
+                  onClick={() => onSetSearchingRole(true)}
+                  className={cn(
+                    'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative',
+                    isLightModeActive
+                      ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
+                      : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
+                  )}
+                >
                   <div className="flex flex-col items-center space-y-2 py-1">
                     <div className={cn(
                       'w-32 h-32 rounded-full border-2 border-dashed flex items-center justify-center text-4xl font-light transition-colors',
@@ -502,8 +557,8 @@ export default function PlayerDetailsModal({
                       <p className="text-xs opacity-50 mt-0.5">Click to select character</p>
                     </div>
                   </div>
-                )}
-              </button>
+                </button>
+              )
             )
           )}
 
@@ -629,11 +684,65 @@ export default function PlayerDetailsModal({
              )}
            </div>
          )}
-       </div>
-     </div>
-    </>
-  );
-}
+        </div>
+      </div>
+      {/* Inline role details modal */}
+      {selectedRole && (() => {
+        const abilityText = selectedRole.ability
+          ?? (officialRoles as Array<{ id: string; ability?: string }>).find(r => r.id === selectedRole.id)?.ability
+          ?? "Ability description not found.";
+        const t = selectedRole.team;
+        return (
+          <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedRole(null)}>
+            <div
+              className={cn("w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl animate-scaleIn", isLightModeActive ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-150")}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button type="button" onClick={() => setSelectedRole(null)} className={cn("absolute top-4 right-4 p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")} aria-label="Close details">
+                <X size={18} />
+              </button>
+              <div className={cn(
+                "w-24 h-24 mx-auto rounded-full bg-white flex items-center justify-center shadow-lg border-4 transition-transform duration-300 hover:rotate-6 mt-2",
+                t === 'townsfolk' && "border-clocktower-townsfolk shadow-clocktower-townsfolk/20",
+                t === 'outsider'  && "border-clocktower-outsider shadow-clocktower-outsider/20",
+                t === 'minion'    && "border-clocktower-minion shadow-clocktower-minion/20",
+                t === 'demon'     && "border-clocktower-demon shadow-clocktower-demon/20",
+                t === 'traveler'  && "border-clocktower-traveler shadow-clocktower-traveler/20",
+              )}>
+                <img key={selectedRole.id} src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={roleIconFallback(selectedRole, t === 'minion' || t === 'demon')} />
+              </div>
+              <h4 className={cn(
+                "text-2xl font-black mt-4 tracking-wide",
+                t === 'townsfolk' && "text-clocktower-townsfolk",
+                t === 'outsider'  && "text-clocktower-outsider",
+                t === 'minion'    && "text-clocktower-minion",
+                t === 'demon'     && "text-clocktower-demon",
+                t === 'traveler'  && "text-clocktower-traveler",
+              )}>{selectedRole.name}</h4>
+              <span className={cn(
+                "inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mt-2",
+                t === 'townsfolk' && "bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20",
+                t === 'outsider'  && "bg-clocktower-outsider/10 text-clocktower-outsider border border-clocktower-outsider/20",
+                t === 'minion'    && "bg-clocktower-minion/10 text-clocktower-minion border border-clocktower-minion/20",
+                t === 'demon'     && "bg-clocktower-demon/10 text-clocktower-demon border border-clocktower-demon/20",
+                t === 'traveler'  && "bg-clocktower-traveler/10 text-clocktower-traveler border border-clocktower-traveler/20",
+              )}>{selectedRole.team}</span>
+              <div className={cn("mt-5 p-4 rounded-xl border leading-relaxed text-sm select-text text-center font-medium", isLightModeActive ? "bg-white border-amber-900/10 text-gray-700 shadow-sm" : "bg-gray-955/60 border-gray-800 text-gray-300")}>{abilityText}</div>
+              <button type="button" onClick={() => setSelectedRole(null)} className={cn(
+                "w-full mt-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-[0.98]",
+                t === 'townsfolk' && "bg-clocktower-townsfolk shadow-clocktower-townsfolk/20",
+                t === 'outsider'  && "bg-clocktower-outsider shadow-clocktower-outsider/20",
+                t === 'minion'    && "bg-clocktower-minion shadow-clocktower-minion/20",
+                t === 'demon'     && "bg-clocktower-demon shadow-clocktower-demon/20",
+                t === 'traveler'  && "bg-clocktower-traveler shadow-clocktower-traveler/20",
+              )}>Close Details</button>
+            </div>
+          </div>
+        );
+      })()}
+     </>
+   );
+ }
 
 // ── Internal sub-component ──────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
+import { sortByScriptOrder } from '../../utils/scriptUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
@@ -13,6 +14,7 @@ import ScriptCharactersModal from './ScriptCharactersModal';
 import BaseDistributionCard from './BaseDistributionCard';
 import AutoResizeTextarea from './AutoResizeTextarea';
 import DialogModal from './DialogModal';
+import ToggleSwitch from './ToggleSwitch';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Props {
@@ -156,13 +158,7 @@ export default function GamePhase({
         }
       });
     });
-    return roles.sort((a, b) => {
-      const idxA = baseRoles.findIndex(r => r.id === a.id);
-      const idxB = baseRoles.findIndex(r => r.id === b.id);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    return sortByScriptOrder(roles, baseRoles);
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);
@@ -323,22 +319,12 @@ export default function GamePhase({
                 "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
                 isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
               )}>
-                <input
-                  type="checkbox"
+                <ToggleSwitch
                   id="toggle-reminders-checkbox-desktop"
                   checked={enableReminders}
-                  onChange={(e) => onToggleReminders(e.target.checked)}
-                  className="sr-only"
+                  onChange={onToggleReminders}
+                  isLightModeActive={isLightModeActive}
                 />
-                <div className={cn(
-                  "w-9 h-5 rounded-full transition-colors relative shrink-0",
-                  enableReminders ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-                )}>
-                  <div className={cn(
-                    "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                    enableReminders ? "translate-x-4" : "translate-x-0"
-                  )} />
-                </div>
                 <span>Turn on Reminder Tokens</span>
               </label>
             )}
@@ -469,21 +455,11 @@ export default function GamePhase({
               })}
             </div>
             <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none pt-0.5">
-              <input
-                type="checkbox"
+              <ToggleSwitch
                 checked={showAllBluffCandidates}
-                onChange={e => setShowAllBluffCandidates(e.target.checked)}
-                className="sr-only"
+                onChange={setShowAllBluffCandidates}
+                isLightModeActive={isLightModeActive}
               />
-              <div className={cn(
-                "w-9 h-5 rounded-full transition-colors relative shrink-0",
-                showAllBluffCandidates ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-              )}>
-                <div className={cn(
-                  "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                  showAllBluffCandidates ? "translate-x-4" : "translate-x-0"
-                )} />
-              </div>
               <span className="font-semibold">Lunatic Mode</span>
             </label>
           </div>
@@ -837,22 +813,12 @@ export default function GamePhase({
             "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
             isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
           )}>
-            <input
-              type="checkbox"
+            <ToggleSwitch
               id="toggle-reminders-checkbox-mobile"
               checked={enableReminders}
-              onChange={(e) => onToggleReminders(e.target.checked)}
-              className="sr-only"
+              onChange={onToggleReminders}
+              isLightModeActive={isLightModeActive}
             />
-            <div className={cn(
-              "w-9 h-5 rounded-full transition-colors relative shrink-0",
-              enableReminders ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-            )}>
-              <div className={cn(
-                "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                enableReminders ? "translate-x-4" : "translate-x-0"
-              )} />
-            </div>
             <span>Turn on Reminder Tokens</span>
           </label>
         )}

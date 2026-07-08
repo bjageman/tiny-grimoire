@@ -5,6 +5,7 @@ import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { computeBalance } from '../../utils/computeBalance';
+import ToggleSwitch from '../shared/ToggleSwitch';
 
 interface Props {
   isOpen: boolean;
@@ -124,22 +125,12 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                 <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
                   Sort
                 </span>
-                <input
+                <ToggleSwitch
                   id="select-sort-alphabetically-checkbox"
-                  type="checkbox"
                   checked={sortAlphabetically}
-                  onChange={(e) => setSortAlphabetically(e.target.checked)}
-                  className="sr-only"
+                  onChange={setSortAlphabetically}
+                  isLightModeActive={isLightModeActive}
                 />
-                <div className={cn(
-                  "w-9 h-5 rounded-full transition-colors relative shrink-0",
-                  sortAlphabetically ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-                )}>
-                  <div className={cn(
-                    "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                    sortAlphabetically ? "translate-x-4" : "translate-x-0"
-                  )} />
-                </div>
               </label>
               <div className="flex gap-2">
                 <button

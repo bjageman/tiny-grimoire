@@ -3,6 +3,7 @@ import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
+import { sortByScriptOrder } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
@@ -68,13 +69,7 @@ export default function PlayerTrackerSetupPhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return [...baseRoles].sort((a, b) => {
-      const idxA = baseRoles.findIndex(r => r.id === a.id);
-      const idxB = baseRoles.findIndex(r => r.id === b.id);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    return sortByScriptOrder(baseRoles, baseRoles);
   }, [customScriptRoles]);
 
   return (

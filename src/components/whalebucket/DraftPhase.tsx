@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
 import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
+import ToggleSwitch from '../shared/ToggleSwitch';
 
 import type { ValidationSummary } from '../../utils/validationSummary';
 
@@ -115,22 +116,12 @@ export default function WhaleBucketDraftPhase({
           "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",
           isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
         )}>
-          <input
-            type="checkbox"
+          <ToggleSwitch
             id="override-failures-checkbox-whale"
             checked={overrideFailures}
-            onChange={(e) => setOverrideFailures(e.target.checked)}
-            className="sr-only"
+            onChange={setOverrideFailures}
+            isLightModeActive={isLightModeActive}
           />
-          <div className={cn(
-            "w-9 h-5 rounded-full transition-colors relative shrink-0",
-            overrideFailures ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-          )}>
-            <div className={cn(
-              "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-              overrideFailures ? "translate-x-4" : "translate-x-0"
-            )} />
-          </div>
           <span>Override failures</span>
         </label>
       )}

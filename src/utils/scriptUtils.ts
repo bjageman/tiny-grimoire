@@ -2,6 +2,22 @@ import type { Role } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 
+/** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
+export function compareByScriptOrder(baseRoles: { id: string }[]) {
+  return (a: { id: string }, b: { id: string }): number => {
+    const idxA = baseRoles.findIndex(r => r.id === a.id);
+    const idxB = baseRoles.findIndex(r => r.id === b.id);
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  };
+}
+
+/** Sorts `roles` by their position in `baseRoles` (the active script), unrecognized roles last. */
+export function sortByScriptOrder<T extends { id: string }>(roles: T[], baseRoles: T[]): T[] {
+  return [...roles].sort(compareByScriptOrder(baseRoles));
+}
+
 export function generateGameCode(): string {
   return Array.from({ length: 4 }, () =>
     String.fromCharCode(65 + Math.floor(Math.random() * 26))

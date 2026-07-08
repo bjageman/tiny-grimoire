@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import ToggleSwitch from '../shared/ToggleSwitch';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
+import { sortByScriptOrder } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
@@ -100,13 +102,7 @@ export default function StandardSetupPhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return [...baseRoles].sort((a, b) => {
-      const idxA = baseRoles.findIndex(r => r.id === a.id);
-      const idxB = baseRoles.findIndex(r => r.id === b.id);
-      if (idxA === -1) return 1;
-      if (idxB === -1) return -1;
-      return idxA - idxB;
-    });
+    return sortByScriptOrder(baseRoles, baseRoles);
   }, [customScriptRoles]);
 
   const openGrimoire = () => {
@@ -336,22 +332,12 @@ export default function StandardSetupPhase({
             "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",
             isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
           )}>
-            <input
-              type="checkbox"
+            <ToggleSwitch
               id="override-failures-checkbox"
               checked={overrideFailures}
-              onChange={(e) => setOverrideFailures(e.target.checked)}
-              className="sr-only"
+              onChange={setOverrideFailures}
+              isLightModeActive={isLightModeActive}
             />
-            <div className={cn(
-              "w-9 h-5 rounded-full transition-colors relative shrink-0",
-              overrideFailures ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-            )}>
-              <div className={cn(
-                "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                overrideFailures ? "translate-x-4" : "translate-x-0"
-              )} />
-            </div>
             <span>Override failures</span>
           </label>
         )}

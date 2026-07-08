@@ -2,13 +2,15 @@ import { useRef, useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
 import DialogModal from './DialogModal';
+import ToggleSwitch from './ToggleSwitch';
+import CharacterDetailModal from './CharacterDetailModal';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Player {
@@ -320,22 +322,12 @@ export default function PlayerDetailsModal({
                     <span className={cn("text-[10px] font-semibold leading-none", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
                       Sort
                     </span>
-                    <input
+                    <ToggleSwitch
                       id="tracker-sort-alphabetically-checkbox"
-                      type="checkbox"
                       checked={sortAlphabetically}
-                      onChange={(e) => setSortAlphabetically(e.target.checked)}
-                      className="sr-only"
+                      onChange={setSortAlphabetically}
+                      isLightModeActive={isLightModeActive}
                     />
-                    <div className={cn(
-                      "w-9 h-5 rounded-full transition-colors relative shrink-0",
-                      sortAlphabetically ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
-                    )}>
-                      <div className={cn(
-                        "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
-                        sortAlphabetically ? "translate-x-4" : "translate-x-0"
-                      )} />
-                    </div>
                   </label>
                 ) : (
                   <button
@@ -715,82 +707,24 @@ export default function PlayerDetailsModal({
         </div>
       </div>
       {/* Inline role details modal */}
-      {selectedRole && (() => {
-        const abilityText = selectedRole.ability
-          ?? (officialRoles as Array<{ id: string; ability?: string }>).find(r => r.id === selectedRole.id)?.ability
-          ?? "Ability description not found.";
-        const t = selectedRole.team;
-        return (
-          <div id="character-details-backdrop" className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedRole(null)}>
-            <div
-              id="character-details-modal"
-              className={cn("w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl animate-scaleIn", isLightModeActive ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-150")}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                id="character-details-remove-button"
-                type="button"
-                onClick={() => {
-                  if (allowMultipleRoles) {
-                    onUpdateRoles?.(p.id, displayRoles.filter(id => id !== selectedRole.id));
-                  } else {
-                    onUpdateRole(p.id, '');
-                  }
-                  setSelectedRole(null);
-                }}
-                className={cn(
-                  "absolute top-4 left-4 p-1.5 rounded-full transition-colors",
-                  isLightModeActive
-                    ? "text-red-650 hover:bg-red-50 hover:text-red-800"
-                    : "text-red-400 hover:bg-red-950/40 hover:text-red-300"
-                )}
-                aria-label="Remove character"
-                title="Remove character"
-              >
-                <Trash2 size={18} />
-              </button>
-              <button type="button" onClick={() => setSelectedRole(null)} className={cn("absolute top-4 right-4 p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")} aria-label="Close details">
-                <X size={18} />
-              </button>
-              <div className={cn(
-                "w-24 h-24 mx-auto rounded-full bg-white flex items-center justify-center shadow-lg border-4 transition-transform duration-300 hover:rotate-6 mt-2",
-                t === 'townsfolk' && "border-clocktower-townsfolk shadow-clocktower-townsfolk/20",
-                t === 'outsider'  && "border-clocktower-outsider shadow-clocktower-outsider/20",
-                t === 'minion'    && "border-clocktower-minion shadow-clocktower-minion/20",
-                t === 'demon'     && "border-clocktower-demon shadow-clocktower-demon/20",
-                t === 'traveler'  && "border-clocktower-traveler shadow-clocktower-traveler/20",
-              )}>
-                <img key={selectedRole.id} src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-16 h-16 object-contain" onError={roleIconFallback(selectedRole, t === 'minion' || t === 'demon')} />
-              </div>
-              <h4 className={cn(
-                "text-2xl font-black mt-4 tracking-wide",
-                t === 'townsfolk' && "text-clocktower-townsfolk",
-                t === 'outsider'  && "text-clocktower-outsider",
-                t === 'minion'    && "text-clocktower-minion",
-                t === 'demon'     && "text-clocktower-demon",
-                t === 'traveler'  && "text-clocktower-traveler",
-              )}>{selectedRole.name}</h4>
-              <span className={cn(
-                "inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mt-2",
-                t === 'townsfolk' && "bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20",
-                t === 'outsider'  && "bg-clocktower-outsider/10 text-clocktower-outsider border border-clocktower-outsider/20",
-                t === 'minion'    && "bg-clocktower-minion/10 text-clocktower-minion border border-clocktower-minion/20",
-                t === 'demon'     && "bg-clocktower-demon/10 text-clocktower-demon border border-clocktower-demon/20",
-                t === 'traveler'  && "bg-clocktower-traveler/10 text-clocktower-traveler border border-clocktower-traveler/20",
-              )}>{selectedRole.team}</span>
-              <div className={cn("mt-5 p-4 rounded-xl border leading-relaxed text-sm select-text text-center font-medium", isLightModeActive ? "bg-white border-amber-900/10 text-gray-700 shadow-sm" : "bg-gray-955/60 border-gray-800 text-gray-300")}>{abilityText}</div>
-              <button type="button" onClick={() => setSelectedRole(null)} className={cn(
-                "w-full mt-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-[0.98]",
-                t === 'townsfolk' && "bg-clocktower-townsfolk shadow-clocktower-townsfolk/20",
-                t === 'outsider'  && "bg-clocktower-outsider shadow-clocktower-outsider/20",
-                t === 'minion'    && "bg-clocktower-minion shadow-clocktower-minion/20",
-                t === 'demon'     && "bg-clocktower-demon shadow-clocktower-demon/20",
-                t === 'traveler'  && "bg-clocktower-traveler shadow-clocktower-traveler/20",
-              )}>Close Details</button>
-            </div>
-          </div>
-        );
-      })()}
+      {selectedRole && (
+        <CharacterDetailModal
+          role={selectedRole}
+          isLightModeActive={isLightModeActive}
+          onClose={() => setSelectedRole(null)}
+          onRemove={() => {
+            if (allowMultipleRoles) {
+              onUpdateRoles?.(p.id, displayRoles.filter(id => id !== selectedRole.id));
+            } else {
+              onUpdateRole(p.id, '');
+            }
+            setSelectedRole(null);
+          }}
+          backdropId="character-details-backdrop"
+          modalId="character-details-modal"
+          animate
+        />
+      )}
      </>
    );
  }

@@ -123,25 +123,26 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                   <h4 className={cn("text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5", color, border)}>
                     {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({teamRoles.length})</span>
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="columns-2 gap-2 [column-fill:balance]">
                     {teamRoles.map(role => (
-                      <button
-                        type="button"
-                        key={role.id}
-                        onClick={() => setSelectedRole(role)}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
-                          isLightModeActive
-                            ? `bg-white/80 border-gray-200/60 hover:bg-white ${hover} hover:shadow-sm`
-                            : `bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 ${hover}`
-                        )}
-                      >
-                        <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                          <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
-                            onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
-                        </span>
-                        <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
-                      </button>
+                      <div key={role.id} className="break-inside-avoid mb-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRole(role)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.02] cursor-pointer focus:outline-none",
+                            isLightModeActive
+                              ? `bg-white/80 border-gray-200/60 hover:bg-white ${hover} hover:shadow-sm`
+                              : `bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 ${hover}`
+                          )}
+                        >
+                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                            <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
+                          </span>
+                          <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

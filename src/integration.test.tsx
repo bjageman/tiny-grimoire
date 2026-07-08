@@ -830,10 +830,11 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    // Enter character search/selection mode
+    // Enter character search/selection mode if not already there
     const changeRoleBtn = storyteller.container.querySelector('#detail-change-role-button');
-    expect(changeRoleBtn).not.toBeNull();
-    fireEvent.click(changeRoleBtn!);
+    if (changeRoleBtn) {
+      fireEvent.click(changeRoleBtn);
+    }
 
     // Update Alice's role to Empath
     const empathBtn = storyteller.container.querySelector('#detail-role-option-empath');
@@ -850,6 +851,64 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(alice).toBeDefined();
     expect(alice!.roleId).toBe('empath');
     expect(alice!.isEvil).toBe(true);
+
+    storyteller.unmount();
+  });
+
+  it('storyteller details modal opens conditionally in search mode only if player has no role assigned', async () => {
+    const PLAYERS = [
+      { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+      { id: 'p2', name: 'Bob', isDead: false, roleId: undefined }
+    ];
+    
+    seedPrimary({
+      players: PLAYERS,
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+    });
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    // 1. Open details modal for Alice (has character 'washerwoman')
+    const aliceRow = storyteller.container.querySelector('#ledger-player-p1');
+    expect(aliceRow).not.toBeNull();
+    
+    await act(async () => {
+      fireEvent.click(aliceRow!);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Should NOT be in search mode initially (change role button is visible, search input is not present)
+    const changeRoleBtnAlice = storyteller.container.querySelector('#detail-change-role-button');
+    expect(changeRoleBtnAlice).not.toBeNull();
+    const searchInputAlice = storyteller.container.querySelector('#detail-role-search-input');
+    expect(searchInputAlice).toBeNull();
+
+    // Close details modal
+    const closeBtn = storyteller.container.querySelector('[aria-label="Close modal"]');
+    if (closeBtn) {
+      await act(async () => {
+        fireEvent.click(closeBtn);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+    }
+
+    // 2. Open details modal for Bob (has no character assigned)
+    const bobRow = storyteller.container.querySelector('#ledger-player-p2');
+    expect(bobRow).not.toBeNull();
+    
+    await act(async () => {
+      fireEvent.click(bobRow!);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Should be in search mode immediately (search input is visible, change role token display is not present)
+    const searchInputBob = storyteller.container.querySelector('#detail-role-search-input');
+    expect(searchInputBob).not.toBeNull();
+    const changeRoleBtnBob = storyteller.container.querySelector('#detail-change-role-button');
+    expect(changeRoleBtnBob).toBeNull();
 
     storyteller.unmount();
   });

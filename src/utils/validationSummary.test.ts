@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getValidationSummary } from './validationSummary';
-import type { Player } from '../types';
+import type { Player, Role } from '../types';
 
 describe('validationSummary utility', () => {
   it('should return null for empty player list', () => {
@@ -329,5 +329,43 @@ describe('validationSummary utility', () => {
         expect(summary.warnings).not.toContain('Marionette (Player 2) must be sitting next to the Demon.');
       }
     });
+
+    it('puts characters not on the script under failures', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'poisoner', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'imp', isDead: false },
+      ];
+      // Script does not include 'chef'
+      const scriptRoles: Role[] = [
+        { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk', ability: '' },
+        { id: 'librarian', name: 'Librarian', team: 'townsfolk', ability: '' },
+        { id: 'investigator', name: 'Investigator', team: 'townsfolk', ability: '' },
+        { id: 'poisoner', name: 'Poisoner', team: 'minion', ability: '' },
+        { id: 'imp', name: 'Imp', team: 'demon', ability: '' },
+      ];
+      const summary = getValidationSummary(players, scriptRoles);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.failures).toContain('1 character is not on the script.');
+      }
+
+      // 2 missing characters (chef and poisoner are missing)
+      const scriptRoles2: Role[] = [
+        { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk', ability: '' },
+        { id: 'librarian', name: 'Librarian', team: 'townsfolk', ability: '' },
+        { id: 'investigator', name: 'Investigator', team: 'townsfolk', ability: '' },
+        { id: 'imp', name: 'Imp', team: 'demon', ability: '' },
+      ];
+      const summary2 = getValidationSummary(players, scriptRoles2);
+      expect(summary2).not.toBeNull();
+      if (summary2) {
+        expect(summary2.failures).toContain('2 characters are not on the script.');
+      }
+    });
   });
 });
+

@@ -89,6 +89,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [isSearchingRole, setIsSearchingRole] = useState(false);
   const [modalRoleSearch, setModalRoleSearch] = useState('');
 
+  const [prevSelectedPlayerId, setPrevSelectedPlayerId] = useState<string | null>(null);
+  if (selectedPlayerId !== prevSelectedPlayerId) {
+    setPrevSelectedPlayerId(selectedPlayerId);
+    if (selectedPlayerId) {
+      const p = players.find(player => player.id === selectedPlayerId);
+      setIsSearchingRole(p ? !p.roleId : false);
+    }
+  }
+
   // Script states
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");

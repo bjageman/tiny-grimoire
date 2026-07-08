@@ -108,7 +108,13 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return [...baseRoles].sort((a, b) => a.name.localeCompare(b.name));
+    return [...baseRoles].sort((a, b) => {
+      const idxA = baseRoles.findIndex(r => r.id === a.id);
+      const idxB = baseRoles.findIndex(r => r.id === b.id);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
   }, [customScriptRoles]);
 
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

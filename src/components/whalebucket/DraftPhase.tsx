@@ -120,9 +120,18 @@ export default function WhaleBucketDraftPhase({
             id="override-failures-checkbox-whale"
             checked={overrideFailures}
             onChange={(e) => setOverrideFailures(e.target.checked)}
-            className="rounded border-gray-300 text-clocktower-blood focus:ring-clocktower-blood bg-transparent"
+            className="sr-only"
           />
-          Override failures
+          <div className={cn(
+            "w-9 h-5 rounded-full transition-colors relative shrink-0",
+            overrideFailures ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
+          )}>
+            <div className={cn(
+              "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
+              overrideFailures ? "translate-x-4" : "translate-x-0"
+            )} />
+          </div>
+          <span>Override failures</span>
         </label>
       )}
     </div>

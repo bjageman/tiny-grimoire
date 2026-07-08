@@ -34,10 +34,6 @@ describe('SelectCharactersModal', () => {
     const { container } = render(<SelectCharactersModal {...defaultProps} />);
     
     // By default, roles should follow their array order: Washerwoman then Chef
-    let townsfolkLabels = container.querySelectorAll('.text-clocktower-townsfolk + div label span.font-semibold');
-    // Wait, the label markup is:
-    // <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-    //   {teamRoles.map(role => ... <span className="font-semibold text-xs truncate">{role.name}</span>
     const getTownsfolkNames = () => {
       const spans = container.querySelectorAll('label span.font-semibold');
       // We only care about the townsfolk group. Townsfolk is the first team section.

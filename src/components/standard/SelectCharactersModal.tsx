@@ -120,7 +120,10 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
               {selectedIds.size} of {assignableRoles.length} characters
             </span>
             <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 select-none cursor-pointer shrink-0 py-1">
+               <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
+                <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
+                  Sort
+                </span>
                 <input
                   id="select-sort-alphabetically-checkbox"
                   type="checkbox"
@@ -137,9 +140,6 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                     sortAlphabetically ? "translate-x-4" : "translate-x-0"
                   )} />
                 </div>
-                <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                  Sort Alphabetically
-                </span>
               </label>
               <div className="flex gap-2">
                 <button

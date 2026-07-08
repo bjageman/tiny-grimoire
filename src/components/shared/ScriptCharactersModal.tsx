@@ -103,7 +103,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch sm:items-center">
+          <div className="flex flex-row gap-3 mb-4 items-center justify-between">
             <div className="flex-1 flex items-center rounded-lg px-3 py-2 text-sm border bg-white border-gray-300 focus-within:border-clocktower-blood">
               <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
               <input
@@ -120,7 +120,10 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 </button>
               )}
             </div>
-            <label className="flex items-center gap-2 select-none cursor-pointer shrink-0 py-1">
+             <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
+              <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
+                Sort
+              </span>
               <input
                 id="script-sort-alphabetically-checkbox"
                 type="checkbox"
@@ -137,9 +140,6 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                   sortAlphabetically ? "translate-x-4" : "translate-x-0"
                 )} />
               </div>
-              <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                Sort Alphabetically
-              </span>
             </label>
           </div>
 

@@ -1,9 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import SelectCharactersModal from './SelectCharactersModal';
 import type { Role } from '../../types';
 
 describe('SelectCharactersModal', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
   const roles: Role[] = [
     { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
     { id: 'chef', name: 'Chef', team: 'townsfolk' },

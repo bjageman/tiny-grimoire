@@ -37,7 +37,14 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(() => {
+    return localStorage.getItem('botc-sort-alphabetically') === 'true';
+  });
+
+  const handleToggleSort = (val: boolean) => {
+    setSortAlphabetically(val);
+    localStorage.setItem('botc-sort-alphabetically', String(val));
+  };
 
   const byTeam = useMemo(() => {
     const grouped = Object.fromEntries(
@@ -128,7 +135,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                 <ToggleSwitch
                   id="select-sort-alphabetically-checkbox"
                   checked={sortAlphabetically}
-                  onChange={setSortAlphabetically}
+                  onChange={handleToggleSort}
                   isLightModeActive={isLightModeActive}
                 />
               </label>

@@ -99,7 +99,14 @@ export default function PlayerDetailsModal({
   const [editedNotes, setEditedNotes] = useBufferedField(p.id, p.notes ?? '', (id, notes) => onUpdateNotes?.(id, notes));
   const isMobile = useIsMobile();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(() => {
+    return localStorage.getItem('botc-sort-alphabetically') === 'true';
+  });
+
+  const handleToggleSort = (val: boolean) => {
+    setSortAlphabetically(val);
+    localStorage.setItem('botc-sort-alphabetically', String(val));
+  };
 
   const displayRolesList = useMemo(() => {
     return [...filteredModalRoles].sort((a, b) => {
@@ -325,7 +332,7 @@ export default function PlayerDetailsModal({
                     <ToggleSwitch
                       id="tracker-sort-alphabetically-checkbox"
                       checked={sortAlphabetically}
-                      onChange={setSortAlphabetically}
+                      onChange={handleToggleSort}
                       isLightModeActive={isLightModeActive}
                     />
                   </label>

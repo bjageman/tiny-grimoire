@@ -27,7 +27,14 @@ const TEAMS = [
 export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptAuthor, isLightModeActive }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(() => {
+    return localStorage.getItem('botc-sort-alphabetically') === 'true';
+  });
+
+  const handleToggleSort = (val: boolean) => {
+    setSortAlphabetically(val);
+    localStorage.setItem('botc-sort-alphabetically', String(val));
+  };
 
   useScrollLock(isOpen);
 
@@ -36,7 +43,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (selectedRole) setSelectedRole(null);
-        else { onClose(); setSearchTerm(''); setSortAlphabetically(false); }
+        else { onClose(); setSearchTerm(''); }
       }
     };
     window.addEventListener('keydown', handler);
@@ -68,7 +75,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   const isEmpty = TEAMS.every(t => byTeam[t.key].length === 0);
 
-  const handleClose = () => { onClose(); setSearchTerm(''); setSortAlphabetically(false); };
+  const handleClose = () => { onClose(); setSearchTerm(''); };
 
   if (!isOpen) return null;
 
@@ -125,12 +132,12 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
               <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
                 Sort
               </span>
-              <ToggleSwitch
-                id="script-sort-alphabetically-checkbox"
-                checked={sortAlphabetically}
-                onChange={setSortAlphabetically}
-                isLightModeActive={isLightModeActive}
-              />
+                <ToggleSwitch
+                  id="script-sort-alphabetically-checkbox"
+                  checked={sortAlphabetically}
+                  onChange={handleToggleSort}
+                  isLightModeActive={isLightModeActive}
+                />
             </label>
           </div>
 

@@ -41,6 +41,7 @@ describe('PlayerDetailsModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it('renders the player name and role', () => {

@@ -223,37 +223,58 @@ export function performStandardAssignment(
     selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
   }
 
-  let outsiderModifier = 0;
-  if (selectedMinions.some(m => m.id === 'baron')) outsiderModifier += 2;
-  if (selectedMinions.some(m => m.id === 'godfather')) {
-    const gfOptions: number[] = [];
-    const tfDelta = (selectedMinions.some(m => m.id === 'marionette') ? 1 : 0) + (outs.some(o => o.id === 'drunk') ? 1 : 0);
-
-    for (const gf of [-1, 1]) {
-      const tempOuts = Math.max(0, base.outsider + outsiderModifier + gf);
-      let tempTfs = baseCount - selectedDemons.length - selectedMinions.length - tempOuts;
-      if (tempTfs < 0) tempTfs = 0;
-
-      const fitsOutsiders = tempOuts <= outs.length;
-      const fitsTownsfolk = (tempTfs + tfDelta) <= tfs.length;
-
-      if (fitsOutsiders && fitsTownsfolk) {
-        gfOptions.push(gf);
-      }
-    }
-
-    if (gfOptions.length > 0) {
-      outsiderModifier += gfOptions[Math.floor(Math.random() * gfOptions.length)];
-    } else {
-      outsiderModifier += Math.random() < 0.5 ? 1 : -1;
-    }
-  }
-  if (selectedDemons.some(d => d.id === 'fanggu')) outsiderModifier += 1;
-  if (selectedDemons.some(d => d.id === 'vigormortis')) outsiderModifier -= 1;
-
-  let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
+
+  const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
+                               (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
+                               (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0);
+
+  const gfRange = (!bypassAdjustments && selectedMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
+  const balRange = (!bypassAdjustments && tfs.some(t => t.id === 'balloonist')) ? [0, 1] : [0];
+  const hermRange = (!bypassAdjustments && outs.some(o => o.id === 'hermit')) ? [-1, 0] : [0];
+
+  const tfDelta = (selectedMinions.some(m => m.id === 'marionette') ? 1 : 0) + (outs.some(o => o.id === 'drunk') ? 1 : 0);
+
+  interface Combination {
+    gf: number;
+    bal: number;
+    herm: number;
+  }
+
+  const validCombos: Combination[] = [];
+
+  for (const gf of gfRange) {
+    for (const bal of balRange) {
+      for (const herm of hermRange) {
+        const tempOuts = Math.max(0, base.outsider + baseOutsiderModifier + gf + bal + herm);
+        let tempTfs = baseCount - selectedDemons.length - selectedMinions.length - tempOuts;
+        if (tempTfs < 0) tempTfs = 0;
+
+        const fitsOutsiders = tempOuts <= outs.length;
+        const fitsTownsfolk = (tempTfs + tfDelta) <= tfs.length;
+
+        if (fitsOutsiders && fitsTownsfolk) {
+          validCombos.push({ gf, bal, herm });
+        }
+      }
+    }
+  }
+
+  let chosenCombo: Combination;
+  if (validCombos.length > 0) {
+    chosenCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
+  } else {
+    chosenCombo = {
+      gf: gfRange[Math.floor(Math.random() * gfRange.length)],
+      bal: balRange[Math.floor(Math.random() * balRange.length)],
+      herm: hermRange[Math.floor(Math.random() * hermRange.length)]
+    };
+  }
+
+  const outsiderModifier = baseOutsiderModifier + chosenCombo.gf;
+  let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
+
   if (bypassAdjustments) {
     const maxOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
     targetOutsiders = Math.floor(Math.random() * (maxOutsiders + 1));
@@ -264,15 +285,13 @@ export function performStandardAssignment(
     targetOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
   }
 
-  // Marionette fully counts as the 1 Minion it is (selectedMinions is unchanged below) and does
-  // not otherwise alter the real Outsider/Townsfolk counts.
   const hasMarionette = !bypassAdjustments && selectedMinions.some(m => m.id === 'marionette');
 
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
   // 1. Balloonist adjustment
-  if (!bypassAdjustments && selectedTownsfolk.some(t => t.id === 'balloonist') && Math.random() < 0.5 && outs.length > selectedOutsiders.length) {
+  if (!bypassAdjustments && chosenCombo.bal === 1 && outs.length > selectedOutsiders.length) {
     const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
     if (remainingOuts.length > 0) {
       const newOut = remainingOuts[Math.floor(Math.random() * remainingOuts.length)];
@@ -287,7 +306,7 @@ export function performStandardAssignment(
   }
 
   // 2. Hermit adjustment
-  if (!bypassAdjustments && selectedOutsiders.some(o => o.id === 'hermit') && Math.random() < 0.5) {
+  if (!bypassAdjustments && chosenCombo.herm === -1) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
     if (otherOutsiders.length > 0) {
       const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];

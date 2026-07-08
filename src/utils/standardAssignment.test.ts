@@ -592,6 +592,37 @@ describe('performStandardAssignment', () => {
         expect(uniqueRoleIds.size).toBe(10);
       }
     });
+
+    it('locks Hermit to 0 modifier (no adjustment) when -1 would exceed the available selected Townsfolk (6-player setup with only 3 Townsfolk selected)', () => {
+      const hermit: Role = { id: 'hermit', name: 'Hermit', team: 'outsider' };
+      const poisoner: Role = { id: 'poisoner', name: 'Poisoner', team: 'minion' };
+      const imp: Role = { id: 'imp', name: 'Imp', team: 'demon' };
+
+      const selectedTownsfolk = baseTownsfolk.slice(0, 3); // Only 3 Townsfolk
+      const selectedRoles = [
+        ...selectedTownsfolk,
+        hermit,
+        poisoner,
+        imp
+      ];
+
+      for (let trial = 0; trial < 100; trial++) {
+        const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+        const result = performStandardAssignment(players, selectedRoles, []);
+        if (!result) continue;
+
+        expect(result).toHaveLength(6);
+
+        // Since -1 modifier would require 4 Townsfolk (but we only have 3), it must lock Hermit to 0.
+        // Therefore, Hermit MUST be assigned and in play!
+        const hermitInPlay = result.some(p => p.roleId === 'hermit');
+        expect(hermitInPlay).toBe(true);
+
+        const assignedRoleIds = result.map(p => p.roleId);
+        const uniqueRoleIds = new Set(assignedRoleIds);
+        expect(uniqueRoleIds.size).toBe(6);
+      }
+    });
   });
 });
 

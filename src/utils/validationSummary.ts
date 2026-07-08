@@ -287,6 +287,7 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
       const trueRoleId = p.isTheMarionette ? 'marionette' :
                          p.isTheDrunk ? 'drunk' :
                          p.isTheLunatic ? 'lunatic' :
+                         p.isTheLilMonsta ? 'lilmonsta' :
                          null;
       if (trueRoleId && !allRoles.some(r => r.id === trueRoleId)) {
         missingRoleIds.add(trueRoleId);

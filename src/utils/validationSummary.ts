@@ -22,7 +22,11 @@ export interface ValidationSummary {
   expectedTownsfolkLabel: string;
 }
 
-export function getValidationSummary(players: Player[], allRoles: Role[] = rolesData as Role[]): ValidationSummary | null {
+export function getValidationSummary(
+  players: Player[],
+  allRoles: Role[] = rolesData as Role[],
+  selectedCharacterIds?: Set<string>
+): ValidationSummary | null {
   if (players.length === 0) return null;
 
   const findRole = (roleId?: string) => {
@@ -284,6 +288,36 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   if (customRolesAssigned.length > 0) {
     const uniqueNames = [...new Set(customRolesAssigned.map(r => r.name))];
     warnings.push(`Custom: ${uniqueNames.join(', ')} — adjust setup manually.`);
+  }
+
+  // Check for roles not in the bag setup
+  if (selectedCharacterIds && selectedCharacterIds.size > 0) {
+    const unselectedTrueRoles = new Map<string, string[]>(); // roleName -> playerNames
+    for (const p of players) {
+      if (!p.roleId) continue;
+      const trueRoleId = p.isTheDrunk ? 'drunk' :
+                         p.isTheMarionette ? 'marionette' :
+                         p.isTheLunatic ? 'lunatic' :
+                         p.roleId;
+      const role = findRole(trueRoleId);
+      if (role && role.team === 'traveler') continue;
+
+      if (!selectedCharacterIds.has(trueRoleId)) {
+        const name = role?.name ?? trueRoleId;
+        if (!unselectedTrueRoles.has(name)) {
+          unselectedTrueRoles.set(name, []);
+        }
+        unselectedTrueRoles.get(name)!.push(p.name);
+      }
+    }
+
+    for (const [roleName, playerNames] of unselectedTrueRoles.entries()) {
+      if (playerNames.length === 1) {
+        warnings.push(`${roleName} is assigned to ${playerNames[0]}, but is not in the bag setup.`);
+      } else {
+        warnings.push(`${roleName} is assigned to multiple players (${playerNames.join(', ')}), but is not in the bag setup.`);
+      }
+    }
   }
 
   // Drunk/Marionette/Lunatic are always supposed to display as a different, fake character —

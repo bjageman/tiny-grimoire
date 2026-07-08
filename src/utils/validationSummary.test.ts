@@ -501,5 +501,57 @@ describe('validationSummary utility', () => {
       }
     });
   });
+
+  describe('bag setup validation warnings', () => {
+    const basePlayers: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Bob', roleId: 'librarian', isDead: false },
+      { id: '3', name: 'Charlie', roleId: 'investigator', isDead: false },
+      { id: '4', name: 'David', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Eve', roleId: 'poisoner', isDead: false },
+      { id: '6', name: 'Frank', roleId: 'imp', isDead: false },
+    ];
+
+    it('does not warn if selectedCharacterIds is empty or undefined', () => {
+      const summary = getValidationSummary(basePlayers, undefined, new Set());
+      expect(summary?.warnings.length).toBe(0);
+    });
+
+    it('warns if a player is assigned a role not in selectedCharacterIds', () => {
+      const bag = new Set(['washerwoman', 'librarian', 'investigator', 'chef', 'poisoner', 'scarletwoman']); // imp is missing from bag, replaced by scarletwoman
+      const summary = getValidationSummary(basePlayers, undefined, bag);
+      expect(summary?.warnings).toContain('Imp is assigned to Frank, but is not in the bag setup.');
+    });
+
+    it('correctly checks true roles of disguised players (Drunk/Marionette/Lunatic)', () => {
+      // Bob is the Drunk (disguised as Librarian).
+      // True role is 'drunk'.
+      const disguisedPlayers: Player[] = [
+        ...basePlayers.filter(p => p.name !== 'Bob'),
+        { id: '2', name: 'Bob', roleId: 'librarian', isDead: false, isTheDrunk: true },
+      ];
+
+      // Bag setup: 'washerwoman', 'drunk', 'investigator', 'chef', 'poisoner', 'imp'
+      const bag = new Set(['washerwoman', 'drunk', 'investigator', 'chef', 'poisoner', 'imp']);
+      const summary = getValidationSummary(disguisedPlayers, undefined, bag);
+      // No warning, because Bob's true role (drunk) is in the bag, and Librarian is his fake role
+      expect(summary?.warnings.filter(w => w.includes('not in the bag setup')).length).toBe(0);
+
+      // If 'drunk' is missing from the bag setup:
+      const bagNoDrunk = new Set(['washerwoman', 'butler', 'investigator', 'chef', 'poisoner', 'imp']);
+      const summary2 = getValidationSummary(disguisedPlayers, undefined, bagNoDrunk);
+      expect(summary2?.warnings).toContain('Drunk is assigned to Bob, but is not in the bag setup.');
+    });
+
+    it('ignores traveler roles when validating bag setup', () => {
+      const playersWithTraveler: Player[] = [
+        ...basePlayers,
+        { id: '7', name: 'Grace', roleId: 'gunslinger', isDead: false }, // traveler
+      ];
+      const bag = new Set(['washerwoman', 'librarian', 'investigator', 'chef', 'poisoner', 'imp']);
+      const summary = getValidationSummary(playersWithTraveler, undefined, bag);
+      expect(summary?.warnings.filter(w => w.includes('not in the bag setup')).length).toBe(0);
+    });
+  });
 });
 

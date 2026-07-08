@@ -849,8 +849,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players, selectionRoles);
-  }, [players, selectionRoles]);
+    return getValidationSummary(players, selectionRoles, selectedCharacterIds);
+  }, [players, selectionRoles, selectedCharacterIds]);
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';

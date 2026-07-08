@@ -73,6 +73,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
 
+  const [userRotation, setUserRotation] = useState<number | null>(null);
+
+  const rotationOffset = useMemo(() => {
+    if (userRotation !== null) return userRotation;
+    const myName = sessionStorage.getItem('joined-name') || localStorage.getItem('botc-joined-name') || '';
+    if (!myName) return 0;
+    const idx = players.findIndex(p => p.name.trim().toLowerCase() === myName.trim().toLowerCase());
+    return idx !== -1 ? idx : 0;
+  }, [players, userRotation]);
+
   const handleIncomingMessage = (data: unknown) => {
     const payload = data as {
       type: string;
@@ -201,6 +211,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
     }
     setGameCode(null);
+    setUserRotation(null);
   };
 
   const disconnectSync = () => {
@@ -588,6 +599,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           enableReminders={false}
           notes={gameNotes}
           onNotesChange={setGameNotes}
+          rotationOffset={rotationOffset}
+          onRotationChange={setUserRotation}
         />
       )}
 

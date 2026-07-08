@@ -96,6 +96,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
 
+  const [userRotation, setUserRotation] = useState<number | null>(null);
+
+  const rotationOffset = useMemo(() => {
+    if (userRotation !== null) return userRotation;
+    const myName = name;
+    if (!myName) return 0;
+    const idx = players.findIndex(p => p.name.trim().toLowerCase() === myName.trim().toLowerCase());
+    return idx !== -1 ? idx : 0;
+  }, [players, name, userRotation]);
+
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
     return [...baseRoles].sort((a, b) => a.name.localeCompare(b.name));
@@ -252,6 +262,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setState('join');
+      setUserRotation(null);
     } else if (payload.type === 'booted') {
       if (payload.playerId === playerId) {
         showAlert('You have been booted from the game room.');
@@ -259,6 +270,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         sessionStorage.removeItem('joined-name');
         window.location.hash = '#/join';
         setState('join');
+        setUserRotation(null);
       }
     }
   };
@@ -348,6 +360,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setState('join');
     setAssignedRole(null);
     setRevealed(false);
+    setUserRotation(null);
   };
 
   const goToTracker = () => {
@@ -894,6 +907,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                 onSelectPlayer={() => {}}
                 rolesData={[]}
                 isLightModeActive={isLight}
+                rotationOffset={rotationOffset}
+                onRotationChange={setUserRotation}
               />
             </div>
 

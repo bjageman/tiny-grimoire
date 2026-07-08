@@ -197,4 +197,44 @@ describe('PlayerTracker', () => {
 
     expect(window.location.hash).toBe('#/tracker');
   });
+
+  it('automatically rotates the grimoire so the joined player is at the bottom', () => {
+    sessionStorage.setItem('joined-name', 'Charlie');
+
+    const { container } = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    // Add players and transition to game phase
+    const input = screen.getByPlaceholderText('Enter player name in seating order...');
+    const addButton = screen.getByRole('button', { name: '' });
+
+    const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve'];
+    names.forEach(name => {
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.click(addButton);
+    });
+
+    // Start Game
+    const startGameButton = screen.getByText('Start Game');
+    fireEvent.click(startGameButton);
+
+    // Simulate WebSocket sync message
+    act(() => {
+      mockOnMessageCallback({
+        type: 'game_update',
+        players: [
+          { id: 'p-1', name: 'Alice', isDead: false, isDeadVoteUsed: false },
+          { id: 'p-2', name: 'Bob', isDead: false, isDeadVoteUsed: false },
+          { id: 'p-3', name: 'Charlie', isDead: false, isDeadVoteUsed: false },
+          { id: 'p-4', name: 'David', isDead: false, isDeadVoteUsed: false },
+          { id: 'p-5', name: 'Eve', isDead: false, isDeadVoteUsed: false },
+        ],
+        timeOfDay: 'day',
+        dayNumber: 2,
+      });
+    });
+
+    // Verify first rendered player button in DOM is Charlie (p-3)
+    const playerButtons = container.querySelectorAll('button[id^="grimoire-player-"]');
+    expect(playerButtons[0].id).toBe('grimoire-player-p-3');
+  });
 });

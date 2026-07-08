@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
@@ -36,10 +36,20 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const byTeam = useMemo(
-    () => Object.fromEntries(TEAMS.map(t => [t.key, assignableRoles.filter(r => r.team === t.key)])),
-    [assignableRoles]
-  );
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+
+  const byTeam = useMemo(() => {
+    const grouped = Object.fromEntries(
+      TEAMS.map(t => [t.key, assignableRoles.filter(r => r.team === t.key)])
+    ) as Record<'townsfolk' | 'outsider' | 'minion' | 'demon', Role[]>;
+
+    if (sortAlphabetically) {
+      for (const team of Object.keys(grouped) as Array<keyof typeof grouped>) {
+        grouped[team] = [...grouped[team]].sort((a, b) => a.name.localeCompare(b.name));
+      }
+    }
+    return grouped;
+  }, [assignableRoles, sortAlphabetically]);
 
   const selectedRoles = useMemo(() => assignableRoles.filter(r => selectedIds.has(r.id)), [assignableRoles, selectedIds]);
 
@@ -105,25 +115,48 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 space-y-4 pb-4 pt-1">
           {/* Global select controls */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
               {selectedIds.size} of {assignableRoles.length} characters
             </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={selectAll}
-                className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
-              >
-                Select All
-              </button>
-              <button
-                type="button"
-                onClick={deselectAll}
-                className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
-              >
-                Deselect All
-              </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 select-none cursor-pointer shrink-0 py-1">
+                <input
+                  id="select-sort-alphabetically-checkbox"
+                  type="checkbox"
+                  checked={sortAlphabetically}
+                  onChange={(e) => setSortAlphabetically(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={cn(
+                  "w-9 h-5 rounded-full transition-colors relative shrink-0",
+                  sortAlphabetically ? "bg-clocktower-blood" : (isLightModeActive ? "bg-gray-300" : "bg-gray-700")
+                )}>
+                  <div className={cn(
+                    "absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-transform shadow-sm",
+                    sortAlphabetically ? "translate-x-4" : "translate-x-0"
+                  )} />
+                </div>
+                <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
+                  Sort Alphabetically
+                </span>
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={selectAll}
+                  className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={deselectAll}
+                  className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
+                >
+                  Deselect All
+                </button>
+              </div>
             </div>
           </div>
 

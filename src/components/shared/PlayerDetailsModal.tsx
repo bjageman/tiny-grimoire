@@ -101,12 +101,18 @@ export default function PlayerDetailsModal({
 
   const displayRolesList = useMemo(() => {
     return [...filteredModalRoles].sort((a, b) => {
-      // 1. Keep teams separated
+      // 1. Currently assigned role(s) float to the top
+      const isCurrentA = allowMultipleRoles ? (p.roleIds ?? []).includes(a.id) : a.id === p.roleId;
+      const isCurrentB = allowMultipleRoles ? (p.roleIds ?? []).includes(b.id) : b.id === p.roleId;
+      if (isCurrentA && !isCurrentB) return -1;
+      if (!isCurrentA && isCurrentB) return 1;
+
+      // 2. Keep teams separated
       const orderA = TEAM_ORDER[a.team] ?? 99;
       const orderB = TEAM_ORDER[b.team] ?? 99;
       if (orderA !== orderB) return orderA - orderB;
 
-      // 2. Sort within team
+      // 3. Sort within team
       if (allowMultipleRoles && sortAlphabetically) {
         return a.name.localeCompare(b.name);
       } else {
@@ -119,7 +125,7 @@ export default function PlayerDetailsModal({
         return a.name.localeCompare(b.name);
       }
     });
-  }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles]);
+  }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();
@@ -498,8 +504,9 @@ export default function PlayerDetailsModal({
             ) : (
               /* Standard grimoire single button or display */
               displayRoles.length > 0 ? (
-                <div
+                <button
                   id="detail-change-role-button"
+                  type="button"
                   onClick={() => onSetSearchingRole(true)}
                   className={cn(
                     'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative cursor-pointer',
@@ -549,7 +556,7 @@ export default function PlayerDetailsModal({
                       })}
                     </div>
                   </div>
-                </div>
+                </button>
               ) : (
                 <button
                   id="detail-change-role-button"

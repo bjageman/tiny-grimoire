@@ -693,8 +693,9 @@ export default function PlayerDetailsModal({
           ?? "Ability description not found.";
         const t = selectedRole.team;
         return (
-          <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedRole(null)}>
+          <div id="character-details-backdrop" className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-fadeIn" onClick={() => setSelectedRole(null)}>
             <div
+              id="character-details-modal"
               className={cn("w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl animate-scaleIn", isLightModeActive ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-150")}
               onClick={(e) => e.stopPropagation()}
             >

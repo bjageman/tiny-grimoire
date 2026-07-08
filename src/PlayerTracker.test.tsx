@@ -3,12 +3,32 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import PlayerTracker from './PlayerTracker';
 
 let mockOnMessageCallback: (data: unknown) => void = () => {};
+let mockShareOnMessageCallback: (data: unknown) => void = () => {};
+let mockIncomingShareOnMessageCallback: (data: unknown) => void = () => {};
+let useGameSocketCallCount = 0;
+const mockShareSendMessage = vi.fn();
+const mockIncomingShareSendMessage = vi.fn();
 
+// PlayerTracker calls useGameSocket three times per render, always in the
+// same order: the real game socket, the notes-share sender socket, then the
+// notes-share receiver socket. Track them by call parity rather than a
+// single shared variable, since a later call would otherwise clobber an
+// earlier one's callback.
 vi.mock('./hooks/useGameSocket', () => {
   return {
     useGameSocket: vi.fn((gameCode, onMessage) => {
-      mockOnMessageCallback = onMessage;
-      return { isConnected: !!gameCode, sendMessage: vi.fn() };
+      useGameSocketCallCount++;
+      switch (useGameSocketCallCount % 3) {
+        case 1:
+          mockOnMessageCallback = onMessage;
+          return { isConnected: !!gameCode, sendMessage: vi.fn() };
+        case 2:
+          mockShareOnMessageCallback = onMessage;
+          return { isConnected: !!gameCode, sendMessage: mockShareSendMessage };
+        default:
+          mockIncomingShareOnMessageCallback = onMessage;
+          return { isConnected: !!gameCode, sendMessage: mockIncomingShareSendMessage };
+      }
     })
   };
 });
@@ -18,6 +38,7 @@ describe('PlayerTracker', () => {
     localStorage.clear();
     sessionStorage.clear();
     vi.clearAllMocks();
+    useGameSocketCallCount = 0;
   });
 
   it('renders setup phase and allows adding players', () => {
@@ -270,5 +291,74 @@ describe('PlayerTracker', () => {
     fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(false);
     expect(screen.queryByTitle('Add reminder to Alice')).toBeNull();
+  });
+
+  it('shares initial setup (names + script) but no characters, status, or notes', () => {
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText('Enter player name in seating order...');
+    const addButton = screen.getByRole('button', { name: '' });
+
+    ['Alice', 'Bob'].forEach(name => {
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.click(addButton);
+    });
+
+    fireEvent.click(screen.getByText('Start Game'));
+
+    // Mark Bob dead and give him a private note — neither should leak to a recipient
+    const bobRow = Array.from(document.querySelectorAll('[id^="ledger-player-"]'))
+      .find(el => el.textContent?.includes('Bob'));
+    fireEvent.click(bobRow!);
+    fireEvent.click(screen.getByRole('button', { name: 'Alive' }));
+    fireEvent.change(screen.getByPlaceholderText('Notes...'), { target: { value: 'Secretly the Imp' } });
+
+    // Someone opening the share link requests the initial setup once
+    act(() => {
+      mockShareOnMessageCallback({ type: 'notes_share_sync_request' });
+    });
+
+    expect(mockShareSendMessage).toHaveBeenCalled();
+    const lastCall = mockShareSendMessage.mock.calls.at(-1)![0] as {
+      type: string;
+      players: Array<Record<string, unknown>>;
+      scriptName: string;
+    };
+    expect(lastCall.type).toBe('notes_share_state');
+    expect(lastCall.scriptName).toBe('All Roles');
+    expect(lastCall.players).toHaveLength(2);
+    for (const p of lastCall.players) {
+      expect(Object.keys(p).sort()).toEqual(['id', 'name']);
+    }
+    expect(lastCall.players.map(p => p.name).sort()).toEqual(['Alice', 'Bob']);
+  });
+
+  it('imports a shared setup from a share link into its own independent, editable tracker', () => {
+    const hash = window.location.hash;
+    window.location.hash = '#/tracker?shareCode=ABCD';
+
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    // Simulate the sharer responding with their initial setup
+    act(() => {
+      mockIncomingShareOnMessageCallback({
+        type: 'notes_share_state',
+        players: [
+          { id: 'p-1', name: 'Alice' },
+          { id: 'p-2', name: 'Bob' },
+        ],
+        scriptName: 'Trouble Brewing',
+        scriptAuthor: 'The Pandemonium Institute',
+        customScriptRoles: null,
+      });
+    });
+
+    // The imported players appear, and the tracker behaves like a normal,
+    // independently-editable setup (not synced to anything).
+    expect(screen.getAllByText('Alice')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Bob')[0]).toBeInTheDocument();
+    expect(screen.queryByText(/seating arrangement and player list are synced/i)).toBeNull();
+
+    window.location.hash = hash;
   });
 });

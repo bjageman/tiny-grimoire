@@ -356,7 +356,7 @@ export default function PlayerDetailsModal({
                               type="button"
                               onClick={() => setSelectedRole(rObj)}
                               title={`${rObj.name} - View Details`}
-                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
+                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg focus:outline-none cursor-pointer"
                             >
                               <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
                                 <defs>
@@ -475,7 +475,7 @@ export default function PlayerDetailsModal({
                                 setSelectedRole(rObj);
                               }}
                               title={`${rObj.name} - View Details`}
-                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
+                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg focus:outline-none cursor-pointer"
                             >
                               <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
                                 <defs>

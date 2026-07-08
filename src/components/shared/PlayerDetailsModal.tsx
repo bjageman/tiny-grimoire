@@ -2,7 +2,7 @@ import { useRef, useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search, Trash2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
@@ -699,6 +699,28 @@ export default function PlayerDetailsModal({
               className={cn("w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl animate-scaleIn", isLightModeActive ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-150")}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                id="character-details-remove-button"
+                type="button"
+                onClick={() => {
+                  if (allowMultipleRoles) {
+                    onUpdateRoles?.(p.id, displayRoles.filter(id => id !== selectedRole.id));
+                  } else {
+                    onUpdateRole(p.id, '');
+                  }
+                  setSelectedRole(null);
+                }}
+                className={cn(
+                  "absolute top-4 left-4 p-1.5 rounded-full transition-colors",
+                  isLightModeActive
+                    ? "text-red-650 hover:bg-red-50 hover:text-red-800"
+                    : "text-red-400 hover:bg-red-950/40 hover:text-red-300"
+                )}
+                aria-label="Remove character"
+                title="Remove character"
+              >
+                <Trash2 size={18} />
+              </button>
               <button type="button" onClick={() => setSelectedRole(null)} className={cn("absolute top-4 right-4 p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")} aria-label="Close details">
                 <X size={18} />
               </button>

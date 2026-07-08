@@ -65,11 +65,11 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   const hasGodfather = assignedRoles.some(r => r.id === 'godfather');
   const hasFangGu = assignedRoles.some(r => r.id === 'fanggu');
   const hasVigormortis = assignedRoles.some(r => r.id === 'vigormortis');
-  const hasBalloonist = assignedRoles.some(r => r.id === 'balloonist');
-  const hasHuntsman = assignedRoles.some(r => r.id === 'huntsman');
-  const hasAlchemist = assignedRoles.some(r => r.id === 'alchemist');
+  const hasBalloonist = players.some(p => p.roleId === 'balloonist');
+  const hasHuntsman = players.some(p => p.roleId === 'huntsman');
+  const hasAlchemist = players.some(p => p.roleId === 'alchemist');
   const hasLilMonsta = assignedRoles.some(r => r.id === 'lilmonsta') || players.some(p => p.isTheLilMonsta);
-  const hasHermit = assignedRoles.some(r => r.id === 'hermit');
+  const hasHermit = players.some(p => p.roleId === 'hermit');
   const hasSummoner = assignedRoles.some(r => r.id === 'summoner');
   const hasLordOfTyphon = assignedRoles.some(r => r.id === 'lordoftyphon');
   const hasKazali = assignedRoles.some(r => r.id === 'kazali');
@@ -209,15 +209,66 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDeltaForTownsfolk);
   
   // Jinx checks
-  const hasChoirboy = assignedRoles.some(r => r.id === 'choirboy');
-  const hasKing = assignedRoles.some(r => r.id === 'king');
-  const hasDamsel = assignedRoles.some(r => r.id === 'damsel');
+  const hasChoirboy = players.some(p => p.roleId === 'choirboy');
+  const hasKing = players.some(p => p.roleId === 'king');
+  const hasDamsel = players.some(p => p.roleId === 'damsel');
   
   const warnings: string[] = [];
   const failures: string[] = [];
   if (hasChoirboy && !hasKing) failures.push("Choirboy in play, but no King assigned.");
   if (hasHuntsman && !hasDamsel) failures.push("Huntsman in play, but no Damsel assigned.");
   if (hasAlchemist) warnings.push("Alchemist in play — ability may affect setup.");
+
+  // Setup validation failures for Outsiders/Townsfolk
+  if (!isOutsiderValid && !(hasKazali || hasXaan)) {
+    const minExpected = Math.min(...validOutsiders);
+    const maxExpected = Math.max(...validOutsiders);
+    if (counts.outsider < minExpected) {
+      failures.push(`Too few Outsiders: expected ${expectedOutsiderLabel}, but got ${counts.outsider}.`);
+    } else if (counts.outsider > maxExpected) {
+      failures.push(`Too many Outsiders: expected ${expectedOutsiderLabel}, but got ${counts.outsider}.`);
+    } else {
+      failures.push(`Incorrect number of Outsiders: expected ${expectedOutsiderLabel}, but got ${counts.outsider}.`);
+    }
+  }
+
+  if (!(hasKazali || hasXaan)) {
+    if (!isOutsiderValid) {
+      const minExpectedTF = Math.min(...uniqueTownsfolk);
+      const maxExpectedTF = Math.max(...uniqueTownsfolk);
+      if (counts.townsfolk < minExpectedTF) {
+        failures.push(`Too few Townsfolk: expected ${expectedTownsfolkLabel}, but got ${counts.townsfolk}.`);
+      } else if (counts.townsfolk > maxExpectedTF) {
+        failures.push(`Too many Townsfolk: expected ${expectedTownsfolkLabel}, but got ${counts.townsfolk}.`);
+      }
+    } else if (!isTownsfolkValid) {
+      const expectedTF = baseCount - expectedDemon - expectedMinion - counts.outsider + marionetteOutsiderDelta;
+      if (counts.townsfolk < expectedTF) {
+        failures.push(`Too few Townsfolk: expected ${expectedTF} (with ${counts.outsider} Outsider${counts.outsider === 1 ? '' : 's'}), but got ${counts.townsfolk}.`);
+      } else if (counts.townsfolk > expectedTF) {
+        failures.push(`Too many Townsfolk: expected ${expectedTF} (with ${counts.outsider} Outsider${counts.outsider === 1 ? '' : 's'}), but got ${counts.townsfolk}.`);
+      }
+    }
+  }
+
+  // Setup validation failures for Minions/Demons
+  if (!isMinionValid) {
+    if (counts.minion < expectedMinion) {
+      failures.push(`Too few Minions: expected ${expectedMinion}, but got ${counts.minion}.`);
+    } else if (counts.minion > expectedMinion) {
+      failures.push(`Too many Minions: expected ${expectedMinion}, but got ${counts.minion}.`);
+    }
+  }
+
+  if (!isDemonValid) {
+    if (counts.demon < expectedDemon) {
+      failures.push(`Too few Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+    } else if (counts.demon > expectedDemon) {
+      failures.push(`Too many Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+    }
+  }
+
+
 
   const customRolesAssigned = assignedRoles.filter(r => !OFFICIAL_ROLE_IDS.has(r.id));
   if (customRolesAssigned.length > 0) {

@@ -1132,7 +1132,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       { id: 'p2', name: 'Bob', roleId: 'washerwoman' },
       { id: 'p3', name: 'Carol', roleId: 'empath' },
       { id: 'p4', name: 'Dave', roleId: 'poisoner' },
-      { id: 'p5', name: 'Eve', roleId: 'butler' }
+      { id: 'p5', name: 'Eve', roleId: 'monk' }
     ];
     
     localStorage.setItem('standard-botc-game', JSON.stringify({

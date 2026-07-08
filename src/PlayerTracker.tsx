@@ -264,14 +264,20 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  const { sendMessage: sendIncomingShareRequest } = useGameSocket(incomingShareCode || '', handleIncomingShareMessage);
+  const { sendMessage: sendIncomingShareRequest, isConnected: isIncomingShareConnected } = useGameSocket(incomingShareCode || '', handleIncomingShareMessage);
   useEffect(() => {
-    if (!incomingShareCode) return;
-    const timer = setTimeout(() => {
+    if (!incomingShareCode || !isIncomingShareConnected) return;
+    // Ask as soon as our socket is actually subscribed (not on a blind
+    // timer — real WebSocket handshakes can take longer than a fixed
+    // delay), then keep retrying: the sharer's reply is only delivered to
+    // subscribers connected at the moment it's sent, so a single request
+    // can go unanswered if either side's socket wasn't fully up yet.
+    sendIncomingShareRequest({ type: 'notes_share_sync_request' });
+    const retry = setInterval(() => {
       sendIncomingShareRequest({ type: 'notes_share_sync_request' });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [incomingShareCode, sendIncomingShareRequest]);
+    }, 2000);
+    return () => clearInterval(retry);
+  }, [incomingShareCode, isIncomingShareConnected, sendIncomingShareRequest]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -563,6 +569,25 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   return (
     <>
+    {incomingShareCode && (
+      <div className={cn(
+        "fixed inset-0 z-[100] flex flex-col items-center justify-center space-y-4 backdrop-blur-sm transition-all duration-300",
+        isLightModeActive ? "bg-white/95 text-clocktower-night" : "bg-gray-955/95 text-white"
+      )}>
+        <div className="relative">
+          <div className="absolute inset-0 bg-clocktower-demon/15 rounded-full blur-xl scale-125 animate-pulse" />
+          <img
+            src="/icons/summoner.svg"
+            alt="Importing..."
+            className="w-24 h-24 object-contain animate-spin relative z-10"
+            style={{ animationDuration: '3s' }}
+          />
+        </div>
+        <p className="font-display text-lg font-bold tracking-widest uppercase animate-pulse relative z-10 mt-2 text-clocktower-blood">
+          Importing Setup...
+        </p>
+      </div>
+    )}
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
@@ -633,15 +658,6 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
     >
-
-      {incomingShareCode && (
-        <p className={cn(
-          'text-center text-xs font-semibold uppercase tracking-widest mb-4 animate-pulse',
-          isLightModeActive ? 'text-gray-500' : 'text-gray-400'
-        )}>
-          Importing shared setup…
-        </p>
-      )}
 
       {phase === 'setup' && (
         <PlayerTrackerSetupPhase

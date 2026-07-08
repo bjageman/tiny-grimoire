@@ -767,7 +767,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     {showShareModal && (
       <RoomCodeModal
         gameCode={shareCode}
-        joinUrl={`${window.location.origin}${window.location.pathname}#/shared-notes?code=${shareCode}`}
+        joinUrl={`${window.location.origin}${window.location.pathname}#/tracker?shareCode=${shareCode}`}
         onClose={() => setShowShareModal(false)}
         isLightModeActive={isLightModeActive}
         shareOnly

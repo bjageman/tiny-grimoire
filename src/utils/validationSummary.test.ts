@@ -484,6 +484,22 @@ describe('validationSummary utility', () => {
       expect(summary?.isOutsiderValid).toBe(true);
       expect(summary?.failures.some(f => f.includes('Outsiders'))).toBe(false);
     });
+
+    it('should correctly count traveler roles when they are not in the passed script/allRoles list', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'gunslinger', isDead: false },
+      ];
+      const customScript: Role[] = [
+        { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      ];
+      const summary = getValidationSummary(players, customScript);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.counts.traveler).toBe(1);
+        expect(summary.counts.townsfolk).toBe(1);
+      }
+    });
   });
 });
 

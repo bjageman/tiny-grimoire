@@ -2,6 +2,7 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { Search, Trash2 } from 'lucide-react';
+import rolesData from '../../roles.json';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
@@ -65,7 +66,7 @@ export default function SetupPlayerEditModal({
 
   if (!player) return null;
 
-  const roleObj = selectionRoles.find(r => r.id === player.roleId);
+  const roleObj = selectionRoles.find(r => r.id === player.roleId) || (rolesData as Role[]).find(r => r.id === player.roleId);
 
   const hasDrunkInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'drunk');
   const hasMarionetteInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'marionette');
@@ -75,8 +76,8 @@ export default function SetupPlayerEditModal({
   const N = players.length;
   const leftNeighbor = players[(index - 1 + N) % N];
   const rightNeighbor = players[(index + 1) % N];
-  const leftRoleObj = selectionRoles.find(r => r.id === leftNeighbor?.roleId);
-  const rightRoleObj = selectionRoles.find(r => r.id === rightNeighbor?.roleId);
+  const leftRoleObj = selectionRoles.find(r => r.id === leftNeighbor?.roleId) || (rolesData as Role[]).find(r => r.id === leftNeighbor?.roleId);
+  const rightRoleObj = selectionRoles.find(r => r.id === rightNeighbor?.roleId) || (rolesData as Role[]).find(r => r.id === rightNeighbor?.roleId);
   const isNextToDemon = (leftRoleObj?.team === 'demon' && !leftNeighbor?.isTheLunatic)
     || (rightRoleObj?.team === 'demon' && !rightNeighbor?.isTheLunatic);
 

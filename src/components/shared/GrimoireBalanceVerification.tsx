@@ -61,7 +61,7 @@ export default function GrimoireBalanceVerification({
       <div className={cn(
         "grid text-center text-[10px] font-mono border-t pt-2.5",
         isLightModeActive ? "border-gray-200" : "border-gray-800",
-        validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
+        validationSummary.counts.traveler > 0
           ? "grid-cols-5 gap-1"
           : "grid-cols-4 gap-2"
       )}>
@@ -89,11 +89,11 @@ export default function GrimoireBalanceVerification({
             {validationSummary.counts.demon} / {validationSummary.expected.demon}
           </div>
         </div>
-        {(validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0) && (
+        {validationSummary.counts.traveler > 0 && (
           <div>
             <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
             <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
-              {validationSummary.counts.traveler} / {validationSummary.expected.traveler}
+              {validationSummary.counts.traveler} / 5
             </div>
           </div>
         )}

@@ -60,9 +60,34 @@ function getMasqueradeFakeRole(
   return masterPool[0] || null;
 }
 
-function splitTravelers(players: Player[], travelerCount: number): { travelerIds: Set<string>; basePlayers: Player[] } {
-  const shuffled = shuffle(players);
-  const travelerIds = new Set(shuffled.slice(0, travelerCount).map(p => p.id));
+function isTravelerRole(roleId: string | undefined, selectionRoles: Role[]): boolean {
+  if (!roleId) return false;
+  const role = selectionRoles.find(r => r.id === roleId) || (masterRoles as Role[]).find(r => r.id === roleId);
+  return role?.team === 'traveler' || (role?.team as string) === 'traveller';
+}
+
+function splitTravelers(
+  players: Player[],
+  travelerCount: number,
+  manualTravelerIds: Set<string>
+): { travelerIds: Set<string>; basePlayers: Player[] } {
+  const travelerIds = new Set<string>();
+
+  for (const id of manualTravelerIds) {
+    if (travelerIds.size < travelerCount) {
+      travelerIds.add(id);
+    }
+  }
+
+  if (travelerIds.size < travelerCount) {
+    const nonManualPlayers = players.filter(p => !manualTravelerIds.has(p.id));
+    const shuffled = shuffle(nonManualPlayers);
+    for (const p of shuffled) {
+      if (travelerIds.size >= travelerCount) break;
+      travelerIds.add(p.id);
+    }
+  }
+
   return { travelerIds, basePlayers: players.filter(p => !travelerIds.has(p.id)) };
 }
 
@@ -112,11 +137,22 @@ function assignSimpleRolesToPlayers(
   isEvilId?: string
 ): Player[] {
   const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
-  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+  const travelerRoles = shuffle(
+    selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+  );
+  if (travelerRoles.length === 0) {
+    travelerRoles.push({ id: 'beggar', name: 'Beggar', team: 'traveler' } as Role);
+  }
 
+  let travelerIdx = 0;
   return players.map(p => {
     if (travelerIds.has(p.id)) {
-      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      if (isTravelerRole(p.roleId, selectionRoles)) {
+        return { ...p, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      }
+      const assignedTraveler = travelerRoles[travelerIdx % travelerRoles.length];
+      travelerIdx++;
+      return { ...p, roleId: assignedTraveler.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
     }
     const roleId = assignedRoles[basePlayerIndex.get(p.id) ?? 0]?.id;
     return {
@@ -140,7 +176,17 @@ export function performStandardAssignment(
   const N = players.length;
   if (N < 5) return null;
 
-  const travelerCount = N > 15 ? N - 15 : 0;
+  const manualTravelerIds = new Set(
+    players.filter(p => isTravelerRole(p.roleId, selectionRoles)).map(p => p.id)
+  );
+
+  const neededTravelers = N > 15 ? N - 15 : 0;
+  let travelerCount = Math.max(manualTravelerIds.size, neededTravelers);
+  const maxTravelers = N - 5;
+  if (travelerCount > maxTravelers) {
+    travelerCount = maxTravelers;
+  }
+
   const baseCount = N - travelerCount;
   const base = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
 
@@ -179,7 +225,7 @@ export function performStandardAssignment(
     const finalRolesList = shuffle([...selectedOutsiders, ...selectedTownsfolk]);
     fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], outs[0]);
 
-    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles);
   }
 
@@ -196,7 +242,7 @@ export function performStandardAssignment(
     const L = Math.round(baseCount * 0.6);
     const finalRolesList = shuffle([...Array(L).fill(legionRole), ...shuffle(tfs).slice(0, baseCount - L)]);
     fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], dems[0]);
-    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'legion');
   }
 
@@ -416,7 +462,7 @@ export function performStandardAssignment(
     );
   }
 
-  const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+  const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
   const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
 
   const K = basePlayers.length;
@@ -513,11 +559,22 @@ export function performStandardAssignment(
     }
   }
 
-  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+  const travelerRoles = shuffle(
+    selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+  );
+  if (travelerRoles.length === 0) {
+    travelerRoles.push({ id: 'beggar', name: 'Beggar', team: 'traveler' } as Role);
+  }
 
+  let travelerIdx = 0;
   const assignedPlayers = players.map(p => {
     if (travelerIds.has(p.id)) {
-      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      if (manualTravelerIds.has(p.id)) {
+        return { ...p, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      }
+      const assignedTraveler = travelerRoles[travelerIdx % travelerRoles.length];
+      travelerIdx++;
+      return { ...p, roleId: assignedTraveler.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
     }
 
     const role = assignedRoles[basePlayerIndex.get(p.id) ?? 0];
@@ -565,7 +622,7 @@ export function performStandardAssignment(
     };
   });
 
-  const travelerRoleIds = new Set(selectionRoles.filter(r => r.team === 'traveler').map(r => r.id));
+  const travelerRoleIds = new Set(selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller').map(r => r.id));
   const tfIds = new Set(tfs.map(r => r.id));
   const outIds = new Set(outs.map(r => r.id));
 

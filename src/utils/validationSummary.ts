@@ -25,10 +25,20 @@ export interface ValidationSummary {
 export function getValidationSummary(players: Player[], allRoles: Role[] = rolesData as Role[]): ValidationSummary | null {
   if (players.length === 0) return null;
 
+  const findRole = (roleId?: string) => {
+    if (!roleId) return undefined;
+    const rawRole = allRoles.find(r => r.id === roleId) || (rolesData as Role[]).find(r => r.id === roleId);
+    if (!rawRole) return undefined;
+    if ((rawRole.team as string) === 'traveller') {
+      return { ...rawRole, team: 'traveler' as const };
+    }
+    return rawRole;
+  };
+
   const N = players.length;
   const travelerCount = players.filter(p => {
     if (!p.roleId) return false;
-    const r = allRoles.find(role => role.id === p.roleId);
+    const r = findRole(p.roleId);
     return r?.team === 'traveler';
   }).length;
   const baseCount = N - travelerCount;
@@ -45,7 +55,7 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
       } else if (p.roleId === 'lilmonsta') {
         acc.minion++;
       } else {
-        const role = allRoles.find(r => r.id === p.roleId);
+        const role = findRole(p.roleId);
         if (role) acc[role.team]++;
       }
     }
@@ -53,10 +63,10 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   }, { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveler: 0 });
   
   const assignedRoles = players.map(p => {
-    if (p.isTheMarionette) return allRoles.find(r => r.id === 'marionette');
-    if (p.isTheDrunk) return allRoles.find(r => r.id === 'drunk');
-    if (p.isTheLunatic) return allRoles.find(r => r.id === 'lunatic');
-    return allRoles.find(r => r.id === p.roleId);
+    if (p.isTheMarionette) return findRole('marionette');
+    if (p.isTheDrunk) return findRole('drunk');
+    if (p.isTheLunatic) return findRole('lunatic');
+    return findRole(p.roleId);
   }).filter(Boolean) as Role[];
   const hasLegion = assignedRoles.some(r => r.id === 'legion');
   const hasRiot = assignedRoles.some(r => r.id === 'riot');

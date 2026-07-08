@@ -65,7 +65,10 @@ export default function CharacterAssignmentCircle({
       >
         {players.map((p, index) => {
           const pos = positions[index] ?? { left: 50, top: 50 };
-          const roleObj = (selectionRoles ?? (rolesData as Role[])).find(r => r.id === p.roleId);
+          let roleObj = selectionRoles?.find(r => r.id === p.roleId);
+          if (!roleObj) {
+            roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+          }
           const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
           const isEvil = p.isTheLunatic ? false : p.isTheMarionette ? true : defaultEvil;
           const isDropTarget = dragOverIndex === index && draggedIndex !== index;

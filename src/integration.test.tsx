@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, act, within } from '@testing-library/react';
+import { render, fireEvent, act, within, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import StandardSetup from './StandardSetup';
 import WhaleBucket from './WhaleBucket';
@@ -901,12 +901,13 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     
     await act(async () => {
       fireEvent.click(bobRow!);
-      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    // Should be in search mode immediately (search input is visible, change role token display is not present)
-    const searchInputBob = storyteller.container.querySelector('#detail-role-search-input');
-    expect(searchInputBob).not.toBeNull();
+    await waitFor(() => {
+      const searchInputBob = storyteller.container.querySelector('#detail-role-search-input');
+      expect(searchInputBob).not.toBeNull();
+    });
+
     const changeRoleBtnBob = storyteller.container.querySelector('#detail-change-role-button');
     expect(changeRoleBtnBob).toBeNull();
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { GripVertical, Search, X } from 'lucide-react';
+import { ChevronDown, GripVertical, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { sortByScriptOrder } from '../../utils/scriptUtils';
@@ -110,6 +110,7 @@ export default function GamePhase({
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
   const [isBluffOverlayOpen, setIsBluffOverlayOpen] = useState(false);
   const [bluffPickerSlot, setBluffPickerSlot] = useState<number | null>(null);
   const [bluffSearch, setBluffSearch] = useState('');
@@ -581,13 +582,29 @@ export default function GamePhase({
             ? 'bg-white/50 border-gray-300 text-clocktower-night'
             : 'bg-gray-900/40 border-gray-800/80'
         )}>
-          <div className="flex justify-between items-center mb-1">
+          <button
+            type="button"
+            onClick={() => setIsLedgerCollapsed(prev => !prev)}
+            aria-expanded={!isLedgerCollapsed}
+            className="w-full flex justify-between items-center mb-1 text-left"
+          >
             <h4 className={cn(
               'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-655' : 'text-gray-500'
             )}>Grimoire Ledger Reference</h4>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5 text-xs">
+            <ChevronDown
+              size={14}
+              className={cn(
+                'md:hidden shrink-0 transition-transform duration-200',
+                isLightModeActive ? 'text-gray-655' : 'text-gray-500',
+                !isLedgerCollapsed && 'rotate-180'
+              )}
+            />
+          </button>
+          <div className={cn(
+            'gap-1.5 text-xs grid-cols-1',
+            isLedgerCollapsed ? 'hidden md:grid' : 'grid'
+          )}>
             {players.map((p, index) => {
               const rObj = grimoireRolesData.find(r => r.id === p.roleId);
               return (

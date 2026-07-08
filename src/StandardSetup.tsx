@@ -783,7 +783,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [currentScriptRoles]);
 
   const randomlyAssignRoles = () => {
-    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles);
+    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles);
     if (!assignedPlayers) {
       const N = players.length;
       showAlert(N < 5
@@ -803,7 +803,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles)!;
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };

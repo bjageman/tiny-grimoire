@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
 import type { Role } from '../../types';
@@ -30,7 +30,7 @@ export default function ReminderPickerModal({
   useScrollLock();
   const [search, setSearch] = useState('');
 
-  const options: ReminderOption[] = activeRoleIds.flatMap((charId) => {
+  const options: ReminderOption[] = useMemo(() => activeRoleIds.flatMap((charId) => {
     const reminders = (remindersData as Record<string, string[]>)[charId] ?? [];
     const role = rolesData.find((r) => r.id === charId);
     if (!role || reminders.length === 0) return [];
@@ -39,15 +39,18 @@ export default function ReminderPickerModal({
       sourceCharName: role.name,
       text,
     }));
-  });
+  }), [activeRoleIds, rolesData]);
 
-  const filtered = search.trim()
-    ? options.filter(
-        (o) =>
-          o.text.toLowerCase().includes(search.toLowerCase()) ||
-          o.sourceCharName.toLowerCase().includes(search.toLowerCase())
-      )
-    : options;
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return term
+      ? options.filter(
+          (o) =>
+            o.text.toLowerCase().includes(term) ||
+            o.sourceCharName.toLowerCase().includes(term)
+        )
+      : options;
+  }, [options, search]);
 
   return (
     <div

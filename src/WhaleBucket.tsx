@@ -367,12 +367,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
   ]);
 
-  useStorytellerSync({
+  const { hasReceivedSync } = useStorytellerSync({
     isSecondary,
     syncCode,
     localState: syncState,
     onApplySync: handleApplySync,
   });
+  const showLoading = isSecondary && !hasReceivedSync;
 
   // Save to localStorage
   useEffect(() => {
@@ -920,6 +921,25 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   return (
     <>
+    {showLoading && (
+      <div className={cn(
+        "fixed inset-0 z-[100] flex flex-col items-center justify-center space-y-4 backdrop-blur-sm transition-all duration-300",
+        isLightModeActive ? "bg-white/95 text-clocktower-night" : "bg-gray-955/95 text-white"
+      )}>
+        <div className="relative">
+          <div className="absolute inset-0 bg-clocktower-demon/15 rounded-full blur-xl scale-125 animate-pulse" />
+          <img
+            src="/icons/summoner.svg"
+            alt="Summoning..."
+            className="w-24 h-24 object-contain animate-spin relative z-10"
+            style={{ animationDuration: '3s' }}
+          />
+        </div>
+        <p className="font-display text-lg font-bold tracking-widest uppercase animate-pulse relative z-10 mt-2 text-clocktower-blood">
+          Summoning...
+        </p>
+      </div>
+    )}
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}

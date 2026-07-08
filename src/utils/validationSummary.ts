@@ -15,6 +15,8 @@ export interface ValidationSummary {
   isOutsiderValid: boolean;
   isTownsfolkValid: boolean;
   jinxWarnings: string[];
+  warnings: string[];
+  failures: string[];
   isValid: boolean;
   expectedOutsiderLabel: string;
   expectedTownsfolkLabel: string;
@@ -211,15 +213,16 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   const hasKing = assignedRoles.some(r => r.id === 'king');
   const hasDamsel = assignedRoles.some(r => r.id === 'damsel');
   
-  const jinxWarnings: string[] = [];
-  if (hasChoirboy && !hasKing) jinxWarnings.push("Choirboy in play, but no King assigned.");
-  if (hasHuntsman && !hasDamsel) jinxWarnings.push("Huntsman in play, but no Damsel assigned.");
-  if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
+  const warnings: string[] = [];
+  const failures: string[] = [];
+  if (hasChoirboy && !hasKing) failures.push("Choirboy in play, but no King assigned.");
+  if (hasHuntsman && !hasDamsel) failures.push("Huntsman in play, but no Damsel assigned.");
+  if (hasAlchemist) warnings.push("Alchemist in play — ability may affect setup.");
 
   const customRolesAssigned = assignedRoles.filter(r => !OFFICIAL_ROLE_IDS.has(r.id));
   if (customRolesAssigned.length > 0) {
     const uniqueNames = [...new Set(customRolesAssigned.map(r => r.name))];
-    jinxWarnings.push(`Custom: ${uniqueNames.join(', ')} — adjust setup manually.`);
+    warnings.push(`Custom: ${uniqueNames.join(', ')} — adjust setup manually.`);
   }
 
   // Drunk/Marionette/Lunatic are always supposed to display as a different, fake character —
@@ -228,7 +231,7 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   for (const p of players) {
     if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {
       const role = allRoles.find(r => r.id === p.roleId);
-      jinxWarnings.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
+      failures.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
     }
   }
 
@@ -240,7 +243,7 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
   for (const [roleId, count] of Object.entries(roleIdFreq)) {
     if (count > 1 && roleId !== 'legion') {
       const role = allRoles.find(r => r.id === roleId);
-      jinxWarnings.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
+      failures.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
     }
   }
 
@@ -259,7 +262,7 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
 
   if (marionettePlayers.length > 0) {
     if (demonPlayers.length === 0) {
-      jinxWarnings.push("A Marionette is in play, but there is no Demon assigned.");
+      failures.push("A Marionette is in play, but there is no Demon assigned.");
     } else {
       const K = basePlayersInOrder.length;
       for (const mp of marionettePlayers) {
@@ -269,12 +272,13 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
           return (d_idx - 1 + K) % K === m_idx || (d_idx + 1) % K === m_idx;
         });
         if (!isNeighboringDemon) {
-          jinxWarnings.push(`Marionette (${mp.name}) must be sitting next to the Demon.`);
+          failures.push(`Marionette (${mp.name}) must be sitting next to the Demon.`);
         }
       }
     }
   }
   
+  const jinxWarnings = [...warnings, ...failures];
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
   
   return {
@@ -294,6 +298,8 @@ export function getValidationSummary(players: Player[], allRoles: Role[] = roles
     isOutsiderValid,
     isTownsfolkValid,
     jinxWarnings,
+    warnings,
+    failures,
     isValid,
     expectedOutsiderLabel,
     expectedTownsfolkLabel

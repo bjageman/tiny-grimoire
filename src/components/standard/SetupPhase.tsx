@@ -96,6 +96,7 @@ export default function StandardSetupPhase({
   const [showGrimoireWarning, setShowGrimoireWarning] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [isSelectCharactersModalOpen, setIsSelectCharactersModalOpen] = useState(false);
+  const [overrideFailures, setOverrideFailures] = useState(false);
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
@@ -318,12 +319,27 @@ export default function StandardSetupPhase({
         )}
         <button
           id="open-grimoire-button"
-          disabled={!allAssigned}
+          disabled={!allAssigned || (!!validationSummary?.failures?.length && !overrideFailures)}
           onClick={handleOpenGrimoire}
           className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
         >
           Open Grimoire
         </button>
+        {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
+          <label className={cn(
+            "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",
+            isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+          )}>
+            <input
+              type="checkbox"
+              id="override-failures-checkbox"
+              checked={overrideFailures}
+              onChange={(e) => setOverrideFailures(e.target.checked)}
+              className="rounded border-gray-300 text-clocktower-blood focus:ring-clocktower-blood bg-transparent"
+            />
+            Override failures
+          </label>
+        )}
       </div>
     </div>
 

@@ -237,4 +237,38 @@ describe('PlayerTracker', () => {
     const playerButtons = container.querySelectorAll('button[id^="grimoire-player-"]');
     expect(playerButtons[0].id).toBe('grimoire-player-p-3');
   });
+
+  it('allows toggling reminder tokens on and off via checkbox below notes', () => {
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText('Enter player name in seating order...');
+    const addButton = screen.getByRole('button', { name: '' });
+
+    const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve'];
+    names.forEach(name => {
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.click(addButton);
+    });
+
+    const startButton = screen.getByText('Start Game');
+    fireEvent.click(startButton);
+
+    // Verify checkbox is rendered and defaults to unchecked
+    const checkbox = screen.getAllByLabelText('Turn on Reminder Tokens')[0] as HTMLInputElement;
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox.checked).toBe(false);
+
+    // Toggle it on
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(true);
+
+    // Verify "+" add-reminder button is now visible on player circles
+    const firstPlayerAddBtn = screen.getByTitle('Add reminder to Alice');
+    expect(firstPlayerAddBtn).toBeInTheDocument();
+
+    // Toggle it off
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(false);
+    expect(screen.queryByTitle('Add reminder to Alice')).toBeNull();
+  });
 });

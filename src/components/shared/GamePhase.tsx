@@ -50,6 +50,7 @@ interface Props {
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;
+  includeAllScriptReminders?: boolean;
   travelerCardTitle?: string;
   demonBluffs?: string[];
   onUpdateDemonBluffs?: (bluffs: string[]) => void;
@@ -65,6 +66,8 @@ interface Props {
   onRotationChange?: (offset: number) => void;
   notes?: string;
   onNotesChange?: (notes: string) => void;
+  showReminderToggle?: boolean;
+  onToggleReminders?: (enabled: boolean) => void;
 }
 
 export default function GamePhase({
@@ -84,6 +87,7 @@ export default function GamePhase({
   isSynced = false,
   isSecondary = false,
   enableReminders = true,
+  includeAllScriptReminders = false,
   travelerCardTitle = 'Add Traveler',
   demonBluffs = [],
   onUpdateDemonBluffs,
@@ -99,6 +103,8 @@ export default function GamePhase({
   onRotationChange,
   notes,
   onNotesChange,
+  showReminderToggle = false,
+  onToggleReminders,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -276,10 +282,11 @@ export default function GamePhase({
             isSynced={isSynced}
             isLightModeActive={isLightModeActive}
             remotePlayerIds={remotePlayerIds}
+            includeAllScriptReminders={includeAllScriptReminders}
             reminderTokens={enableReminders ? reminderTokens : []}
-            onAddReminder={enableReminders && !isSynced ? handleAddReminder : undefined}
-            onRemoveReminder={enableReminders && !isSynced ? handleRemoveReminder : undefined}
-            onRemoveAllReminders={enableReminders && !isSynced ? handleRemoveAllReminders : undefined}
+            onAddReminder={enableReminders ? handleAddReminder : undefined}
+            onRemoveReminder={enableReminders ? handleRemoveReminder : undefined}
+            onRemoveAllReminders={enableReminders ? handleRemoveAllReminders : undefined}
             rotationOffset={rotationOffset}
             onRotationChange={onRotationChange}
           />
@@ -305,6 +312,21 @@ export default function GamePhase({
               placeholder="Write anything here. Deductions, suspicions, reminders..."
               isLightModeActive={isLightModeActive}
             />
+            {showReminderToggle && onToggleReminders && (
+              <label className={cn(
+                "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
+                isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+              )}>
+                <input
+                  type="checkbox"
+                  id="toggle-reminders-checkbox-desktop"
+                  checked={enableReminders}
+                  onChange={(e) => onToggleReminders(e.target.checked)}
+                  className="rounded border-gray-300 text-clocktower-blood focus:ring-clocktower-blood bg-transparent cursor-pointer"
+                />
+                Turn on Reminder Tokens
+              </label>
+            )}
           </div>
         )}
       </div>
@@ -786,6 +808,21 @@ export default function GamePhase({
           placeholder="Write anything here. Deductions, suspicions, reminders..."
           isLightModeActive={isLightModeActive}
         />
+        {showReminderToggle && onToggleReminders && (
+          <label className={cn(
+            "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
+            isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+          )}>
+            <input
+              type="checkbox"
+              id="toggle-reminders-checkbox-mobile"
+              checked={enableReminders}
+              onChange={(e) => onToggleReminders(e.target.checked)}
+              className="rounded border-gray-300 text-clocktower-blood focus:ring-clocktower-blood bg-transparent cursor-pointer"
+            />
+            Turn on Reminder Tokens
+          </label>
+        )}
       </div>
     )}
     </>

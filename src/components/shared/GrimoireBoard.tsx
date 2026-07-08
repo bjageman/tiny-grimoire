@@ -29,6 +29,7 @@ interface GrimoireBoardProps {
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
   remotePlayerIds?: Set<string>;
+  includeAllScriptReminders?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -49,6 +50,7 @@ export default function GrimoireBoard({
   rotationOffset: controlledRotation,
   onRotationChange,
   remotePlayerIds,
+  includeAllScriptReminders = false,
 }: GrimoireBoardProps) {
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
@@ -114,16 +116,20 @@ export default function GrimoireBoard({
 
   const activeCharIds = useMemo(() => {
     const ids = new Set<string>();
-    players.forEach(p => {
-      if (p.roleId) ids.add(p.roleId);
-      p.roleIds?.forEach(id => ids.add(id));
-      if (p.isTheDrunk) ids.add('drunk');
-      if (p.isTheMarionette) ids.add('marionette');
-      if (p.isTheLunatic) ids.add('lunatic');
-      if (p.isTheLilMonsta) ids.add('lilmonsta');
-    });
+    if (includeAllScriptReminders) {
+      rolesData.forEach(r => ids.add(r.id));
+    } else {
+      players.forEach(p => {
+        if (p.roleId) ids.add(p.roleId);
+        p.roleIds?.forEach(id => ids.add(id));
+        if (p.isTheDrunk) ids.add('drunk');
+        if (p.isTheMarionette) ids.add('marionette');
+        if (p.isTheLunatic) ids.add('lunatic');
+        if (p.isTheLilMonsta) ids.add('lilmonsta');
+      });
+    }
     return [...ids];
-  }, [players]);
+  }, [players, rolesData, includeAllScriptReminders]);
 
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
@@ -326,7 +332,7 @@ export default function GrimoireBoard({
         ) : <div />}
 
         <div className="flex justify-center items-center gap-2">
-          {!isSynced && onRemoveAllReminders && reminderTokens.length > 0 && (
+          {onRemoveAllReminders && reminderTokens.length > 0 && (
             <button
               id="grimoire-reset-reminders-button"
               onClick={onRemoveAllReminders}
@@ -550,7 +556,7 @@ export default function GrimoireBoard({
               className="hover:z-50 group"
             >
               {/* "+" add-reminder — at anchor when empty, shifted inward when reminders exist */}
-              {!isSynced && onAddReminder && playerReminders.length < 5 && (
+              {onAddReminder && playerReminders.length < 5 && (
                 <button
                   style={{
                     position: 'absolute',

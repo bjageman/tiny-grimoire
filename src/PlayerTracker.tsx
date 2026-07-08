@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
-import type { Player, Role } from './types';
+import type { Player, Role, PlacedReminder } from './types';
 import { TEAM_ORDER } from './types';
 import { parseScriptFile } from './utils/scriptUtils';
 
@@ -70,6 +70,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
   const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
+  const [enableReminders, setEnableReminders] = usePersistedField<boolean>(STORAGE_KEY, 'enableReminders', false);
+  const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
 
@@ -233,6 +235,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       setPhase('setup');
       setTimeOfDay('night');
       setDayNumber(1);
+      setReminderTokens([]);
+      setEnableReminders(false);
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
@@ -282,8 +286,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptAuthor,
       gameNotes,
       code: gameCode || undefined,
+      enableReminders,
+      reminderTokens,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -596,7 +602,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
           isSynced={isSynced}
-          enableReminders={false}
+          enableReminders={enableReminders}
+          includeAllScriptReminders={true}
+          reminderTokens={reminderTokens}
+          onSetReminderTokens={setReminderTokens}
+          showReminderToggle={true}
+          onToggleReminders={setEnableReminders}
           notes={gameNotes}
           onNotesChange={setGameNotes}
           rotationOffset={rotationOffset}

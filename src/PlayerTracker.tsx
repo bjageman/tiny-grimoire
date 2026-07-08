@@ -371,6 +371,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const {
     draggedIndex,
     dragOverIndex,
+    hoverSide,
     handleMouseDown,
     handleDragStart,
     handleDragOver,
@@ -695,6 +696,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           setPhase={setPhase}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           handleMouseDown={handleMouseDown}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}

@@ -40,6 +40,7 @@ interface StandardSetupPhaseProps {
   setPhase: (phase: 'setup' | 'game') => void;
   draggedIndex: number | null;
   dragOverIndex: number | null;
+  hoverSide: 'before' | 'after' | null;
   handleMouseDown: (e: React.MouseEvent) => void;
   handleDragStart: (e: React.DragEvent, index: number) => void;
   handleDragOver: (e: React.DragEvent, index: number) => void;
@@ -78,6 +79,7 @@ export default function StandardSetupPhase({
   setPhase,
   draggedIndex,
   dragOverIndex,
+  hoverSide,
   handleMouseDown,
   handleDragStart,
   handleDragOver,
@@ -296,6 +298,7 @@ export default function StandardSetupPhase({
             isLightModeActive={isLightModeActive}
             draggedIndex={draggedIndex}
             dragOverIndex={dragOverIndex}
+            hoverSide={hoverSide}
             handleMouseDown={handleMouseDown}
             handleDragStart={handleDragStart}
             handleDragOver={handleDragOver}

@@ -182,6 +182,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const {
     draggedIndex,
     dragOverIndex,
+    hoverSide,
     handleMouseDown,
     handleDragStart,
     handleDragOver,
@@ -1053,6 +1054,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           allowTravelers={allowTravelers}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           handleMouseDown={handleMouseDown}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}

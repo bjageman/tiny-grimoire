@@ -258,6 +258,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const {
     draggedIndex,
     dragOverIndex,
+    hoverSide,
     handleMouseDown,
     handleDragStart,
     handleDragOver,
@@ -1055,6 +1056,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onGrimoireConfirmed={() => setGrimoireConfirmed(true)}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           handleMouseDown={handleMouseDown}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}

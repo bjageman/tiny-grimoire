@@ -78,7 +78,7 @@ describe('usePlayerDragAndDrop', () => {
     } as unknown as React.DragEvent;
     
     act(() => {
-      result.current.handleDragOver(mockDragOverEvent, 2);
+      result.current.handleDragOver(mockDragOverEvent, 2, 'after');
     });
     expect(result.current.dragOverIndex).toBe(2);
     expect(mockDragOverEvent.preventDefault).toHaveBeenCalled();
@@ -190,7 +190,7 @@ describe('usePlayerDragAndDrop', () => {
     act(() => {
       result.current.handleTouchEnd();
     });
-    expect(setItems).toHaveBeenCalledWith(['Charlie', 'Bob', 'Alice']);
+    expect(setItems).toHaveBeenCalledWith(['Bob', 'Alice', 'Charlie']);
     expect(result.current.draggedIndex).toBeNull();
     expect(result.current.dragOverIndex).toBeNull();
 

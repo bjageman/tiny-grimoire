@@ -16,6 +16,7 @@ describe('CharacterAssignmentCircle', () => {
     setSearchTerm: vi.fn(),
     draggedIndex: null,
     dragOverIndex: null,
+    hoverSide: null,
     handleMouseDown: vi.fn(),
     handleDragStart: vi.fn(),
     handleDragOver: vi.fn(),

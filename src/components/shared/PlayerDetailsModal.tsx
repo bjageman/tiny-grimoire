@@ -828,7 +828,7 @@ function RoleList({
         ? 'border-gray-300 bg-white/50 divide-gray-200'
         : 'border-gray-800 bg-gray-950/40 divide-gray-800'
     )}>
-      {hasRole && (
+      {hasRole && !allowMultipleRoles && (
         <button
           id="detail-clear-role-button"
           type="button"

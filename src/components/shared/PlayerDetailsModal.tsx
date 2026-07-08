@@ -140,11 +140,13 @@ export default function PlayerDetailsModal({
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
     <div
+      id="player-details-backdrop"
       onClick={onClose}
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
     >
       {/* Modal card */}
       <div
+        id="player-details-modal"
         onClick={(e) => e.stopPropagation()}
         className={cn(
           'relative w-full max-w-md rounded-2xl border p-6 flex flex-col gap-6 shadow-2xl transition-colors duration-300 group',

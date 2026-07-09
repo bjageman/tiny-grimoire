@@ -269,7 +269,7 @@ export default function GamePhase({
   return (
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
-    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start max-[740px]:landscape:grid max-[740px]:landscape:grid-cols-[3fr_2fr] max-[740px]:landscape:gap-6 max-[740px]:landscape:space-y-0 max-[740px]:landscape:items-start">
+    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start">
       {/* Column 1: Board & Night Order */}
       <div className="space-y-6">
         <div id="grimoire-board-container" className="space-y-4">

@@ -149,7 +149,7 @@ export default function GrimoireBoard({
 
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-full md:max-w-[760px] md:h-[540px] max-[740px]:landscape:w-full max-[740px]:landscape:max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-full md:max-w-[760px] md:h-[540px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: isDesktop
@@ -176,7 +176,7 @@ export default function GrimoireBoard({
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:max-w-[920px] md:h-[560px] max-[740px]:landscape:w-full max-[740px]:landscape:max-h-[500px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:max-w-[920px] md:h-[560px] rounded-[34px]",
         radiusX: 40,
         radiusY: 38,
         btnStyle: isDesktop
@@ -203,7 +203,7 @@ export default function GrimoireBoard({
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:max-w-[920px] md:h-[560px] max-[740px]:landscape:w-full max-[740px]:landscape:max-h-[500px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:max-w-[920px] md:h-[560px] rounded-[40px]",
         radiusX: 42,
         radiusY: 40,
         btnStyle: isDesktop

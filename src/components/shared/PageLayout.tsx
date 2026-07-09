@@ -102,7 +102,7 @@ export default function PageLayout({
 
   return (
     <div id="page-root" className={cn(
-      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-[1600px] max-[740px]:landscape:max-w-5xl",
+      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-[1600px]",
       isLight ? "bg-clocktower-parchment text-clocktower-night" : "bg-clocktower-night text-clocktower-parchment"
     )}>
       <header id="page-header" className={cn(

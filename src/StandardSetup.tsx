@@ -175,6 +175,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    // A full reset (Disconnect / Reset Game) starts a fresh session, so re-arm
+    // the one-time "Send character assignments?" warning — mirrors
+    // resetGameKeepConnected so both reset paths behave the same.
+    setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('standard-botc-game-code', newCode);
@@ -908,11 +912,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
-            // Returning to setup means the next Open Grimoire will re-send
-            // everyone their character, so clear the one-time confirmation —
-            // otherwise re-opening skips the "Send character assignments?"
-            // warning (mirrors resetGameKeepConnected).
-            ? () => { setPhase('setup'); setGrimoireConfirmed(false); }
+            // Stepping back to setup keeps the one-time grimoire confirmation:
+            // you've already acknowledged sending assignments, so re-opening
+            // shouldn't nag again. Only a Reset (Keep Players / Disconnect)
+            // re-arms it.
+            ? () => setPhase('setup')
             : remotePlayerIds.size > 0
               // Synced with players: don't silently abandon them by returning to
               // the Host menu — surface the reset/disconnect choice first.

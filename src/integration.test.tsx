@@ -249,11 +249,11 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
-  it('re-shows the Send-character-assignments confirm after returning to setup and re-opening', async () => {
-    // Regression: confirming once set grimoireConfirmed=true, and the header
-    // Back button returned to setup WITHOUT clearing it — so a second Open
-    // Grimoire skipped the "Send character assignments?" warning and started
-    // the game silently.
+  it('does NOT re-show the grimoire confirm after the Back button returns to setup', async () => {
+    // The header Back button steps back to setup WITHOUT re-arming the one-time
+    // "Send character assignments?" warning: you've already acknowledged
+    // sending assignments, so re-opening should not nag again. (Only a Reset —
+    // Keep Players / Disconnect — re-arms it.)
     localStorage.setItem('standard-botc-game-code', 'RCFM');
     localStorage.setItem('standard-botc-sync-code', 'RCFS');
     localStorage.setItem('standard-botc-game', JSON.stringify({
@@ -285,27 +285,29 @@ describe('Storyteller Reset Integration', () => {
     expect(openBtn()).not.toBeNull();
     expect(openBtn().disabled).toBe(false);
 
-    // First open → confirm modal appears.
+    // First open → confirm modal appears → confirm it.
     fireEvent.click(openBtn());
     expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
-
-    // Confirm → grimoire opens (leaves setup / game phase).
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button')!);
       await new Promise(r => setTimeout(r, 50));
     });
     expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
 
-    // Back to setup via the header back button.
+    // Back to setup via the header back button (roles are kept).
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#page-back-button')!);
       await new Promise(r => setTimeout(r, 50));
     });
     expect(openBtn()).not.toBeNull();
 
-    // Re-open → the confirm MUST appear again (previously skipped).
-    fireEvent.click(openBtn());
-    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
+    // Re-open → NO confirm; the grimoire opens straight through.
+    await act(async () => {
+      fireEvent.click(openBtn());
+      await new Promise(r => setTimeout(r, 50));
+    });
+    expect(within(storyteller.container).queryByText('Send character assignments?')).toBeNull();
+    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
 
     storyteller.unmount();
   });

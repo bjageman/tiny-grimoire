@@ -190,11 +190,11 @@ describe('validationSummary utility', () => {
       }
     });
 
-    it('drops the expected Outsider count by 1 when the Marionette displays as an Outsider, with no Townsfolk compensation', () => {
-      // 6-player base: 3 TF / 1 Out / 1 Min / 1 Dem. Marionette displaying as Outsider means no
-      // OTHER real Outsider (expected Outsider drops to 0), and Townsfolk expected stays at the
-      // base 3 — even though the game still needs a 4th real Townsfolk to fill all 6 seats, so
-      // Townsfolk will legitimately show as unbalanced here.
+    it('drops the expected Outsider count by 1 and adds 1 to Townsfolk when the Marionette displays as an Outsider', () => {
+      // 6-player base: 3 TF / 1 Out / 1 Min / 1 Dem. Marionette displaying as Outsider fills the
+      // one Outsider slot itself (expected Outsider drops to 0), and that freed good seat becomes
+      // a real Townsfolk (expected Townsfolk rises to 4) — keeping total good seats constant, so
+      // the 4 real Townsfolk here are correctly balanced.
       const players: Player[] = [
         { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
         { id: '2', name: 'Player 2', roleId: 'imp', isDead: false },
@@ -208,12 +208,12 @@ describe('validationSummary utility', () => {
       expect(summary).not.toBeNull();
       if (summary) {
         expect(summary.expected.outsider).toBe(0);
-        expect(summary.expected.townsfolk).toBe(3);
+        expect(summary.expected.townsfolk).toBe(4);
         expect(summary.counts.outsider).toBe(0);
         expect(summary.counts.townsfolk).toBe(4);
         expect(summary.isOutsiderValid).toBe(true);
-        expect(summary.isTownsfolkValid).toBe(false);
-        expect(summary.modifications).toContain('Marionette displays as Outsider (-1 Outsider)');
+        expect(summary.isTownsfolkValid).toBe(true);
+        expect(summary.modifications).toContain('Marionette displays as Outsider (-1 Outsider, +1 Townsfolk)');
       }
     });
   });

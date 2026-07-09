@@ -90,9 +90,9 @@ export function getValidationSummary(
   const hasXaan = assignedRoles.some(r => r.id === 'xaan');
 
   // Marionette's own seat is always tallied as a Minion (see `counts` above). If it displays
-  // as the Outsider, there's no other real Outsider this game, so the expected Outsider count
-  // drops by 1 with no compensation elsewhere. If it displays as Townsfolk, nothing changes —
-  // Townsfolk is a large enough pool that one extra apparent Townsfolk isn't tracked here.
+  // as the Outsider, it fills the one Outsider slot itself, so the expected Outsider count drops
+  // by 1 and that freed good seat is instead a real Townsfolk (+1 Townsfolk) — keeping the total
+  // number of good seats constant. If it displays as Townsfolk, nothing changes.
   const marionettePlayer = players.find(p => p.isTheMarionette);
   const marionetteFakeTeam = marionettePlayer
     ? allRoles.find(r => r.id === marionettePlayer.roleId)?.team
@@ -160,7 +160,7 @@ export function getValidationSummary(
       modifications.push("Godfather (+1 or -1 Outsider)");
     }
     if (marionetteFakeTeam === 'outsider') {
-      modifications.push("Marionette displays as Outsider (-1 Outsider)");
+      modifications.push("Marionette displays as Outsider (-1 Outsider, +1 Townsfolk)");
     }
   }
 
@@ -180,10 +180,6 @@ export function getValidationSummary(
   const huntMods = (hasHuntsman && !hasLegion && !hasRiot) ? [0, 1] : [0];
   const hermMods = (hasHermit && !hasLegion && !hasRiot) ? [-1, 0] : [0];
   const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta);
-  // Townsfolk's expected count is derived from Outsider's below (it's "whatever's left"), but
-  // the Marionette's -1 Outsider shift is NOT supposed to bump Townsfolk up to compensate — so
-  // this mirrors fixedOutsiderDelta minus the Marionette term specifically for that derivation.
-  const fixedOutsiderDeltaForTownsfolk = fixedOutsiderDelta - marionetteOutsiderDelta;
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion || hasRiot) {
@@ -207,11 +203,11 @@ export function getValidationSummary(
   }
 
   const validOutsiders = Array.from(possibleOutsiderCounts).sort((a, b) => a - b);
-  const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out + marionetteOutsiderDelta));
+  const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out));
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
   const isOutsiderValid = validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider + marionetteOutsiderDelta;
+  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
   const isDemonValid = counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
@@ -220,7 +216,7 @@ export function getValidationSummary(
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
-  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDeltaForTownsfolk);
+  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDelta);
   
   // Jinx checks
   const hasChoirboy = players.some(p => p.roleId === 'choirboy');
@@ -256,7 +252,7 @@ export function getValidationSummary(
         failures.push(`Too many Townsfolk: expected ${expectedTownsfolkLabel}, but got ${counts.townsfolk}.`);
       }
     } else if (!isTownsfolkValid) {
-      const expectedTF = baseCount - expectedDemon - expectedMinion - counts.outsider + marionetteOutsiderDelta;
+      const expectedTF = baseCount - expectedDemon - expectedMinion - counts.outsider;
       if (counts.townsfolk < expectedTF) {
         failures.push(`Too few Townsfolk: expected ${expectedTF} (with ${counts.outsider} Outsider${counts.outsider === 1 ? '' : 's'}), but got ${counts.townsfolk}.`);
       } else if (counts.townsfolk > expectedTF) {

@@ -130,7 +130,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+  const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
   const broadcastSetupUpdate = useCallback((listToBroadcast: Player[]) => {
     if (broadcastTimeoutRef.current) {

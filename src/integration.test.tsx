@@ -381,6 +381,49 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('reveals a traveler token even under a custom script that omits travelers', async () => {
+    // Regression: real uploaded scripts list only townsfolk/outsider/minion/demon
+    // — travelers are a universal pool that never appears in customScriptRoles.
+    // A player assigned a traveler must still reveal, by falling back to the
+    // full official role list rather than staying stuck in the waiting room.
+    const gameCode = 'TRVL';
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const deliver = (payload: Record<string, unknown>) => act(() => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage(payload));
+    });
+
+    // Storyteller adds Alice mid-game as a Gunslinger (traveler) under a custom
+    // script whose role list contains no travelers.
+    deliver({
+      type: 'game_update',
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'gunslinger' }],
+      timeOfDay: 'day',
+      dayNumber: 1,
+      scriptName: 'Custom Script',
+      customScriptRoles: [{ id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' }],
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Revealed as the traveler, not stranded in the waiting room.
+    expect(joinPage.container.querySelector('#waiting-screen')).toBeNull();
+    expect(joinPage.queryAllByText('Gunslinger').length).toBeGreaterThan(0);
+
+    joinPage.unmount();
+  });
+
   it('sends a player who opened the game tracker (from a join) back to the join waiting room on game_reset', async () => {
     // A joined player who taps "Open Player Game Tracker" navigates to
     // #/tracker (the PlayerTracker component), leaving JoinPage entirely. On a

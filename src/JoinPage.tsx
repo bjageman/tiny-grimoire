@@ -249,7 +249,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         if (me) {
           if (me.roleId) {
             const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (rolesData as Role[]);
-            const rObj = effectiveRoles.find(r => r.id === me.roleId);
+            // Fall back to the full official role list: travelers (and any other
+            // universal roles) aren't part of an uploaded custom script, so a
+            // traveler assigned under a custom script won't be found in
+            // effectiveRoles — without this fallback the token never reveals.
+            const rObj = effectiveRoles.find(r => r.id === me.roleId)
+              ?? (rolesData as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
               setAssignedRole(rObj);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {

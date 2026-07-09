@@ -336,8 +336,11 @@ export function performStandardAssignment(
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
-  // 1. Balloonist adjustment
-  if (!bypassAdjustments && chosenCombo.bal === 1 && outs.length > selectedOutsiders.length) {
+  // 1. Balloonist adjustment — its [+0 or +1 Outsider] only applies if the Balloonist was
+  // actually dealt. `balRange` above is gated on the script *pool*, which on an all-roles
+  // script always contains it, so the draw must be re-checked here.
+  const balloonistInPlay = selectedTownsfolk.some(t => t.id === 'balloonist');
+  if (!bypassAdjustments && chosenCombo.bal === 1 && balloonistInPlay && outs.length > selectedOutsiders.length) {
     const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
     if (remainingOuts.length > 0) {
       const newOut = remainingOuts[Math.floor(Math.random() * remainingOuts.length)];
@@ -351,18 +354,19 @@ export function performStandardAssignment(
     }
   }
 
-  // 2. Hermit adjustment
-  if (!bypassAdjustments && chosenCombo.herm === -1) {
+  // 2. Hermit adjustment — same pool-vs-draw problem as the Balloonist above. Removing the
+  // Hermit itself would take it out of play and invalidate the -1 that justified the removal,
+  // so this only fires when some other Outsider can absorb it.
+  const hermitInPlay = selectedOutsiders.some(o => o.id === 'hermit');
+  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInPlay) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
     if (otherOutsiders.length > 0) {
       const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
       selectedOutsiders = selectedOutsiders.filter(o => o.id !== outToRemove.id);
-    } else {
-      selectedOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
-    }
-    const remainingTfs = tfs.filter(t => !selectedTownsfolk.some(st => st.id === t.id));
-    if (remainingTfs.length > 0) {
-      selectedTownsfolk.push(remainingTfs[Math.floor(Math.random() * remainingTfs.length)]);
+      const remainingTfs = tfs.filter(t => !selectedTownsfolk.some(st => st.id === t.id));
+      if (remainingTfs.length > 0) {
+        selectedTownsfolk.push(remainingTfs[Math.floor(Math.random() * remainingTfs.length)]);
+      }
     }
   }
 

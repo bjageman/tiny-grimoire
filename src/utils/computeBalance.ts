@@ -5,7 +5,8 @@ import type { Role } from '../types';
 const OFFICIAL_ROLE_IDS = new Set((officialRolesData as { id: string }[]).map(r => r.id));
 
 export function computeBalance(selectedRoles: Role[], playerCount: number) {
-  const base = getDistribution(playerCount);
+  const basePlayerCount = Math.min(15, playerCount);
+  const base = getDistribution(basePlayerCount);
 
   const has = (id: string) => selectedRoles.some(r => r.id === id);
   const hasDrunk       = has('drunk');
@@ -40,7 +41,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const modifications: string[] = [];
 
   if (hasLegion) {
-    const L = Math.round(playerCount * 0.6);
+    const L = Math.round(basePlayerCount * 0.6);
     expectedDemon  = L;
     expectedMinion = 0;
     modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
@@ -90,7 +91,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (hasLegion) {
     possibleOutsiders.add(0);
   } else if (hasKazali || hasXaan) {
-    const max = Math.max(0, playerCount - expectedDemon - expectedMinion);
+    const max = Math.max(0, basePlayerCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= max; i++) possibleOutsiders.add(i);
   } else {
     for (const gf of gfMods) for (const bal of balMods) for (const hunt of huntMods) for (const herm of hermMods) {
@@ -99,11 +100,11 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   }
 
   const validOutsiders  = Array.from(possibleOutsiders).sort((a, b) => a - b);
-  const validTownsfolk  = validOutsiders.map(out => Math.max(0, playerCount - expectedDemon - expectedMinion - out) + tfDelta);
+  const validTownsfolk  = validOutsiders.map(out => Math.max(0, basePlayerCount - expectedDemon - expectedMinion - out) + tfDelta);
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
   const isOutsiderValid  = (hasKazali || hasXaan) ? true : validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = (hasKazali || hasXaan) ? true : (isOutsiderValid && counts.townsfolk === playerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
+  const isTownsfolkValid = (hasKazali || hasXaan) ? true : (isOutsiderValid && counts.townsfolk === basePlayerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
   const isDemonValid     = hasLunatic
     ? (counts.demon === expectedDemon || counts.demon === expectedDemon + 1)
     : (counts.demon === expectedDemon);

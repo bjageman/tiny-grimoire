@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/1cab8e4c-9188-4c05-8126-9c9e35267691
 ## Core Features
 
 ### Auto-Distribution Algorithm
-Both modes use a shared distribution engine that respects official team counts for 5–15 players and dynamically resolves complex setup roles and jinxes — for example, Legion restructures the entire evil team composition, Atheist removes the evil team entirely, Baron and similar roles adjust outsider counts automatically, and linked pairs like Choirboy ↔ King are enforced. Riot is dealt as an ordinary single Demon: unlike Legion, its "Minions become Riot" transformation resolves on day 3 during play, not at setup.
+Both modes use a shared distribution engine that respects official team counts for 5–15 players and dynamically resolves complex setup roles and jinxes — for example, Legion restructures the entire evil team composition, Atheist removes the evil team entirely, Baron and similar roles adjust outsider counts automatically, and linked pairs like Choirboy ↔ King are enforced. 
 
 ### 1. Standard Setup Mode
 Classic manual storyteller mode:

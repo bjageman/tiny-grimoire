@@ -117,6 +117,13 @@ export default function StandardSetupPhase({
 
   const bagPlayerCount = Math.min(15, basePlayerCount);
 
+  // How many connected players still lack a character. When this is > 0,
+  // `allAssigned` is false and the Open Grimoire button is disabled — but the
+  // Override-failures toggle can't clear it, so without an explicit hint the
+  // button just greys out with no explanation (common once bots join after
+  // roles were assigned). See the hint rendered under the button below.
+  const unassignedCount = players.filter(p => !p.roleId).length;
+
   const openGrimoire = () => {
     setPhase('game');
     setTimeout(() => {
@@ -340,6 +347,13 @@ export default function StandardSetupPhase({
         >
           Open Grimoire
         </button>
+        {!allAssigned && (
+          <p id="open-grimoire-disabled-hint" className="text-center text-xs font-semibold text-amber-500 mt-2">
+            {players.length < 5
+              ? 'Add at least 5 players to open the grimoire.'
+              : `Assign a character to ${unassignedCount} more player${unassignedCount === 1 ? '' : 's'} before opening (players beyond 15 become Travelers).`}
+          </p>
+        )}
         {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
           <label className={cn(
             "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",

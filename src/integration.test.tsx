@@ -249,6 +249,42 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('explains why Open Grimoire is disabled when a connected player has no character', async () => {
+    // Regression: a bot that joins after roles were assigned lands unassigned,
+    // which disables Open Grimoire. The Override-failures toggle can't clear the
+    // `!allAssigned` case, so the button must explain itself rather than silently
+    // greying out (and never showing the "Send character assignments?" confirm).
+    localStorage.setItem('standard-botc-game-code', 'GRIM');
+    localStorage.setItem('standard-botc-sync-code', 'GRIS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [
+        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+        { id: 'p2', name: 'Bob', isDead: false, roleId: 'chef' },
+        { id: 'p3', name: 'Cara', isDead: false, roleId: 'empath' },
+        { id: 'p4', name: 'Dave', isDead: false, roleId: 'poisoner' },
+        { id: 'p5', name: 'Eve', isDead: false, roleId: 'imp' },
+        { id: 'p6', name: 'Finn', isDead: false, roleId: '' }, // late-joining bot, unassigned
+      ],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    const openBtn = storyteller.container.querySelector('#open-grimoire-button') as HTMLButtonElement;
+    expect(openBtn).not.toBeNull();
+    expect(openBtn.disabled).toBe(true);
+
+    const hint = storyteller.container.querySelector('#open-grimoire-disabled-hint');
+    expect(hint).not.toBeNull();
+    expect(hint!.textContent).toContain('1 more player');
+
+    storyteller.unmount();
+  });
+
   it('a synced storyteller pressing back at setup gets the reset modal, not a silent exit', async () => {
     localStorage.setItem('standard-botc-game-code', 'BGRD');
     localStorage.setItem('standard-botc-sync-code', 'BGRS');

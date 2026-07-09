@@ -219,7 +219,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   // gets their own independent, fully-editable tracker seeded with this
   // data; no characters, status, or notes are ever sent, and nothing here
   // pushes again after the recipient's one request.
-  const sendShareMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+  const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
   const handleShareSocketMessage = (data: unknown) => {
     const payload = data as { type: string };

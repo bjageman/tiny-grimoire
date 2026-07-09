@@ -249,6 +249,67 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('re-shows the Send-character-assignments confirm after returning to setup and re-opening', async () => {
+    // Regression: confirming once set grimoireConfirmed=true, and the header
+    // Back button returned to setup WITHOUT clearing it — so a second Open
+    // Grimoire skipped the "Send character assignments?" warning and started
+    // the game silently.
+    localStorage.setItem('standard-botc-game-code', 'RCFM');
+    localStorage.setItem('standard-botc-sync-code', 'RCFS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [
+        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
+        { id: 'p2', name: 'Bob', isDead: false, roleId: 'chef' },
+        { id: 'p3', name: 'Cara', isDead: false, roleId: 'empath' },
+        { id: 'p4', name: 'Dave', isDead: false, roleId: 'poisoner' },
+        { id: 'p5', name: 'Eve', isDead: false, roleId: 'imp' },
+      ],
+      phase: 'setup',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = 'RCFM';
+
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    // A remote player announces herself so remotePlayerCount > 0 (the confirm
+    // only shows when connected players will receive assignments).
+    await act(async () => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({ type: 'player_join', id: 'p1', name: 'Alice' }));
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    const openBtn = () => storyteller.container.querySelector('#open-grimoire-button') as HTMLButtonElement;
+    expect(openBtn()).not.toBeNull();
+    expect(openBtn().disabled).toBe(false);
+
+    // First open → confirm modal appears.
+    fireEvent.click(openBtn());
+    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
+
+    // Confirm → grimoire opens (leaves setup / game phase).
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button')!);
+      await new Promise(r => setTimeout(r, 50));
+    });
+    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
+
+    // Back to setup via the header back button.
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#page-back-button')!);
+      await new Promise(r => setTimeout(r, 50));
+    });
+    expect(openBtn()).not.toBeNull();
+
+    // Re-open → the confirm MUST appear again (previously skipped).
+    fireEvent.click(openBtn());
+    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
+
+    storyteller.unmount();
+  });
+
   it('a synced storyteller pressing back at setup gets the reset modal, not a silent exit', async () => {
     localStorage.setItem('standard-botc-game-code', 'BGRD');
     localStorage.setItem('standard-botc-sync-code', 'BGRS');

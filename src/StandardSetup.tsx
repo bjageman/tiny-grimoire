@@ -908,7 +908,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
-            ? () => setPhase('setup')
+            // Returning to setup means the next Open Grimoire will re-send
+            // everyone their character, so clear the one-time confirmation —
+            // otherwise re-opening skips the "Send character assignments?"
+            // warning (mirrors resetGameKeepConnected).
+            ? () => { setPhase('setup'); setGrimoireConfirmed(false); }
             : remotePlayerIds.size > 0
               // Synced with players: don't silently abandon them by returning to
               // the Host menu — surface the reset/disconnect choice first.

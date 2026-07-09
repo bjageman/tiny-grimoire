@@ -396,6 +396,7 @@ export default function StandardSetupPhase({
               Cancel
             </button>
             <button
+              id="confirm-open-grimoire-button"
               onClick={confirmOpenGrimoire}
               className="px-4 py-2 rounded-md text-sm font-display font-bold tracking-wider uppercase bg-clocktower-blood text-white hover:bg-red-800 transition-colors"
             >

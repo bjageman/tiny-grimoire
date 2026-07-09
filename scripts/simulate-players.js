@@ -34,7 +34,7 @@
 import { chromium } from '@playwright/test';
 
 function parseArgs(argv) {
-  const args = { players: 1, url: 'http://localhost:5173', headless: true, code: null };
+  const args = { players: 1, url: 'http://localhost:5173', headless: true, code: null, stagger: 2500 };
   for (const arg of argv) {
     const stripped = arg.replace(/^--/, '');
     const eq = stripped.indexOf('=');
@@ -45,13 +45,18 @@ function parseArgs(argv) {
     else if (key === 'url') args.url = value.replace(/\/$/, '');
     else if (key === 'headless') args.headless = value !== 'false';
     else if (key === 'headed') args.headless = false;
+    else if (key === 'stagger') args.stagger = parseInt(value, 10);
   }
   return args;
 }
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.code || args.code.length !== 4 || !Number.isInteger(args.players) || args.players < 1) {
-  console.error('Usage: npm run simulate -- --code=ABCD [--players=5] [--url=http://localhost:5173] [--headed]');
+  console.error('Usage: npm run simulate -- --code=ABCD [--players=5] [--stagger=2500] [--url=http://localhost:5173] [--headed]');
+  process.exit(1);
+}
+if (!Number.isInteger(args.stagger) || args.stagger < 0) {
+  console.error('--stagger must be a non-negative integer (milliseconds between each bot connecting).');
   process.exit(1);
 }
 
@@ -65,11 +70,12 @@ function randomDelay(minMs, maxMs) {
 // Fixed-duration sleep (randomDelay is for jittered human-like waits).
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Bots start their connections one second apart (see the launcher at the
-// bottom), and a bot that fails to reach the lobby retries its initial join a
-// few times before giving up — so a bot that misses the Storyteller's ack
-// during a busy join burst isn't lost for the rest of the session.
-const CONNECT_STAGGER_MS = 1000;
+// Bots start their connections `--stagger` ms apart (see the launcher at the
+// bottom; default 2.5s) so their joins don't hit the ntfy broker as a single
+// burst — a large simultaneous burst gets rate-limited and silently dropped,
+// which is why some players never register with the Storyteller. A bot that
+// still fails to reach the lobby retries its initial join a few times before
+// giving up, so a missed ack isn't lost for the rest of the session.
 const RECONNECT_DELAY_MS = 5000;
 const MAX_JOIN_ATTEMPTS = 5;
 
@@ -256,12 +262,12 @@ async function runBot(browser, index, code, url) {
 const browser = await chromium.launch({ headless: args.headless });
 console.log(`Spawning ${args.players} bot(s) into room ${args.code} at ${args.url}...\n`);
 
-// Launch bots one second apart so their connections arrive staggered rather
-// than as a single simultaneous burst. Each runBot keeps running once started;
-// the sleep only spaces out when the *next* bot begins connecting.
+// Launch bots `args.stagger` ms apart so their connections arrive staggered
+// rather than as a single simultaneous burst. Each runBot keeps running once
+// started; the sleep only spaces out when the *next* bot begins connecting.
 const bots = [];
 for (let i = 0; i < args.players; i++) {
-  if (i > 0) await sleep(CONNECT_STAGGER_MS);
+  if (i > 0) await sleep(args.stagger);
   bots.push(runBot(browser, i, args.code, args.url));
 }
 await Promise.all(bots);

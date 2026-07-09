@@ -553,5 +553,65 @@ describe('validationSummary utility', () => {
       expect(summary?.warnings.filter(w => w.includes('not in the bag setup')).length).toBe(0);
     });
   });
+
+  describe('large player counts (>15) validation', () => {
+    it('caps baseCount at 15 and treats the rest as travelers', () => {
+      // 17 players: 15 standard characters and 2 travelers
+      const players: Player[] = [
+        // 9 Townsfolk
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'empath', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'fortuneteller', isDead: false },
+        { id: '7', name: 'Player 7', roleId: 'undertaker', isDead: false },
+        { id: '8', name: 'Player 8', roleId: 'monk', isDead: false },
+        { id: '9', name: 'Player 9', roleId: 'slayer', isDead: false },
+        // 2 Outsiders
+        { id: '10', name: 'Player 10', roleId: 'butler', isDead: false },
+        { id: '11', name: 'Player 11', roleId: 'saint', isDead: false },
+        // 3 Minions
+        { id: '12', name: 'Player 12', roleId: 'poisoner', isDead: false },
+        { id: '13', name: 'Player 13', roleId: 'spy', isDead: false },
+        { id: '14', name: 'Player 14', roleId: 'scarletwoman', isDead: false },
+        // 1 Demon
+        { id: '15', name: 'Player 15', roleId: 'imp', isDead: false },
+        // 2 Travelers
+        { id: '16', name: 'Player 16', roleId: 'gunslinger', isDead: false },
+        { id: '17', name: 'Player 17', roleId: 'beggar', isDead: false },
+      ];
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.base).toEqual({ townsfolk: 9, outsider: 2, minion: 3, demon: 1, traveler: 0 });
+        expect(summary.expected).toEqual({ townsfolk: 9, outsider: 2, minion: 3, demon: 1, traveler: 2 });
+        expect(summary.counts.townsfolk).toBe(9);
+        expect(summary.counts.outsider).toBe(2);
+        expect(summary.counts.minion).toBe(3);
+        expect(summary.counts.demon).toBe(1);
+        expect(summary.counts.traveler).toBe(2);
+        expect(summary.isValid).toBe(true);
+      }
+    });
+
+    it('caps baseCount at 15 even if travelers are not yet assigned in setup', () => {
+      // 17 players, all assigned base characters
+      const players: Player[] = Array.from({ length: 17 }, (_, i) => ({
+        id: String(i + 1),
+        name: `Player ${i + 1}`,
+        roleId: i < 9 ? 'washerwoman' : i < 11 ? 'butler' : i < 14 ? 'poisoner' : i < 15 ? 'imp' : '',
+        isDead: false,
+      }));
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.base).toEqual({ townsfolk: 9, outsider: 2, minion: 3, demon: 1, traveler: 0 });
+        expect(summary.expected).toEqual({ townsfolk: 9, outsider: 2, minion: 3, demon: 1, traveler: 2 });
+      }
+    });
+  });
 });
 

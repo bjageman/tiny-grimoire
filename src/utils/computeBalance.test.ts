@@ -243,3 +243,47 @@ describe('computeBalance — basic distribution', () => {
     expect(computeBalance(roles, 6).isValid).toBe(false);
   });
 });
+
+describe('computeBalance — large player counts (>15)', () => {
+  it('expects 9 Townsfolk for a 15-player game', () => {
+    // 15 players base: 9 TF, 2 Out, 3 Minion, 1 Demon
+    const roles = [
+      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
+      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
+      out('butler'), out('saint'),
+      min('poisoner'), min('spy'), min('scarletwoman'),
+      dem('imp'),
+    ];
+    const b = computeBalance(roles, 15);
+    expect(b.isValid).toBe(true);
+    expect(b.expectedTownsfolkLabel).toBe('9');
+  });
+
+  it('expects 9 Townsfolk for a 17-player game', () => {
+    // 17 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
+    const roles = [
+      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
+      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
+      out('butler'), out('saint'),
+      min('poisoner'), min('spy'), min('scarletwoman'),
+      dem('imp'),
+    ];
+    const b = computeBalance(roles, 17);
+    expect(b.isValid).toBe(true);
+    expect(b.expectedTownsfolkLabel).toBe('9');
+  });
+
+  it('expects 9 Townsfolk for a 20-player game', () => {
+    // 20 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
+    const roles = [
+      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
+      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
+      out('butler'), out('saint'),
+      min('poisoner'), min('spy'), min('scarletwoman'),
+      dem('imp'),
+    ];
+    const b = computeBalance(roles, 20);
+    expect(b.isValid).toBe(true);
+    expect(b.expectedTownsfolkLabel).toBe('9');
+  });
+});

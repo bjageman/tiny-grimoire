@@ -269,7 +269,7 @@ export default function GamePhase({
   return (
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
-    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start max-md:landscape:grid max-md:landscape:grid-cols-[3fr_2fr] max-md:landscape:gap-6 max-md:landscape:space-y-0 max-md:landscape:items-start">
+    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start">
       {/* Column 1: Board & Night Order */}
       <div className="space-y-6">
         <div id="grimoire-board-container" className="space-y-4">
@@ -294,7 +294,7 @@ export default function GamePhase({
             onRotationChange={onRotationChange}
           />
         </div>
-        {renderScriptButton('game-script-button-mobile', 'flex md:hidden landscape:hidden')}
+        {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}
         {showNightOrder && (
           <NightOrderWidget
             players={players}
@@ -307,7 +307,7 @@ export default function GamePhase({
           />
         )}
         {onNotesChange && (
-          <div className="hidden md:block landscape:block space-y-1.5">
+          <div className="hidden md:block space-y-1.5">
             <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
             <AutoResizeTextarea
               value={notes ?? ''}
@@ -337,7 +337,7 @@ export default function GamePhase({
       <div id="grimoire-controls-container" className="space-y-6">
 
         {/* Active Script Display */}
-        {renderScriptButton('game-script-button', 'hidden md:flex landscape:flex')}
+        {renderScriptButton('game-script-button', 'hidden md:flex')}
 
         {/* Standard Base Distribution */}
         {players.length >= 5 && (() => {
@@ -817,7 +817,7 @@ export default function GamePhase({
     </div>
 
     {onNotesChange && (
-      <div className="md:hidden landscape:hidden mt-6 space-y-1.5">
+      <div className="md:hidden mt-6 space-y-1.5">
         <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
         <AutoResizeTextarea
           value={notes ?? ''}

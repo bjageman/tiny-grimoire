@@ -1082,6 +1082,52 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     joinPage.unmount();
   });
 
+  it('Whale Bucket: warns before opening the grimoire when players are connected (parity with Standard)', async () => {
+    const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
+    localStorage.setItem('whale-bucket-game-code', 'WBOG');
+    localStorage.setItem('whale-bucket-sync-code', 'WBOS');
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [
+        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman', preferences },
+        { id: 'p2', name: 'Bob', isDead: false, roleId: 'chef', preferences },
+        { id: 'p3', name: 'Cara', isDead: false, roleId: 'empath', preferences },
+        { id: 'p4', name: 'Dave', isDead: false, roleId: 'poisoner', preferences },
+        { id: 'p5', name: 'Eve', isDead: false, roleId: 'imp', preferences },
+      ],
+      phase: 'draft',
+    }));
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = 'WBOG';
+
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    // A connected player announces herself so remotePlayerCount > 0.
+    await act(async () => {
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage({ type: 'player_join', id: 'p1', name: 'Alice' }));
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    const openBtn = storyteller.container.querySelector('#open-grimoire-button') as HTMLButtonElement;
+    expect(openBtn).not.toBeNull();
+    expect(openBtn.disabled).toBe(false);
+
+    // Open Grimoire → confirmation modal appears instead of silently starting.
+    fireEvent.click(openBtn);
+    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
+
+    // Confirm → the game starts (leaves the draft phase).
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button-whale')!);
+      await new Promise(r => setTimeout(r, 50));
+    });
+    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
+
+    storyteller.unmount();
+  });
+
   it('Whale Bucket: manual-assign-characters-button transitions to draft and retains assigned characters', async () => {
     // 1. Render with 0 players to verify disabled state
     localStorage.setItem('whale-bucket-game', JSON.stringify({
@@ -1461,5 +1507,93 @@ describe('Storyteller Notes Privacy', () => {
 
     storyteller.unmount();
     tracker.unmount();
+  });
+});
+
+describe('Player Limit Enforcement', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('rejects a joining player in standard mode if the room is already full (20 players)', async () => {
+    localStorage.setItem('standard-botc-game-code', 'ABCD');
+    localStorage.setItem('standard-botc-sync-code', 'ABCS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: Array.from({ length: 20 }, (_, i) => ({
+        id: `p${i}`,
+        name: `Player ${i}`,
+        isDead: false,
+        roleId: '',
+      })),
+      phase: 'setup',
+    }));
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    // Now render the Join page and try to join as a 21st player
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
+    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
+    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    fireEvent.change(codeInput, { target: { value: 'ABCD' } });
+    fireEvent.change(nameInput, { target: { value: 'Alice' } });
+    fireEvent.click(submitBtn);
+
+    // Should stop retrying and show error that the room is full
+    await waitFor(() => {
+      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
+    });
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('rejects a joining player in whale-bucket mode if the room is already full (15 players)', async () => {
+    localStorage.setItem('whale-bucket-game-code', 'WXYZ');
+    localStorage.setItem('whale-bucket-sync-code', 'WXYZS');
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: Array.from({ length: 15 }, (_, i) => ({
+        id: `p${i}`,
+        name: `Player ${i}`,
+        isDead: false,
+        roleId: '',
+        isTheDrunk: false,
+        isTheMarionette: false,
+        isTheLilMonsta: false,
+        preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] }
+      })),
+      phase: 'setup',
+    }));
+
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    // Now render the Join page and try to join as a 16th player
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
+    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
+    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    fireEvent.change(codeInput, { target: { value: 'WXYZ' } });
+    fireEvent.change(nameInput, { target: { value: 'Bob' } });
+    fireEvent.click(submitBtn);
+
+    // Should stop retrying and show error that the room is full
+    await waitFor(() => {
+      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
+    });
+
+    storyteller.unmount();
+    joinPage.unmount();
   });
 });

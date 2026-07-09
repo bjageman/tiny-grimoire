@@ -613,5 +613,51 @@ describe('validationSummary utility', () => {
       }
     });
   });
+
+  describe('Riot', () => {
+    // Riot is [setup: false] — "On day 3, Minions become Riot" resolves during play, so unlike
+    // Legion it must not alter the setup distribution or suppress Outsider-modifying characters.
+    it('treats Riot as a normal single Demon and adds no modification tag', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'empath', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'butler', isDead: false },
+        { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+        { id: '8', name: 'Player 8', roleId: 'riot', isDead: false },
+      ];
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.expected).toEqual({ townsfolk: 5, outsider: 1, minion: 1, demon: 1, traveler: 0 });
+        expect(summary.modifications).toEqual([]);
+        expect(summary.isValid).toBe(true);
+      }
+    });
+
+    it('still applies Baron (+2 Outsiders) when Riot is the Demon', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'butler', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'saint', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'recluse', isDead: false },
+        { id: '7', name: 'Player 7', roleId: 'baron', isDead: false },
+        { id: '8', name: 'Player 8', roleId: 'riot', isDead: false },
+      ];
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.expected).toEqual({ townsfolk: 3, outsider: 3, minion: 1, demon: 1, traveler: 0 });
+        expect(summary.modifications).toContain('Baron (+2 Outsiders)');
+        expect(summary.isValid).toBe(true);
+      }
+    });
+  });
 });
 

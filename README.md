@@ -5,12 +5,12 @@ A comprehensive web app for running **Blood on the Clocktower** in-person. Story
 ## Demo
 
 ### Full Walkthrough — Desktop Storyteller View + Live Mobile Sync
+https://github.com/user-attachments/assets/0a98e577-8801-45fe-856c-12f75dbfe337
 
-https://github.com/user-attachments/assets/1cab8e4c-9188-4c05-8126-9c9e35267691
 
 ### Mobile Player Experience
+https://github.com/user-attachments/assets/1cab8e4c-9188-4c05-8126-9c9e35267691
 
-https://github.com/user-attachments/assets/0a98e577-8801-45fe-856c-12f75dbfe337
 
 ## Core Features
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
 import officialRoles from '../official_roles.json';
+import allRolesJson from '../roles.json';
 
 describe('performStandardAssignment', () => {
   const mockScriptRoles: Role[] = [
@@ -664,6 +665,75 @@ describe('performStandardAssignment', () => {
 
       const assignedTravelers = result.filter(p => travelerRoles.some(t => t.id === p.roleId));
       expect(assignedTravelers.length).toBe(1);
+    });
+  });
+
+  describe('Outsider count on an all-roles script', () => {
+    const allRoles = allRolesJson as Role[];
+    const teamOf = (id: string) => allRoles.find(r => r.id === id)?.team;
+
+    // Every character that may legitimately move the Outsider count or the bag composition.
+    const OTHER_MODIFIERS = new Set([
+      'baron', 'fanggu', 'vigormortis', 'godfather', 'huntsman', 'kazali', 'xaan',
+      'lilmonsta', 'lordoftyphon', 'summoner', 'marionette', 'drunk', 'legion', 'atheist',
+    ]);
+
+    const realRoleIds = (result: Player[]) => result.map(p =>
+      p.isTheDrunk ? 'drunk' : p.isTheMarionette ? 'marionette' : p.isTheLunatic ? 'lunatic' : (p.roleId ?? '')
+    );
+
+    // The Balloonist's [+0 or +1 Outsider] and the Hermit's [-0 or -1 Outsider] were gated on
+    // the script *pool* rather than the actual draw. On an all-roles script both are always in
+    // the pool, so ~50% of games silently landed a seat off the correct Outsider count.
+    it('does not shift the Outsider count for a Balloonist or Hermit that was never dealt', () => {
+      // 12 players: 7 Townsfolk / 2 Outsiders / 2 Minions / 1 Demon
+      const players: Player[] = Array.from({ length: 12 }, (_, i) => ({
+        id: String(i), name: `P${i}`, isDead: false,
+      }));
+
+      let cleanGames = 0;
+      for (let i = 0; i < 400; i++) {
+        const result = performStandardAssignment(players, allRoles, allRoles, allRoles);
+        expect(result).not.toBeNull();
+        if (!result) return;
+
+        const ids = realRoleIds(result);
+        if (ids.some(id => OTHER_MODIFIERS.has(id))) continue;
+        if (ids.includes('balloonist') || ids.includes('hermit')) continue;
+
+        cleanGames++;
+        expect(ids.filter(id => teamOf(id) === 'outsider').length).toBe(2);
+      }
+
+      // Guard against the filters vacuously skipping every game.
+      expect(cleanGames).toBeGreaterThan(20);
+    });
+
+    it('still allows the Balloonist and Hermit to move the count when they are dealt', () => {
+      const players: Player[] = Array.from({ length: 12 }, (_, i) => ({
+        id: String(i), name: `P${i}`, isDead: false,
+      }));
+
+      const balloonistCounts = new Set<number>();
+      const hermitCounts = new Set<number>();
+
+      for (let i = 0; i < 1500; i++) {
+        const result = performStandardAssignment(players, allRoles, allRoles, allRoles);
+        if (!result) continue;
+
+        const ids = realRoleIds(result);
+        if (ids.some(id => OTHER_MODIFIERS.has(id))) continue;
+
+        const outsiders = ids.filter(id => teamOf(id) === 'outsider').length;
+        const bal = ids.includes('balloonist');
+        const herm = ids.includes('hermit');
+        if (bal && !herm) balloonistCounts.add(outsiders);
+        if (herm && !bal) hermitCounts.add(outsiders);
+      }
+
+      // Balloonist may add one Outsider (2 or 3); Hermit may remove one (1 or 2).
+      expect([...balloonistCounts].sort()).toEqual([2, 3]);
+      expect([...hermitCounts].sort()).toEqual([1, 2]);
     });
   });
 });

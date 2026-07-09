@@ -205,6 +205,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
         setPlayers(payload.players || []);
       }
+    } else if (payload.type === 'room_full') {
+      if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
+        if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
+        if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        setState('join');
+        setErrorMsg('The game room is full.');
+      }
     } else if (payload.type === 'code_valid') {
       if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);

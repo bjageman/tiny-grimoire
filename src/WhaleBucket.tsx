@@ -133,6 +133,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
+  const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
 
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
 
@@ -209,6 +210,17 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
       );
       if (phase === 'game' && !isExistingPlayer) {
+        return;
+      }
+
+      if (!isExistingPlayer && players.length >= 15) {
+        if (sendMessageRef.current) {
+          sendMessageRef.current({
+            type: 'room_full',
+            playerId: payload.id,
+            playerName: payload.name,
+          });
+        }
         return;
       }
 
@@ -803,6 +815,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    // A full reset starts a fresh session, so re-arm the one-time "Send
+    // character assignments?" warning (mirrors resetGameKeepConnected).
+    setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('whale-bucket-game-code', newCode);
@@ -846,6 +861,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setGameLog([]);
     setReminderTokens([]);
     setCheckedItems({});
+    // Re-arm the one-time "Send character assignments?" warning for the next round.
+    setGrimoireConfirmed(false);
 
     // Broadcast immediately (no debounce): the explicit reset command first,
     // then a setup_update carrying the cleared roster as a backup that pulls
@@ -1071,6 +1088,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           runAssignment={runAssignment}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
+          remotePlayerCount={remotePlayerIds.size}
+          grimoireConfirmed={grimoireConfirmed}
+          onGrimoireConfirmed={() => setGrimoireConfirmed(true)}
         />
       )}
 

@@ -73,7 +73,6 @@ export function getValidationSummary(
     return findRole(p.roleId);
   }).filter(Boolean) as Role[];
   const hasLegion = assignedRoles.some(r => r.id === 'legion');
-  const hasRiot = assignedRoles.some(r => r.id === 'riot');
   const hasAtheist = assignedRoles.some(r => r.id === 'atheist');
   const hasBaron = assignedRoles.some(r => r.id === 'baron');
   const hasGodfather = assignedRoles.some(r => r.id === 'godfather');
@@ -109,11 +108,6 @@ export function getValidationSummary(
     expectedDemon = L;
     expectedMinion = 0;
     modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
-  } else if (hasRiot) {
-    const D = 1 + base.minion;
-    expectedDemon = D;
-    expectedMinion = 0;
-    modifications.push(`Riot active (${D} Demons, 0 Minions/Outsiders)`);
   } else if (hasAtheist) {
     expectedDemon = 0;
     expectedMinion = 0;
@@ -175,14 +169,14 @@ export function getValidationSummary(
   
   expectedDemon = Math.max(0, expectedDemon);
 
-  const gfMods = (hasGodfather && !hasLegion && !hasRiot) ? [-1, 1] : [0];
-  const balMods = (hasBalloonist && !hasLegion && !hasRiot) ? [0, 1] : [0];
-  const huntMods = (hasHuntsman && !hasLegion && !hasRiot) ? [0, 1] : [0];
-  const hermMods = (hasHermit && !hasLegion && !hasRiot) ? [-1, 0] : [0];
-  const fixedOutsiderDelta = (hasLegion || hasRiot) ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta);
+  const gfMods = (hasGodfather && !hasLegion) ? [-1, 1] : [0];
+  const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];
+  const huntMods = (hasHuntsman && !hasLegion) ? [0, 1] : [0];
+  const hermMods = (hasHermit && !hasLegion) ? [-1, 0] : [0];
+  const fixedOutsiderDelta = hasLegion ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta);
 
   const possibleOutsiderCounts = new Set<number>();
-  if (hasLegion || hasRiot) {
+  if (hasLegion) {
     possibleOutsiderCounts.add(0);
   } else if (hasKazali || hasXaan) {
     const maxOutsiders = Math.max(0, baseCount - expectedDemon - expectedMinion);

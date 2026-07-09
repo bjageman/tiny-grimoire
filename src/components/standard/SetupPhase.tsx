@@ -107,6 +107,16 @@ export default function StandardSetupPhase({
     return sortByScriptOrder(baseRoles, baseRoles);
   }, [customScriptRoles]);
 
+  const basePlayerCount = useMemo(() => {
+    return players.filter(p => {
+      if (!p.roleId) return true;
+      const r = scriptRoles.find(role => role.id === p.roleId) || (rolesData as Role[]).find(role => role.id === p.roleId);
+      return r?.team !== 'traveler';
+    }).length;
+  }, [players, scriptRoles]);
+
+  const bagPlayerCount = Math.min(15, basePlayerCount);
+
   const openGrimoire = () => {
     setPhase('game');
     setTimeout(() => {
@@ -407,7 +417,7 @@ export default function StandardSetupPhase({
       isOpen={isSelectCharactersModalOpen}
       onClose={() => setIsSelectCharactersModalOpen(false)}
       roles={scriptRoles}
-      playerCount={players.length}
+      playerCount={bagPlayerCount}
       isLightModeActive={isLightModeActive}
       onAssign={randomlyAssignWithRoles}
       selectedIds={selectedCharacterIds}

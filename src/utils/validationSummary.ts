@@ -45,7 +45,7 @@ export function getValidationSummary(
     const r = findRole(p.roleId);
     return r?.team === 'traveler';
   }).length;
-  const baseCount = N - travelerCount;
+  const baseCount = Math.min(15, N - travelerCount);
   const base = getDistribution(baseCount);
   
   const counts = players.reduce((acc, p) => {
@@ -407,7 +407,7 @@ export function getValidationSummary(
       outsider: expectedOutsider,
       minion: expectedMinion,
       demon: expectedDemon,
-      traveler: base.traveler
+      traveler: N - baseCount
     },
     hasGodfather,
     modifications,

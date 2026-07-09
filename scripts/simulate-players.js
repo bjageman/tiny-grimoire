@@ -62,6 +62,17 @@ function randomDelay(minMs, maxMs) {
   return new Promise((resolve) => setTimeout(resolve, minMs + Math.random() * (maxMs - minMs)));
 }
 
+// Fixed-duration sleep (randomDelay is for jittered human-like waits).
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Bots start their connections one second apart (see the launcher at the
+// bottom), and a bot that fails to reach the lobby retries its initial join a
+// few times before giving up — so a bot that misses the Storyteller's ack
+// during a busy join burst isn't lost for the rest of the session.
+const CONNECT_STAGGER_MS = 1000;
+const RECONNECT_DELAY_MS = 5000;
+const MAX_JOIN_ATTEMPTS = 5;
+
 async function waitVisible(locator, timeout) {
   return locator.waitFor({ timeout }).then(() => true).catch(() => false);
 }
@@ -148,6 +159,18 @@ async function watchForDisconnects(page, log, code, name) {
   }
 }
 
+// One initial-join attempt: (re)navigate to the join screen, submit the join
+// form, and wait to land in the lobby / preferences screen. Returns true on
+// success, false on timeout — so runBot can retry (reconnect).
+async function attemptJoin(page, url, code, name, log) {
+  await page.goto(`${url}/#/join?code=${code}`);
+  await page.getByPlaceholder('e.g. KVTQ').fill(code);
+  await page.getByPlaceholder('Enter your name...').fill(name);
+  await page.getByRole('button', { name: 'Join Game Room' }).click();
+  log('sent join request, waiting for the Storyteller to acknowledge...');
+  return settleIntoWaitingRoom(page, log, 30_000);
+}
+
 async function runBot(browser, index, code, url) {
   const name = index < BOT_NAMES.length ? BOT_NAMES[index] : `Bot${index}`;
   const log = (msg) => console.log(`[${name}] ${msg}`);
@@ -156,14 +179,26 @@ async function runBot(browser, index, code, url) {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(`${url}/#/join?code=${code}`);
-    await page.getByPlaceholder('e.g. KVTQ').fill(code);
-    await page.getByPlaceholder('Enter your name...').fill(name);
-    await page.getByRole('button', { name: 'Join Game Room' }).click();
-    log('sent join request, waiting for the Storyteller to acknowledge...');
-
-    if (!(await settleIntoWaitingRoom(page, log, 30_000))) {
-      log('never reached the lobby within 30s — giving up.');
+    // Retry the initial join a few times: during a staggered join burst a bot
+    // can miss the Storyteller's ack, and reconnecting is cheaper than losing
+    // the bot for the rest of the run.
+    let joined = false;
+    for (let attempt = 1; attempt <= MAX_JOIN_ATTEMPTS && !joined; attempt++) {
+      try {
+        joined = await attemptJoin(page, url, code, name, log);
+        if (!joined) log(`join attempt ${attempt}/${MAX_JOIN_ATTEMPTS} never reached the lobby.`);
+      } catch (err) {
+        // A thrown navigation/selector error is just as retryable as a timeout,
+        // so reconnect on it too rather than letting it end the bot.
+        log(`join attempt ${attempt}/${MAX_JOIN_ATTEMPTS} errored: ${String(err.message || err).split('\n')[0]}`);
+      }
+      if (!joined && attempt < MAX_JOIN_ATTEMPTS) {
+        log(`reconnecting in ${RECONNECT_DELAY_MS / 1000}s...`);
+        await sleep(RECONNECT_DELAY_MS);
+      }
+    }
+    if (!joined) {
+      log(`never reached the lobby after ${MAX_JOIN_ATTEMPTS} attempts — giving up.`);
       return;
     }
     log(`joined the lobby as "${name}"`);
@@ -221,7 +256,15 @@ async function runBot(browser, index, code, url) {
 const browser = await chromium.launch({ headless: args.headless });
 console.log(`Spawning ${args.players} bot(s) into room ${args.code} at ${args.url}...\n`);
 
-await Promise.all(Array.from({ length: args.players }, (_, i) => runBot(browser, i, args.code, args.url)));
+// Launch bots one second apart so their connections arrive staggered rather
+// than as a single simultaneous burst. Each runBot keeps running once started;
+// the sleep only spaces out when the *next* bot begins connecting.
+const bots = [];
+for (let i = 0; i < args.players; i++) {
+  if (i > 0) await sleep(CONNECT_STAGGER_MS);
+  bots.push(runBot(browser, i, args.code, args.url));
+}
+await Promise.all(bots);
 
 console.log('\nAll bots finished their run. Press Ctrl+C to close the browsers.');
 process.stdin.resume();

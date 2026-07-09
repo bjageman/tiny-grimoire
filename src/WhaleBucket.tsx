@@ -212,6 +212,17 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         return;
       }
 
+      if (!isExistingPlayer && players.length >= 15) {
+        if (sendMessageRef.current) {
+          sendMessageRef.current({
+            type: 'room_full',
+            playerId: payload.id,
+            playerName: payload.name,
+          });
+        }
+        return;
+      }
+
       if (sendMessageRef.current) {
         sendMessageRef.current({
           type: 'code_valid',

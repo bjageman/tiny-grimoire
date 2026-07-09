@@ -1463,3 +1463,91 @@ describe('Storyteller Notes Privacy', () => {
     tracker.unmount();
   });
 });
+
+describe('Player Limit Enforcement', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('rejects a joining player in standard mode if the room is already full (20 players)', async () => {
+    localStorage.setItem('standard-botc-game-code', 'ABCD');
+    localStorage.setItem('standard-botc-sync-code', 'ABCS');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: Array.from({ length: 20 }, (_, i) => ({
+        id: `p${i}`,
+        name: `Player ${i}`,
+        isDead: false,
+        roleId: '',
+      })),
+      phase: 'setup',
+    }));
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    // Now render the Join page and try to join as a 21st player
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
+    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
+    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    fireEvent.change(codeInput, { target: { value: 'ABCD' } });
+    fireEvent.change(nameInput, { target: { value: 'Alice' } });
+    fireEvent.click(submitBtn);
+
+    // Should stop retrying and show error that the room is full
+    await waitFor(() => {
+      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
+    });
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('rejects a joining player in whale-bucket mode if the room is already full (15 players)', async () => {
+    localStorage.setItem('whale-bucket-game-code', 'WXYZ');
+    localStorage.setItem('whale-bucket-sync-code', 'WXYZS');
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: Array.from({ length: 15 }, (_, i) => ({
+        id: `p${i}`,
+        name: `Player ${i}`,
+        isDead: false,
+        roleId: '',
+        isTheDrunk: false,
+        isTheMarionette: false,
+        isTheLilMonsta: false,
+        preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] }
+      })),
+      phase: 'setup',
+    }));
+
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    // Now render the Join page and try to join as a 16th player
+    window.location.hash = '#/join';
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
+    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
+    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    fireEvent.change(codeInput, { target: { value: 'WXYZ' } });
+    fireEvent.change(nameInput, { target: { value: 'Bob' } });
+    fireEvent.click(submitBtn);
+
+    // Should stop retrying and show error that the room is full
+    await waitFor(() => {
+      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
+    });
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+});

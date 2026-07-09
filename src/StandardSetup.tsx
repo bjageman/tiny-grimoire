@@ -297,6 +297,17 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         return;
       }
 
+      if (!isExistingPlayer && players.length >= 20) {
+        if (sendMessageRef.current) {
+          sendMessageRef.current({
+            type: 'room_full',
+            playerId: payload.id,
+            playerName: payload.name,
+          });
+        }
+        return;
+      }
+
       if (sendMessageRef.current) {
         sendMessageRef.current({
           type: 'code_valid',

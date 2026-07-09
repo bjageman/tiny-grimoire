@@ -130,7 +130,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+  const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
   const broadcastSetupUpdate = useCallback((listToBroadcast: Player[]) => {
     if (broadcastTimeoutRef.current) {
@@ -175,6 +175,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    // A full reset (Disconnect / Reset Game) starts a fresh session, so re-arm
+    // the one-time "Send character assignments?" warning — mirrors
+    // resetGameKeepConnected so both reset paths behave the same.
+    setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('standard-botc-game-code', newCode);
@@ -908,6 +912,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
+            // Stepping back to setup keeps the one-time grimoire confirmation:
+            // you've already acknowledged sending assignments, so re-opening
+            // shouldn't nag again. Only a Reset (Keep Players / Disconnect)
+            // re-arms it.
             ? () => setPhase('setup')
             : remotePlayerIds.size > 0
               // Synced with players: don't silently abandon them by returning to

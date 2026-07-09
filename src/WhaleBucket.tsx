@@ -145,7 +145,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', ['drunk', 'marionette', 'lunatic']);
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sendMessageRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+  const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
   const broadcastSetupUpdate = useCallback((listToBroadcast: Player[]) => {
     if (broadcastTimeoutRef.current) {

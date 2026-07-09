@@ -32,7 +32,7 @@ export function useStorytellerSync<T>({
     setPrevSyncCode(syncCode);
     setHasReceivedSync(!isSecondary);
   }
-  const sendSyncRef = useRef<((payload: unknown) => Promise<void>) | null>(null);
+  const sendSyncRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
   const lastAppliedSyncRef = useRef<string | null>(null);
 
   const onApplySyncRef = useRef(onApplySync);

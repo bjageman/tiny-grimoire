@@ -83,9 +83,16 @@ describe('SetupPlayerEditModal', () => {
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it('shows a "Taken" badge for roles already assigned to another player', () => {
+  it('clicking the role the player already has deselects it', () => {
+    const { container } = render(<SetupPlayerEditModal {...defaultProps} />);
+    fireEvent.click(container.querySelector('#role-option-washerwoman')!);
+    expect(defaultProps.updatePlayerRole).toHaveBeenCalledWith('p1', '');
+    expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it('badges a role taken by another player with just that player name', () => {
     render(<SetupPlayerEditModal {...defaultProps} />);
-    expect(screen.getByText('Taken: Charlie')).toBeInTheDocument();
+    expect(screen.getByText('Charlie')).toBeInTheDocument();
   });
 
   it('shows The Drunk toggle for a Townsfolk player and calls togglePlayerTheDrunk', () => {

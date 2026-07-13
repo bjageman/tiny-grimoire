@@ -332,7 +332,7 @@ export default function SetupPlayerEditModal({
               <button
                 id={`role-option-${role.id}`}
                 key={role.id}
-                onClick={() => { updatePlayerRole(activePlayerId, role.id); onClose(); }}
+                onClick={() => { updatePlayerRole(activePlayerId, isCurrent ? '' : role.id); onClose(); }}
                 className={cn(
                   "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
                   isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
@@ -368,7 +368,7 @@ export default function SetupPlayerEditModal({
                         ? "bg-gray-100 border-gray-200 text-gray-655"
                         : "bg-gray-800/40 border-gray-700/30 text-gray-400"
                     )}>
-                      Taken: {selectedByPlayer.name}
+                      {selectedByPlayer.name}
                     </span>
                   )}
                 </div>

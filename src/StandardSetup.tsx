@@ -490,7 +490,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
 
   const toggleTimeOfDay = () => {
-    setCheckedItems({});
     if (timeOfDay === 'night') {
       setTimeOfDay('day');
       addLogEntry(`Advanced to Day ${dayNumber}`, 'day', dayNumber);

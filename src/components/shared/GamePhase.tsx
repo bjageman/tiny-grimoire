@@ -277,7 +277,7 @@ export default function GamePhase({
             players={players}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
-            toggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
+            toggleTimeOfDay={!isSynced && !showNightOrder ? toggleTimeOfDay : undefined}
             onSelectPlayer={setSelectedPlayerId}
             rolesData={grimoireRolesData}
             onResetDead={onResetDead}

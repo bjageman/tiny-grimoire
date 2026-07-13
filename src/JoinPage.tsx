@@ -920,7 +920,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                 }))}
                 timeOfDay={timeOfDay}
                 dayNumber={dayNumber}
-                toggleTimeOfDay={() => {}}
                 onSelectPlayer={() => {}}
                 rolesData={[]}
                 isLightModeActive={isLight}

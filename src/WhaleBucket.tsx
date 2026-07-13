@@ -417,7 +417,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset]);
 
   const toggleTimeOfDay = () => {
-    setCheckedItems({});
     if (timeOfDay === 'night') {
       setTimeOfDay('day');
       addLogEntry(`Advanced to Day ${dayNumberRef.current}`, 'day', dayNumberRef.current);

@@ -657,7 +657,7 @@ export default function GrimoireBoard({
                   style={grimoireConfig.btnStyle}
                   className={cn(
                     "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none",
-                    isFanned ? "group-hover:scale-125 group-hover:shadow-lg" : "",
+                    isFanned ? "group-hover:rotate-3 group-hover:shadow-lg" : "",
                     p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
                   )}
                 >

@@ -142,7 +142,7 @@ export default function PageLayout({
 
         {headerExtra}
 
-        <div className="flex items-center gap-2.5 w-full px-4 md:px-8 lg:px-12 mt-1.5">
+        <div id="page-header-divider" className="flex items-center gap-2.5 w-full px-4 md:px-8 lg:px-12 mt-1.5">
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />
           <span className={cn("text-[8px] leading-none", isLight ? "text-clocktower-blood/40" : "text-clocktower-gold/50")}>◆</span>
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />

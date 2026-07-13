@@ -77,10 +77,10 @@ export default function NightOrderWidget({
     if (willCheck && item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay) {
       onToggleTimeOfDay();
 
-      // Dawn hands the game back to the town, so bring the grimoire into view
+      // Dawn hands the game back to the town, so scroll up to the top of the page
       if (item.advancesTo === 'day') {
         setTimeout(() => {
-          document.getElementById('grimoire-circle-board')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
       }
     }

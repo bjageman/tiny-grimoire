@@ -127,11 +127,11 @@ describe('NightOrderWidget', () => {
     expect(handleToggleTimeOfDay).toHaveBeenCalledTimes(1);
   });
 
-  it('scrolls the grimoire into view when Dawn starts the day', () => {
+  it('scrolls up to the page header when Dawn starts the day', () => {
     vi.useFakeTimers();
     const scrollIntoView = vi.fn();
     const board = document.createElement('div');
-    board.id = 'grimoire-circle-board';
+    board.id = 'page-header-divider';
     board.scrollIntoView = scrollIntoView;
     document.body.appendChild(board);
 

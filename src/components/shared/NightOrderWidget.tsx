@@ -61,11 +61,22 @@ export default function NightOrderWidget({
     setCheckedItems({});
   };
 
-  // Toggle checkmark. Dusk and Dawn move the game into the phase they announce —
-  // they do that whenever the game is not in it yet, even if left ticked from a
-  // previous night, since nothing clears the checklist but the Reset button.
+  // Toggle checkmark. Dusk and Dawn move the game into the phase they announce,
+  // whenever the game is not in it yet — even if they are still ticked from an
+  // earlier night. Dawn ends the night, so it is the one thing that clears the
+  // checklist; Dusk leaves every tick alone.
   const handleToggleCheck = (item: NightOrderItem) => {
     const advancesPhase = item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay;
+
+    if (advancesPhase && item.advancesTo === 'day') {
+      setCheckedItems({});
+      onToggleTimeOfDay!();
+      // Dawn hands the game back to the town, so scroll up to the top of the page
+      setTimeout(() => {
+        document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return;
+    }
 
     setCheckedItems({
       ...checkedItems,
@@ -73,14 +84,7 @@ export default function NightOrderWidget({
     });
 
     if (advancesPhase) {
-      onToggleTimeOfDay();
-
-      // Dawn hands the game back to the town, so scroll up to the top of the page
-      if (item.advancesTo === 'day') {
-        setTimeout(() => {
-          document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }
+      onToggleTimeOfDay!();
     }
   };
 

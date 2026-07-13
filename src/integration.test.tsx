@@ -1226,7 +1226,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('keeps checklist checkboxes across day/night transitions', async () => {
+  it('clears checklist checkboxes when Dawn starts the day', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }
     ];
@@ -1250,10 +1250,10 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    // The day has begun and every tick, including Dawn's own, is still there
+    // The day has begun and the night's ticks are gone
     const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
     expect(saved.timeOfDay).toBe('day');
-    expect(saved.checkedItems).toEqual({ 'washerwoman-p1': true, dawn: true });
+    expect(saved.checkedItems).toEqual({});
 
     storyteller.unmount();
   });

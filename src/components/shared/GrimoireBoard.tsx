@@ -303,9 +303,6 @@ export default function GrimoireBoard({
     return angles;
   }, [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect]);
 
-  // Players keep their order in the DOM and rotation only changes the seat each one
-  // is drawn in. Reordering the list instead would make React move the nodes, and a
-  // moved node drops the transition that animates it around the circle.
   const playerCount = players.length;
   const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
   const seatOf = (playerIndex: number) =>

@@ -53,9 +53,6 @@ export default function CharacterAssignmentCircle({
 }: CharacterAssignmentCircleProps) {
   const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
 
-  // Players keep their order in the DOM and rotation only changes the seat each one
-  // is drawn in. Reordering the list instead would make React move the nodes, and a
-  // moved node drops the transition that animates it around the circle.
   const n = players.length;
   const offset = n > 0 ? ((rotationOffset % n) + n) % n : 0;
   const seatOf = (playerIndex: number) => (n > 0 ? ((playerIndex - offset) % n + n) % n : 0);

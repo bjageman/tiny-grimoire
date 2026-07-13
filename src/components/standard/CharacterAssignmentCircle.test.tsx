@@ -83,7 +83,6 @@ describe('CharacterAssignmentCircle', () => {
         <CharacterAssignmentCircle {...defaultProps} players={four} rotationOffset={1} />
       );
 
-      // Offset 1 moves Bob into Alice's seat, and wraps Alice round to the last one
       expect(seatPositionOf(rotated.container, 'p2')).toBe(seats[0]);
       expect(seatPositionOf(rotated.container, 'p3')).toBe(seats[1]);
       expect(seatPositionOf(rotated.container, 'p4')).toBe(seats[2]);

@@ -71,6 +71,7 @@ export default function GrimoireBoard({
   const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
   const [boardWidth, setBoardWidth] = useState<number>(0);
+  const [seatsReady, setSeatsReady] = useState(false);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
   const isMobile = useIsMobile();
@@ -106,6 +107,12 @@ export default function GrimoireBoard({
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (boardWidth <= 0 || seatsReady) return;
+    const frame = requestAnimationFrame(() => setSeatsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [boardWidth, seatsReady]);
 
   useEffect(() => {
     if (pickerPlayerId !== null || selectedReminder !== null) {
@@ -534,7 +541,7 @@ export default function GrimoireBoard({
                 top: `${topPos}%`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: zIndex,
-                transition: 'left 250ms ease-in-out, top 250ms ease-in-out',
+                transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
               }}
               onMouseEnter={() => {
                 setFannedPlayerId(p.id);
@@ -566,7 +573,9 @@ export default function GrimoireBoard({
                     width: `${reminderTokenSizePct}%`,
                     height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
-                    transition: 'left 250ms ease-in-out, top 250ms ease-in-out, background-color 150ms',
+                    transition: seatsReady
+                      ? 'left 250ms ease-in-out, top 250ms ease-in-out, background-color 150ms'
+                      : 'none',
                   }}
                   onTouchStart={(e) => e.stopPropagation()}
                   onClick={(e) => {
@@ -605,7 +614,7 @@ export default function GrimoireBoard({
                     width: `${reminderTokenSizePct}%`,
                     height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
-                    transition: 'left 250ms ease-in-out, top 250ms ease-in-out',
+                    transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
                   }}
                 >
                 <button
@@ -653,7 +662,8 @@ export default function GrimoireBoard({
                   }}
                   style={grimoireConfig.btnStyle}
                   className={cn(
-                    "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none",
+                    "rounded-full flex flex-col items-center justify-center shadow-md relative select-none",
+                    seatsReady && "transition-all duration-200",
                     isFanned ? "group-hover:rotate-3 group-hover:shadow-lg" : "",
                     p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
                   )}

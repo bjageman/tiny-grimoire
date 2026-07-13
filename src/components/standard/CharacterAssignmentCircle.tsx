@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wifi, RotateCcw, RotateCw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
@@ -51,7 +51,14 @@ export default function CharacterAssignmentCircle({
   remotePlayerIds,
   selectionRoles,
 }: CharacterAssignmentCircleProps) {
-  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+  const { boardRef, isMeasured, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+
+  const [seatsReady, setSeatsReady] = useState(false);
+  useEffect(() => {
+    if (!isMeasured || seatsReady) return;
+    const frame = requestAnimationFrame(() => setSeatsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [isMeasured, seatsReady]);
 
   const n = players.length;
   const offset = n > 0 ? ((rotationOffset % n) + n) % n : 0;
@@ -150,7 +157,9 @@ export default function CharacterAssignmentCircle({
                 top: `${pos.top}%`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: draggedIndex === index ? 40 : dragOverIndex === index ? 35 : 10,
-                transition: 'left 250ms ease-in-out, top 250ms ease-in-out, opacity 200ms ease-in-out',
+                transition: seatsReady
+                  ? 'left 250ms ease-in-out, top 250ms ease-in-out, opacity 200ms ease-in-out'
+                  : 'none',
               }}
               className={cn(
                 "drag-handle cursor-grab active:cursor-grabbing touch-none",
@@ -164,7 +173,8 @@ export default function CharacterAssignmentCircle({
                 onClick={() => { setActivePlayerId(p.id); setSearchTerm(''); }}
                 style={btnStyle}
                 className={cn(
-                  "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none hover:bg-[#fafafa]"
+                  "rounded-full flex flex-col items-center justify-center shadow-md relative select-none hover:bg-[#fafafa]",
+                  seatsReady && "transition-all duration-200"
                 )}
                 title="Edit player"
               >

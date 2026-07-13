@@ -107,10 +107,6 @@ describe('CharacterAssignmentCircle', () => {
         <CharacterAssignmentCircle {...defaultProps} players={four} rotationOffset={2} />
       );
       expect(dragIndices(container)).toEqual(['0', '1', '2', '3']);
-      const tokens = [...container.querySelectorAll('[data-drag-index]')];
-      tokens.forEach(el => {
-        expect((el as HTMLElement).style.transition).toContain('left');
-      });
     });
 
     it('rotates in both directions from the buttons', () => {

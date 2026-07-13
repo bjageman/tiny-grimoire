@@ -119,14 +119,14 @@ describe('PlayerDetailsModal', () => {
 
   it('toggles alignment (good/evil) via the alignment button', () => {
     render(<PlayerDetailsModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('😇 Good'));
+    fireEvent.click(screen.getByText('Good'));
     expect(defaultProps.onToggleEvil).toHaveBeenCalledWith('p1');
   });
 
   it('keeps the alignment toggle but hides the drunk/poisoned toggle when allowMultipleRoles is true', () => {
     render(<PlayerDetailsModal {...defaultProps} allowMultipleRoles={true} />);
-    expect(screen.queryByText('😇 Good')).not.toBeNull();
-    expect(screen.queryByText('🤢 Drunk/Poisoned')).toBeNull();
+    expect(screen.queryByText('Good')).not.toBeNull();
+    expect(screen.queryByText('Droisoned')).toBeNull();
   });
 
   it('opens the role search when the character is clicked, and selecting a role calls onUpdateRole', () => {

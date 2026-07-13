@@ -18,7 +18,7 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
   );
 
   return (
-    <PageLayout theme={theme} toggleTheme={toggleTheme} title="BOTC Grimoire">
+    <PageLayout theme={theme} toggleTheme={toggleTheme} title="Tiny Grimoire">
       <div id="home-nav" className="w-full max-w-md mx-auto space-y-3">
 
         <a

@@ -100,7 +100,7 @@ export default function WhaleBucketDraftEditModal({
       <button
         key={role.id}
         id={`role-option-${role.id}`}
-        onClick={() => updatePlayerRole(activeDraftPlayerId, role.id)}
+        onClick={() => updatePlayerRole(activeDraftPlayerId, isCurrent ? '' : role.id)}
         className={cn(
           "w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center",
           isPreferred ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-gray-800",

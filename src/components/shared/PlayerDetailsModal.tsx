@@ -353,7 +353,6 @@ export default function PlayerDetailsModal({
                 )}
               </div>
               <RoleList
-                hasRole={allowMultipleRoles ? !!(p.roleIds && p.roleIds.length > 0) : (p.isTheDrunk || p.isTheMarionette || p.isTheLunatic || !!p.roleId)}
                 roles={displayRolesList}
                 players={players}
                 currentPlayerId={p.id}
@@ -375,19 +374,10 @@ export default function PlayerDetailsModal({
                     onSetSearchingRole(false);
                     onSetModalRoleSearch('');
                   } else {
-                    onUpdateRole(p.id, roleId);
+                    onUpdateRole(p.id, roleId === p.roleId ? '' : roleId);
                     onSetSearchingRole(false);
                     onSetModalRoleSearch('');
                   }
-                }}
-                onClear={() => {
-                  if (allowMultipleRoles && onUpdateRoles) {
-                    onUpdateRoles(p.id, []);
-                  } else {
-                    onUpdateRole(p.id, '');
-                  }
-                  onSetSearchingRole(false);
-                  onSetModalRoleSearch('');
                 }}
               />
             </div>
@@ -739,25 +729,21 @@ export default function PlayerDetailsModal({
 // ── Internal sub-component ──────────────────────────────────────────────────
 
 interface RoleListProps {
-  hasRole: boolean;
   roles: Role[];
   players: Player[];
   currentPlayerId: string;
   isLightModeActive: boolean;
   onSelect: (roleId: string) => void;
-  onClear: () => void;
   allowMultipleRoles?: boolean;
   roleIds?: string[];
 }
 
 function RoleList({
-  hasRole,
   roles,
   players,
   currentPlayerId,
   isLightModeActive,
   onSelect,
-  onClear,
   allowMultipleRoles = false,
   roleIds = [],
 }: RoleListProps) {
@@ -776,17 +762,6 @@ function RoleList({
         ? 'border-gray-300 bg-white/50 divide-gray-200'
         : 'border-gray-800 bg-gray-950/40 divide-gray-800'
     )}>
-      {hasRole && !allowMultipleRoles && (
-        <button
-          id="detail-clear-role-button"
-          type="button"
-          onClick={onClear}
-          className="w-full text-left px-3 py-2 hover:bg-red-500/10 text-xs text-red-500 font-semibold border-b transition-colors"
-          style={{ borderColor: isLightModeActive ? '#e5e7eb' : '#1f2937' }}
-        >
-          × Clear Character{allowMultipleRoles ? 's' : ''}
-        </button>
-      )}
       {roles.map((role) => {
         const takenBy = players.find((pl) => 
           (allowMultipleRoles ? pl.roleIds?.includes(role.id) : pl.roleId === role.id) && 

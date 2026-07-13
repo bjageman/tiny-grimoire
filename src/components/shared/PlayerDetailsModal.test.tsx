@@ -147,9 +147,9 @@ describe('PlayerDetailsModal', () => {
     expect(screen.getByText('Taken: Bob')).toBeInTheDocument();
   });
 
-  it('clears the current role when Clear Character is clicked', () => {
-    render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
-    fireEvent.click(screen.getByText('× Clear Character'));
+  it('clears the current role when it is picked again', () => {
+    const { container } = render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
+    fireEvent.click(container.querySelector('#detail-role-option-washerwoman')!);
     expect(defaultProps.onUpdateRole).toHaveBeenCalledWith('p1', '');
   });
 

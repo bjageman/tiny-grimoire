@@ -6,18 +6,11 @@ import { roleIconFallback } from '../../utils/roleIcon';
 import CharacterToken from './CharacterToken';
 import officialRoles from '../../official_roles.json';
 
-/**
- * Fixed board dimensions so the exported image is identical on every device — the
- * live grimoire sizes itself off the viewport, which would make a phone's export a
- * cramped portrait circle. The 900x680 ratio lands in the layout hook's "desktop"
- * branch, giving the same seat sizing a Storyteller sees on a laptop.
- */
 const BOARD_WIDTH = 900;
 const BOARD_HEIGHT = 680;
 const CARD_PADDING = 40;
 const REMINDER_SIZE_PCT = 26;
 
-/** Cinzel is a Google webfont; the exporter runs with fonts un-embedded, so the card asks for a serif that is always present. */
 const DISPLAY_FONT = 'Georgia, "Times New Roman", serif';
 
 interface RecapCardProps {
@@ -29,7 +22,6 @@ interface RecapCardProps {
   dayNumber: number;
   timeOfDay: 'night' | 'day';
   date?: Date;
-  /** Fires once the seat layout has measured itself — capturing before this yields mis-sized tokens. */
   onLayoutReady?: () => void;
 }
 
@@ -103,7 +95,6 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
           const pos = positions[index] ?? { left: 50, top: 50 };
           const playerReminders = reminderTokens.filter(r => r.targetPlayerId === p.id);
 
-          // Reminders sit between the seat and the middle of the board, as on the live grimoire.
           const dx = 50 - pos.left;
           const dy = 50 - pos.top;
           const dist = Math.sqrt(dx * dx + dy * dy);

@@ -1,6 +1,5 @@
 import type { Player, Role } from '../types';
 
-/** Discord rejects a message body over 2000 characters. */
 export const DISCORD_MESSAGE_LIMIT = 2000;
 
 const TEAM_EMOJI: Record<Role['team'], string> = {
@@ -21,10 +20,6 @@ export interface RecapOptions {
   date?: Date;
 }
 
-/**
- * The winner is only ever recorded as a log line ("Game over 🌟 Good wins!"), so the
- * recap reads it back out rather than the game tracking a separate winner field.
- */
 export function deriveWinner(gameLog: string[]): 'good' | 'evil' | null {
   for (let i = gameLog.length - 1; i >= 0; i--) {
     if (!gameLog[i].includes('Game over')) continue;
@@ -34,7 +29,6 @@ export function deriveWinner(gameLog: string[]): 'good' | 'evil' | null {
   return null;
 }
 
-/** Mirrors the grimoire's role resolution: explicit roles first, then the "is really X" flags. */
 export function displayRoleIds(player: Player): (string | null)[] {
   if (player.roleIds && player.roleIds.length > 0) return player.roleIds;
   if (player.roleId) return [player.roleId];
@@ -67,11 +61,6 @@ function finalRoster(players: Player[], rolesData: Role[]): string[] {
   });
 }
 
-/**
- * Builds the message body a Storyteller pastes into Discord alongside the grimoire image.
- * Trims the log from the oldest entries first if the whole thing won't fit, since the
- * closing moves are the part worth reading; the full log stays available as the .txt export.
- */
 export function buildDiscordPost(opts: RecapOptions): { text: string; truncated: boolean } {
   const { players, rolesData, gameLog, scriptName, dayNumber, timeOfDay, date = new Date() } = opts;
 
@@ -106,7 +95,6 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
   return { text: head + fence([notice, ...kept]), truncated: true };
 }
 
-/** Discord blurs any attachment whose filename starts with SPOILER_ until it's clicked. */
 export function recapImageFilename(scriptName: string, playerCount: number, date = new Date()): string {
   const slug = scriptName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'grimoire';
   const stamp = date.toISOString().slice(0, 10);

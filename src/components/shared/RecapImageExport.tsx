@@ -13,16 +13,9 @@ interface RecapImageExportProps {
   scriptName: string;
   dayNumber: number;
   timeOfDay: 'night' | 'day';
-  /** Called once the file has been handed to the browser, or with a reason if it could not be. */
   onDone: (error?: string) => void;
 }
 
-/**
- * A custom script's token art lives on a remote host, and CharacterToken only reaches for it
- * after the bundled /icons/<id>.svg 404s — so at layout time those <img>s are still pointing at
- * a URL that is about to fail. Capturing then would bake in blank tokens; wait for each image to
- * either load or give up (the fallback hides it) before rasterizing.
- */
 async function waitForImages(root: HTMLElement, timeoutMs = 8000): Promise<void> {
   const settled = () =>
     Array.from(root.querySelectorAll('img')).every(
@@ -46,23 +39,16 @@ function saveBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Mounted only for the moment it takes to rasterize the grimoire, then unmounted by the parent —
- * keeping a second full board in the tree for the whole game would double every re-render.
- */
 export default function RecapImageExport({ onDone, ...card }: RecapImageExportProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const capturedRef = useRef(false);
 
   const capture = useCallback(async () => {
-    // The layout hook can report ready more than once (its ResizeObserver refires); only the first wins.
     if (capturedRef.current || !cardRef.current) return;
     capturedRef.current = true;
 
     try {
       await waitForImages(cardRef.current);
-      // skipFonts keeps the exporter from fetching Google's stylesheet mid-capture; the card
-      // deliberately styles itself with fonts that are already on every machine.
       const blob = await toBlob(cardRef.current, { pixelRatio: 2, skipFonts: true, backgroundColor: '#0b0b0e' });
       if (!blob) throw new Error('the renderer returned no image');
       saveBlob(blob, recapImageFilename(card.scriptName, card.players.length));
@@ -73,7 +59,6 @@ export default function RecapImageExport({ onDone, ...card }: RecapImageExportPr
   }, [onDone, card.scriptName, card.players.length]);
 
   return createPortal(
-    // Kept in the layout tree — display:none would leave the board unmeasured and mis-size the seats.
     <div style={{ position: 'fixed', top: 0, left: -99999, pointerEvents: 'none', opacity: 0 }} aria-hidden>
       <RecapCard ref={cardRef} {...card} onLayoutReady={capture} />
     </div>,

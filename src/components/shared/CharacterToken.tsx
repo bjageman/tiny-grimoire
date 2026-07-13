@@ -16,12 +16,6 @@ interface CharacterTokenProps {
   blankRing?: boolean;
 }
 
-/**
- * Paint is set with SVG presentation attributes rather than Tailwind's fill-/stroke-
- * utilities: the recap exporter serializes a clone of this tree without the stylesheet,
- * and class-derived fill/stroke is dropped there, leaving rings and role names unpainted.
- * These hexes mirror theme.colors.clocktower in tailwind.config.js.
- */
 const TEAM_COLOR: Record<Role['team'], string> = {
   townsfolk: '#2563eb',
   outsider: '#10b981',
@@ -74,7 +68,6 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
         {role && (
           <>
-            {/* Inline styles, not utility classes, for the same reason as the paint above. */}
             <text
               fill={teamFill(role.team)}
               style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.025em', textTransform: 'uppercase' }}

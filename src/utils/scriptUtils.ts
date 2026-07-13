@@ -104,9 +104,6 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
             const ability = typeof itemObj.ability === 'string' && itemObj.ability.trim()
               ? itemObj.ability
               : undefined;
-            // Scripts carry the token art either as [good, evil] or — as Bloodstar exports it —
-            // a single URL string. Only accepting the array form silently dropped the art for
-            // every Bloodstar script, leaving custom roles with blank tokens.
             const rawImage = itemObj.image;
             const image = typeof rawImage === 'string' && rawImage.trim()
               ? [rawImage.trim()]

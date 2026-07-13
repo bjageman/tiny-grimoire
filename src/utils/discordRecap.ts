@@ -71,7 +71,7 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
   const alive = players.filter(p => !p.isDead).length;
 
   const head = [
-    `## 🩸 ${scriptName} — ${outcome}`,
+    `## ${scriptName} — ${outcome}`,
     `**${players.length} players · ${alive} alive · ended ${phase} · ${when}**`,
     '',
     '**Final Grimoire**',

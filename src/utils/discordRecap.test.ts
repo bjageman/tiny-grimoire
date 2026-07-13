@@ -57,7 +57,7 @@ describe('buildDiscordPost', () => {
       gameLog: ['[Day 3 · 23:20] Game over 😈 Evil wins!'],
     });
 
-    expect(text).toContain('## 🩸 Trouble Brewing — 😈 Evil wins');
+    expect(text).toContain('## Trouble Brewing — 😈 Evil wins');
     expect(text).toContain('4 players · 3 alive · ended Day 3');
     expect(text).toContain('🔵 **Alice** — Washerwoman');
     expect(text).toContain('😈 **Jonas** — Imp');

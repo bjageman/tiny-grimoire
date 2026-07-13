@@ -296,7 +296,6 @@ export default function NightOrderWidget({
         ) : (
           items.map((item) => {
             const isChecked = checkedItems[item.id] || false;
-            const isInfo = item.type === 'info';
             const isDead = item.player?.isDead;
 
             return (
@@ -309,11 +308,9 @@ export default function NightOrderWidget({
                     ? "bg-emerald-500/5 border-emerald-500/30 opacity-60"
                     : isDead
                       ? "bg-gray-200/40 dark:bg-gray-900/10 border-gray-300 dark:border-gray-800/80 opacity-50"
-                      : isInfo
-                        ? "bg-gray-150/45 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
-                        : isLightModeActive
-                          ? "bg-white border-gray-200 hover:border-gray-300"
-                          : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
+                      : isLightModeActive
+                        ? "bg-white border-gray-200 hover:border-gray-300"
+                        : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
                 )}
               >
                 <div

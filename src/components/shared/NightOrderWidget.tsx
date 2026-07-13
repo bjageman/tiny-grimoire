@@ -25,6 +25,7 @@ interface NightOrderItem {
   description?: string;
   team?: 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler';
   player?: Player;
+  advancesTo?: 'day' | 'night'; // checking this step moves the game into that phase
 }
 
 export default function NightOrderWidget({
@@ -36,7 +37,9 @@ export default function NightOrderWidget({
   checkedItems: propCheckedItems,
   onSetCheckedItems,
 }: NightOrderWidgetProps) {
-  const [activeTab, setActiveTab] = useState<'first' | 'other'>(dayNumber === 1 ? 'first' : 'other');
+  const [activeTab, setActiveTab] = useState<'first' | 'other'>(
+    dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other'
+  );
   
   // Track checkmarks by item ID
   const [localCheckedItems, setLocalCheckedItems] = useState<Record<string, boolean>>({});
@@ -49,8 +52,10 @@ export default function NightOrderWidget({
       isFirstMount.current = false;
       return;
     }
-    setActiveTab(dayNumber === 1 ? 'first' : 'other');
-    setCheckedItems({});
+    setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
+    // A new phase starts with a clean checklist, except for a Dusk that was just
+    // ticked off to bring us into this night: it belongs to the night it opened.
+    setCheckedItems(prev => (timeOfDay === 'night' && prev.dusk ? { dusk: true } : {}));
   }, [dayNumber, timeOfDay, setCheckedItems]);
 
   // Clear checks manually
@@ -58,12 +63,18 @@ export default function NightOrderWidget({
     setCheckedItems({});
   };
 
-  // Toggle checkmark
-  const handleToggleCheck = (itemId: string) => {
+  // Toggle checkmark. Ticking Dusk or Dawn also moves the game into that phase.
+  const handleToggleCheck = (item: NightOrderItem) => {
+    const willCheck = !checkedItems[item.id];
+
     setCheckedItems({
       ...checkedItems,
-      [itemId]: !checkedItems[itemId],
+      [item.id]: willCheck,
     });
+
+    if (willCheck && item.advancesTo && item.advancesTo !== timeOfDay) {
+      onToggleTimeOfDay?.();
+    }
   };
 
   // Group in-play players by their role ID
@@ -83,13 +94,17 @@ export default function NightOrderWidget({
 
   nightList.forEach(id => {
     if (id === 'dusk') {
-      items.push({
-        type: 'info',
-        id: 'dusk',
-        roleId: 'dusk',
-        name: 'Dusk',
-        description: 'Storyteller: Announce that night falls. Everyone closes their eyes.',
-      });
+      // The first night has no dusk step: the game starts there.
+      if (activeTab === 'other') {
+        items.push({
+          type: 'info',
+          id: 'dusk',
+          roleId: 'dusk',
+          name: 'Dusk',
+          description: 'Storyteller: Announce that night falls. Everyone closes their eyes.',
+          advancesTo: 'night',
+        });
+      }
       return;
     }
     if (id === 'dawn') {
@@ -99,6 +114,7 @@ export default function NightOrderWidget({
         roleId: 'dawn',
         name: 'Dawn',
         description: 'Storyteller: Announce that dawn has broken. Everyone opens their eyes.',
+        advancesTo: 'day',
       });
       return;
     }
@@ -161,8 +177,8 @@ export default function NightOrderWidget({
     }
   });
 
-  // Calculate completion status of waking steps
-  const wakeItems = items.filter(item => item.type === 'character' || item.id === 'minioninfo' || item.id === 'demoninfo');
+  // Calculate completion status of waking steps (Dusk and Dawn are phase changes, not wakes)
+  const wakeItems = items.filter(item => !item.advancesTo);
   const allResolved = wakeItems.length > 0 && wakeItems.every(item => checkedItems[item.id]);
 
   const getCharacterColorClass = (item: NightOrderItem, isLight: boolean) => {
@@ -286,40 +302,30 @@ export default function NightOrderWidget({
             return (
               <div
                 key={item.id}
-                onClick={() => !isInfo && handleToggleCheck(item.id)}
+                onClick={() => handleToggleCheck(item)}
                 className={cn(
-                  "flex items-start gap-3 p-2.5 rounded-lg border transition-all select-none",
-                  isInfo
-                    ? "bg-gray-150/45 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800"
-                    : cn(
-                        "cursor-pointer",
-                        isChecked
-                          ? "bg-emerald-500/5 border-emerald-500/30 opacity-60"
-                          : isDead
-                            ? "bg-gray-200/40 dark:bg-gray-900/10 border-gray-300 dark:border-gray-800/80 opacity-50"
-                            : isLightModeActive
-                              ? "bg-white border-gray-200 hover:border-gray-300"
-                              : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
-                      )
+                  "flex items-start gap-3 p-2.5 rounded-lg border transition-all select-none cursor-pointer",
+                  isChecked
+                    ? "bg-emerald-500/5 border-emerald-500/30 opacity-60"
+                    : isDead
+                      ? "bg-gray-200/40 dark:bg-gray-900/10 border-gray-300 dark:border-gray-800/80 opacity-50"
+                      : isInfo
+                        ? "bg-gray-150/45 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+                        : isLightModeActive
+                          ? "bg-white border-gray-200 hover:border-gray-300"
+                          : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
                 )}
               >
-                {/* Checkbox for characters / step indicator */}
-                {!isInfo ? (
-                  <div
-                    className={cn(
-                      "w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 mt-0.5",
-                      isChecked
-                        ? "bg-emerald-500 border-emerald-500 text-white"
-                        : "border-gray-400 dark:border-gray-600"
-                    )}
-                  >
-                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3px]" />}
-                  </div>
-                ) : (
-                  <div className="w-5 h-5 flex items-center justify-center font-bold font-mono text-[10px] bg-gray-200 dark:bg-gray-800 rounded text-gray-500 flex-shrink-0 mt-0.5">
-                    *
-                  </div>
-                )}
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 mt-0.5",
+                    isChecked
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : "border-gray-400 dark:border-gray-600"
+                  )}
+                >
+                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3px]" />}
+                </div>
 
                 {/* Role and Player info */}
                 <div className="flex-1 min-w-0">

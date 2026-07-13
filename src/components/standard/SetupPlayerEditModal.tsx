@@ -97,8 +97,6 @@ export default function SetupPlayerEditModal({
   const isMarionetteSelectedElsewhere = players.some(pl => pl.id !== player.id && pl.isTheMarionette);
   const isLunaticSelectedElsewhere = players.some(pl => pl.id !== player.id && pl.isTheLunatic);
 
-  // The bag filter is only offered when characters have actually been selected for the bag,
-  // otherwise it would hide every role.
   const canFilterByBag = !!setBagOnly && !!selectedCharacterIds && selectedCharacterIds.size > 0;
   const isBagOnly = canFilterByBag && !!bagOnly;
 
@@ -107,7 +105,6 @@ export default function SetupPlayerEditModal({
       r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.team.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    // The player's current role always stays visible, even if it was never put in the bag.
     .filter(r => !isBagOnly || selectedCharacterIds!.has(r.id) || r.id === player.roleId)
     .sort((a, b) => {
       const isCurrentA = a.id === player.roleId;

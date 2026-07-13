@@ -205,7 +205,6 @@ describe('SetupPlayerEditModal', () => {
     });
 
     it("keeps the player's current role visible even when it is not in the bag", () => {
-      // Alice is the Washerwoman, which is not among the selected bag characters.
       const { container } = render(<SetupPlayerEditModal {...bagProps} bagOnly={true} />);
       expect(container.querySelector('#role-option-washerwoman')).toBeInTheDocument();
     });

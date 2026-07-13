@@ -54,6 +54,13 @@ export default function CharacterAssignmentCircle({
   const { boardRef, isMeasured, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
 
   const [seatsReady, setSeatsReady] = useState(false);
+  const [seatedCount, setSeatedCount] = useState(players.length);
+
+  if (seatedCount !== players.length) {
+    setSeatedCount(players.length);
+    setSeatsReady(false);
+  }
+
   useEffect(() => {
     if (!isMeasured || seatsReady) return;
     const frame = requestAnimationFrame(() => setSeatsReady(true));

@@ -72,7 +72,13 @@ export default function GrimoireBoard({
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
   const [boardWidth, setBoardWidth] = useState<number>(0);
   const [seatsReady, setSeatsReady] = useState(false);
+  const [seatedCount, setSeatedCount] = useState(players.length);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+
+  if (seatedCount !== players.length) {
+    setSeatedCount(players.length);
+    setSeatsReady(false);
+  }
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
   const isMobile = useIsMobile();
   const reminderTokenSizePct = isMobile ? 32 : 26;

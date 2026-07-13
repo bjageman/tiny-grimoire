@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, RotateCcw, Moon, Award } from 'lucide-react';
+import { Check, RotateCcw, Moon } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import DayNightLabel from './DayNightLabel';
 import type { Player } from '../../types';
@@ -184,10 +184,6 @@ export default function NightOrderWidget({
     }
   });
 
-  // Calculate completion status of waking steps (Dusk and Dawn are phase changes, not wakes)
-  const wakeItems = items.filter(item => !item.advancesTo);
-  const allResolved = wakeItems.length > 0 && wakeItems.every(item => checkedItems[item.id]);
-
   const getCharacterColorClass = (item: NightOrderItem, isLight: boolean) => {
     if (item.type === 'info') {
       return isLight ? 'text-gray-600' : 'text-white';
@@ -280,14 +276,6 @@ export default function NightOrderWidget({
           </button>
         </div>
       </div>
-
-      {/* Completion Banner */}
-      {allResolved && (
-        <div className="flex items-center gap-2.5 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-fadeIn">
-          <Award className="w-5 h-5 flex-shrink-0 animate-bounce" />
-          <span className="text-xs font-bold uppercase tracking-wider">All night actions resolved! Dawn awaits.</span>
-        </div>
-      )}
 
       {/* Items List */}
       <div className="space-y-2">

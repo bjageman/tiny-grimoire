@@ -191,14 +191,12 @@ describe('NightOrderWidget', () => {
       />
     );
 
-    // Already night: ticking Dusk just records the step, it must not flip to day
     fireEvent.click(screen.getByText('Dusk', { selector: '.font-serif' }).closest('div')!);
     expect(handleToggleTimeOfDay).not.toHaveBeenCalled();
     expect(handleSetCheckedItems).toHaveBeenCalledWith({ dusk: true });
   });
 
   it('clears the checklist on Dawn but never on Dusk', () => {
-    // Mirrors how the game screens wire the widget up: night -> day, day -> next night
     function Harness({ startAt }: { startAt: 'night' | 'day' }) {
       const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>(startAt);
       const [dayNumber, setDayNumber] = useState(1);
@@ -235,12 +233,10 @@ describe('NightOrderWidget', () => {
 
     fireEvent.click(dusk().closest('div')!);
 
-    // Night 2 has begun and nothing about the checklist has been cleared
     expect(screen.getByText('Night 2')).not.toHaveClass('invisible');
     expect(dusk().className).toContain('line-through');
     expect(lunatic().className).toContain('line-through');
 
-    // Dawn ends the night: the day begins and every tick is cleared
     fireEvent.click(dawn().closest('div')!);
 
     expect(screen.getByText('Day 2')).not.toHaveClass('invisible');
@@ -248,7 +244,6 @@ describe('NightOrderWidget', () => {
     expect(dusk().className).not.toContain('line-through');
     expect(lunatic().className).not.toContain('line-through');
 
-    // And Dusk starts the next night again
     fireEvent.click(dusk().closest('div')!);
 
     expect(screen.getByText('Night 3')).not.toHaveClass('invisible');

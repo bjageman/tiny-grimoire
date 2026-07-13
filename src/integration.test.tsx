@@ -765,8 +765,6 @@ describe('Storyteller Device Sync', () => {
     secondary.unmount();
   });
 
-  // The board badge is a label now: the storyteller changes phase by ticking Dawn
-  // (night -> day) or Dusk (day -> next night) in the night order.
   const clickNightOrderStep = (container: HTMLElement, step: 'Dawn' | 'Dusk') => {
     fireEvent.click(within(container).getByText(step, { selector: '.font-serif' }).closest('div')!);
   };
@@ -779,7 +777,6 @@ describe('Storyteller Device Sync', () => {
     expect(within(primary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
     expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
 
-    // Tick Dawn on primary to advance to Day 1
     await act(async () => {
       clickNightOrderStep(primary.container, 'Dawn');
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -886,7 +883,6 @@ describe('Storyteller Device Sync', () => {
     const targetToggles = 18;
     for (let i = 0; i < targetToggles; i++) {
       sentPayloads.length = 0;
-      // Even steps end the night (Dawn), odd steps start the next one (Dusk)
       await advancePhase(i % 2 === 0 ? 'Dawn' : 'Dusk');
 
       const lastSync = lastSyncState();
@@ -1242,7 +1238,6 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
 
-    // Tick Dawn in the night order to move from Night 1 to Day 1
     await act(async () => {
       fireEvent.click(
         within(storyteller.container).getByText('Dawn', { selector: '.font-serif' }).closest('div')!
@@ -1250,7 +1245,6 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    // The day has begun and the night's ticks are gone
     const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
     expect(saved.timeOfDay).toBe('day');
     expect(saved.checkedItems).toEqual({});

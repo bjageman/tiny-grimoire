@@ -25,7 +25,7 @@ interface NightOrderItem {
   description?: string;
   team?: 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler';
   player?: Player;
-  advancesTo?: 'day' | 'night'; // checking this step moves the game into that phase
+  advancesTo?: 'day' | 'night';
 }
 
 export default function NightOrderWidget({
@@ -52,7 +52,6 @@ export default function NightOrderWidget({
       isFirstMount.current = false;
       return;
     }
-    // Only Dawn and the Reset button clear the checks — never a phase change on its own.
     setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
   }, [dayNumber, timeOfDay]);
 
@@ -61,17 +60,12 @@ export default function NightOrderWidget({
     setCheckedItems({});
   };
 
-  // Toggle checkmark. Dusk and Dawn move the game into the phase they announce,
-  // whenever the game is not in it yet — even if they are still ticked from an
-  // earlier night. Dawn ends the night, so it is the one thing that clears the
-  // checklist; Dusk leaves every tick alone.
   const handleToggleCheck = (item: NightOrderItem) => {
     const advancesPhase = item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay;
 
     if (advancesPhase && item.advancesTo === 'day') {
       setCheckedItems({});
       onToggleTimeOfDay!();
-      // Dawn hands the game back to the town, so scroll up to the top of the page
       setTimeout(() => {
         document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -105,7 +99,6 @@ export default function NightOrderWidget({
 
   nightList.forEach(id => {
     if (id === 'dusk') {
-      // The first night has no dusk step: the game starts there.
       if (activeTab === 'other') {
         items.push({
           type: 'info',
@@ -232,7 +225,6 @@ export default function NightOrderWidget({
 
         {/* Controls */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          {/* Current day/night label. Dusk and Dawn drive the phase now, so this only reports it. */}
           <div
             className={cn(
               "whitespace-nowrap flex items-center gap-1 px-2.5 py-2.5 rounded-md text-[9px] font-bold tracking-wider uppercase border select-none min-w-[68px] justify-center",

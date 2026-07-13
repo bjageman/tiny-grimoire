@@ -52,29 +52,27 @@ export default function NightOrderWidget({
       isFirstMount.current = false;
       return;
     }
+    // Checks are never cleared automatically — only the Reset button clears them.
     setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
-    // The night's checklist is cleared once the day begins. Starting a night keeps
-    // what is already ticked, so Dusk stays checked on the night it opened.
-    if (timeOfDay === 'day') {
-      setCheckedItems({});
-    }
-  }, [dayNumber, timeOfDay, setCheckedItems]);
+  }, [dayNumber, timeOfDay]);
 
   // Clear checks manually
   const handleReset = () => {
     setCheckedItems({});
   };
 
-  // Toggle checkmark. Ticking Dusk or Dawn also moves the game into that phase.
+  // Toggle checkmark. Dusk and Dawn move the game into the phase they announce —
+  // they do that whenever the game is not in it yet, even if left ticked from a
+  // previous night, since nothing clears the checklist but the Reset button.
   const handleToggleCheck = (item: NightOrderItem) => {
-    const willCheck = !checkedItems[item.id];
+    const advancesPhase = item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay;
 
     setCheckedItems({
       ...checkedItems,
-      [item.id]: willCheck,
+      [item.id]: advancesPhase ? true : !checkedItems[item.id],
     });
 
-    if (willCheck && item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay) {
+    if (advancesPhase) {
       onToggleTimeOfDay();
 
       // Dawn hands the game back to the town, so scroll up to the top of the page

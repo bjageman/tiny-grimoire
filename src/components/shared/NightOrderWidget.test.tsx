@@ -197,7 +197,7 @@ describe('NightOrderWidget', () => {
     expect(handleSetCheckedItems).toHaveBeenCalledWith({ dusk: true });
   });
 
-  it('ticking Dusk only moves the day on to the next night', () => {
+  it('changes phase on Dusk/Dawn without ever clearing the checklist', () => {
     // Mirrors how the game screens wire the widget up: night -> day, day -> next night
     function Harness({ startAt }: { startAt: 'night' | 'day' }) {
       const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>(startAt);
@@ -228,30 +228,31 @@ describe('NightOrderWidget', () => {
     const dusk = () => screen.getByText('Dusk', { selector: '.font-serif' });
     const dawn = () => screen.getByText('Dawn', { selector: '.font-serif' });
 
-    const { unmount } = render(<Harness startAt="day" />);
+    render(<Harness startAt="day" />);
 
     fireEvent.click(lunatic().closest('div')!);
     expect(lunatic().className).toContain('line-through');
 
     fireEvent.click(dusk().closest('div')!);
 
-    // Night 2 has begun and nothing else about the checklist has changed
+    // Night 2 has begun and nothing about the checklist has been cleared
     expect(screen.getByText('Night 2')).not.toHaveClass('invisible');
     expect(dusk().className).toContain('line-through');
     expect(lunatic().className).toContain('line-through');
 
-    unmount();
-
-    // Dawn is what clears the night's work, as the day begins
-    render(<Harness startAt="night" />);
-
-    fireEvent.click(lunatic().closest('div')!);
-    expect(lunatic().className).toContain('line-through');
-
+    // Dawn moves us on to the day, again leaving every tick in place
     fireEvent.click(dawn().closest('div')!);
 
-    expect(screen.getByText('Day 1')).not.toHaveClass('invisible');
-    expect(lunatic().className).not.toContain('line-through');
+    expect(screen.getByText('Day 2')).not.toHaveClass('invisible');
+    expect(dawn().className).toContain('line-through');
+    expect(dusk().className).toContain('line-through');
+    expect(lunatic().className).toContain('line-through');
+
+    // Dusk is still ticked from the last night, but it still starts the next one
+    fireEvent.click(dusk().closest('div')!);
+
+    expect(screen.getByText('Night 3')).not.toHaveClass('invisible');
+    expect(dusk().className).toContain('line-through');
   });
 
   it('makes Minion Info and Demon Info checkable', () => {

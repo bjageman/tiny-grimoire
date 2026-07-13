@@ -490,8 +490,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
-      // The night's checklist is done with; a Dusk that starts a night keeps its tick
-      setCheckedItems({});
       setTimeOfDay('day');
       addLogEntry(`Advanced to Day ${dayNumber}`, 'day', dayNumber);
     } else {

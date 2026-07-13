@@ -52,7 +52,7 @@ export default function NightOrderWidget({
       isFirstMount.current = false;
       return;
     }
-    // Checks are never cleared automatically — only the Reset button clears them.
+    // Only Dawn and the Reset button clear the checks — never a phase change on its own.
     setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
   }, [dayNumber, timeOfDay]);
 

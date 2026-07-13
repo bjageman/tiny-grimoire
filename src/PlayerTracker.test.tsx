@@ -254,8 +254,6 @@ describe('PlayerTracker', () => {
       });
     });
 
-    // Charlie (p-3) is the joined player, so he is seated at the bottom of the circle.
-    // Players keep their order in the DOM, so the seat is read off the position.
     const seatOf = (id: string) => {
       const token = container.querySelector(`#grimoire-player-${id}`)!.closest('[style*="left"]') as HTMLElement;
       return { left: parseFloat(token.style.left), top: parseFloat(token.style.top) };

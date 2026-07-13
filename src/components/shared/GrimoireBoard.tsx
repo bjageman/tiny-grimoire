@@ -553,7 +553,7 @@ export default function GrimoireBoard({
                   setFannedPlayerId(p.id);
                 }
               }}
-              className="hover:z-50 group"
+              className="hover:z-50 group transition-[left,top] duration-200 ease-out"
             >
               {/* "+" add-reminder — at anchor when empty, shifted inward when reminders exist */}
               {onAddReminder && playerReminders.length < 5 && (

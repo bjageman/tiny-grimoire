@@ -71,7 +71,14 @@ export default function GrimoireBoard({
   const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
   const [boardWidth, setBoardWidth] = useState<number>(0);
+  const [seatsReady, setSeatsReady] = useState(false);
+  const [seatedCount, setSeatedCount] = useState(players.length);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+
+  if (seatedCount !== players.length) {
+    setSeatedCount(players.length);
+    setSeatsReady(false);
+  }
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
   const isMobile = useIsMobile();
   const reminderTokenSizePct = isMobile ? 32 : 26;
@@ -106,6 +113,12 @@ export default function GrimoireBoard({
       observer.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (boardWidth <= 0 || seatsReady) return;
+    const frame = requestAnimationFrame(() => setSeatsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [boardWidth, seatsReady]);
 
   useEffect(() => {
     if (pickerPlayerId !== null || selectedReminder !== null) {
@@ -303,12 +316,10 @@ export default function GrimoireBoard({
     return angles;
   }, [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect]);
 
-  const rotatedPlayers = useMemo(() => {
-    if (rotationOffset === 0 || players.length === 0) return players;
-    const n = players.length;
-    const off = ((rotationOffset % n) + n) % n;
-    return [...players.slice(off), ...players.slice(0, off)];
-  }, [players, rotationOffset]);
+  const playerCount = players.length;
+  const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
+  const seatOf = (playerIndex: number) =>
+    playerCount > 0 ? ((playerIndex - seatOffset) % playerCount + playerCount) % playerCount : 0;
 
   return (
     <>
@@ -479,8 +490,9 @@ export default function GrimoireBoard({
           </div>
         )}
 
-        {rotatedPlayers.map((p, index) => {
-          const angle = evenAngles[index] !== undefined ? evenAngles[index] : 0;
+        {players.map((p, playerIndex) => {
+          const seat = seatOf(playerIndex);
+          const angle = evenAngles[seat] !== undefined ? evenAngles[seat] : 0;
 
           const cosVal = Math.cos(angle);
           const sinVal = Math.sin(angle);
@@ -535,6 +547,7 @@ export default function GrimoireBoard({
                 top: `${topPos}%`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: zIndex,
+                transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
               }}
               onMouseEnter={() => {
                 setFannedPlayerId(p.id);
@@ -566,6 +579,9 @@ export default function GrimoireBoard({
                     width: `${reminderTokenSizePct}%`,
                     height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
+                    transition: seatsReady
+                      ? 'left 250ms ease-in-out, top 250ms ease-in-out, background-color 150ms'
+                      : 'none',
                   }}
                   onTouchStart={(e) => e.stopPropagation()}
                   onClick={(e) => {
@@ -604,6 +620,7 @@ export default function GrimoireBoard({
                     width: `${reminderTokenSizePct}%`,
                     height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
+                    transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
                   }}
                 >
                 <button
@@ -651,8 +668,9 @@ export default function GrimoireBoard({
                   }}
                   style={grimoireConfig.btnStyle}
                   className={cn(
-                    "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none",
-                    isFanned ? "group-hover:scale-125 group-hover:shadow-lg" : "",
+                    "rounded-full flex flex-col items-center justify-center shadow-md relative select-none",
+                    seatsReady && "transition-all duration-200",
+                    isFanned ? "group-hover:rotate-3 group-hover:shadow-lg" : "",
                     p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
                   )}
                 >

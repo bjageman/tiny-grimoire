@@ -83,9 +83,16 @@ describe('SetupPlayerEditModal', () => {
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it('shows a "Taken" badge for roles already assigned to another player', () => {
+  it('clicking the role the player already has deselects it', () => {
+    const { container } = render(<SetupPlayerEditModal {...defaultProps} />);
+    fireEvent.click(container.querySelector('#role-option-washerwoman')!);
+    expect(defaultProps.updatePlayerRole).toHaveBeenCalledWith('p1', '');
+    expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it('badges a role taken by another player with just that player name', () => {
     render(<SetupPlayerEditModal {...defaultProps} />);
-    expect(screen.getByText('Taken: Charlie')).toBeInTheDocument();
+    expect(screen.getByText('Charlie')).toBeInTheDocument();
   });
 
   it('shows The Drunk toggle for a Townsfolk player and calls togglePlayerTheDrunk', () => {
@@ -172,6 +179,47 @@ describe('SetupPlayerEditModal', () => {
     expect(roleOptions.length).toBeGreaterThan(0);
     roleOptions.forEach(btn => {
       expect(btn).not.toBeDisabled();
+    });
+  });
+
+  describe('"Bag only" filter', () => {
+    const bagProps = {
+      ...defaultProps,
+      selectedCharacterIds: new Set(['chef', 'imp']),
+      setBagOnly: vi.fn(),
+    };
+
+    it('is hidden when no characters have been selected for the bag', () => {
+      const { container } = render(
+        <SetupPlayerEditModal {...bagProps} selectedCharacterIds={new Set()} />
+      );
+      expect(container.querySelector('#bag-only-filter')).not.toBeInTheDocument();
+    });
+
+    it('shows every role when the filter is off', () => {
+      const { container } = render(<SetupPlayerEditModal {...bagProps} bagOnly={false} />);
+      expect(container.querySelector('#bag-only-filter-checkbox')).not.toBeChecked();
+      expect(container.querySelector('#role-option-poisoner')).toBeInTheDocument();
+      expect(container.querySelector('#role-option-chef')).toBeInTheDocument();
+    });
+
+    it('shows only characters in the bag when the filter is on', () => {
+      const { container } = render(<SetupPlayerEditModal {...bagProps} bagOnly={true} />);
+      expect(container.querySelector('#bag-only-filter-checkbox')).toBeChecked();
+      expect(container.querySelector('#role-option-chef')).toBeInTheDocument();
+      expect(container.querySelector('#role-option-imp')).toBeInTheDocument();
+      expect(container.querySelector('#role-option-poisoner')).not.toBeInTheDocument();
+    });
+
+    it("keeps the player's current role visible even when it is not in the bag", () => {
+      const { container } = render(<SetupPlayerEditModal {...bagProps} bagOnly={true} />);
+      expect(container.querySelector('#role-option-washerwoman')).toBeInTheDocument();
+    });
+
+    it('reports toggling back to the parent', () => {
+      const { container } = render(<SetupPlayerEditModal {...bagProps} bagOnly={false} />);
+      fireEvent.click(container.querySelector('#bag-only-filter-checkbox')!);
+      expect(bagProps.setBagOnly).toHaveBeenCalledWith(true);
     });
   });
 });

@@ -14,6 +14,8 @@ import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
   players: Player[];
+  rotationOffset?: number;
+  onRotationChange?: (offset: number) => void;
   customScriptRoles: Role[] | null;
   scriptName: string;
   scriptAuthor: string;
@@ -57,6 +59,8 @@ interface StandardSetupPhaseProps {
 
 export default function StandardSetupPhase({
   players,
+  rotationOffset,
+  onRotationChange,
   customScriptRoles,
   scriptName,
   scriptAuthor,
@@ -305,6 +309,8 @@ export default function StandardSetupPhase({
 
           <CharacterAssignmentCircle
             players={players}
+            rotationOffset={rotationOffset}
+            onRotationChange={onRotationChange}
             isLightModeActive={isLightModeActive}
             draggedIndex={draggedIndex}
             dragOverIndex={dragOverIndex}

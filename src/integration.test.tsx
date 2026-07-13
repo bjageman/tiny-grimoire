@@ -765,6 +765,10 @@ describe('Storyteller Device Sync', () => {
     secondary.unmount();
   });
 
+  const clickNightOrderStep = (container: HTMLElement, step: 'Dawn' | 'Dusk') => {
+    fireEvent.click(within(container).getByText(step, { selector: '.font-serif' }).closest('div')!);
+  };
+
   it('syncs time-of-day toggle from primary to secondary in real time', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
@@ -773,12 +777,8 @@ describe('Storyteller Device Sync', () => {
     expect(within(primary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
     expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
 
-    // Click the time-of-day badge on primary to advance to Day 1
-    const timeBadge = primary.container.querySelector('#grimoire-info-row');
-    expect(timeBadge).not.toBeNull();
-
     await act(async () => {
-      fireEvent.click(timeBadge!);
+      clickNightOrderStep(primary.container, 'Dawn');
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
@@ -844,20 +844,20 @@ describe('Storyteller Device Sync', () => {
     const { primary, secondary } = await renderSyncedPair();
 
     // Re-query inside each act so the reference is always fresh after re-renders
-    const clickTimeBadge = async () => {
+    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
       await act(async () => {
-        fireEvent.click(primary.container.querySelector('#grimoire-info-row')!);
+        clickNightOrderStep(primary.container, step);
         await new Promise(resolve => setTimeout(resolve, 150));
       });
     };
 
     // Night → Day: verify via DOM on secondary
-    await clickTimeBadge();
+    await advancePhase('Dawn');
     expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
 
     // Day → Night 2: verify via sync payload (more reliable than DOM after multiple toggles)
     sentPayloads.length = 0;
-    await clickTimeBadge();
+    await advancePhase('Dusk');
     const nightSync = lastSyncState();
     expect(nightSync).toBeDefined();
     expect(nightSync!.timeOfDay).toBe('night');
@@ -871,9 +871,9 @@ describe('Storyteller Device Sync', () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
 
-    const clickTimeBadge = async () => {
+    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
       await act(async () => {
-        fireEvent.click(primary.container.querySelector('#grimoire-info-row')!);
+        clickNightOrderStep(primary.container, step);
         await new Promise(resolve => setTimeout(resolve, 150));
       });
     };
@@ -883,7 +883,7 @@ describe('Storyteller Device Sync', () => {
     const targetToggles = 18;
     for (let i = 0; i < targetToggles; i++) {
       sentPayloads.length = 0;
-      await clickTimeBadge();
+      await advancePhase(i % 2 === 0 ? 'Dawn' : 'Dusk');
 
       const lastSync = lastSyncState();
       expect(lastSync).toBeDefined();
@@ -1222,7 +1222,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('clears checklist checkboxes on day/night transitions', async () => {
+  it('clears checklist checkboxes when Dawn starts the day', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }
     ];
@@ -1238,18 +1238,43 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
 
-    // Click the time-of-day badge to toggle from Night 1 to Day 1
-    const timeBadge = storyteller.container.querySelector('#grimoire-info-row');
-    expect(timeBadge).not.toBeNull();
-
     await act(async () => {
-      fireEvent.click(timeBadge!);
+      fireEvent.click(
+        within(storyteller.container).getByText('Dawn', { selector: '.font-serif' }).closest('div')!
+      );
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    // Verify checkedItems is empty in local storage
     const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    expect(saved.timeOfDay).toBe('day');
     expect(saved.checkedItems).toEqual({});
+
+    storyteller.unmount();
+  });
+
+  it('starts the next night on Dusk, keeping it ticked and the checklist intact', async () => {
+    seedPrimary({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+      timeOfDay: 'day',
+      dayNumber: 1,
+      checkedItems: {},
+    });
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(
+        within(storyteller.container).getByText('Dusk', { selector: '.font-serif' }).closest('div')!
+      );
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    expect(saved.timeOfDay).toBe('night');
+    expect(saved.dayNumber).toBe(2);
+    expect(saved.checkedItems).toEqual({ dusk: true });
 
     storyteller.unmount();
   });

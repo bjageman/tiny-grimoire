@@ -254,9 +254,17 @@ describe('PlayerTracker', () => {
       });
     });
 
-    // Verify first rendered player button in DOM is Charlie (p-3)
-    const playerButtons = container.querySelectorAll('button[id^="grimoire-player-"]');
-    expect(playerButtons[0].id).toBe('grimoire-player-p-3');
+    const seatOf = (id: string) => {
+      const token = container.querySelector(`#grimoire-player-${id}`)!.closest('[style*="left"]') as HTMLElement;
+      return { left: parseFloat(token.style.left), top: parseFloat(token.style.top) };
+    };
+    const ids = ['p-1', 'p-2', 'p-3', 'p-4', 'p-5'];
+    const charlie = seatOf('p-3');
+
+    expect(charlie.left).toBeCloseTo(50, 1);
+    ids.filter(id => id !== 'p-3').forEach(id => {
+      expect(seatOf(id).top).toBeLessThan(charlie.top);
+    });
   });
 
   it('allows toggling reminder tokens on and off via checkbox below notes', () => {

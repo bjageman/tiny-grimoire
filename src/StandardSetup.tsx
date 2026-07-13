@@ -111,6 +111,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const scriptRoles = readPersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null) || (rolesData as Role[]);
     return new Set(scriptRoles.map(r => r.id));
   });
+  const [bagOnly, setBagOnly] = useState(false);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
@@ -489,7 +490,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
 
   const toggleTimeOfDay = () => {
-    setCheckedItems({});
     if (timeOfDay === 'night') {
       setTimeOfDay('day');
       addLogEntry(`Advanced to Day ${dayNumber}`, 'day', dayNumber);
@@ -1017,6 +1017,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          rotationOffset={rotationOffset}
+          onRotationChange={setRotationOffset}
           isSecondary={isSecondary}
           setPhase={(p) => {
             if (p === 'game') {
@@ -1178,6 +1180,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
           onUpdatePronouns={updatePlayerPronouns}
+          selectedCharacterIds={selectedCharacterIds}
+          bagOnly={bagOnly}
+          setBagOnly={setBagOnly}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
           isSecondary={isSecondary}
         />

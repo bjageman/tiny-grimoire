@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import type { Player } from '../../types';
 
@@ -56,5 +56,80 @@ describe('CharacterAssignmentCircle', () => {
     // Draggable attribute should be true
     const playerTokenDiv = container.querySelector('[data-drag-index="0"]');
     expect(playerTokenDiv).toHaveAttribute('draggable', 'true');
+  });
+
+  describe('rotation', () => {
+    const four: Player[] = [
+      { id: 'p1', name: 'Alice', isDead: false },
+      { id: 'p2', name: 'Bob', isDead: false },
+      { id: 'p3', name: 'Charlie', isDead: false },
+      { id: 'p4', name: 'Dave', isDead: false },
+    ];
+
+    const seatPositionOf = (container: HTMLElement, id: string) => {
+      const el = container.querySelector(`#edit-player-button-${id}`)!.closest('[data-drag-index]') as HTMLElement;
+      return `${el.style.left}|${el.style.top}`;
+    };
+
+    const dragIndices = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-drag-index]')].map(el => el.getAttribute('data-drag-index'));
+
+    it('rotates which seat each player is drawn in, matching the grimoire board', () => {
+      const unrotated = render(<CharacterAssignmentCircle {...defaultProps} players={four} />);
+      const seats = four.map(p => seatPositionOf(unrotated.container, p.id));
+      cleanup();
+
+      const rotated = render(
+        <CharacterAssignmentCircle {...defaultProps} players={four} rotationOffset={1} />
+      );
+
+      expect(seatPositionOf(rotated.container, 'p2')).toBe(seats[0]);
+      expect(seatPositionOf(rotated.container, 'p3')).toBe(seats[1]);
+      expect(seatPositionOf(rotated.container, 'p4')).toBe(seats[2]);
+      expect(seatPositionOf(rotated.container, 'p1')).toBe(seats[3]);
+    });
+
+    it('rotates the other way for a negative offset', () => {
+      const unrotated = render(<CharacterAssignmentCircle {...defaultProps} players={four} />);
+      const seats = four.map(p => seatPositionOf(unrotated.container, p.id));
+      cleanup();
+
+      const rotated = render(
+        <CharacterAssignmentCircle {...defaultProps} players={four} rotationOffset={-1} />
+      );
+
+      expect(seatPositionOf(rotated.container, 'p4')).toBe(seats[0]);
+      expect(seatPositionOf(rotated.container, 'p1')).toBe(seats[1]);
+    });
+
+    it('keeps players in player order in the DOM, so rotating animates rather than jumps', () => {
+      const { container } = render(
+        <CharacterAssignmentCircle {...defaultProps} players={four} rotationOffset={2} />
+      );
+      expect(dragIndices(container)).toEqual(['0', '1', '2', '3']);
+    });
+
+    it('rotates in both directions from the buttons', () => {
+      const onRotationChange = vi.fn();
+      const { container } = render(
+        <CharacterAssignmentCircle
+          {...defaultProps}
+          players={four}
+          rotationOffset={2}
+          onRotationChange={onRotationChange}
+        />
+      );
+
+      fireEvent.click(container.querySelector('#setup-rotate-ccw-button')!);
+      expect(onRotationChange).toHaveBeenCalledWith(3);
+
+      fireEvent.click(container.querySelector('#setup-rotate-cw-button')!);
+      expect(onRotationChange).toHaveBeenCalledWith(1);
+    });
+
+    it('hides the rotate buttons when rotation is not wired up', () => {
+      const { container } = render(<CharacterAssignmentCircle {...defaultProps} players={four} />);
+      expect(container.querySelector('#setup-rotate-ccw-button')).toBeNull();
+    });
   });
 });

@@ -23,6 +23,9 @@ interface SetupPlayerEditModalProps {
   togglePlayerTheLunatic: (id: string) => void;
   togglePlayerTheLilMonsta: (id: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
+  selectedCharacterIds?: Set<string>;
+  bagOnly?: boolean;
+  setBagOnly?: (value: boolean) => void;
   isSecondary?: boolean;
   onClose: () => void;
 }
@@ -53,6 +56,9 @@ export default function SetupPlayerEditModal({
   togglePlayerTheLunatic,
   togglePlayerTheLilMonsta,
   onUpdatePronouns,
+  selectedCharacterIds,
+  bagOnly,
+  setBagOnly,
   onClose,
   isSecondary,
 }: SetupPlayerEditModalProps) {
@@ -91,11 +97,15 @@ export default function SetupPlayerEditModal({
   const isMarionetteSelectedElsewhere = players.some(pl => pl.id !== player.id && pl.isTheMarionette);
   const isLunaticSelectedElsewhere = players.some(pl => pl.id !== player.id && pl.isTheLunatic);
 
+  const canFilterByBag = !!setBagOnly && !!selectedCharacterIds && selectedCharacterIds.size > 0;
+  const isBagOnly = canFilterByBag && !!bagOnly;
+
   const filteredRoles = selectionRoles
     .filter(r =>
       r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.team.toLowerCase().includes(searchTerm.toLowerCase())
     )
+    .filter(r => !isBagOnly || selectedCharacterIds!.has(r.id) || r.id === player.roleId)
     .sort((a, b) => {
       const isCurrentA = a.id === player.roleId;
       const isCurrentB = b.id === player.roleId;
@@ -120,75 +130,88 @@ export default function SetupPlayerEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center">
-          <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
-            Edit Player
-          </h3>
-          <button id="close-player-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              id="remove-player-button"
+              type="button"
+              disabled={!!isSecondary}
+              onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
+              className={cn(
+                "shrink-0 p-1.5 rounded border border-gray-800 transition-colors",
+                isSecondary
+                  ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
+                  : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+              )}
+              title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
+            >
+              <Trash2 size={16} />
+            </button>
+            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
+              Edit Player
+            </h3>
+          </div>
+          <button id="close-player-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
             Close
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {(() => {
-            const isSecondaryDevice = !!isSecondary;
-            return (
-              <>
-                <button
-                  id="remove-player-button"
-                  type="button"
-                  disabled={isSecondaryDevice}
-                  onClick={() => { if (!isSecondaryDevice) { removePlayer(player.id); onClose(); } }}
-                  className={cn(
-                    "shrink-0 p-2 rounded border border-gray-800 transition-colors",
-                    isSecondaryDevice 
-                      ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40" 
-                      : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
-                  )}
-                  title={isSecondaryDevice ? "This action is disabled on secondary devices." : "Remove player"}
-                >
-                  <Trash2 size={16} />
-                </button>
-                <input
-                  id="edit-player-name-input"
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-                  autoFocus={!isMobile}
-                  autoCapitalize="words"
-                  placeholder="Player name"
-                  className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-                />
-              </>
-            );
-          })()}
+        <div className="flex items-center gap-2">
+          <input
+            id="edit-player-name-input"
+            type="text"
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+            autoFocus={!isMobile}
+            autoCapitalize="words"
+            placeholder="Player name"
+            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+          />
+          {onUpdatePronouns && (
+            <select
+              id="setup-player-pronouns-select"
+              value={player.pronouns || ''}
+              onChange={(e) => onUpdatePronouns(player.id, e.target.value)}
+              className={cn(
+                'shrink-0 w-24 rounded pl-2 pr-1 py-2 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer',
+                isLightModeActive
+                  ? 'bg-white border-gray-300 text-gray-600'
+                  : 'bg-gray-955 border-gray-800 text-gray-400'
+              )}
+            >
+              <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
+              {PRONOUN_OPTIONS.map(option => (
+                <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        {onUpdatePronouns && (
-          <select
-            id="setup-player-pronouns-select"
-            value={player.pronouns || ''}
-            onChange={(e) => onUpdatePronouns(player.id, e.target.value)}
-            className={cn(
-              'rounded px-2 py-1.5 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer self-start',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-gray-600'
-                : 'bg-gray-955 border-gray-800 text-gray-400'
+        {(canFilterByBag || canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            {canFilterByBag && (
+              <label
+                id="bag-only-filter"
+                title="Only show characters selected in the setup bag"
+                className={cn(
+                  "mr-auto flex items-center gap-1.5 cursor-pointer text-[11px] font-medium select-none",
+                  isLightModeActive ? "text-gray-600" : "text-gray-400"
+                )}
+              >
+                <input
+                  id="bag-only-filter-checkbox"
+                  type="checkbox"
+                  checked={isBagOnly}
+                  onChange={(e) => setBagOnly!(e.target.checked)}
+                  className="shrink-0 w-3.5 h-3.5"
+                />
+                Bag only
+              </label>
             )}
-          >
-            <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
-            {PRONOUN_OPTIONS.map(option => (
-              <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                {option}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
-          <div className="flex flex-wrap justify-end gap-1.5">
             {canBeDrunk && (
               <button
                 id={`toggle-drunk-button-${player.id}`}
@@ -309,7 +332,7 @@ export default function SetupPlayerEditModal({
               <button
                 id={`role-option-${role.id}`}
                 key={role.id}
-                onClick={() => { updatePlayerRole(activePlayerId, role.id); onClose(); }}
+                onClick={() => { updatePlayerRole(activePlayerId, isCurrent ? '' : role.id); onClose(); }}
                 className={cn(
                   "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
                   isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
@@ -345,7 +368,7 @@ export default function SetupPlayerEditModal({
                         ? "bg-gray-100 border-gray-200 text-gray-655"
                         : "bg-gray-800/40 border-gray-700/30 text-gray-400"
                     )}>
-                      Taken: {selectedByPlayer.name}
+                      {selectedByPlayer.name}
                     </span>
                   )}
                 </div>

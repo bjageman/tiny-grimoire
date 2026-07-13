@@ -119,14 +119,14 @@ describe('PlayerDetailsModal', () => {
 
   it('toggles alignment (good/evil) via the alignment button', () => {
     render(<PlayerDetailsModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('😇 Good'));
+    fireEvent.click(screen.getByText('Good'));
     expect(defaultProps.onToggleEvil).toHaveBeenCalledWith('p1');
   });
 
   it('keeps the alignment toggle but hides the drunk/poisoned toggle when allowMultipleRoles is true', () => {
     render(<PlayerDetailsModal {...defaultProps} allowMultipleRoles={true} />);
-    expect(screen.queryByText('😇 Good')).not.toBeNull();
-    expect(screen.queryByText('🤢 Drunk/Poisoned')).toBeNull();
+    expect(screen.queryByText('Good')).not.toBeNull();
+    expect(screen.queryByText('Droisoned')).toBeNull();
   });
 
   it('opens the role search when the character is clicked, and selecting a role calls onUpdateRole', () => {
@@ -147,9 +147,9 @@ describe('PlayerDetailsModal', () => {
     expect(screen.getByText('Taken: Bob')).toBeInTheDocument();
   });
 
-  it('clears the current role when Clear Character is clicked', () => {
-    render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
-    fireEvent.click(screen.getByText('× Clear Character'));
+  it('clears the current role when it is picked again', () => {
+    const { container } = render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
+    fireEvent.click(container.querySelector('#detail-role-option-washerwoman')!);
     expect(defaultProps.onUpdateRole).toHaveBeenCalledWith('p1', '');
   });
 

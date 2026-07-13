@@ -14,6 +14,7 @@ export function useGrimoireLayout(playerCount: number) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [boardAspect, setBoardAspect] = useState(1.3);
   const [boardWidth, setBoardWidth] = useState(BOARD_BASELINE_WIDTH);
+  const [isMeasured, setIsMeasured] = useState(false);
 
   useEffect(() => {
     const boardElement = boardRef.current;
@@ -24,6 +25,7 @@ export function useGrimoireLayout(playerCount: number) {
       if (rect.width > 0 && rect.height > 0) {
         setBoardAspect(rect.height / rect.width);
         setBoardWidth(rect.width);
+        setIsMeasured(true);
       }
     };
 
@@ -187,6 +189,7 @@ export function useGrimoireLayout(playerCount: number) {
 
   return {
     boardRef,
+    isMeasured,
     boardClass: grimoireConfig.boardClass,
     btnStyle: grimoireConfig.btnStyle,
     nameStyle: grimoireConfig.nameStyle,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi } from 'lucide-react';
+import { Wifi, RotateCcw, RotateCw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
@@ -8,6 +8,8 @@ import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 
 interface CharacterAssignmentCircleProps {
   players: Player[];
+  rotationOffset?: number;
+  onRotationChange?: (offset: number) => void;
   isLightModeActive: boolean;
   setActivePlayerId: (id: string | null) => void;
   setSearchTerm: (term: string) => void;
@@ -29,6 +31,8 @@ interface CharacterAssignmentCircleProps {
 
 export default function CharacterAssignmentCircle({
   players,
+  rotationOffset = 0,
+  onRotationChange,
   isLightModeActive,
   setActivePlayerId,
   setSearchTerm,
@@ -49,6 +53,13 @@ export default function CharacterAssignmentCircle({
 }: CharacterAssignmentCircleProps) {
   const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
 
+  // Players keep their order in the DOM and rotation only changes the seat each one
+  // is drawn in. Reordering the list instead would make React move the nodes, and a
+  // moved node drops the transition that animates it around the circle.
+  const n = players.length;
+  const offset = n > 0 ? ((rotationOffset % n) + n) % n : 0;
+  const seatOf = (playerIndex: number) => (n > 0 ? ((playerIndex - offset) % n + n) % n : 0);
+
   return (
     <div className="w-full flex flex-col items-center">
       <div
@@ -64,7 +75,8 @@ export default function CharacterAssignmentCircle({
         style={{ containerType: 'size' }}
       >
         {players.map((p, index) => {
-          const pos = positions[index] ?? { left: 50, top: 50 };
+          const seatIndex = seatOf(index);
+          const pos = positions[seatIndex] ?? { left: 50, top: 50 };
           let roleObj = selectionRoles?.find(r => r.id === p.roleId);
           if (!roleObj) {
             roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
@@ -75,9 +87,8 @@ export default function CharacterAssignmentCircle({
 
           let rotateDeg = 0;
           if (isDropTarget && hoverSide) {
-            const n = players.length;
-            const neighborIdx = hoverSide === 'before' ? (index - 1 + n) % n : (index + 1) % n;
-            const neighborPos = positions[neighborIdx];
+            const neighborSeat = hoverSide === 'before' ? (seatIndex - 1 + n) % n : (seatIndex + 1) % n;
+            const neighborPos = positions[neighborSeat];
             if (neighborPos) {
               const dy = neighborPos.top - pos.top;
               const dx = neighborPos.left - pos.left;
@@ -100,13 +111,10 @@ export default function CharacterAssignmentCircle({
                 const boardRect = boardElement.getBoundingClientRect();
                 const cursorX = ((e.clientX - boardRect.left) / boardRect.width) * 100;
                 const cursorY = ((e.clientY - boardRect.top) / boardRect.height) * 100;
-                
-                const n = players.length;
-                const prevIdx = (index - 1 + n) % n;
-                const nextIdx = (index + 1) % n;
-                const prevPos = positions[prevIdx];
-                const nextPos = positions[nextIdx];
-                
+
+                const prevPos = positions[(seatIndex - 1 + n) % n];
+                const nextPos = positions[(seatIndex + 1) % n];
+
                 if (prevPos && nextPos) {
                   const dPrev = Math.pow(cursorX - prevPos.left, 2) + Math.pow(cursorY - prevPos.top, 2);
                   const dNext = Math.pow(cursorX - nextPos.left, 2) + Math.pow(cursorY - nextPos.top, 2);
@@ -125,13 +133,11 @@ export default function CharacterAssignmentCircle({
                   const boardRect = boardElement.getBoundingClientRect();
                   const cursorX = ((clientX - boardRect.left) / boardRect.width) * 100;
                   const cursorY = ((clientY - boardRect.top) / boardRect.height) * 100;
-                  
-                  const n = players.length;
-                  const prevIdx = (targetIdx - 1 + n) % n;
-                  const nextIdx = (targetIdx + 1) % n;
-                  const prevPos = positions[prevIdx];
-                  const nextPos = positions[nextIdx];
-                  
+
+                  const targetSeat = seatOf(targetIdx);
+                  const prevPos = positions[(targetSeat - 1 + n) % n];
+                  const nextPos = positions[(targetSeat + 1) % n];
+
                   if (prevPos && nextPos) {
                     const dPrev = Math.pow(cursorX - prevPos.left, 2) + Math.pow(cursorY - prevPos.top, 2);
                     const dNext = Math.pow(cursorX - nextPos.left, 2) + Math.pow(cursorY - nextPos.top, 2);
@@ -147,9 +153,10 @@ export default function CharacterAssignmentCircle({
                 top: `${pos.top}%`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: draggedIndex === index ? 40 : dragOverIndex === index ? 35 : 10,
+                transition: 'left 250ms ease-in-out, top 250ms ease-in-out, opacity 200ms ease-in-out',
               }}
               className={cn(
-                "drag-handle cursor-grab active:cursor-grabbing touch-none transition-all duration-200",
+                "drag-handle cursor-grab active:cursor-grabbing touch-none",
                 draggedIndex === index && "opacity-30 scale-95",
                 isDropTarget && "scale-110"
               )}
@@ -229,6 +236,41 @@ export default function CharacterAssignmentCircle({
             </div>
           );
         })}
+
+        {onRotationChange && n > 1 && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <button
+                type="button"
+                id="setup-rotate-ccw-button"
+                onClick={() => onRotationChange(rotationOffset + 1)}
+                className={cn(
+                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  isLightModeActive
+                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
+                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
+                )}
+                title="Rotate counter-clockwise"
+              >
+                <RotateCcw size={14} />
+              </button>
+              <button
+                type="button"
+                id="setup-rotate-cw-button"
+                onClick={() => onRotationChange(rotationOffset - 1)}
+                className={cn(
+                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  isLightModeActive
+                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
+                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
+                )}
+                title="Rotate clockwise"
+              >
+                <RotateCw size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

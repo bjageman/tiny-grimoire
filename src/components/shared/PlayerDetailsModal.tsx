@@ -635,7 +635,7 @@ export default function PlayerDetailsModal({
                  : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
              )}
            >
-             {isEvil ? '👿 Evil' : '😇 Good'}
+             {isEvil ? 'Evil' : 'Good'}
            </button>
            {!allowMultipleRoles && (
              <button
@@ -651,7 +651,7 @@ export default function PlayerDetailsModal({
                      : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
                )}
              >
-               🤢 Drunk/Poisoned
+               Droisoned
              </button>
            )}
          </div>

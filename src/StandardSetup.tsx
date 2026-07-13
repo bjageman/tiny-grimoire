@@ -1017,6 +1017,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       {phase === 'setup' && (
         <StandardSetupPhase
           players={players}
+          rotationOffset={rotationOffset}
+          onRotationChange={setRotationOffset}
           isSecondary={isSecondary}
           setPhase={(p) => {
             if (p === 'game') {

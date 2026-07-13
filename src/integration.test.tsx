@@ -1253,6 +1253,34 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     // Verify checkedItems is empty in local storage
     const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
     expect(saved.checkedItems).toEqual({});
+    expect(saved.timeOfDay).toBe('day');
+
+    storyteller.unmount();
+  });
+
+  it('starts the next night on Dusk, keeping it ticked and the checklist intact', async () => {
+    seedPrimary({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+      timeOfDay: 'day',
+      dayNumber: 1,
+      checkedItems: {},
+    });
+
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(
+        within(storyteller.container).getByText('Dusk', { selector: '.font-serif' }).closest('div')!
+      );
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    expect(saved.timeOfDay).toBe('night');
+    expect(saved.dayNumber).toBe(2);
+    expect(saved.checkedItems).toEqual({ dusk: true });
 
     storyteller.unmount();
   });

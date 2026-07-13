@@ -111,6 +111,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const scriptRoles = readPersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null) || (rolesData as Role[]);
     return new Set(scriptRoles.map(r => r.id));
   });
+  // Held here rather than in the modal so the choice survives switching between players.
+  const [bagOnly, setBagOnly] = useState(false);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
@@ -1178,6 +1180,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           togglePlayerTheLunatic={togglePlayerTheLunatic}
           togglePlayerTheLilMonsta={togglePlayerTheLilMonsta}
           onUpdatePronouns={updatePlayerPronouns}
+          selectedCharacterIds={selectedCharacterIds}
+          bagOnly={bagOnly}
+          setBagOnly={setBagOnly}
           onClose={() => { setActivePlayerId(null); setSearchTerm(''); }}
           isSecondary={isSecondary}
         />

@@ -224,11 +224,6 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                   {p.name}
                 </span>
 
-                {p.isDrunkOrPoisoned && (
-                  <div style={{ position: 'absolute', top: '14%', right: '14%', fontSize: 22, lineHeight: 1, zIndex: 30 }}>
-                    🤢
-                  </div>
-                )}
                 {p.isDead && p.hasDeadVote && (
                   <div
                     style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', fontSize: 22, lineHeight: 1, zIndex: 30 }}

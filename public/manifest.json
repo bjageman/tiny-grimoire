@@ -1,7 +1,7 @@
 {
-  "name": "Tiny Grim",
+  "name": "Tiny Grimoire",
   "short_name": "Tiny Grim",
-  "description": "An interactive grimoire and game companion for Blood on the Clocktower.",
+  "description": "An unofficial, fan-made interactive grimoire and companion for Blood on the Clocktower.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",

@@ -19,6 +19,14 @@ export default function HomePage({ theme, toggleTheme }: HomeProps) {
 
   return (
     <PageLayout theme={theme} toggleTheme={toggleTheme} title="Tiny Grimoire">
+      <div className="flex justify-center mb-6">
+        <img
+          src="/favicon.svg"
+          alt="Tiny Grimoire Logo"
+          className="w-20 h-20 md:w-24 md:h-24 object-contain filter drop-shadow-[0_0_12px_rgba(139,0,0,0.15)] transition-transform hover:scale-105 duration-300"
+        />
+      </div>
+
       <div id="home-nav" className="w-full max-w-md mx-auto space-y-3">
 
         <a

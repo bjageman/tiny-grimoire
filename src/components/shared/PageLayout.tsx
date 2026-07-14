@@ -158,7 +158,7 @@ export default function PageLayout({
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
         <p className={cn("text-xs", isLight ? "text-gray-400" : "text-gray-600")}>
-          Not affiliated with The Pandemonium Institute.
+          Unofficial fan-made tool. Not affiliated with or endorsed by The Pandemonium Institute.
         </p>
         <div id="page-footer-links" className="flex items-center gap-1">
           <a

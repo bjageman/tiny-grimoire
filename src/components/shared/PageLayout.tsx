@@ -179,7 +179,7 @@ export default function PageLayout({
         <div id="page-footer-links" className="flex items-center gap-1">
           <a
             id="footer-github-link"
-            href="https://github.com/bjageman/botc-grimoire-companion"
+            href="https://github.com/bjageman/tiny-grimoire"
             target="_blank"
             rel="noopener noreferrer"
             title="GitHub"

@@ -96,8 +96,8 @@ docker compose down
 ### Docker (manual)
 
 ```bash
-docker build -t botc-grimoire-companion .
-docker run -p 8080:80 botc-grimoire-companion
+docker build -t tiny-grimoire .
+docker run -p 8080:80 tiny-grimoire
 ```
 
 ## Tech Stack

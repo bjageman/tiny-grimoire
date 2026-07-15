@@ -104,9 +104,12 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
             const ability = typeof itemObj.ability === 'string' && itemObj.ability.trim()
               ? itemObj.ability
               : undefined;
-            const image = Array.isArray(itemObj.image) && itemObj.image.every(u => typeof u === 'string')
-              ? itemObj.image as string[]
-              : undefined;
+            const rawImage = itemObj.image;
+            const image = typeof rawImage === 'string' && rawImage.trim()
+              ? [rawImage.trim()]
+              : Array.isArray(rawImage) && rawImage.length > 0 && rawImage.every(u => typeof u === 'string')
+                ? rawImage as string[]
+                : undefined;
 
             unknownRoles.push({ id: item.id, name: displayName });
 

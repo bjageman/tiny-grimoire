@@ -273,8 +273,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     };
     if (payload.type === 'notes_share_state' && !hasAppliedIncomingShare.current) {
       hasAppliedIncomingShare.current = true;
-      if (payload.players) {
+      if (payload.players && payload.players.length > 0) {
         setPlayers(payload.players.map(p => ({ id: p.id, name: p.name, isDead: false })));
+        setPhase('game');
       }
       if (payload.scriptName) setScriptName(payload.scriptName);
       if (payload.scriptAuthor !== undefined) setScriptAuthor(payload.scriptAuthor);

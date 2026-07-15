@@ -1,6 +1,6 @@
-# 📖 BOTC Grimoire
+# 📖 Tiny Grimoire
 
-A comprehensive web app for running **Blood on the Clocktower** in-person. Storytellers manage the full game through an interactive digital grimoire, while players join live sessions from their own devices by syncing with the town square in real time to receive their character token and track the game state.
+An unofficial, fan-made web app for running **Blood on the Clocktower** in-person. Storytellers manage the full game through an interactive digital grimoire, while players join live sessions from their own devices by syncing with the town square in real time to receive their character token and track the game state.
 
 ## Demo
 
@@ -96,8 +96,8 @@ docker compose down
 ### Docker (manual)
 
 ```bash
-docker build -t botc-grimoire-companion .
-docker run -p 8080:80 botc-grimoire-companion
+docker build -t tiny-grimoire .
+docker run -p 8080:80 tiny-grimoire
 ```
 
 ## Tech Stack
@@ -111,12 +111,18 @@ docker run -p 8080:80 botc-grimoire-companion
 ## Acknowledgements
 
 - **[The Pandemonium Institute](https://bloodontheclocktower.com)** — Creators of Blood on the Clocktower.
-- **[botc-icons](https://github.com/tomozbot/botc-icons)** — Role icons used throughout the app are sourced from this project and downloaded automatically at build time.
+- **[botc-icons](https://github.com/tomozbot/botc-icons)** — Role icons are sourced from this community project and downloaded automatically at build time. They are **not** committed to this repository (`public/icons/` is gitignored). This art is community/playtest work that remains the copyright of its respective artists and owners; it is not covered by this project's MIT license, and this project claims no rights to it.
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
 
 ### Disclaimer
-This project is not affiliated with or endorsed by The Pandemonium Institute.
-Blood on the Clocktower is a trademark of Steven Medway and The Pandemonium Institute.
+This is an unofficial, fan-made tool, created and distributed free of charge. It is not
+affiliated with, endorsed by, or sponsored by The Pandemonium Institute.
+
+Blood on the Clocktower, its characters, and its associated names and artwork are the
+property of Steven Medway and The Pandemonium Institute. This project's MIT license covers
+only its own source code — it grants no rights to any Blood on the Clocktower intellectual
+property. Character names, ability text, and role icons remain the property of their
+respective owners.

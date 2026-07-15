@@ -341,7 +341,7 @@ describe('PlayerTracker', () => {
     expect(lastCall.players.map(p => p.name).sort()).toEqual(['Alice', 'Bob']);
   });
 
-  it('imports a shared setup from a share link into its own independent, editable tracker', () => {
+  it('imports a shared setup onto the grimoire, in its own independent, editable tracker', () => {
     const hash = window.location.hash;
     window.location.hash = '#/tracker?shareCode=ABCD';
 
@@ -361,11 +361,36 @@ describe('PlayerTracker', () => {
       });
     });
 
-    // The imported players appear, and the tracker behaves like a normal,
-    // independently-editable setup (not synced to anything).
+    // The imported roster lands straight on the grimoire (game phase), not the
+    // setup form, and the tracker is independent — not synced to anything.
+    expect(screen.getAllByText(/night 1/i)[0]).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Enter player name in seating order...')).toBeNull();
     expect(screen.getAllByText('Alice')[0]).toBeInTheDocument();
     expect(screen.getAllByText('Bob')[0]).toBeInTheDocument();
     expect(screen.queryByText(/seating arrangement and player list are synced/i)).toBeNull();
+
+    window.location.hash = hash;
+  });
+
+  it('stays on setup when a share arrives with no players', () => {
+    const hash = window.location.hash;
+    window.location.hash = '#/tracker?shareCode=ABCD';
+
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    act(() => {
+      mockIncomingShareOnMessageCallback({
+        type: 'notes_share_state',
+        players: [],
+        scriptName: 'Trouble Brewing',
+        scriptAuthor: 'The Pandemonium Institute',
+        customScriptRoles: null,
+      });
+    });
+
+    // Nothing to seat, so an empty grimoire would be pointless — stay on setup.
+    expect(screen.getByPlaceholderText('Enter player name in seating order...')).toBeInTheDocument();
+    expect(screen.queryAllByText(/night 1/i)).toHaveLength(0);
 
     window.location.hash = hash;
   });

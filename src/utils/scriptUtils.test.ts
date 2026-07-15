@@ -85,15 +85,34 @@ describe('parseScriptFile', () => {
     expect(washerwoman?.image).toBeUndefined();
   });
 
+  it('accepts a bare image URL string, as Bloodstar scripts export it', async () => {
+    const file = makeFile([
+      'washerwoman',
+      {
+        id: 'sculptor_fall_of_rome',
+        name: 'Sculptor',
+        team: 'townsfolk',
+        image: 'https://www.bloodstar.xyz/p/AlexS/Fall_of_Rome/sculptor_fall_of_rome.png',
+      },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    const custom = roles.find(r => r.id === 'sculptorfallofrome');
+    expect(custom?.image).toEqual(['https://www.bloodstar.xyz/p/AlexS/Fall_of_Rome/sculptor_fall_of_rome.png']);
+  });
+
   it('omits ability/image when missing or malformed on a custom role', async () => {
     const file = makeFile([
       'washerwoman',
       { id: 'noextras', name: 'No Extras', team: 'townsfolk' },
-      { id: 'badimage', name: 'Bad Image', team: 'townsfolk', image: 'not-an-array' },
+      { id: 'blankimage', name: 'Blank Image', team: 'townsfolk', image: '   ' },
+      { id: 'emptyimage', name: 'Empty Image', team: 'townsfolk', image: [] },
+      { id: 'numberimage', name: 'Number Image', team: 'townsfolk', image: 42 },
     ]);
     const { roles } = await parseScriptFile(file);
     expect(roles.find(r => r.id === 'noextras')?.ability).toBeUndefined();
     expect(roles.find(r => r.id === 'noextras')?.image).toBeUndefined();
-    expect(roles.find(r => r.id === 'badimage')?.image).toBeUndefined();
+    expect(roles.find(r => r.id === 'blankimage')?.image).toBeUndefined();
+    expect(roles.find(r => r.id === 'emptyimage')?.image).toBeUndefined();
+    expect(roles.find(r => r.id === 'numberimage')?.image).toBeUndefined();
   });
 });

@@ -157,13 +157,29 @@ export default function PageLayout({
         "flex justify-between items-center py-4 px-4 md:px-8 lg:px-12 border-t",
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
-        <p className={cn("text-xs", isLight ? "text-gray-400" : "text-gray-600")}>
-          Not affiliated with The Pandemonium Institute.
-        </p>
+        <div className="flex items-center gap-3 min-w-0">
+          <a
+            id="footer-ccc-badge"
+            href="https://bloodontheclocktower.com/pages/community-created-content-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Community Created Content — see The Pandemonium Institute's policy"
+            className="shrink-0 transition-opacity hover:opacity-80"
+          >
+            <img
+              src={isLight ? "/community-created-content-light.png" : "/community-created-content-dark.png"}
+              alt="Community Created Content"
+              className="h-7 w-auto"
+            />
+          </a>
+          <p className={cn("text-xs min-w-0", isLight ? "text-gray-400" : "text-gray-600")}>
+            Unofficial fan-made tool. Not affiliated with or endorsed by The Pandemonium Institute.
+          </p>
+        </div>
         <div id="page-footer-links" className="flex items-center gap-1">
           <a
             id="footer-github-link"
-            href="https://github.com/bjageman/botc-grimoire-companion"
+            href="https://github.com/bjageman/tiny-grimoire"
             target="_blank"
             rel="noopener noreferrer"
             title="GitHub"

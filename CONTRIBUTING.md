@@ -1,4 +1,4 @@
-# Contributing to BOTC Grimoire
+# Contributing to Tiny Grimoire
 
 Thank you for your interest in contributing! We welcome community contributions to help improve the grimoire and draft companion.
 
@@ -6,8 +6,8 @@ Thank you for your interest in contributing! We welcome community contributions 
 
 1. **Clone and install dependencies**:
    ```bash
-   git clone https://github.com/bjageman/botc-grimoire-companion.git
-   cd botc-grimoire-companion
+   git clone https://github.com/bjageman/tiny-grimoire.git
+   cd tiny-grimoire
    npm install
    ```
 

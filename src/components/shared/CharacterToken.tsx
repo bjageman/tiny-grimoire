@@ -16,13 +16,15 @@ interface CharacterTokenProps {
   blankRing?: boolean;
 }
 
-const teamFill = (team: Role['team']) => ({
-  townsfolk: 'fill-clocktower-townsfolk',
-  outsider: 'fill-clocktower-outsider',
-  minion: 'fill-clocktower-minion',
-  demon: 'fill-clocktower-demon',
-  traveler: 'fill-clocktower-traveler',
-}[team] ?? 'fill-gray-500');
+const TEAM_COLOR: Record<Role['team'], string> = {
+  townsfolk: '#2563eb',
+  outsider: '#10b981',
+  minion: '#ef4444',
+  demon: '#7f1d1d',
+  traveler: '#a855f7',
+};
+
+const teamFill = (team: Role['team']) => TEAM_COLOR[team] ?? '#6b7280';
 
 export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, blankRing = false }: CharacterTokenProps) {
   const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
@@ -46,19 +48,36 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
 
   return (
     <div className={cn('relative shrink-0', size === undefined && 'w-full h-full', className)} style={sizeStyle}>
-      <svg viewBox="0 0 200 200" className={cn('w-full h-full absolute inset-0 z-0 select-none pointer-events-none', isDead && 'opacity-60')}>
+      <svg
+        viewBox="0 0 200 200"
+        opacity={isDead ? 0.6 : 1}
+        className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none"
+      >
         <defs>
           <path id={`token-top-${idPrefix}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
           <path id={`token-bottom-${idPrefix}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
         </defs>
-        <circle cx="100" cy="100" r="90" fill={isDead ? '#e4e4e7' : '#ffffff'} className={cn('stroke-[6px]', evil ? 'stroke-clocktower-minion' : 'stroke-clocktower-townsfolk')} />
+        <circle
+          cx="100"
+          cy="100"
+          r="90"
+          fill={isDead ? '#e4e4e7' : '#ffffff'}
+          stroke={evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk}
+          strokeWidth={6}
+        />
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
         {role && (
           <>
-            <text className={cn('font-bold text-[18px] tracking-wider uppercase', teamFill(role.team))}>
+            <text
+              fill={teamFill(role.team)}
+              style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.025em', textTransform: 'uppercase' }}
+            >
               <textPath href={`#token-top-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.name}</textPath>
             </text>
-            <text className={cn('font-bold text-[11px] tracking-widest uppercase', teamFill(role.team))}>
+            <text
+              fill={teamFill(role.team)}
+              style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+            >
               <textPath href={`#token-bottom-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.team}</textPath>
             </text>
           </>

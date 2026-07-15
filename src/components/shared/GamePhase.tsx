@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronDown, GripVertical, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { sortByScriptOrder } from '../../utils/scriptUtils';
@@ -15,6 +15,10 @@ import BaseDistributionCard from './BaseDistributionCard';
 import AutoResizeTextarea from './AutoResizeTextarea';
 import DialogModal from './DialogModal';
 import ToggleSwitch from './ToggleSwitch';
+import RecapImageExport from './RecapImageExport';
+import { DiscordIcon } from './DiscordIcon';
+import { buildDiscordPost } from '../../utils/discordRecap';
+import { copyText } from '../../utils/clipboard';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Props {
@@ -110,6 +114,8 @@ export default function GamePhase({
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [postCopied, setPostCopied] = useState(false);
   const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
   const [isBluffOverlayOpen, setIsBluffOverlayOpen] = useState(false);
   const [bluffPickerSlot, setBluffPickerSlot] = useState<number | null>(null);
@@ -138,7 +144,7 @@ export default function GamePhase({
     }
     setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
   };
-  const { dialogProps, showConfirm } = useDialog();
+  const { dialogProps, showConfirm, showAlert } = useDialog();
 
   const handleRemoveAllReminders = () => {
     showConfirm('Remove all reminder tokens?', () => {
@@ -216,6 +222,31 @@ export default function GamePhase({
   }, [bluffCandidates, bluffSearch]);
 
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!postCopied) return;
+    const t = setTimeout(() => setPostCopied(false), 1800);
+    return () => clearTimeout(t);
+  }, [postCopied]);
+
+  const handleCopyPost = async () => {
+    const { text } = buildDiscordPost({
+      players,
+      rolesData: grimoireRolesData,
+      gameLog: gameLog ?? [],
+      scriptName,
+      dayNumber,
+      timeOfDay,
+    });
+    if (await copyText(text)) {
+      setPostCopied(true);
+    } else {
+      showAlert(
+        'Your browser would not let the page write to the clipboard. Select the log text and copy it by hand, or open the app over https (or on localhost) where copying is permitted.',
+        'Copy failed'
+      );
+    }
+  };
 
   useEffect(() => {
     if (bluffPickerSlot !== null && !isMobile) {
@@ -729,15 +760,48 @@ export default function GamePhase({
                 'text-xs uppercase font-bold tracking-wider',
                 isLightModeActive ? 'text-gray-600' : 'text-gray-500'
               )}>Game Log</h4>
-              {gameLog && gameLog.length > 0 && (
-                <button
-                  type="button"
-                  onClick={onDownloadLog}
-                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
-                >
-                  Download
-                </button>
-              )}
+              {gameLog && gameLog.length > 0 && (() => {
+                const logBtn = cn(
+                  'inline-flex items-center gap-1.5 rounded text-white hover:opacity-90 transition-opacity text-xs font-bold disabled:opacity-50 disabled:cursor-wait',
+                  isMobile ? 'p-1.5' : 'px-2 py-0.5'
+                );
+                const iconSize = isMobile ? 14 : 12;
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsSavingImage(true)}
+                      disabled={isSavingImage}
+                      title="Save an image of the final grimoire"
+                      aria-label="Save an image of the final grimoire"
+                      className={cn(logBtn, 'bg-clocktower-gold text-clocktower-night')}
+                    >
+                      <ImageDown size={iconSize} />
+                      {!isMobile && (isSavingImage ? 'Saving…' : 'Image')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyPost}
+                      title="Copy the grimoire and log as a Discord post"
+                      aria-label="Copy the grimoire and log as a Discord post"
+                      className={cn(logBtn, 'bg-[#5865F2]')}
+                    >
+                      {postCopied ? <Check size={iconSize} /> : <DiscordIcon size={iconSize} />}
+                      {!isMobile && (postCopied ? 'Copied' : 'Copy Logs')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onDownloadLog}
+                      title="Download the game log as a text file"
+                      aria-label="Download the game log as a text file"
+                      className={cn(logBtn, 'bg-clocktower-blood')}
+                    >
+                      <Download size={iconSize} />
+                      {!isMobile && 'Logs'}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
             <div className={cn(
               'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
@@ -762,6 +826,22 @@ export default function GamePhase({
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
       />
+
+      {isSavingImage && (
+        <RecapImageExport
+          players={players}
+          rolesData={grimoireRolesData}
+          reminderTokens={reminderTokens}
+          gameLog={gameLog ?? []}
+          scriptName={scriptName}
+          dayNumber={dayNumber}
+          timeOfDay={timeOfDay}
+          onDone={(error) => {
+            setIsSavingImage(false);
+            if (error) showAlert(`The grimoire image could not be saved — ${error}.`, 'Save failed');
+          }}
+        />
+      )}
 
       {/* Demon Bluffs full-screen overlay — always dark */}
       {isBluffOverlayOpen && (

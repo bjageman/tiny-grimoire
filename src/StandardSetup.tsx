@@ -112,6 +112,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     return new Set(scriptRoles.map(r => r.id));
   });
   const [bagOnly, setBagOnly] = useState(false);
+  const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = useState(0);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
@@ -816,7 +817,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [currentScriptRoles]);
 
   const randomlyAssignRoles = () => {
-    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles);
+    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles, sentinelOutsiderDelta);
     if (!assignedPlayers) {
       const N = players.length;
       showAlert(N < 5
@@ -836,7 +837,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta)!;
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
@@ -864,8 +865,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players, selectionRoles, selectedCharacterIds);
-  }, [players, selectionRoles, selectedCharacterIds]);
+    return getValidationSummary(players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta);
+  }, [players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta]);
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
@@ -1058,6 +1059,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           setActivePlayerId={setActivePlayerId}
           setSearchTerm={setSearchTerm}
           validationSummary={validationSummary}
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           isLightModeActive={isLightModeActive}
           allAssigned={allAssigned}
           remotePlayerCount={remotePlayerIds.size}

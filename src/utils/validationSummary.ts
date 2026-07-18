@@ -25,7 +25,8 @@ export interface ValidationSummary {
 export function getValidationSummary(
   players: Player[],
   allRoles: Role[] = rolesData as Role[],
-  selectedCharacterIds?: Set<string>
+  selectedCharacterIds?: Set<string>,
+  sentinelOutsiderDelta: number = 0
 ): ValidationSummary | null {
   if (players.length === 0) return null;
 
@@ -156,6 +157,9 @@ export function getValidationSummary(
     if (marionetteFakeTeam === 'outsider') {
       modifications.push("Marionette displays as Outsider (-1 Outsider, +1 Townsfolk)");
     }
+    if (sentinelOutsiderDelta !== 0) {
+      modifications.push(`Sentinel (${sentinelOutsiderDelta > 0 ? '+1' : '-1'} Outsider)`);
+    }
   }
 
   if (hasKazali) {
@@ -173,7 +177,7 @@ export function getValidationSummary(
   const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];
   const huntMods = (hasHuntsman && !hasLegion) ? [0, 1] : [0];
   const hermMods = (hasHermit && !hasLegion) ? [-1, 0] : [0];
-  const fixedOutsiderDelta = hasLegion ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta);
+  const fixedOutsiderDelta = hasLegion ? 0 : ((hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + marionetteOutsiderDelta + sentinelOutsiderDelta);
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion) {

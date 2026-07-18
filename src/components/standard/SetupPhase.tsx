@@ -10,6 +10,7 @@ import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
+import FablesAndLorics from '../shared/FablesAndLorics';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
@@ -53,6 +54,8 @@ interface StandardSetupPhaseProps {
   handleTouchMove: (e: React.TouchEvent) => void;
   handleTouchEnd: () => void;
   validationSummary: ValidationSummary | null;
+  sentinelOutsiderDelta: number;
+  setSentinelOutsiderDelta: (delta: number) => void;
   isLightModeActive: boolean;
   isSecondary?: boolean;
 }
@@ -94,6 +97,8 @@ export default function StandardSetupPhase({
   handleTouchMove,
   handleTouchEnd,
   validationSummary,
+  sentinelOutsiderDelta,
+  setSentinelOutsiderDelta,
   isLightModeActive,
   isSecondary,
   remotePlayerCount = 0,
@@ -338,6 +343,11 @@ export default function StandardSetupPhase({
         {validationSummary && players.length >= 5 && (
           <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
         )}
+        <FablesAndLorics
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          isLightModeActive={isLightModeActive}
+        />
         <button
           id="open-grimoire-button"
           disabled={!allAssigned || (!!validationSummary?.failures?.length && !overrideFailures)}

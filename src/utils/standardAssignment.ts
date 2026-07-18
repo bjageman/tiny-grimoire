@@ -171,7 +171,8 @@ export function performStandardAssignment(
   players: Player[],
   currentScriptRoles: Role[],
   selectionRoles: Role[],
-  fallbackScriptRoles?: Role[]
+  fallbackScriptRoles?: Role[],
+  sentinelOutsiderDelta: number = 0
 ): Player[] | null {
   const N = players.length;
   if (N < 5) return null;
@@ -272,9 +273,13 @@ export function performStandardAssignment(
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
 
+  // The Sentinel (Fabled) may put 1 extra or 1 fewer Outsider in play. It's a fixed,
+  // Storyteller-chosen shift, so it folds into the base Outsider modifier alongside Baron/
+  // Fang Gu/Vigormortis. Kazali/Xaan already pick "any" Outsider count, so it's ignored there.
   const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
                                (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
-                               (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0);
+                               (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +
+                               (bypassAdjustments ? 0 : sentinelOutsiderDelta);
 
   const gfRange = (!bypassAdjustments && selectedMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
   const balRange = (!bypassAdjustments && tfs.some(t => t.id === 'balloonist')) ? [0, 1] : [0];

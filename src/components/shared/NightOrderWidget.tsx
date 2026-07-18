@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { Check, RotateCcw, Moon } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import DayNightLabel from './DayNightLabel';
-import type { Player } from '../../types';
+import type { Player, Role } from '../../types';
 import nightSheet from '../../nightsheet.json';
 import officialRoles from '../../official_roles.json';
 
@@ -15,6 +15,8 @@ interface NightOrderWidgetProps {
   onToggleTimeOfDay?: () => void;
   checkedItems?: Record<string, boolean>;
   onSetCheckedItems?: Dispatch<SetStateAction<Record<string, boolean>>>;
+  /** Active script roles, used to append custom/homebrew characters that carry their own night order. */
+  scriptRoles?: Role[];
 }
 
 interface NightOrderItem {
@@ -36,6 +38,7 @@ export default function NightOrderWidget({
   onToggleTimeOfDay,
   checkedItems: propCheckedItems,
   onSetCheckedItems,
+  scriptRoles,
 }: NightOrderWidgetProps) {
   const [activeTab, setActiveTab] = useState<'first' | 'other'>(
     dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other'
@@ -180,6 +183,42 @@ export default function NightOrderWidget({
       });
     }
   });
+
+  // Append in-play custom/homebrew characters, which carry their own night order from the
+  // uploaded script and aren't in nightsheet.json (so they'd otherwise never appear). They're
+  // sorted among themselves by their own night number and read just before dawn — i.e. after
+  // the official night order rather than interleaved into it (a deliberate v1 simplification).
+  if (scriptRoles && scriptRoles.length > 0) {
+    const customActors: { role: Role; player: Player; order: number }[] = [];
+    players.forEach(player => {
+      if (!player.roleId || nightList.includes(player.roleId)) return;
+      const role = scriptRoles.find(r => r.id === player.roleId);
+      if (!role) return;
+      const order = activeTab === 'first' ? role.firstNight : role.otherNight;
+      if (order === undefined) return;
+      customActors.push({ role, player, order });
+    });
+    customActors.sort((a, b) => a.order - b.order);
+
+    const customItems: NightOrderItem[] = customActors.map(({ role, player }) => {
+      const reminder = activeTab === 'first' ? role.firstNightReminder : role.otherNightReminder;
+      return {
+        type: 'character',
+        id: `${role.id}-${player.id}`,
+        roleId: role.id,
+        name: role.name,
+        description: reminder || role.ability || 'Wake player and resolve ability.',
+        team: role.team,
+        player,
+      };
+    });
+
+    if (customItems.length > 0) {
+      const dawnIdx = items.findIndex(it => it.roleId === 'dawn');
+      if (dawnIdx >= 0) items.splice(dawnIdx, 0, ...customItems);
+      else items.push(...customItems);
+    }
+  }
 
   const getCharacterColorClass = (item: NightOrderItem, isLight: boolean) => {
     if (item.type === 'info') {

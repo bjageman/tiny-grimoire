@@ -11,6 +11,52 @@ import DayNightLabel from './DayNightLabel';
 import CharacterToken from './CharacterToken';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
+// Fit a reminder label to the token: measure the text once and scale the font (in cqw,
+// relative to the token) so every label fills roughly the same width along its baseline —
+// short labels render larger, long ones smaller. `targetCqw` is the length the text should
+// fill; the curved baseline is longer than the token is wide, so it uses a larger target
+// than a straight line would. Capped so a 1–2 character label doesn't blow up past the token.
+const REMINDER_LABEL_ARC_CQW = 95;
+const REMINDER_LABEL_MAX_CQW = 46;
+interface ReminderLabelMetrics { fontSize: number; letterSpacing: number; }
+let reminderLabelMeasureCtx: CanvasRenderingContext2D | null = null;
+const reminderLabelMetricsCache = new Map<string, ReminderLabelMetrics>();
+
+// Extra tracking so short labels spread across the arc instead of clustering in the middle;
+// tapers to almost nothing once the word is long enough to fill the arc on its own. In em.
+function reminderLabelSpacingEm(len: number): number {
+  return len <= 2 ? 0.14 : len <= 4 ? 0.11 : len === 5 ? 0.06 : 0.03;
+}
+
+function reminderLabelMetrics(text: string, targetCqw: number): ReminderLabelMetrics {
+  if (!text) return { fontSize: REMINDER_LABEL_MAX_CQW, letterSpacing: 0 };
+  const cacheKey = `${targetCqw}:${text}`;
+  const cached = reminderLabelMetricsCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  const spacingEm = reminderLabelSpacingEm(text.length);
+  let fontSize = REMINDER_LABEL_MAX_CQW;
+  if (typeof document !== 'undefined') {
+    if (!reminderLabelMeasureCtx) reminderLabelMeasureCtx = document.createElement('canvas').getContext('2d');
+    if (reminderLabelMeasureCtx) {
+      // Measure against the same face the label renders in (Cinzel), so the fit stays accurate.
+      reminderLabelMeasureCtx.font = '900 100px "Cinzel", Georgia, serif';
+      const rawPerFont = reminderLabelMeasureCtx.measureText(text).width / 100;
+      // Solve for the font size that makes glyphs + inter-letter gaps fill the target length.
+      const gaps = spacingEm * Math.max(0, text.length - 1);
+      fontSize = Math.min(REMINDER_LABEL_MAX_CQW, targetCqw / Math.max(0.01, rawPerFont + gaps));
+    }
+  }
+  const metrics = { fontSize, letterSpacing: spacingEm * fontSize };
+  reminderLabelMetricsCache.set(cacheKey, metrics);
+  return metrics;
+}
+
+// Cinzel loads async; any measurements taken before it's ready used a fallback face and are
+// wrong. Drop the cache once fonts settle so later renders re-measure against the real font.
+if (typeof document !== 'undefined' && document.fonts?.ready) {
+  document.fonts.ready.then(() => reminderLabelMetricsCache.clear());
+}
+
 interface GrimoireBoardProps {
   players: Player[];
   timeOfDay: 'night' | 'day';
@@ -608,6 +654,8 @@ export default function GrimoireBoard({
                 const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
                 const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
                 const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
+                const labelText = reminder.text.slice(0, 7);
+                const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
 
                 return (
                 <div
@@ -641,6 +689,36 @@ export default function GrimoireBoard({
                     className="w-full h-full object-contain opacity-80"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
+                  {reminder.text && (
+                    <svg
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="xMidYMid meet"
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <path id={`rt-arc-${reminder.id}`} d="M6.3 56.2 A46 46 0 0 0 93.7 56.2" fill="none" />
+                      </defs>
+                      <text
+                        textAnchor="middle"
+                        style={{
+                          fontFamily: '"Cinzel", Georgia, serif',
+                          fontSize: `${labelMetrics.fontSize.toFixed(2)}px`,
+                          letterSpacing: `${labelMetrics.letterSpacing.toFixed(2)}px`,
+                          fontWeight: 900,
+                          fill: '#111827',
+                          paintOrder: 'stroke',
+                          stroke: 'rgba(255,255,255,0.92)',
+                          strokeWidth: `${(labelMetrics.fontSize * 0.13).toFixed(2)}px`,
+                          strokeLinejoin: 'round',
+                        }}
+                      >
+                        <textPath href={`#rt-arc-${reminder.id}`} startOffset="50%">
+                          {labelText}
+                        </textPath>
+                      </text>
+                    </svg>
+                  )}
                 </button>
                 </div>
                 );

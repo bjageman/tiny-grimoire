@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import remindersData from '../../reminders.json';
 
@@ -130,7 +131,7 @@ export default function ReminderPickerModal({
                     src={`/icons/${opt.sourceCharId}.svg`}
                     alt={opt.sourceCharName}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    onError={roleIconFallback(rolesData.find((r) => r.id === opt.sourceCharId))}
                   />
                 </div>
                 <div className="min-w-0">

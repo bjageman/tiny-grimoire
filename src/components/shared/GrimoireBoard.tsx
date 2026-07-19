@@ -4,6 +4,7 @@ import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
@@ -608,11 +609,10 @@ export default function GrimoireBoard({
                 const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
                 const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
                 const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
-                // Custom/homebrew characters carry their own icon URL on the role; official
-                // characters use their bundled local icon. Fall back to the local path so a
-                // missing custom image still tries the icon set before hiding via onError.
+                // Custom/homebrew characters carry their own icon URL on the role; the local
+                // bundled icon is tried first, and roleIconFallback swaps in the custom image
+                // (or hides) when it 404s — same as everywhere else reminder icons render.
                 const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
-                const reminderIconSrc = reminderRole?.image?.[0] ?? `/icons/${reminder.sourceCharId}.svg`;
 
                 return (
                 <div
@@ -641,10 +641,10 @@ export default function GrimoireBoard({
                   title={reminder.text}
                 >
                   <img
-                    src={reminderIconSrc}
+                    src={`/icons/${reminder.sourceCharId}.svg`}
                     alt={reminder.text}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    onError={roleIconFallback(reminderRole)}
                   />
                 </button>
                 </div>

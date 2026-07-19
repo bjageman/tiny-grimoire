@@ -76,9 +76,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   expectedDemon = Math.max(0, expectedDemon);
 
-  // Drunk and Marionette each need their own extra Townsfolk selected beyond the real target
-  // count, to serve as a fake identity without colliding with an actual in-play Townsfolk (or,
-  // if both are selected, with each other's fake identity) — see standardAssignment.ts.
+  // Drunk and Marionette each need an extra Townsfolk beyond the real target for a non-colliding fake identity (see standardAssignment.ts).
   const tfDelta = hasLegion ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
 
   const gfMods   = (hasGodfather  && !hasLegion) ? [-1, 1] : [0];

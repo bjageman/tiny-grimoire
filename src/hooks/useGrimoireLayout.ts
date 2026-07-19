@@ -44,9 +44,7 @@ export function useGrimoireLayout(playerCount: number) {
     const count = playerCount;
     const isDesktop = boardAspect < 1.15;
 
-    // The desktop sizes are absolute pixels tuned for a 680px-wide board. Once `md:` lifts the
-    // width cap the board fills its grid column, which on a narrow tablet is well under 680 —
-    // so scale the tokens down to match, or they overhang the board's rounded edge.
+    // Desktop sizes are px tuned for a 680px board; scale down when the actual board is narrower or tokens overhang.
     const s = boardWidth > 0 ? Math.min(1, boardWidth / BOARD_BASELINE_WIDTH) : 1;
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
 

@@ -186,9 +186,7 @@ function assignBaseCharacters(
     }
   }
 
-  // Riot's "Minions become Riot" transformation happens on day 3 during play, not at setup
-  // ([setup: false] on the character, unlike Legion's setup-time "[Most players are Legion]") —
-  // so at initial assignment it's just a normal single Demon, no distribution changes.
+  // Riot transforms Minions during play (day 3), not at setup, so it's just a normal single Demon here.
   let mode: 'normal' | 'legion' | 'atheist' = 'normal';
   if (isAtheistActive) {
     mode = 'atheist';

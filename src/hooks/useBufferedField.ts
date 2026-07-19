@@ -28,10 +28,7 @@ export function useBufferedField(
     if (entityId !== lastEntityId.current) {
       const prevId = lastEntityId.current;
       const prevValue = lastValue.current;
-      // Compare against the outgoing entity's original value before it's
-      // overwritten below, otherwise switching entities in the same render
-      // (id and originalValue both changing) spuriously flushes the old
-      // entity's untouched value against the new entity's original.
+      // Compare against the outgoing entity's own original value, or switching entities in one render spuriously flushes.
       if (prevValue !== lastOriginalValue.current) {
         onFlushRef.current(prevId, prevValue);
       }

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Read endpoints and credentials from environment variables.
-// Leave USERNAME/PASSWORD blank when using the public ntfy.sh broker.
+// Endpoints/credentials from env; leave USERNAME/PASSWORD blank for the public ntfy.sh broker.
 const NTFY_SERVER_URL = import.meta.env.VITE_NTFY_SERVER_URL || 'ntfy.sh';
 const NTFY_USERNAME = import.meta.env.VITE_NTFY_ADMIN_USERNAME || '';
 const NTFY_PASSWORD = import.meta.env.VITE_NTFY_ADMIN_PASSWORD || '';
@@ -114,14 +113,7 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
 
     console.log(`[ntfy] Publishing message to: ${protocol}://${cleanDomain}/${topic}`, payload);
 
-    // Publishing is a plain HTTP POST to the ntfy broker. Under a burst of
-    // near-simultaneous messages (e.g. many players joining at once) the public
-    // broker rate-limits and rejects some POSTs — a silently dropped publish
-    // means the storyteller never sees that join, or a player never gets their
-    // ack. Retry with exponential backoff + jitter (honoring Retry-After on a
-    // 429) so a transient rejection recovers instead of vanishing. Returns
-    // whether the publish ultimately succeeded; callers must NOT treat a false
-    // result as "delivered".
+    // POST to the ntfy broker with backoff+jitter retries (honoring 429 Retry-After); returns whether it truly delivered — false is NOT "delivered".
     for (let attempt = 1; attempt <= PUBLISH_MAX_ATTEMPTS; attempt++) {
       let retryAfterMs: number | null = null;
       try {

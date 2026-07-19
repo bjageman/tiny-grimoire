@@ -31,9 +31,15 @@ export default function ReminderPickerModal({
   const [search, setSearch] = useState('');
 
   const options: ReminderOption[] = useMemo(() => activeRoleIds.flatMap((charId) => {
-    const reminders = (remindersData as Record<string, string[]>)[charId] ?? [];
     const role = rolesData.find((r) => r.id === charId);
-    if (!role || reminders.length === 0) return [];
+    if (!role) return [];
+    // Official characters carry their reminders in reminders.json; custom/homebrew characters
+    // bring their own on the role itself (parsed from the uploaded script).
+    const official = (remindersData as Record<string, string[]>)[charId] ?? [];
+    const reminders = official.length > 0
+      ? official
+      : [...(role.reminders ?? []), ...(role.remindersGlobal ?? [])];
+    if (reminders.length === 0) return [];
     return reminders.map((text) => ({
       sourceCharId: charId,
       sourceCharName: role.name,

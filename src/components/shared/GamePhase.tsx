@@ -335,6 +335,7 @@ export default function GamePhase({
             onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
             checkedItems={checkedItems}
             onSetCheckedItems={onSetCheckedItems}
+            scriptRoles={customScriptRoles ?? undefined}
           />
         )}
         {onNotesChange && (

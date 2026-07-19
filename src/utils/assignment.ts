@@ -186,7 +186,6 @@ function assignBaseCharacters(
     }
   }
 
-  // Riot transforms Minions during play (day 3), not at setup, so it's just a normal single Demon here.
   let mode: 'normal' | 'legion' | 'atheist' = 'normal';
   if (isAtheistActive) {
     mode = 'atheist';

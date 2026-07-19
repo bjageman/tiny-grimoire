@@ -131,8 +131,7 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
                 ? rawImage as string[]
                 : undefined;
 
-            // Carry the character's own reminders and night order straight from the script JSON,
-            // so a homebrew character offers its own tokens and slots into the night order.
+            // Carry the character's own reminders and night order straight from the script JSON.
             const reminders = toStringArray(itemObj.reminders);
             const remindersGlobal = toStringArray(itemObj.remindersGlobal);
             const firstNight = toNightOrder(itemObj.firstNight);

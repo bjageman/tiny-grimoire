@@ -12,19 +12,14 @@ import DayNightLabel from './DayNightLabel';
 import CharacterToken from './CharacterToken';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
-// Fit a reminder label to the token: measure the text once and scale the font (in cqw,
-// relative to the token) so every label fills roughly the same width along its baseline —
-// short labels render larger, long ones smaller. `targetCqw` is the length the text should
-// fill; the curved baseline is longer than the token is wide, so it uses a larger target
-// than a straight line would. Capped so a 1–2 character label doesn't blow up past the token.
+// Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
 const REMINDER_LABEL_ARC_CQW = 95;
 const REMINDER_LABEL_MAX_CQW = 46;
 interface ReminderLabelMetrics { fontSize: number; letterSpacing: number; }
 let reminderLabelMeasureCtx: CanvasRenderingContext2D | null = null;
 const reminderLabelMetricsCache = new Map<string, ReminderLabelMetrics>();
 
-// Extra tracking so short labels spread across the arc instead of clustering in the middle;
-// tapers to almost nothing once the word is long enough to fill the arc on its own. In em.
+// Extra letter-spacing (em) so short labels spread across the arc; tapers off as the word lengthens.
 function reminderLabelSpacingEm(len: number): number {
   return len <= 2 ? 0.14 : len <= 4 ? 0.11 : len === 5 ? 0.06 : 0.03;
 }
@@ -52,8 +47,7 @@ function reminderLabelMetrics(text: string, targetCqw: number): ReminderLabelMet
   return metrics;
 }
 
-// Cinzel loads async; any measurements taken before it's ready used a fallback face and are
-// wrong. Drop the cache once fonts settle so later renders re-measure against the real font.
+// Cinzel loads async: drop the cache once fonts settle so labels re-measure against the real font.
 if (typeof document !== 'undefined' && document.fonts?.ready) {
   document.fonts.ready.then(() => reminderLabelMetricsCache.clear());
 }
@@ -657,9 +651,7 @@ export default function GrimoireBoard({
                 const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
                 const labelText = reminder.text.slice(0, 7);
                 const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
-                // Custom/homebrew characters carry their own icon URL on the role; the local
-                // bundled icon is tried first, and roleIconFallback swaps in the custom image
-                // (or hides) when it 404s — same as everywhere else reminder icons render.
+                // Try the bundled local icon first; roleIconFallback swaps in a custom character's own image on 404.
                 const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
 
                 return (

@@ -184,10 +184,7 @@ export default function NightOrderWidget({
     }
   });
 
-  // Append in-play custom/homebrew characters, which carry their own night order from the
-  // uploaded script and aren't in nightsheet.json (so they'd otherwise never appear). They're
-  // sorted among themselves by their own night number and read just before dawn — i.e. after
-  // the official night order rather than interleaved into it (a deliberate v1 simplification).
+  // Append in-play custom characters (not in nightsheet.json) after the official order, sorted by their own night number.
   if (scriptRoles && scriptRoles.length > 0) {
     const customActors: { role: Role; player: Player; order: number }[] = [];
     players.forEach(player => {

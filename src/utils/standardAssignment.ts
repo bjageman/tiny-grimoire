@@ -273,9 +273,7 @@ export function performStandardAssignment(
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
 
-  // The Sentinel (Fabled) may put 1 extra or 1 fewer Outsider in play. It's a fixed,
-  // Storyteller-chosen shift, so it folds into the base Outsider modifier alongside Baron/
-  // Fang Gu/Vigormortis. Kazali/Xaan already pick "any" Outsider count, so it's ignored there.
+  // Sentinel (Fabled): a fixed Storyteller-chosen ±1 Outsider shift; ignored under Kazali/Xaan.
   const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
                                (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
                                (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +

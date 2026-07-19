@@ -4,6 +4,7 @@ import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
@@ -656,6 +657,10 @@ export default function GrimoireBoard({
                 const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
                 const labelText = reminder.text.slice(0, 7);
                 const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
+                // Custom/homebrew characters carry their own icon URL on the role; the local
+                // bundled icon is tried first, and roleIconFallback swaps in the custom image
+                // (or hides) when it 404s — same as everywhere else reminder icons render.
+                const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
 
                 return (
                 <div
@@ -687,7 +692,7 @@ export default function GrimoireBoard({
                     src={`/icons/${reminder.sourceCharId}.svg`}
                     alt={reminder.text}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    onError={roleIconFallback(reminderRole)}
                   />
                   {reminder.text && (
                     <svg

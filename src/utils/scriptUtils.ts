@@ -26,6 +26,26 @@ export function generateGameCode(): string {
 
 const VALID_TEAMS = new Set(['townsfolk', 'outsider', 'minion', 'demon', 'traveler']);
 
+/** Normalize a script field that may be a single string or an array of strings into a clean string[]. */
+function toStringArray(value: unknown): string[] | undefined {
+  if (typeof value === 'string' && value.trim()) return [value.trim()];
+  if (Array.isArray(value)) {
+    const arr = value.filter((s): s is string => typeof s === 'string' && s.trim().length > 0);
+    return arr.length > 0 ? arr : undefined;
+  }
+  return undefined;
+}
+
+/** Read a numeric night-order field (Bloodstar uses integers; treat non-positive/absent as "does not act"). */
+function toNightOrder(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 ? value : undefined;
+}
+
+/** Read an optional non-empty string field (e.g. a night reminder). */
+function toOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
 export function parseScriptFile(file: File): Promise<{ name: string; author: string; roles: Role[]; unknownRoles: { id: string; name: string }[] }> {
   const allRoles = rolesData as Role[];
   const official = officialRoles as { id: string; name: string; team: string }[];
@@ -111,6 +131,15 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
                 ? rawImage as string[]
                 : undefined;
 
+            // Carry the character's own reminders and night order straight from the script JSON,
+            // so a homebrew character offers its own tokens and slots into the night order.
+            const reminders = toStringArray(itemObj.reminders);
+            const remindersGlobal = toStringArray(itemObj.remindersGlobal);
+            const firstNight = toNightOrder(itemObj.firstNight);
+            const firstNightReminder = toOptionalString(itemObj.firstNightReminder);
+            const otherNight = toNightOrder(itemObj.otherNight);
+            const otherNightReminder = toOptionalString(itemObj.otherNightReminder);
+
             unknownRoles.push({ id: item.id, name: displayName });
 
             return {
@@ -119,6 +148,12 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
               team,
               ...(ability && { ability }),
               ...(image && { image }),
+              ...(reminders && { reminders }),
+              ...(remindersGlobal && { remindersGlobal }),
+              ...(firstNight !== undefined && { firstNight }),
+              ...(firstNightReminder && { firstNightReminder }),
+              ...(otherNight !== undefined && { otherNight }),
+              ...(otherNightReminder && { otherNightReminder }),
             };
           });
 

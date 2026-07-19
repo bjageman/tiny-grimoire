@@ -115,4 +115,53 @@ describe('parseScriptFile', () => {
     expect(roles.find(r => r.id === 'emptyimage')?.image).toBeUndefined();
     expect(roles.find(r => r.id === 'numberimage')?.image).toBeUndefined();
   });
+
+  it('carries a custom character\'s reminders and night order from the script', async () => {
+    const file = makeFile([
+      'washerwoman',
+      {
+        id: 'sculptor', name: 'Sculptor', team: 'townsfolk',
+        reminders: ['Sculpture', 'Nominated'],
+        remindersGlobal: ['Watching'],
+        firstNight: 18, firstNightReminder: 'Show the Sculptor a thumbs up.',
+        otherNight: 19, otherNightReminder: 'The Sculptor acts.',
+      },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    const custom = roles.find(r => r.id === 'sculptor');
+    expect(custom?.reminders).toEqual(['Sculpture', 'Nominated']);
+    expect(custom?.remindersGlobal).toEqual(['Watching']);
+    expect(custom?.firstNight).toBe(18);
+    expect(custom?.firstNightReminder).toBe('Show the Sculptor a thumbs up.');
+    expect(custom?.otherNight).toBe(19);
+    expect(custom?.otherNightReminder).toBe('The Sculptor acts.');
+  });
+
+  it('normalizes a single-string reminders field into an array', async () => {
+    const file = makeFile([
+      'washerwoman',
+      { id: 'onereminder', name: 'One Reminder', team: 'outsider', reminders: 'Marked' },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    expect(roles.find(r => r.id === 'onereminder')?.reminders).toEqual(['Marked']);
+  });
+
+  it('omits night order / reminders when absent or non-positive on a custom role', async () => {
+    const file = makeFile([
+      'washerwoman',
+      { id: 'quietcustom', name: 'Quiet Custom', team: 'townsfolk', firstNight: 0, reminders: [] },
+    ]);
+    const { roles } = await parseScriptFile(file);
+    const custom = roles.find(r => r.id === 'quietcustom');
+    expect(custom?.firstNight).toBeUndefined();
+    expect(custom?.reminders).toBeUndefined();
+  });
+
+  it('does not attach reminder/night fields to a known official role', async () => {
+    const file = makeFile(['washerwoman']);
+    const { roles } = await parseScriptFile(file);
+    const ww = roles.find(r => r.id === 'washerwoman');
+    expect(ww?.reminders).toBeUndefined();
+    expect(ww?.firstNight).toBeUndefined();
+  });
 });

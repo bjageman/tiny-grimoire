@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import remindersData from '../../reminders.json';
 
@@ -31,9 +32,15 @@ export default function ReminderPickerModal({
   const [search, setSearch] = useState('');
 
   const options: ReminderOption[] = useMemo(() => activeRoleIds.flatMap((charId) => {
-    const reminders = (remindersData as Record<string, string[]>)[charId] ?? [];
     const role = rolesData.find((r) => r.id === charId);
-    if (!role || reminders.length === 0) return [];
+    if (!role) return [];
+    // Official characters carry their reminders in reminders.json; custom/homebrew characters
+    // bring their own on the role itself (parsed from the uploaded script).
+    const official = (remindersData as Record<string, string[]>)[charId] ?? [];
+    const reminders = official.length > 0
+      ? official
+      : [...(role.reminders ?? []), ...(role.remindersGlobal ?? [])];
+    if (reminders.length === 0) return [];
     return reminders.map((text) => ({
       sourceCharId: charId,
       sourceCharName: role.name,
@@ -124,7 +131,7 @@ export default function ReminderPickerModal({
                     src={`/icons/${opt.sourceCharId}.svg`}
                     alt={opt.sourceCharName}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    onError={roleIconFallback(rolesData.find((r) => r.id === opt.sourceCharId))}
                   />
                 </div>
                 <div className="min-w-0">

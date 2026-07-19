@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import NightOrderWidget from './NightOrderWidget';
-import type { Player } from '../../types';
+import type { Player, Role } from '../../types';
 
 describe('NightOrderWidget', () => {
   const mockPlayers: Player[] = [
@@ -269,5 +269,50 @@ describe('NightOrderWidget', () => {
 
     fireEvent.click(screen.getByText('Demon Info', { selector: '.font-serif' }).closest('div')!);
     expect(handleSetCheckedItems).toHaveBeenCalledWith({ demoninfo: true });
+  });
+
+  it('appends an in-play custom character with its own first-night order', () => {
+    const players: Player[] = [
+      { id: 'p1', name: 'Alice', roleId: 'sculptor', isDead: false },
+      { id: 'p2', name: 'Bob', roleId: 'washerwoman', isDead: false },
+    ];
+    const scriptRoles: Role[] = [
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      {
+        id: 'sculptor', name: 'Sculptor', team: 'townsfolk',
+        firstNight: 18, firstNightReminder: 'The Sculptor wakes.',
+      },
+    ];
+    render(
+      <NightOrderWidget
+        players={players}
+        timeOfDay="night"
+        dayNumber={1}
+        isLightModeActive={false}
+        scriptRoles={scriptRoles}
+      />
+    );
+    expect(screen.getByText('Sculptor', { selector: '.font-serif' })).toBeInTheDocument();
+    expect(screen.getByText('The Sculptor wakes.')).toBeInTheDocument();
+  });
+
+  it('omits a custom character that has no order for the active night', () => {
+    const players: Player[] = [
+      { id: 'p1', name: 'Alice', roleId: 'daydreamer', isDead: false },
+    ];
+    const scriptRoles: Role[] = [
+      // Acts only on the first night, so it must not appear on other nights.
+      { id: 'daydreamer', name: 'Daydreamer', team: 'townsfolk', firstNight: 12, firstNightReminder: 'Wake.' },
+    ];
+    render(
+      <NightOrderWidget
+        players={players}
+        timeOfDay="night"
+        dayNumber={2}
+        isLightModeActive={false}
+        scriptRoles={scriptRoles}
+      />
+    );
+    expect(screen.queryByText('Daydreamer', { selector: '.font-serif' })).toBeNull();
   });
 });

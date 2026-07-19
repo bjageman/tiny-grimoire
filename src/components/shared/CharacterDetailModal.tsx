@@ -65,7 +65,7 @@ export default function CharacterDetailModal({
           <X size={18} />
         </button>
         <div className={cn(
-          "w-24 h-24 mx-auto rounded-full bg-white flex items-center justify-center shadow-lg border-4 transition-transform duration-300 hover:rotate-6 mt-2",
+          "w-24 h-24 mx-auto rounded-full overflow-hidden bg-white flex items-center justify-center shadow-lg border-4 transition-transform duration-300 hover:rotate-6 mt-2",
           t === 'townsfolk' && "border-clocktower-townsfolk shadow-clocktower-townsfolk/20",
           t === 'outsider'  && "border-clocktower-outsider shadow-clocktower-outsider/20",
           t === 'minion'    && "border-clocktower-minion shadow-clocktower-minion/20",

@@ -163,8 +163,8 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                               : `bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 ${hover}`
                           )}
                         >
-                          <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                            <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-4.5 h-4.5 object-contain"
+                          <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                            <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-[75%] h-[75%] object-contain"
                               onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                           </span>
                           <span className={cn("font-bold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>

@@ -224,7 +224,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                             onChange={() => toggleRole(role.id)}
                             className="shrink-0 w-3.5 h-3.5"
                           />
-                          <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                          <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                             <img
                               key={role.id}
                               src={`/icons/${role.id}.svg`}

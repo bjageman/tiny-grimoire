@@ -808,7 +808,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               )}>
                 {/* Character Color Rim */}
                 <div className={cn(
-                  "w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white shadow-lg shadow-black/20 mb-4 animate-scaleUp",
+                  "w-28 h-28 rounded-full overflow-hidden border-4 flex items-center justify-center bg-white shadow-lg shadow-black/20 mb-4 animate-scaleUp",
                   assignedRole.team === 'townsfolk' && "border-clocktower-townsfolk",
                   assignedRole.team === 'outsider' && "border-clocktower-outsider",
                   assignedRole.team === 'minion' && "border-clocktower-minion",

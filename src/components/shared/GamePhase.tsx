@@ -459,7 +459,7 @@ export default function GamePhase({
                         >
                           {role ? (
                             <span className="flex items-center gap-1.5">
-                              <div className="w-5 h-5 shrink-0 rounded-full bg-white flex items-center justify-center p-0.5">
+                              <div className="w-5 h-5 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
                                 <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                               </div>
                               <span>{role.name}</span>
@@ -728,7 +728,7 @@ export default function GamePhase({
                               rObj.team === 'traveler' && 'text-clocktower-traveler',
                             )}
                           >
-                            <span className="w-4.5 h-4.5 bg-white rounded-full flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
                               <img key={rObj.id} src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
                                 onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')} />
                             </span>
@@ -867,7 +867,7 @@ export default function GamePhase({
                 >
                   {role ? (
                     <>
-                      <div className="w-16 h-16 shrink-0 rounded-full bg-white flex items-center justify-center p-1">
+                      <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-1">
                         <img
                           key={role.id}
                           src={`/icons/${role.id}.svg`}

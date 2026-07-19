@@ -400,13 +400,26 @@ export default function PlayerDetailsModal({
                               title={`${rObj.name} - View Details`}
                               className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 cursor-pointer"
                             >
-                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
+                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-0">
                                 <defs>
                                   <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
                                   <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
                                 </defs>
                                 <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
                                 <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
+                                <div className="w-[80%] h-[80%] flex items-center justify-center">
+                                  <img
+                                    key={rObj.id}
+                                    src={`/icons/${rObj.id}.svg`}
+                                    alt={rObj.name}
+                                    className="w-full h-full object-contain"
+                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
+                                  />
+                                </div>
+                              </div>
+                              <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
                                 <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
                                   <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
                                     {rObj.name}
@@ -418,17 +431,6 @@ export default function PlayerDetailsModal({
                                   </textPath>
                                 </text>
                               </svg>
-                              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                                <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                  <img
-                                    key={rObj.id}
-                                    src={`/icons/${rObj.id}.svg`}
-                                    alt={rObj.name}
-                                    className="w-full h-full object-contain"
-                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                  />
-                                </div>
-                              </div>
                             </button>
                             <button
                               type="button"
@@ -511,13 +513,26 @@ export default function PlayerDetailsModal({
                         if (!rObj) return null;
                         return (
                           <div key={roleId} className="absolute inset-0">
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
+                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-0">
                               <defs>
                                 <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
                                 <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
                               </defs>
                               <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
                               <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
+                              <div className="w-[80%] h-[80%] flex items-center justify-center">
+                                <img
+                                  key={rObj.id}
+                                  src={`/icons/${rObj.id}.svg`}
+                                  alt={rObj.name}
+                                  className="w-full h-full object-contain"
+                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
+                                />
+                              </div>
+                            </div>
+                            <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
                               <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
                                 <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
                                   {rObj.name}
@@ -529,17 +544,6 @@ export default function PlayerDetailsModal({
                                 </textPath>
                               </text>
                             </svg>
-                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                <img
-                                  key={rObj.id}
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                />
-                              </div>
-                            </div>
                           </div>
                         );
                       })}
@@ -786,7 +790,7 @@ function RoleList({
             )}
           >
             <div className="flex items-center min-w-0 flex-1 gap-2 mr-2">
-              <span className="w-5.5 h-5.5 bg-white rounded-full flex items-center justify-center shrink-0">
+              <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
                 <img
                   key={role.id}
                   src={`/icons/${role.id}.svg`}

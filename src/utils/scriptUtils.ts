@@ -1,4 +1,4 @@
-import type { Role } from '../types';
+import type { Player, Role } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 
@@ -16,6 +16,21 @@ export function compareByScriptOrder(baseRoles: { id: string }[]) {
 /** Sorts `roles` by their position in `baseRoles` (the active script), unrecognized roles last. */
 export function sortByScriptOrder<T extends { id: string }>(roles: T[], baseRoles: T[]): T[] {
   return [...roles].sort(compareByScriptOrder(baseRoles));
+}
+
+/** Returns baseRoles plus any traveler a seated player is assigned that the script itself omits, resolving unknown traveler definitions from the official role list so imported scripts (which rarely list travelers) still show them. */
+export function withInPlayTravelers(baseRoles: Role[], players: Player[]): Role[] {
+  const all = rolesData as Role[];
+  const roles = [...baseRoles];
+  players.forEach(p => {
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    ids.forEach(roleId => {
+      if (!roleId || roles.some(r => r.id === roleId)) return;
+      const def = all.find(r => r.id === roleId);
+      if (def?.team === 'traveler') roles.push(def);
+    });
+  });
+  return roles;
 }
 
 export function generateGameCode(): string {

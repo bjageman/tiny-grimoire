@@ -454,7 +454,7 @@ export default function GrimoireBoard({
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          {players.filter(p => !p.isDead).length}/{players.length} Alive
         </div>
       </div>
 
@@ -500,7 +500,7 @@ export default function GrimoireBoard({
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          {players.filter(p => !p.isDead).length}/{players.length} Alive
         </div>
 
         {/* Rotate buttons — center of board */}

@@ -4,9 +4,9 @@ export const DISCORD_MESSAGE_LIMIT = 2000;
 
 const TEAM_EMOJI: Record<Role['team'], string> = {
   townsfolk: '🔵',
-  outsider: '🟢',
+  outsider: '🔷',
   minion: '🔴',
-  demon: '😈',
+  demon: '🟥',
   traveler: '🟣',
 };
 
@@ -56,8 +56,11 @@ function finalRoster(players: Player[], rolesData: Role[]): string[] {
     if (p.isTheLunatic) tags.push('Lunatic');
     if (p.isTheLilMonsta) tags.push("Lil' Monsta");
     const suffix = tags.length > 0 ? ` _(${tags.join(', ')})_` : '';
-    const status = p.isDead ? ' 💀' : '';
-    return `${emoji} **${p.name}** — ${roleNames}${suffix}${status}`;
+    const isDemon = roles.some(r => r.team === 'demon');
+    const name = isDemon ? `***${p.name}***` : `**${p.name}**`;
+    const role = isDemon ? `_${roleNames}_` : roleNames;
+    const body = p.isDead ? `~~${name} — ${role}~~` : `${name} — ${role}`;
+    return `${emoji} ${body}${suffix}`;
   });
 }
 
@@ -65,7 +68,7 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
   const { players, rolesData, gameLog, scriptName, dayNumber, timeOfDay, date = new Date() } = opts;
 
   const winner = deriveWinner(gameLog);
-  const outcome = winner === 'good' ? '🌟 Good wins' : winner === 'evil' ? '😈 Evil wins' : 'In progress';
+  const outcome = winner === 'good' ? '🌟 Good Wins' : winner === 'evil' ? '😈 Evil Wins' : 'In progress';
   const when = date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const phase = `${timeOfDay === 'night' ? 'Night' : 'Day'} ${dayNumber}`;
   const alive = players.filter(p => !p.isDead).length;
@@ -78,24 +81,7 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
     ...finalRoster(players, rolesData),
   ].join('\n');
 
-  if (gameLog.length === 0) return clamp(head);
-
-  const fence = (lines: string[]) => ['', '**Game Log**', '```', ...lines, '```'].join('\n');
-  const full = head + fence(gameLog);
-  if (full.length <= DISCORD_MESSAGE_LIMIT) return { text: full, truncated: false };
-
-  const notice = '… earlier entries trimmed — full log in the .txt';
-  const kept: string[] = [];
-  for (let i = gameLog.length - 1; i >= 0; i--) {
-    const candidate = [notice, gameLog[i], ...kept];
-    if ((head + fence(candidate)).length > DISCORD_MESSAGE_LIMIT) break;
-    kept.unshift(gameLog[i]);
-  }
-
-  const trimmed = head + fence([notice, ...kept]);
-  return trimmed.length <= DISCORD_MESSAGE_LIMIT
-    ? { text: trimmed, truncated: true }
-    : clamp(head);
+  return clamp(head);
 }
 
 function clamp(text: string): { text: string; truncated: boolean } {

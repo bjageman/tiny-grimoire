@@ -185,6 +185,16 @@ export default function GrimoireBoard({
     return [...ids];
   }, [players, rolesData, includeAllScriptReminders]);
 
+  // Living players who count toward the game's end conditions — travelers are excluded.
+  const finalCount = useMemo(() => players.filter(p => {
+    if (p.isDead) return false;
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    return !ids.some(id => {
+      const r = rolesData.find(role => role.id === id) || (officialRoles as Role[]).find(role => role.id === id);
+      return r?.team === 'traveler';
+    });
+  }).length, [players, rolesData]);
+
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
 
@@ -443,7 +453,7 @@ export default function GrimoireBoard({
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          {players.filter(p => !p.isDead).length}/{players.length} Alive (Final {finalCount})
         </div>
       </div>
 
@@ -477,19 +487,20 @@ export default function GrimoireBoard({
           )}
         </div>
 
-        {/* Alive count — upper right, desktop only */}
+        {/* Alive + final counts — upper right, desktop only */}
         <div
           id="grimoire-alive-badge"
           onClick={onResetDead}
           className={cn(
-            "hidden md:block absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity",
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          <span>{players.filter(p => !p.isDead).length}/{players.length} Alive</span>
+          <span>Final {finalCount}</span>
         </div>
 
         {/* Rotate buttons — center of board */}

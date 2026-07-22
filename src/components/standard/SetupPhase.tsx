@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ToggleSwitch';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
-import { sortByScriptOrder } from '../../utils/scriptUtils';
+import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ScriptHelpButton';
@@ -113,8 +113,8 @@ export default function StandardSetupPhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return sortByScriptOrder(baseRoles, baseRoles);
-  }, [customScriptRoles]);
+    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
+  }, [customScriptRoles, players]);
 
   const basePlayerCount = useMemo(() => {
     return players.filter(p => {

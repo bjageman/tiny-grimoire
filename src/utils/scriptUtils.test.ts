@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseScriptFile } from './scriptUtils';
+import { parseScriptFile, withInPlayTravelers } from './scriptUtils';
+import type { Player, Role } from '../types';
 
 function makeFile(content: unknown, filename = 'script.json') {
   return new File([JSON.stringify(content)], filename, { type: 'application/json' });
@@ -163,5 +164,43 @@ describe('parseScriptFile', () => {
     const ww = roles.find(r => r.id === 'washerwoman');
     expect(ww?.reminders).toBeUndefined();
     expect(ww?.firstNight).toBeUndefined();
+  });
+});
+
+describe('withInPlayTravelers', () => {
+  const script: Role[] = [
+    { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+    { id: 'imp', name: 'Imp', team: 'demon' },
+  ];
+  const player = (over: Partial<Player> & { id: string }): Player => ({
+    name: over.id, isDead: false, ...over,
+  });
+
+  it('adds a seated traveler the imported script omits, resolved from the official list', () => {
+    const result = withInPlayTravelers(script, [player({ id: 'p1', roleId: 'beggar' })]);
+    const beggar = result.find(r => r.id === 'beggar');
+    expect(beggar?.team).toBe('traveler');
+    expect(beggar?.name).toBe('Beggar');
+  });
+
+  it('leaves the script untouched when no traveler is seated', () => {
+    const result = withInPlayTravelers(script, [player({ id: 'p1', roleId: 'washerwoman' })]);
+    expect(result).toEqual(script);
+  });
+
+  it('does not duplicate a traveler the script already lists', () => {
+    const withBeggar: Role[] = [...script, { id: 'beggar', name: 'Beggar', team: 'traveler' }];
+    const result = withInPlayTravelers(withBeggar, [player({ id: 'p1', roleId: 'beggar' })]);
+    expect(result.filter(r => r.id === 'beggar')).toHaveLength(1);
+  });
+
+  it('reads travelers from roleIds and ignores non-travelers and unknown ids', () => {
+    const result = withInPlayTravelers(script, [
+      player({ id: 'p1', roleIds: ['scapegoat'] }),
+      player({ id: 'p2', roleId: 'imp' }),
+      player({ id: 'p3', roleId: 'not-a-real-role' }),
+    ]);
+    expect(result.find(r => r.id === 'scapegoat')?.team).toBe('traveler');
+    expect(result.filter(r => r.team === 'traveler')).toHaveLength(1);
   });
 });

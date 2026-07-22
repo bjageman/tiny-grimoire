@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
-import { sortByScriptOrder } from '../../utils/scriptUtils';
+import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
@@ -155,17 +155,7 @@ export default function GamePhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    const roles = [...baseRoles];
-    players.forEach(p => {
-      const displayRoles = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
-      displayRoles.forEach(roleId => {
-        const rObj = baseRoles.find(r => r.id === roleId);
-        if (rObj && rObj.team === 'traveler' && !roles.some(r => r.id === rObj.id)) {
-          roles.push(rObj);
-        }
-      });
-    });
-    return sortByScriptOrder(roles, baseRoles);
+    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);

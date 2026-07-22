@@ -5,7 +5,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
 import { roleIconFallback } from './utils/roleIcon';
-import { sortByScriptOrder } from './utils/scriptUtils';
+import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, Settings, CheckCircle2, RotateCcw, Plus, Search, Moon, Scroll, QrCode } from 'lucide-react';
 import type { Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/ScriptCharactersModal';
@@ -106,8 +106,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return sortByScriptOrder(baseRoles, baseRoles);
-  }, [customScriptRoles]);
+    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
+  }, [customScriptRoles, players]);
 
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRetryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

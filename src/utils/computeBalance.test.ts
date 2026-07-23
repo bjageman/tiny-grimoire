@@ -54,7 +54,7 @@ describe('computeBalance — Drunk', () => {
     // 10-player base: 7/0/2/1 — no outsider slot. Drunk cannot fit without Baron.
     const roles = [
       out('drunk'),
-      min('poisoner'), min('scarletwoman'), dem('imp'),
+      min('poisoner'), min('scarlet_woman'), dem('imp'),
       tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'), tf('ravenkeeper'),
     ];
     const b = computeBalance(roles, 10);
@@ -164,7 +164,7 @@ describe('computeBalance — Vigormortis', () => {
     // 12-player base: 7 TF / 2 Out / 2 Minion / 1 Demon. Vigormortis → 1 Out, 8 TF.
     const roles = [
       out('recluse'),
-      min('poisoner'), min('scarletwoman'), dem('vigormortis'),
+      min('poisoner'), min('scarlet_woman'), dem('vigormortis'),
       tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'), tf('ravenkeeper'),
     ];
     const b = computeBalance(roles, 12);
@@ -178,7 +178,7 @@ describe('computeBalance — Vigormortis', () => {
     // Same 12-player game but keeping the base 2 outsiders.
     const roles = [
       out('recluse'), out('mutant'),
-      min('poisoner'), min('scarletwoman'), dem('vigormortis'),
+      min('poisoner'), min('scarlet_woman'), dem('vigormortis'),
       tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'),
     ];
     const b = computeBalance(roles, 12);
@@ -229,7 +229,7 @@ describe('computeBalance — basic distribution', () => {
   it('is valid for a clean 10-player selection without outsiders', () => {
     // 10 players base: 7/0/2/1
     const roles = [
-      min('poisoner'), min('scarletwoman'), dem('imp'),
+      min('poisoner'), min('scarlet_woman'), dem('imp'),
       tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), tf('soldier'), tf('slayer'), tf('virgin'),
     ];
     const b = computeBalance(roles, 10);
@@ -241,49 +241,5 @@ describe('computeBalance — basic distribution', () => {
     // 6 players base: 3/1/1/1 — drop 1 TF
     const roles = [out('recluse'), min('poisoner'), dem('imp'), tf('washerwoman'), tf('empath')];
     expect(computeBalance(roles, 6).isValid).toBe(false);
-  });
-});
-
-describe('computeBalance — large player counts (>15)', () => {
-  it('expects 9 Townsfolk for a 15-player game', () => {
-    // 15 players base: 9 TF, 2 Out, 3 Minion, 1 Demon
-    const roles = [
-      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
-      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
-      out('butler'), out('saint'),
-      min('poisoner'), min('spy'), min('scarletwoman'),
-      dem('imp'),
-    ];
-    const b = computeBalance(roles, 15);
-    expect(b.isValid).toBe(true);
-    expect(b.expectedTownsfolkLabel).toBe('9');
-  });
-
-  it('expects 9 Townsfolk for a 17-player game', () => {
-    // 17 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
-    const roles = [
-      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
-      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
-      out('butler'), out('saint'),
-      min('poisoner'), min('spy'), min('scarletwoman'),
-      dem('imp'),
-    ];
-    const b = computeBalance(roles, 17);
-    expect(b.isValid).toBe(true);
-    expect(b.expectedTownsfolkLabel).toBe('9');
-  });
-
-  it('expects 9 Townsfolk for a 20-player game', () => {
-    // 20 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
-    const roles = [
-      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
-      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
-      out('butler'), out('saint'),
-      min('poisoner'), min('spy'), min('scarletwoman'),
-      dem('imp'),
-    ];
-    const b = computeBalance(roles, 20);
-    expect(b.isValid).toBe(true);
-    expect(b.expectedTownsfolkLabel).toBe('9');
   });
 });

@@ -40,7 +40,11 @@ export default function PageLayout({
     };
   }, [isLight]);
 
-  // Make the browser/Android back button run onBack (in-app action) not navigate: keep a buffer history entry so back pops it and runs onBack.
+  // Makes the Android/browser back button behave the same as the on-screen
+  // back button whenever it triggers an in-app action (onBack) rather than
+  // a real navigation (backHref). We keep a buffer history entry pushed
+  // (same URL, marker state) so the back gesture pops it instead of leaving
+  // the page, and run onBack instead.
   const onBackRef = useRef(onBack);
   useEffect(() => {
     onBackRef.current = onBack;
@@ -51,7 +55,10 @@ export default function PageLayout({
     hasInAppBackRef.current = hasInAppBack;
   });
 
-  // Runs every commit to re-arm the buffer after a back-press consumes it (for chained in-app phases); the history.state check keeps it a no-op otherwise.
+  // Runs after every commit (no dependency array) so it re-arms the buffer
+  // once it's consumed by a back-press — needed for chained in-app phases
+  // (e.g. WhaleBucket's game -> draft -> setup) where onBack stays truthy
+  // across the pop. The history.state check keeps this a no-op otherwise.
   useEffect(() => {
     if (!hasInAppBack) return;
     const currentState = window.history.state as { pageLayoutBackBuffer?: boolean } | null;
@@ -61,7 +68,12 @@ export default function PageLayout({
   });
 
   useEffect(() => {
-    // Our buffer pop never changes the URL so never fires 'hashchange'; defer a microtask to ignore plain hash-assignment popstates that some WebViews/jsdom mis-fire.
+    // A genuine back-through-our-buffer pop never changes the URL (we push
+    // the buffer with the current href), so it never fires 'hashchange'.
+    // Some environments (older WebViews, jsdom) incorrectly fire 'popstate'
+    // for plain hash assignments too — those are always paired with a
+    // 'hashchange' in the same tick, so deferring one microtask lets us
+    // tell the two apart and ignore the latter.
     let hashChangedSincePop = false;
     const handleHashChange = () => {
       hashChangedSincePop = true;
@@ -90,7 +102,7 @@ export default function PageLayout({
 
   return (
     <div id="page-root" className={cn(
-      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-[1600px]",
+      "min-h-screen flex flex-col font-sans transition-colors duration-300 mx-auto max-w-xl md:max-w-[1600px] max-md:landscape:max-w-5xl",
       isLight ? "bg-clocktower-parchment text-clocktower-night" : "bg-clocktower-night text-clocktower-parchment"
     )}>
       <header id="page-header" className={cn(
@@ -130,7 +142,7 @@ export default function PageLayout({
 
         {headerExtra}
 
-        <div id="page-header-divider" className="flex items-center gap-2.5 w-full px-4 md:px-8 lg:px-12 mt-1.5">
+        <div className="flex items-center gap-2.5 w-full px-4 md:px-8 lg:px-12 mt-1.5">
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />
           <span className={cn("text-[8px] leading-none", isLight ? "text-clocktower-blood/40" : "text-clocktower-gold/50")}>◆</span>
           <div className={cn("flex-1 h-px", isLight ? "bg-clocktower-blood/20" : "bg-clocktower-gold/30")} />
@@ -145,29 +157,13 @@ export default function PageLayout({
         "flex justify-between items-center py-4 px-4 md:px-8 lg:px-12 border-t",
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
-        <div className="flex items-center gap-3 min-w-0">
-          <a
-            id="footer-ccc-badge"
-            href="https://bloodontheclocktower.com/pages/community-created-content-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Community Created Content — see The Pandemonium Institute's policy"
-            className="shrink-0 transition-opacity hover:opacity-80"
-          >
-            <img
-              src={isLight ? "/community-created-content-light.png" : "/community-created-content-dark.png"}
-              alt="Community Created Content"
-              className="h-7 w-auto"
-            />
-          </a>
-          <p className={cn("text-xs min-w-0", isLight ? "text-gray-400" : "text-gray-600")}>
-            Unofficial fan-made tool. Not affiliated with or endorsed by The Pandemonium Institute.
-          </p>
-        </div>
+        <p className={cn("text-xs", isLight ? "text-gray-400" : "text-gray-600")}>
+          Not affiliated with The Pandemonium Institute.
+        </p>
         <div id="page-footer-links" className="flex items-center gap-1">
           <a
             id="footer-github-link"
-            href="https://github.com/bjageman/tiny-grimoire"
+            href="https://github.com/bjageman/botc-grimoire-companion"
             target="_blank"
             rel="noopener noreferrer"
             title="GitHub"

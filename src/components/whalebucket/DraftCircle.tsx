@@ -101,23 +101,6 @@ export default function WhaleBucketDraftCircle({
                   <span className="break-words whitespace-normal">{p.name}</span>
                 </span>
 
-                {p.pronouns && (
-                  <span
-                    style={{
-                      fontSize: `${parseFloat(getDynamicFontSize(p.name)) * 0.75}${getDynamicFontSize(p.name).replace(/[0-9.]/g, '')}`,
-                      textShadow: roleObj
-                        ? 'none'
-                        : '0 1px 2px rgba(0,0,0,0.9), 0 -1px 2px rgba(0,0,0,0.9), 1px 0 2px rgba(0,0,0,0.9), -1px 0 2px rgba(0,0,0,0.9)',
-                    }}
-                    className={cn(
-                      "font-medium leading-none select-none z-20 relative",
-                      roleObj ? "text-[#555]" : "text-white/80"
-                    )}
-                  >
-                    {p.pronouns}
-                  </span>
-                )}
-
                 {p.isTheDrunk && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-1.5 py-0.5 rounded text-[9px] font-black bg-yellow-600 text-black border border-yellow-700 shadow-sm leading-none whitespace-nowrap">
                     DRUNK

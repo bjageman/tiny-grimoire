@@ -15,7 +15,7 @@ function getRouteFromHash(): Route {
   if (hash === '#/host') return 'host';
   if (hash === '#/whale-bucket' || hash.startsWith('#/whale-bucket?')) return 'whale-bucket';
   if (hash === '#/standard' || hash.startsWith('#/standard?')) return 'standard';
-  if (hash === '#/tracker' || hash.startsWith('#/tracker?')) return 'tracker';
+  if (hash === '#/tracker') return 'tracker';
   return 'home';
 }
 

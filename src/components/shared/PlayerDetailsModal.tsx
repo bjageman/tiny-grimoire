@@ -1,16 +1,13 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
-import { TEAM_ORDER, type Role } from '../../types';
+import type { Role } from '../../types';
 import rolesData from '../../roles.json';
 import officialRoles from '../../official_roles.json';
 import DialogModal from './DialogModal';
-import ToggleSwitch from './ToggleSwitch';
-import CharacterDetailModal from './CharacterDetailModal';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Player {
@@ -57,8 +54,6 @@ interface PlayerDetailsModalProps {
   onUpdateNotes?: (id: string, notes: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
   onLogEvent?: (msg: string) => void;
-  /** Full current-script role list (including custom/homebrew roles), used to resolve candidate role tokens in allowMultipleRoles mode. */
-  allRoles?: Role[];
 }
 
 const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
@@ -90,7 +85,6 @@ export default function PlayerDetailsModal({
   onUpdateNotes,
   onUpdatePronouns,
   onLogEvent,
-  allRoles = [],
 }: PlayerDetailsModalProps) {
   useScrollLock();
   const originalName = useRef('');
@@ -98,43 +92,6 @@ export default function PlayerDetailsModal({
   const [editedName, setEditedName] = useBufferedField(p.id, p.name, onUpdateName);
   const [editedNotes, setEditedNotes] = useBufferedField(p.id, p.notes ?? '', (id, notes) => onUpdateNotes?.(id, notes));
   const isMobile = useIsMobile();
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [sortAlphabetically, setSortAlphabetically] = useState(() => {
-    return localStorage.getItem('botc-sort-alphabetically') === 'true';
-  });
-
-  const handleToggleSort = (val: boolean) => {
-    setSortAlphabetically(val);
-    localStorage.setItem('botc-sort-alphabetically', String(val));
-  };
-
-  const displayRolesList = useMemo(() => {
-    return [...filteredModalRoles].sort((a, b) => {
-      // 1. Currently assigned role(s) float to the top
-      const isCurrentA = allowMultipleRoles ? (p.roleIds ?? []).includes(a.id) : a.id === p.roleId;
-      const isCurrentB = allowMultipleRoles ? (p.roleIds ?? []).includes(b.id) : b.id === p.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      // 2. Keep teams separated
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-
-      // 3. Sort within team
-      if (allowMultipleRoles && sortAlphabetically) {
-        return a.name.localeCompare(b.name);
-      } else {
-        // Sort by script JSON order (using allRoles)
-        const indexA = allRoles.findIndex((r) => r.id === a.id);
-        const indexB = allRoles.findIndex((r) => r.id === b.id);
-        if (indexA !== -1 && indexB !== -1) {
-          return indexA - indexB;
-        }
-        return a.name.localeCompare(b.name);
-      }
-    });
-  }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();
@@ -142,10 +99,6 @@ export default function PlayerDetailsModal({
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
   const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
   const officialRole = roleObj ? officialRoles.find(r => r.id === roleObj.id) : undefined;
-  const roleAbility = roleObj?.ability ?? officialRole?.ability;
-
-  const resolveRole = (roleId: string) =>
-    allRoles.find(r => r.id === roleId) ?? (rolesData as Role[]).find(r => r.id === roleId);
 
   const teamFill = (team: Role['team']) => ({
     townsfolk: 'fill-clocktower-townsfolk',
@@ -179,13 +132,11 @@ export default function PlayerDetailsModal({
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
     <div
-      id={allowMultipleRoles ? "tracker-player-details-backdrop" : "host-player-details-backdrop"}
       onClick={onClose}
       className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
     >
       {/* Modal card */}
       <div
-        id={allowMultipleRoles ? "tracker-player-details-modal" : "host-player-details-modal"}
         onClick={(e) => e.stopPropagation()}
         className={cn(
           'relative w-full max-w-md rounded-2xl border p-6 flex flex-col gap-6 shadow-2xl transition-colors duration-300 group',
@@ -245,7 +196,7 @@ export default function PlayerDetailsModal({
                     {p.pronouns}
                   </p>
                 )
-              ) : !allowMultipleRoles && onUpdatePronouns && (
+              ) : onUpdatePronouns && (
                 <select
                   id="detail-player-pronouns-select"
                   value={p.pronouns || ''}
@@ -324,36 +275,23 @@ export default function PlayerDetailsModal({
                     autoFocus={!isMobile}
                   />
                 </div>
-                {allowMultipleRoles ? (
-                  <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
-                    <span className={cn("text-[10px] font-semibold leading-none", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                      Sort
-                    </span>
-                    <ToggleSwitch
-                      id="tracker-sort-alphabetically-checkbox"
-                      checked={sortAlphabetically}
-                      onChange={handleToggleSort}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
-                ) : (
-                  <button
-                    id="detail-cancel-role-search-button"
-                    type="button"
-                    onClick={() => { onSetSearchingRole(false); onSetModalRoleSearch(''); }}
-                    className={cn(
-                      'px-3 py-1.5 rounded border text-xs font-semibold transition-colors shrink-0',
-                      isLightModeActive
-                        ? 'border-gray-300 text-gray-600 hover:bg-gray-100'
-                        : 'border-gray-700 text-gray-300 hover:bg-gray-800'
-                    )}
-                  >
-                    Cancel
-                  </button>
-                )}
+                <button
+                  id="detail-cancel-role-search-button"
+                  type="button"
+                  onClick={() => { onSetSearchingRole(false); onSetModalRoleSearch(''); }}
+                  className={cn(
+                    'px-3 py-1.5 rounded border text-xs font-semibold transition-colors shrink-0',
+                    isLightModeActive
+                      ? 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                      : 'border-gray-700 text-gray-300 hover:bg-gray-800'
+                  )}
+                >
+                  Cancel
+                </button>
               </div>
               <RoleList
-                roles={displayRolesList}
+                hasRole={allowMultipleRoles ? !!(p.roleIds && p.roleIds.length > 0) : (p.isTheDrunk || p.isTheMarionette || p.isTheLunatic || !!p.roleId)}
+                roles={filteredModalRoles}
                 players={players}
                 currentPlayerId={p.id}
                 isLightModeActive={isLightModeActive}
@@ -374,10 +312,19 @@ export default function PlayerDetailsModal({
                     onSetSearchingRole(false);
                     onSetModalRoleSearch('');
                   } else {
-                    onUpdateRole(p.id, roleId === p.roleId ? '' : roleId);
+                    onUpdateRole(p.id, roleId);
                     onSetSearchingRole(false);
                     onSetModalRoleSearch('');
                   }
+                }}
+                onClear={() => {
+                  if (allowMultipleRoles && onUpdateRoles) {
+                    onUpdateRoles(p.id, []);
+                  } else {
+                    onUpdateRole(p.id, '');
+                  }
+                  onSetSearchingRole(false);
+                  onSetModalRoleSearch('');
                 }}
               />
             </div>
@@ -390,65 +337,44 @@ export default function PlayerDetailsModal({
                     {/* Player Tracker Row Layout with separate buttons */}
                     <div className="flex flex-row justify-center items-center gap-4 select-none w-full flex-wrap">
                       {displayRoles.map((roleId) => {
-                        const rObj = resolveRole(roleId);
+                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
                         if (!rObj) return null;
                         return (
-                          <div key={roleId} className="relative w-24 h-24 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRole(rObj)}
-                              title={`${rObj.name} - View Details`}
-                              className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 cursor-pointer"
-                            >
-                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-0">
-                                <defs>
-                                  <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                  <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                                </defs>
-                                <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                                <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                              </svg>
-                              <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
-                                <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                  <img
-                                    key={rObj.id}
-                                    src={`/icons/${rObj.id}.svg`}
-                                    alt={rObj.name}
-                                    className="w-full h-full object-contain"
-                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                  />
-                                </div>
+                          <button
+                            key={roleId}
+                            type="button"
+                            onClick={() => onSetSearchingRole(true)}
+                            className="relative w-24 h-24 shrink-0 transition-all duration-200 hover:scale-110 active:scale-95 rounded-full shadow-md hover:shadow-lg border-2 border-transparent focus:outline-none focus:border-clocktower-blood cursor-pointer"
+                          >
+                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-10">
+                              <defs>
+                                <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+                                <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+                              </defs>
+                              <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
+                              <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+                              <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
+                                <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                  {rObj.name}
+                                </textPath>
+                              </text>
+                              <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
+                                <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
+                                  {rObj.team}
+                                </textPath>
+                              </text>
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                              <div className="w-[47%] h-[47%] flex items-center justify-center">
+                                <img
+                                  src={`/icons/${rObj.id}.svg`}
+                                  alt={rObj.name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
                               </div>
-                              <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
-                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                  <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                    {rObj.name}
-                                  </textPath>
-                                </text>
-                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                  <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                    {rObj.team}
-                                  </textPath>
-                                </text>
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUpdateRoles?.(p.id, displayRoles.filter(id => id !== roleId));
-                              }}
-                              title="Remove character"
-                              className={cn(
-                                "absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow border text-xs font-bold z-30 cursor-pointer hover:scale-110 active:scale-95 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0",
-                                isLightModeActive
-                                  ? "bg-white border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-gray-50"
-                                  : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700"
-                              )}
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
+                            </div>
+                          </button>
                         );
                       })}
                       {displayRoles.length < 3 && (
@@ -493,46 +419,33 @@ export default function PlayerDetailsModal({
                 )}
               </div>
             ) : (
-              /* Standard grimoire single button or display */
-              displayRoles.length > 0 ? (
-                <button
-                  id="detail-change-role-button"
-                  type="button"
-                  onClick={() => onSetSearchingRole(true)}
-                  className={cn(
-                    'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative cursor-pointer',
-                    isLightModeActive
-                      ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
-                      : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
-                  )}
-                >
+              /* Standard grimoire single button */
+              <button
+                id="detail-change-role-button"
+                type="button"
+                onClick={() => onSetSearchingRole(true)}
+                className={cn(
+                  'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative',
+                  isLightModeActive
+                    ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
+                    : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
+                )}
+              >
+                {displayRoles.length > 0 ? (
                   <div className="flex flex-col items-center space-y-3 w-full">
-                    <div className="relative flex items-center justify-center select-none w-36 h-36">
+                    <div className="relative flex items-center justify-center select-none transition-all duration-300 w-36 h-36">
                       {displayRoles.map((roleId) => {
-                        const rObj = resolveRole(roleId);
+                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
                         if (!rObj) return null;
                         return (
                           <div key={roleId} className="absolute inset-0">
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-0">
+                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-10">
                               <defs>
                                 <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
                                 <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
                               </defs>
                               <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
                               <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
-                              <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                <img
-                                  key={rObj.id}
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                />
-                              </div>
-                            </div>
-                            <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
                               <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
                                 <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
                                   {rObj.name}
@@ -544,24 +457,22 @@ export default function PlayerDetailsModal({
                                 </textPath>
                               </text>
                             </svg>
+                            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                              <div className="w-[47%] h-[47%] flex items-center justify-center">
+                                <img
+                                  src={`/icons/${rObj.id}.svg`}
+                                  alt={rObj.name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                </button>
-              ) : (
-                <button
-                  id="detail-change-role-button"
-                  type="button"
-                  onClick={() => onSetSearchingRole(true)}
-                  className={cn(
-                    'w-full flex flex-col items-center justify-center py-4 rounded-xl border border-transparent transition-all duration-200 relative',
-                    isLightModeActive
-                      ? 'hover:scale-[1.02] hover:bg-black/5 hover:border-gray-300/40'
-                      : 'hover:scale-[1.02] hover:bg-white/5 hover:border-gray-800/40'
-                  )}
-                >
+                ) : (
                   <div className="flex flex-col items-center space-y-2 py-1">
                     <div className={cn(
                       'w-32 h-32 rounded-full border-2 border-dashed flex items-center justify-center text-4xl font-light transition-colors',
@@ -578,19 +489,58 @@ export default function PlayerDetailsModal({
                       <p className="text-xs opacity-50 mt-0.5">Click to select character</p>
                     </div>
                   </div>
-                </button>
-              )
+                )}
+              </button>
             )
           )}
 
+           {/* Selected character tags with delete button (Player Tracker mode) */}
+           {allowMultipleRoles && displayRoles.length > 0 && !isSearchingRole && (
+             <div className="flex flex-wrap gap-1.5 justify-center mt-4 px-4 relative z-30">
+               {displayRoles.map((roleId) => {
+                 const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                 if (!rObj) return null;
+                 return (
+                   <button
+                     key={roleId}
+                     type="button"
+                     onClick={() => {
+                       if (onUpdateRoles) {
+                         onUpdateRoles(p.id, displayRoles.filter(id => id !== roleId));
+                       }
+                     }}
+                     className={cn(
+                       "inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded border shadow-sm transition-all cursor-pointer select-none",
+                       isLightModeActive
+                         ? "bg-gray-100 border-gray-300 text-clocktower-night hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                         : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-red-950/30 hover:text-red-400 hover:border-red-900/50"
+                     )}
+                     title="Remove character"
+                   >
+                     <span className="w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shrink-0">
+                       <img
+                         src={`/icons/${rObj.id}.svg`}
+                         alt={rObj.name}
+                         className="w-2.5 h-2.5 object-contain"
+                         onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                       />
+                     </span>
+                     <span>{rObj.name}</span>
+                     <span className="text-red-500 font-black ml-0.5 text-xs">×</span>
+                   </button>
+                 );
+               })}
+             </div>
+           )}
+
            {/* Ability text display (only for standard single role mode) */}
-           {!allowMultipleRoles && roleObj && roleAbility && !isSearchingRole && (
+           {!allowMultipleRoles && roleObj && officialRole?.ability && !isSearchingRole && (
              <div className="text-center px-4 mt-2">
                <p className={cn(
                  'text-xs leading-relaxed italic font-medium',
                  isLightModeActive ? 'text-gray-650' : 'text-gray-300'
                )}>
-                 "{roleAbility}"
+                 "{officialRole.ability}"
                </p>
              </div>
            )}
@@ -629,7 +579,7 @@ export default function PlayerDetailsModal({
                  : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
              )}
            >
-             {isEvil ? 'Evil' : 'Good'}
+             {isEvil ? '👿 Evil' : '😇 Good'}
            </button>
            {!allowMultipleRoles && (
              <button
@@ -645,7 +595,7 @@ export default function PlayerDetailsModal({
                      : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
                )}
              >
-               Droisoned
+               🤢 Drunk/Poisoned
              </button>
            )}
          </div>
@@ -705,49 +655,34 @@ export default function PlayerDetailsModal({
              )}
            </div>
          )}
-        </div>
-      </div>
-      {/* Inline role details modal */}
-      {selectedRole && (
-        <CharacterDetailModal
-          role={selectedRole}
-          isLightModeActive={isLightModeActive}
-          onClose={() => setSelectedRole(null)}
-          onRemove={() => {
-            if (allowMultipleRoles) {
-              onUpdateRoles?.(p.id, displayRoles.filter(id => id !== selectedRole.id));
-            } else {
-              onUpdateRole(p.id, '');
-            }
-            setSelectedRole(null);
-          }}
-          backdropId="character-details-backdrop"
-          modalId="character-details-modal"
-          animate
-        />
-      )}
-     </>
-   );
- }
+       </div>
+     </div>
+    </>
+  );
+}
 
 // ── Internal sub-component ──────────────────────────────────────────────────
 
 interface RoleListProps {
+  hasRole: boolean;
   roles: Role[];
   players: Player[];
   currentPlayerId: string;
   isLightModeActive: boolean;
   onSelect: (roleId: string) => void;
+  onClear: () => void;
   allowMultipleRoles?: boolean;
   roleIds?: string[];
 }
 
 function RoleList({
+  hasRole,
   roles,
   players,
   currentPlayerId,
   isLightModeActive,
   onSelect,
+  onClear,
   allowMultipleRoles = false,
   roleIds = [],
 }: RoleListProps) {
@@ -766,6 +701,17 @@ function RoleList({
         ? 'border-gray-300 bg-white/50 divide-gray-200'
         : 'border-gray-800 bg-gray-950/40 divide-gray-800'
     )}>
+      {hasRole && (
+        <button
+          id="detail-clear-role-button"
+          type="button"
+          onClick={onClear}
+          className="w-full text-left px-3 py-2 hover:bg-red-500/10 text-xs text-red-500 font-semibold border-b transition-colors"
+          style={{ borderColor: isLightModeActive ? '#e5e7eb' : '#1f2937' }}
+        >
+          × Clear Character{allowMultipleRoles ? 's' : ''}
+        </button>
+      )}
       {roles.map((role) => {
         const takenBy = players.find((pl) => 
           (allowMultipleRoles ? pl.roleIds?.includes(role.id) : pl.roleId === role.id) && 
@@ -790,13 +736,12 @@ function RoleList({
             )}
           >
             <div className="flex items-center min-w-0 flex-1 gap-2 mr-2">
-              <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
+              <span className="w-5.5 h-5.5 bg-white rounded-full flex items-center justify-center shrink-0">
                 <img
-                  key={role.id}
                   src={`/icons/${role.id}.svg`}
                   alt={role.name}
                   className="w-4 h-4 object-contain"
-                  onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                  onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
                 />
               </span>
               <span className={cn(

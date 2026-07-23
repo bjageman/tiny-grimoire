@@ -1,6 +1,5 @@
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
 import type { PlacedReminder, Role } from '../../types';
 
 interface ReminderTokenModalProps {
@@ -38,12 +37,12 @@ export default function ReminderTokenModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Icon */}
-        <div className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-300 mx-auto mb-3 flex items-center justify-center overflow-hidden">
+        <div className="w-14 h-14 rounded-full bg-gray-200 border-2 border-gray-300 mx-auto mb-3 flex items-center justify-center overflow-hidden">
           <img
             src={`/icons/${reminder.sourceCharId}.svg`}
             alt={role?.name ?? reminder.sourceCharId}
-            className="w-16 h-16 object-contain opacity-80"
-            onError={roleIconFallback(role)}
+            className="w-8 h-8 object-contain opacity-80"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
         </div>
 

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, RotateCcw, Moon } from 'lucide-react';
+import { Check, RotateCcw, Moon, Award, ChevronRight } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import DayNightLabel from './DayNightLabel';
-import type { Player, Role } from '../../types';
+import type { Player } from '../../types';
 import nightSheet from '../../nightsheet.json';
 import officialRoles from '../../official_roles.json';
 
@@ -15,8 +15,6 @@ interface NightOrderWidgetProps {
   onToggleTimeOfDay?: () => void;
   checkedItems?: Record<string, boolean>;
   onSetCheckedItems?: Dispatch<SetStateAction<Record<string, boolean>>>;
-  /** Active script roles, used to append custom/homebrew characters that carry their own night order. */
-  scriptRoles?: Role[];
 }
 
 interface NightOrderItem {
@@ -27,7 +25,6 @@ interface NightOrderItem {
   description?: string;
   team?: 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler';
   player?: Player;
-  advancesTo?: 'day' | 'night';
 }
 
 export default function NightOrderWidget({
@@ -38,11 +35,8 @@ export default function NightOrderWidget({
   onToggleTimeOfDay,
   checkedItems: propCheckedItems,
   onSetCheckedItems,
-  scriptRoles,
 }: NightOrderWidgetProps) {
-  const [activeTab, setActiveTab] = useState<'first' | 'other'>(
-    dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other'
-  );
+  const [activeTab, setActiveTab] = useState<'first' | 'other'>(dayNumber === 1 ? 'first' : 'other');
   
   // Track checkmarks by item ID
   const [localCheckedItems, setLocalCheckedItems] = useState<Record<string, boolean>>({});
@@ -55,34 +49,21 @@ export default function NightOrderWidget({
       isFirstMount.current = false;
       return;
     }
-    setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
-  }, [dayNumber, timeOfDay]);
+    setActiveTab(dayNumber === 1 ? 'first' : 'other');
+    setCheckedItems({});
+  }, [dayNumber, timeOfDay, setCheckedItems]);
 
   // Clear checks manually
   const handleReset = () => {
     setCheckedItems({});
   };
 
-  const handleToggleCheck = (item: NightOrderItem) => {
-    const advancesPhase = item.advancesTo && item.advancesTo !== timeOfDay && onToggleTimeOfDay;
-
-    if (advancesPhase && item.advancesTo === 'day') {
-      setCheckedItems({});
-      onToggleTimeOfDay!();
-      setTimeout(() => {
-        document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-      return;
-    }
-
+  // Toggle checkmark
+  const handleToggleCheck = (itemId: string) => {
     setCheckedItems({
       ...checkedItems,
-      [item.id]: advancesPhase ? true : !checkedItems[item.id],
+      [itemId]: !checkedItems[itemId],
     });
-
-    if (advancesPhase) {
-      onToggleTimeOfDay!();
-    }
   };
 
   // Group in-play players by their role ID
@@ -102,16 +83,13 @@ export default function NightOrderWidget({
 
   nightList.forEach(id => {
     if (id === 'dusk') {
-      if (activeTab === 'other') {
-        items.push({
-          type: 'info',
-          id: 'dusk',
-          roleId: 'dusk',
-          name: 'Dusk',
-          description: 'Storyteller: Announce that night falls. Everyone closes their eyes.',
-          advancesTo: 'night',
-        });
-      }
+      items.push({
+        type: 'info',
+        id: 'dusk',
+        roleId: 'dusk',
+        name: 'Dusk',
+        description: 'Storyteller: Announce that night falls. Everyone closes their eyes.',
+      });
       return;
     }
     if (id === 'dawn') {
@@ -121,7 +99,6 @@ export default function NightOrderWidget({
         roleId: 'dawn',
         name: 'Dawn',
         description: 'Storyteller: Announce that dawn has broken. Everyone opens their eyes.',
-        advancesTo: 'day',
       });
       return;
     }
@@ -184,38 +161,9 @@ export default function NightOrderWidget({
     }
   });
 
-  // Append in-play custom characters (not in nightsheet.json) after the official order, sorted by their own night number.
-  if (scriptRoles && scriptRoles.length > 0) {
-    const customActors: { role: Role; player: Player; order: number }[] = [];
-    players.forEach(player => {
-      if (!player.roleId || nightList.includes(player.roleId)) return;
-      const role = scriptRoles.find(r => r.id === player.roleId);
-      if (!role) return;
-      const order = activeTab === 'first' ? role.firstNight : role.otherNight;
-      if (order === undefined) return;
-      customActors.push({ role, player, order });
-    });
-    customActors.sort((a, b) => a.order - b.order);
-
-    const customItems: NightOrderItem[] = customActors.map(({ role, player }) => {
-      const reminder = activeTab === 'first' ? role.firstNightReminder : role.otherNightReminder;
-      return {
-        type: 'character',
-        id: `${role.id}-${player.id}`,
-        roleId: role.id,
-        name: role.name,
-        description: reminder || role.ability || 'Wake player and resolve ability.',
-        team: role.team,
-        player,
-      };
-    });
-
-    if (customItems.length > 0) {
-      const dawnIdx = items.findIndex(it => it.roleId === 'dawn');
-      if (dawnIdx >= 0) items.splice(dawnIdx, 0, ...customItems);
-      else items.push(...customItems);
-    }
-  }
+  // Calculate completion status of waking steps
+  const wakeItems = items.filter(item => item.type === 'character' || item.id === 'minioninfo' || item.id === 'demoninfo');
+  const allResolved = wakeItems.length > 0 && wakeItems.every(item => checkedItems[item.id]);
 
   const getCharacterColorClass = (item: NightOrderItem, isLight: boolean) => {
     if (item.type === 'info') {
@@ -261,15 +209,21 @@ export default function NightOrderWidget({
 
         {/* Controls */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Current day/night label */}
           <div
+            onClick={onToggleTimeOfDay}
             className={cn(
-              "whitespace-nowrap flex items-center gap-1 px-2.5 py-2.5 rounded-md text-[9px] font-bold tracking-wider uppercase border select-none min-w-[68px] justify-center",
+              "whitespace-nowrap group flex items-center gap-1 px-2.5 py-2.5 rounded-md text-[9px] font-bold tracking-wider uppercase border select-none min-w-[68px] justify-center",
+              onToggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
               timeOfDay === 'day'
                 ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
                 : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
             )}
           >
             <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
+            {onToggleTimeOfDay && (
+              <ChevronRight size={9} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+            )}
           </div>
 
           {/* Tabs */}
@@ -309,6 +263,14 @@ export default function NightOrderWidget({
         </div>
       </div>
 
+      {/* Completion Banner */}
+      {allResolved && (
+        <div className="flex items-center gap-2.5 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-fadeIn">
+          <Award className="w-5 h-5 flex-shrink-0 animate-bounce" />
+          <span className="text-xs font-bold uppercase tracking-wider">All night actions resolved! Dawn awaits.</span>
+        </div>
+      )}
+
       {/* Items List */}
       <div className="space-y-2">
         {items.length === 0 ? (
@@ -318,33 +280,46 @@ export default function NightOrderWidget({
         ) : (
           items.map((item) => {
             const isChecked = checkedItems[item.id] || false;
+            const isInfo = item.type === 'info';
             const isDead = item.player?.isDead;
 
             return (
               <div
                 key={item.id}
-                onClick={() => handleToggleCheck(item)}
+                onClick={() => !isInfo && handleToggleCheck(item.id)}
                 className={cn(
-                  "flex items-start gap-3 p-2.5 rounded-lg border transition-all select-none cursor-pointer",
-                  isChecked
-                    ? "bg-emerald-500/5 border-emerald-500/30 opacity-60"
-                    : isDead
-                      ? "bg-gray-200/40 dark:bg-gray-900/10 border-gray-300 dark:border-gray-800/80 opacity-50"
-                      : isLightModeActive
-                        ? "bg-white border-gray-200 hover:border-gray-300"
-                        : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
+                  "flex items-start gap-3 p-2.5 rounded-lg border transition-all select-none",
+                  isInfo
+                    ? "bg-gray-150/45 dark:bg-gray-900/30 border-gray-200 dark:border-gray-800"
+                    : cn(
+                        "cursor-pointer",
+                        isChecked
+                          ? "bg-emerald-500/5 border-emerald-500/30 opacity-60"
+                          : isDead
+                            ? "bg-gray-200/40 dark:bg-gray-900/10 border-gray-300 dark:border-gray-800/80 opacity-50"
+                            : isLightModeActive
+                              ? "bg-white border-gray-200 hover:border-gray-300"
+                              : "bg-[#1c1c1e] border-[#2c2c2e] hover:border-[#3c3c3e]"
+                      )
                 )}
               >
-                <div
-                  className={cn(
-                    "w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 mt-0.5",
-                    isChecked
-                      ? "bg-emerald-500 border-emerald-500 text-white"
-                      : "border-gray-400 dark:border-gray-600"
-                  )}
-                >
-                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3px]" />}
-                </div>
+                {/* Checkbox for characters / step indicator */}
+                {!isInfo ? (
+                  <div
+                    className={cn(
+                      "w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 mt-0.5",
+                      isChecked
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : "border-gray-400 dark:border-gray-600"
+                    )}
+                  >
+                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3px]" />}
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 flex items-center justify-center font-bold font-mono text-[10px] bg-gray-200 dark:bg-gray-800 rounded text-gray-500 flex-shrink-0 mt-0.5">
+                    *
+                  </div>
+                )}
 
                 {/* Role and Player info */}
                 <div className="flex-1 min-w-0">

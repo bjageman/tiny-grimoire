@@ -4,8 +4,6 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useIsMobile } from './hooks/useIsMobile';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
-import { roleIconFallback } from './utils/roleIcon';
-import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { ShieldAlert, Sparkles, ArrowRight, Eye, EyeOff, Settings, CheckCircle2, RotateCcw, Plus, Search, Moon, Scroll, QrCode } from 'lucide-react';
 import type { Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/ScriptCharactersModal';
@@ -14,7 +12,6 @@ import PageLayout from './components/shared/PageLayout';
 import DialogModal from './components/shared/DialogModal';
 import { useDialog } from './hooks/useDialog';
 import RoomCodeModal from './components/shared/RoomCodeModal';
-import LoadingScreen from './components/shared/LoadingScreen';
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -38,7 +35,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return newId;
   });
 
-  // A Whale Bucket player who reset from the tracker arrives as #/join?returnTo=preferences — land them on the fresh picker.
+  // A Whale Bucket player who reset from the game tracker is routed here as
+  // `#/join?returnTo=preferences` — land them straight on the (fresh) picker.
   const [returnToPrefs] = useState(() => {
     const params = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
     return params.get('returnTo') === 'preferences';
@@ -51,13 +49,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return 'join';
   });
 
-  // Mirror state in a ref so the socket handler reads the latest value, not a stale closure (messages can arrive between render and re-bind).
+  // Mirror `state` in a ref so the socket message handler always reads the
+  // latest committed value rather than a stale closure — realtime messages can
+  // arrive between a render and the effect that re-binds the handler.
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  // Strip the one-shot ?returnTo param so a later refresh doesn't force the player back to preferences.
+  // Strip the one-shot ?returnTo param so a later refresh doesn't force the
+  // player back onto the preferences screen after they've moved on.
   useEffect(() => {
     if (returnToPrefs) {
       window.history.replaceState(null, '', '#/join');
@@ -94,20 +95,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
 
-  const [userRotation, setUserRotation] = useState<number | null>(null);
-
-  const rotationOffset = useMemo(() => {
-    if (userRotation !== null) return userRotation;
-    const myName = name;
-    if (!myName) return 0;
-    const idx = players.findIndex(p => p.name.trim().toLowerCase() === myName.trim().toLowerCase());
-    return idx !== -1 ? idx : 0;
-  }, [players, name, userRotation]);
-
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
-  }, [customScriptRoles, players]);
+    return [...baseRoles].sort((a, b) => a.name.localeCompare(b.name));
+  }, [customScriptRoles]);
 
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRetryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -135,7 +126,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     customScriptRoles?: Role[];
   }
 
-  // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
+  // Send this player back to the lobby after the storyteller resets the game
+  // but keeps everyone connected. Unconditional by design: it's a direct
+  // command, not something inferred from the current UI state, which is what
+  // makes it reliable. Whale Bucket players return to the preferences picker
+  // (with a fresh, empty selection); Standard players return to the waiting
+  // room.
   const returnToLobby = (resetGameType: 'standard' | 'whale-bucket' = 'standard') => {
     setAssignedRole(null);
     setRevealed(false);
@@ -153,7 +149,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const handleMessage = (data: unknown) => {
     const payload = data as GamePayload;
     if (payload.type === 'game_reset') {
-      // Explicit "storyteller reset, stay connected" signal — always obey it regardless of current screen.
+      // Explicit "storyteller reset, stay connected" signal. Always obey it,
+      // regardless of what screen this player is currently on.
       returnToLobby(payload.gameType);
       return;
     }
@@ -167,12 +164,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setGameType(payload.gameType);
 
         if (stateRef.current === 'checking') {
-          // Persist the session as soon as we're in the room (both modes) so a later tracker/reset can resume the join.
+          // Persist the session as soon as we're in the room (both modes) so a
+          // later game tracker / reset can reliably resume the join.
           sessionStorage.setItem('joined-code', code);
           sessionStorage.setItem('joined-name', name);
           setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
         }
-        // A plain setup_update is NOT a reset (storyteller may just tweak setup); only the explicit game_reset command returns players to the lobby.
+        // NB: a plain setup_update is NOT treated as a reset. The storyteller
+        // may simply step back to setup to tweak something without wanting to
+        // boot everyone off their character. Only the explicit `game_reset`
+        // command (handled above) returns players to the lobby.
       }
 
       if (payload.excludedRoleIds) {
@@ -190,15 +191,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
       if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
         setPlayers(payload.players || []);
-      }
-    } else if (payload.type === 'room_full') {
-      if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
-        if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
-        if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-        sessionStorage.removeItem('joined-code');
-        sessionStorage.removeItem('joined-name');
-        setState('join');
-        setErrorMsg('The game room is full.');
       }
     } else if (payload.type === 'code_valid') {
       if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
@@ -243,10 +235,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         const me = payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
         if (me) {
           if (me.roleId) {
-            const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (rolesData as Role[]);
-            // Fall back to the full official role list: travelers under a custom script aren't in effectiveRoles, so without this the token never reveals.
-            const rObj = effectiveRoles.find(r => r.id === me.roleId)
-              ?? (rolesData as Role[]).find(r => r.id === me.roleId);
+            const rObj = (rolesData as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
               setAssignedRole(rObj);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
@@ -261,7 +250,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
       setState('join');
-      setUserRotation(null);
     } else if (payload.type === 'booted') {
       if (payload.playerId === playerId) {
         showAlert('You have been booted from the game room.');
@@ -269,14 +257,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         sessionStorage.removeItem('joined-name');
         window.location.hash = '#/join';
         setState('join');
-        setUserRotation(null);
       }
     }
   };
 
   const { isConnected, sendMessage } = useGameSocket(code, handleMessage);
 
-  // Keep this player synced in the storyteller list on connect/reconnect; 'preferences' included so a reset Whale Bucket player re-announces and gets current excludedRoleIds/script.
+  // Keep player entry in the storyteller list synchronized on connection/reconnection.
+  // 'preferences' is included so a Whale Bucket player who lands on the picker
+  // after a reset re-announces and receives the current excludedRoleIds/script.
   useEffect(() => {
     if (isConnected && code && name) {
       if (state === 'waiting' || state === 'revealed' || state === 'tracker' || state === 'preferences') {
@@ -357,7 +346,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setState('join');
     setAssignedRole(null);
     setRevealed(false);
-    setUserRotation(null);
   };
 
   const goToTracker = () => {
@@ -397,11 +385,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const isMobile = useIsMobile();
   const isLight = theme === 'light';
-  const showLoading = state === 'checking' || (state !== 'join' && !isConnected);
+
 
   return (
     <>
-    {showLoading && <LoadingScreen isLight={isLight} />}
     <PageLayout theme={theme} toggleTheme={toggleTheme} title="Join Game" backHref="#/">
       <div className="w-full max-w-md mx-auto">
 
@@ -808,14 +795,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               )}>
                 {/* Character Color Rim */}
                 <div className={cn(
-                  "w-28 h-28 rounded-full overflow-hidden border-4 flex items-center justify-center bg-white shadow-lg shadow-black/20 mb-4 animate-scaleUp",
+                  "w-28 h-28 rounded-full border-4 flex items-center justify-center bg-white shadow-lg shadow-black/20 mb-4 animate-scaleUp",
                   assignedRole.team === 'townsfolk' && "border-clocktower-townsfolk",
                   assignedRole.team === 'outsider' && "border-clocktower-outsider",
                   assignedRole.team === 'minion' && "border-clocktower-minion",
                   assignedRole.team === 'demon' && "border-clocktower-demon",
                   assignedRole.team === 'traveler' && "border-clocktower-traveler"
                 )}>
-                  <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
+                  <img src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" />
                 </div>
 
                 <div className="flex gap-2 justify-center items-center mb-3">
@@ -844,7 +831,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
                 {/* Role ability summary */}
                 <p className="text-xs text-gray-400 mt-3 max-w-[90%] leading-relaxed">
-                  {assignedRole.ability ?? (rolesData as Array<{ id: string; ability: string }>).find((r) => r.id === assignedRole.id)?.ability}
+                  {(rolesData as Array<{ id: string; ability: string }>).find((r) => r.id === assignedRole.id)?.ability}
                 </p>
               </div>
             </div>
@@ -901,11 +888,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                 }))}
                 timeOfDay={timeOfDay}
                 dayNumber={dayNumber}
+                toggleTimeOfDay={() => {}}
                 onSelectPlayer={() => {}}
                 rolesData={[]}
                 isLightModeActive={isLight}
-                rotationOffset={rotationOffset}
-                onRotationChange={setUserRotation}
               />
             </div>
 

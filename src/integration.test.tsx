@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, act, within, waitFor } from '@testing-library/react';
+import { render, fireEvent, act, within } from '@testing-library/react';
 import { useEffect } from 'react';
 import StandardSetup from './StandardSetup';
 import WhaleBucket from './WhaleBucket';
@@ -249,69 +249,6 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
-  it('does NOT re-show the grimoire confirm after the Back button returns to setup', async () => {
-    // The header Back button steps back to setup WITHOUT re-arming the one-time
-    // "Send character assignments?" warning: you've already acknowledged
-    // sending assignments, so re-opening should not nag again. (Only a Reset —
-    // Keep Players / Disconnect — re-arms it.)
-    localStorage.setItem('standard-botc-game-code', 'RCFM');
-    localStorage.setItem('standard-botc-sync-code', 'RCFS');
-    localStorage.setItem('standard-botc-game', JSON.stringify({
-      players: [
-        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
-        { id: 'p2', name: 'Bob', isDead: false, roleId: 'chef' },
-        { id: 'p3', name: 'Cara', isDead: false, roleId: 'empath' },
-        { id: 'p4', name: 'Dave', isDead: false, roleId: 'poisoner' },
-        { id: 'p5', name: 'Eve', isDead: false, roleId: 'imp' },
-      ],
-      phase: 'setup',
-    }));
-    window.location.hash = '#/standard';
-    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
-    const gameCode = 'RCFM';
-
-    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
-
-    // A remote player announces herself so remotePlayerCount > 0 (the confirm
-    // only shows when connected players will receive assignments).
-    await act(async () => {
-      activeSubscriptions
-        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
-        .forEach(s => s.onMessage({ type: 'player_join', id: 'p1', name: 'Alice' }));
-      await new Promise(r => setTimeout(r, 50));
-    });
-
-    const openBtn = () => storyteller.container.querySelector('#open-grimoire-button') as HTMLButtonElement;
-    expect(openBtn()).not.toBeNull();
-    expect(openBtn().disabled).toBe(false);
-
-    // First open → confirm modal appears → confirm it.
-    fireEvent.click(openBtn());
-    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button')!);
-      await new Promise(r => setTimeout(r, 50));
-    });
-    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
-
-    // Back to setup via the header back button (roles are kept).
-    await act(async () => {
-      fireEvent.click(storyteller.container.querySelector('#page-back-button')!);
-      await new Promise(r => setTimeout(r, 50));
-    });
-    expect(openBtn()).not.toBeNull();
-
-    // Re-open → NO confirm; the grimoire opens straight through.
-    await act(async () => {
-      fireEvent.click(openBtn());
-      await new Promise(r => setTimeout(r, 50));
-    });
-    expect(within(storyteller.container).queryByText('Send character assignments?')).toBeNull();
-    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
-
-    storyteller.unmount();
-  });
-
   it('a synced storyteller pressing back at setup gets the reset modal, not a silent exit', async () => {
     localStorage.setItem('standard-botc-game-code', 'BGRD');
     localStorage.setItem('standard-botc-sync-code', 'BGRS');
@@ -440,49 +377,6 @@ describe('Storyteller Reset Integration', () => {
     // Still on her character, not sent to the waiting room.
     expect(joinPage.container.querySelector('#waiting-screen')).toBeNull();
     expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
-
-    joinPage.unmount();
-  });
-
-  it('reveals a traveler token even under a custom script that omits travelers', async () => {
-    // Regression: real uploaded scripts list only townsfolk/outsider/minion/demon
-    // — travelers are a universal pool that never appears in customScriptRoles.
-    // A player assigned a traveler must still reveal, by falling back to the
-    // full official role list rather than staying stuck in the waiting room.
-    const gameCode = 'TRVL';
-    sessionStorage.setItem('joined-code', gameCode);
-    sessionStorage.setItem('joined-name', 'Alice');
-    window.location.hash = '#/join';
-    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    const deliver = (payload: Record<string, unknown>) => act(() => {
-      activeSubscriptions
-        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
-        .forEach(s => s.onMessage(payload));
-    });
-
-    // Storyteller adds Alice mid-game as a Gunslinger (traveler) under a custom
-    // script whose role list contains no travelers.
-    deliver({
-      type: 'game_update',
-      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'gunslinger' }],
-      timeOfDay: 'day',
-      dayNumber: 1,
-      scriptName: 'Custom Script',
-      customScriptRoles: [{ id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' }],
-    });
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // Revealed as the traveler, not stranded in the waiting room.
-    expect(joinPage.container.querySelector('#waiting-screen')).toBeNull();
-    expect(joinPage.queryAllByText('Gunslinger').length).toBeGreaterThan(0);
 
     joinPage.unmount();
   });
@@ -765,10 +659,6 @@ describe('Storyteller Device Sync', () => {
     secondary.unmount();
   });
 
-  const clickNightOrderStep = (container: HTMLElement, step: 'Dawn' | 'Dusk') => {
-    fireEvent.click(within(container).getByText(step, { selector: '.font-serif' }).closest('div')!);
-  };
-
   it('syncs time-of-day toggle from primary to secondary in real time', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
@@ -777,8 +667,12 @@ describe('Storyteller Device Sync', () => {
     expect(within(primary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
     expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
 
+    // Click the time-of-day badge on primary to advance to Day 1
+    const timeBadge = primary.container.querySelector('#grimoire-info-row');
+    expect(timeBadge).not.toBeNull();
+
     await act(async () => {
-      clickNightOrderStep(primary.container, 'Dawn');
+      fireEvent.click(timeBadge!);
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
@@ -844,20 +738,20 @@ describe('Storyteller Device Sync', () => {
     const { primary, secondary } = await renderSyncedPair();
 
     // Re-query inside each act so the reference is always fresh after re-renders
-    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
+    const clickTimeBadge = async () => {
       await act(async () => {
-        clickNightOrderStep(primary.container, step);
+        fireEvent.click(primary.container.querySelector('#grimoire-info-row')!);
         await new Promise(resolve => setTimeout(resolve, 150));
       });
     };
 
     // Night → Day: verify via DOM on secondary
-    await advancePhase('Dawn');
+    await clickTimeBadge();
     expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
 
     // Day → Night 2: verify via sync payload (more reliable than DOM after multiple toggles)
     sentPayloads.length = 0;
-    await advancePhase('Dusk');
+    await clickTimeBadge();
     const nightSync = lastSyncState();
     expect(nightSync).toBeDefined();
     expect(nightSync!.timeOfDay).toBe('night');
@@ -871,9 +765,9 @@ describe('Storyteller Device Sync', () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
 
-    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
+    const clickTimeBadge = async () => {
       await act(async () => {
-        clickNightOrderStep(primary.container, step);
+        fireEvent.click(primary.container.querySelector('#grimoire-info-row')!);
         await new Promise(resolve => setTimeout(resolve, 150));
       });
     };
@@ -883,7 +777,7 @@ describe('Storyteller Device Sync', () => {
     const targetToggles = 18;
     for (let i = 0; i < targetToggles; i++) {
       sentPayloads.length = 0;
-      await advancePhase(i % 2 === 0 ? 'Dawn' : 'Dusk');
+      await clickTimeBadge();
 
       const lastSync = lastSyncState();
       expect(lastSync).toBeDefined();
@@ -936,11 +830,10 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    // Enter character search/selection mode if not already there
+    // Enter character search/selection mode
     const changeRoleBtn = storyteller.container.querySelector('#detail-change-role-button');
-    if (changeRoleBtn) {
-      fireEvent.click(changeRoleBtn);
-    }
+    expect(changeRoleBtn).not.toBeNull();
+    fireEvent.click(changeRoleBtn!);
 
     // Update Alice's role to Empath
     const empathBtn = storyteller.container.querySelector('#detail-role-option-empath');
@@ -957,65 +850,6 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(alice).toBeDefined();
     expect(alice!.roleId).toBe('empath');
     expect(alice!.isEvil).toBe(true);
-
-    storyteller.unmount();
-  });
-
-  it('storyteller details modal opens conditionally in search mode only if player has no role assigned', async () => {
-    const PLAYERS = [
-      { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },
-      { id: 'p2', name: 'Bob', isDead: false, roleId: undefined }
-    ];
-    
-    seedPrimary({
-      players: PLAYERS,
-      phase: 'game',
-      timeOfDay: 'night',
-      dayNumber: 1,
-    });
-
-    window.location.hash = '#/standard';
-    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
-
-    // 1. Open details modal for Alice (has character 'washerwoman')
-    const aliceRow = storyteller.container.querySelector('#ledger-player-p1');
-    expect(aliceRow).not.toBeNull();
-    
-    await act(async () => {
-      fireEvent.click(aliceRow!);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
-
-    // Should NOT be in search mode initially (change role button is visible, search input is not present)
-    const changeRoleBtnAlice = storyteller.container.querySelector('#detail-change-role-button');
-    expect(changeRoleBtnAlice).not.toBeNull();
-    const searchInputAlice = storyteller.container.querySelector('#detail-role-search-input');
-    expect(searchInputAlice).toBeNull();
-
-    // Close details modal
-    const closeBtn = storyteller.container.querySelector('[aria-label="Close modal"]');
-    if (closeBtn) {
-      await act(async () => {
-        fireEvent.click(closeBtn);
-        await new Promise(resolve => setTimeout(resolve, 50));
-      });
-    }
-
-    // 2. Open details modal for Bob (has no character assigned)
-    const bobRow = storyteller.container.querySelector('#ledger-player-p2');
-    expect(bobRow).not.toBeNull();
-    
-    await act(async () => {
-      fireEvent.click(bobRow!);
-    });
-
-    await waitFor(() => {
-      const searchInputBob = storyteller.container.querySelector('#detail-role-search-input');
-      expect(searchInputBob).not.toBeNull();
-    });
-
-    const changeRoleBtnBob = storyteller.container.querySelector('#detail-change-role-button');
-    expect(changeRoleBtnBob).toBeNull();
 
     storyteller.unmount();
   });
@@ -1080,52 +914,6 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     storyteller.unmount();
     joinPage.unmount();
-  });
-
-  it('Whale Bucket: warns before opening the grimoire when players are connected (parity with Standard)', async () => {
-    const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
-    localStorage.setItem('whale-bucket-game-code', 'WBOG');
-    localStorage.setItem('whale-bucket-sync-code', 'WBOS');
-    localStorage.setItem('whale-bucket-game', JSON.stringify({
-      players: [
-        { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman', preferences },
-        { id: 'p2', name: 'Bob', isDead: false, roleId: 'chef', preferences },
-        { id: 'p3', name: 'Cara', isDead: false, roleId: 'empath', preferences },
-        { id: 'p4', name: 'Dave', isDead: false, roleId: 'poisoner', preferences },
-        { id: 'p5', name: 'Eve', isDead: false, roleId: 'imp', preferences },
-      ],
-      phase: 'draft',
-    }));
-    window.location.hash = '#/whale-bucket';
-    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
-    const gameCode = 'WBOG';
-
-    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
-
-    // A connected player announces herself so remotePlayerCount > 0.
-    await act(async () => {
-      activeSubscriptions
-        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
-        .forEach(s => s.onMessage({ type: 'player_join', id: 'p1', name: 'Alice' }));
-      await new Promise(r => setTimeout(r, 50));
-    });
-
-    const openBtn = storyteller.container.querySelector('#open-grimoire-button') as HTMLButtonElement;
-    expect(openBtn).not.toBeNull();
-    expect(openBtn.disabled).toBe(false);
-
-    // Open Grimoire → confirmation modal appears instead of silently starting.
-    fireEvent.click(openBtn);
-    expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
-
-    // Confirm → the game starts (leaves the draft phase).
-    await act(async () => {
-      fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button-whale')!);
-      await new Promise(r => setTimeout(r, 50));
-    });
-    expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
-
-    storyteller.unmount();
   });
 
   it('Whale Bucket: manual-assign-characters-button transitions to draft and retains assigned characters', async () => {
@@ -1222,7 +1010,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('clears checklist checkboxes when Dawn starts the day', async () => {
+  it('clears checklist checkboxes on day/night transitions', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }
     ];
@@ -1238,43 +1026,18 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
 
+    // Click the time-of-day badge to toggle from Night 1 to Day 1
+    const timeBadge = storyteller.container.querySelector('#grimoire-info-row');
+    expect(timeBadge).not.toBeNull();
+
     await act(async () => {
-      fireEvent.click(
-        within(storyteller.container).getByText('Dawn', { selector: '.font-serif' }).closest('div')!
-      );
+      fireEvent.click(timeBadge!);
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
+    // Verify checkedItems is empty in local storage
     const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
-    expect(saved.timeOfDay).toBe('day');
     expect(saved.checkedItems).toEqual({});
-
-    storyteller.unmount();
-  });
-
-  it('starts the next night on Dusk, keeping it ticked and the checklist intact', async () => {
-    seedPrimary({
-      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
-      phase: 'game',
-      timeOfDay: 'day',
-      dayNumber: 1,
-      checkedItems: {},
-    });
-
-    window.location.hash = '#/standard';
-    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(
-        within(storyteller.container).getByText('Dusk', { selector: '.font-serif' }).closest('div')!
-      );
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    const saved = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
-    expect(saved.timeOfDay).toBe('night');
-    expect(saved.dayNumber).toBe(2);
-    expect(saved.checkedItems).toEqual({ dusk: true });
 
     storyteller.unmount();
   });
@@ -1310,7 +1073,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
       { id: 'p2', name: 'Bob', roleId: 'washerwoman' },
       { id: 'p3', name: 'Carol', roleId: 'empath' },
       { id: 'p4', name: 'Dave', roleId: 'poisoner' },
-      { id: 'p5', name: 'Eve', roleId: 'monk' }
+      { id: 'p5', name: 'Eve', roleId: 'butler' }
     ];
     
     localStorage.setItem('standard-botc-game', JSON.stringify({
@@ -1447,48 +1210,6 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     storyteller.unmount();
   });
-
-  it('disables Open Grimoire when there are failures, and enables it when override failures checkbox is checked', async () => {
-    const PLAYERS = [
-      { id: 'p1', name: 'Alice', roleId: 'imp' },
-      { id: 'p2', name: 'Bob', roleId: 'washerwoman' },
-      { id: 'p3', name: 'Carol', roleId: 'empath' },
-      { id: 'p4', name: 'Dave', roleId: 'poisoner' },
-      { id: 'p5', name: 'Eve', roleId: 'imp' } // Duplicate Imp!
-    ];
-    
-    localStorage.setItem('standard-botc-game', JSON.stringify({
-      players: PLAYERS,
-      phase: 'setup',
-      timeOfDay: 'night',
-      dayNumber: 1,
-    }));
-
-    window.location.hash = '#/standard';
-    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
-
-    // Retrieve the Open Grimoire button
-    const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
-    expect(openGrimBtn).not.toBeNull();
-    // It should be disabled because there is a duplicate Imp (which is a failure)
-    expect(openGrimBtn).toBeDisabled();
-
-    // Verify the override checkbox is present
-    const overrideCheckbox = storyteller.container.querySelector('#override-failures-checkbox') as HTMLInputElement;
-    expect(overrideCheckbox).not.toBeNull();
-    expect(overrideCheckbox.checked).toBe(false);
-
-    // Check the checkbox
-    await act(async () => {
-      fireEvent.click(overrideCheckbox);
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // The button should now be enabled
-    expect(openGrimBtn).not.toBeDisabled();
-
-    storyteller.unmount();
-  });
 });
 
 describe('Storyteller Notes Privacy', () => {
@@ -1532,93 +1253,5 @@ describe('Storyteller Notes Privacy', () => {
 
     storyteller.unmount();
     tracker.unmount();
-  });
-});
-
-describe('Player Limit Enforcement', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-    activeSubscriptions.length = 0;
-    sentPayloads.length = 0;
-    vi.clearAllMocks();
-  });
-
-  it('rejects a joining player in standard mode if the room is already full (20 players)', async () => {
-    localStorage.setItem('standard-botc-game-code', 'ABCD');
-    localStorage.setItem('standard-botc-sync-code', 'ABCS');
-    localStorage.setItem('standard-botc-game', JSON.stringify({
-      players: Array.from({ length: 20 }, (_, i) => ({
-        id: `p${i}`,
-        name: `Player ${i}`,
-        isDead: false,
-        roleId: '',
-      })),
-      phase: 'setup',
-    }));
-
-    window.location.hash = '#/standard';
-    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
-
-    // Now render the Join page and try to join as a 21st player
-    window.location.hash = '#/join';
-    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
-
-    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
-    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
-    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
-
-    fireEvent.change(codeInput, { target: { value: 'ABCD' } });
-    fireEvent.change(nameInput, { target: { value: 'Alice' } });
-    fireEvent.click(submitBtn);
-
-    // Should stop retrying and show error that the room is full
-    await waitFor(() => {
-      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
-    });
-
-    storyteller.unmount();
-    joinPage.unmount();
-  });
-
-  it('rejects a joining player in whale-bucket mode if the room is already full (15 players)', async () => {
-    localStorage.setItem('whale-bucket-game-code', 'WXYZ');
-    localStorage.setItem('whale-bucket-sync-code', 'WXYZS');
-    localStorage.setItem('whale-bucket-game', JSON.stringify({
-      players: Array.from({ length: 15 }, (_, i) => ({
-        id: `p${i}`,
-        name: `Player ${i}`,
-        isDead: false,
-        roleId: '',
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLilMonsta: false,
-        preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] }
-      })),
-      phase: 'setup',
-    }));
-
-    window.location.hash = '#/whale-bucket';
-    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
-
-    // Now render the Join page and try to join as a 16th player
-    window.location.hash = '#/join';
-    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
-
-    const codeInput = joinPage.container.querySelector('input[placeholder="e.g. KVTQ"]') as HTMLInputElement;
-    const nameInput = joinPage.container.querySelector('input[placeholder="Enter your name..."]') as HTMLInputElement;
-    const submitBtn = joinPage.container.querySelector('button[type="submit"]') as HTMLButtonElement;
-
-    fireEvent.change(codeInput, { target: { value: 'WXYZ' } });
-    fireEvent.change(nameInput, { target: { value: 'Bob' } });
-    fireEvent.click(submitBtn);
-
-    // Should stop retrying and show error that the room is full
-    await waitFor(() => {
-      expect(within(joinPage.container).getByText('The game room is full.')).toBeInTheDocument();
-    });
-
-    storyteller.unmount();
-    joinPage.unmount();
   });
 });

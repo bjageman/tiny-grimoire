@@ -41,7 +41,6 @@ describe('PlayerDetailsModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
   });
 
   it('renders the player name and role', () => {
@@ -119,14 +118,14 @@ describe('PlayerDetailsModal', () => {
 
   it('toggles alignment (good/evil) via the alignment button', () => {
     render(<PlayerDetailsModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('Good'));
+    fireEvent.click(screen.getByText('😇 Good'));
     expect(defaultProps.onToggleEvil).toHaveBeenCalledWith('p1');
   });
 
   it('keeps the alignment toggle but hides the drunk/poisoned toggle when allowMultipleRoles is true', () => {
     render(<PlayerDetailsModal {...defaultProps} allowMultipleRoles={true} />);
-    expect(screen.queryByText('Good')).not.toBeNull();
-    expect(screen.queryByText('Droisoned')).toBeNull();
+    expect(screen.queryByText('😇 Good')).not.toBeNull();
+    expect(screen.queryByText('🤢 Drunk/Poisoned')).toBeNull();
   });
 
   it('opens the role search when the character is clicked, and selecting a role calls onUpdateRole', () => {
@@ -147,9 +146,9 @@ describe('PlayerDetailsModal', () => {
     expect(screen.getByText('Taken: Bob')).toBeInTheDocument();
   });
 
-  it('clears the current role when it is picked again', () => {
-    const { container } = render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
-    fireEvent.click(container.querySelector('#detail-role-option-washerwoman')!);
+  it('clears the current role when Clear Character is clicked', () => {
+    render(<PlayerDetailsModal {...defaultProps} isSearchingRole={true} />);
+    fireEvent.click(screen.getByText('× Clear Character'));
     expect(defaultProps.onUpdateRole).toHaveBeenCalledWith('p1', '');
   });
 
@@ -204,44 +203,5 @@ describe('PlayerDetailsModal', () => {
     render(<PlayerDetailsModal {...defaultProps} isSynced={true} onUpdatePronouns={vi.fn()} />);
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.queryByText('Set Pronouns')).toBeNull();
-  });
-
-  it('tracker details modal replaces search cancel button with sort toggle and sorts roles when clicked', () => {
-    const testRoles: Role[] = [
-      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
-      { id: 'chef', name: 'Chef', team: 'townsfolk' },
-    ];
-    const { container } = render(
-      <PlayerDetailsModal
-        {...defaultProps}
-        allowMultipleRoles={true}
-        isSearchingRole={true}
-        allRoles={testRoles}
-        filteredModalRoles={testRoles}
-      />
-    );
-
-    // Cancel button should not be present
-    expect(container.querySelector('#detail-cancel-role-search-button')).toBeNull();
-
-    // Pronouns dropdown should not be present
-    expect(container.querySelector('#detail-player-pronouns-select')).toBeNull();
-
-    // Sort toggle checkbox should be present
-    const toggle = container.querySelector('#tracker-sort-alphabetically-checkbox');
-    expect(toggle).not.toBeNull();
-
-    // By default, roles should follow filteredModalRoles order: Washerwoman then Chef
-    let roleLabels = container.querySelectorAll('button[id^="detail-role-option-"]');
-    expect(roleLabels[0].textContent).toContain('Washerwoman');
-    expect(roleLabels[1].textContent).toContain('Chef');
-
-    // Click the sort toggle to turn it on
-    fireEvent.click(toggle!);
-
-    // Now, they should be sorted alphabetically: Chef then Washerwoman
-    roleLabels = container.querySelectorAll('button[id^="detail-role-option-"]');
-    expect(roleLabels[0].textContent).toContain('Chef');
-    expect(roleLabels[1].textContent).toContain('Washerwoman');
   });
 });

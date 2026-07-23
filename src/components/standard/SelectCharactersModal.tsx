@@ -1,11 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { X, Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { computeBalance } from '../../utils/computeBalance';
-import ToggleSwitch from '../shared/ToggleSwitch';
 
 interface Props {
   isOpen: boolean;
@@ -37,27 +35,10 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const [sortAlphabetically, setSortAlphabetically] = useState(() => {
-    return localStorage.getItem('botc-sort-alphabetically') === 'true';
-  });
-
-  const handleToggleSort = (val: boolean) => {
-    setSortAlphabetically(val);
-    localStorage.setItem('botc-sort-alphabetically', String(val));
-  };
-
-  const byTeam = useMemo(() => {
-    const grouped = Object.fromEntries(
-      TEAMS.map(t => [t.key, assignableRoles.filter(r => r.team === t.key)])
-    ) as Record<'townsfolk' | 'outsider' | 'minion' | 'demon', Role[]>;
-
-    if (sortAlphabetically) {
-      for (const team of Object.keys(grouped) as Array<keyof typeof grouped>) {
-        grouped[team] = [...grouped[team]].sort((a, b) => a.name.localeCompare(b.name));
-      }
-    }
-    return grouped;
-  }, [assignableRoles, sortAlphabetically]);
+  const byTeam = useMemo(
+    () => Object.fromEntries(TEAMS.map(t => [t.key, assignableRoles.filter(r => r.team === t.key)])),
+    [assignableRoles]
+  );
 
   const selectedRoles = useMemo(() => assignableRoles.filter(r => selectedIds.has(r.id)), [assignableRoles, selectedIds]);
 
@@ -123,38 +104,25 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 space-y-4 pb-4 pt-1">
           {/* Global select controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center justify-between">
             <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
               {selectedIds.size} of {assignableRoles.length} characters
             </span>
-            <div className="flex flex-wrap items-center gap-4">
-               <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
-                <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                  Sort
-                </span>
-                <ToggleSwitch
-                  id="select-sort-alphabetically-checkbox"
-                  checked={sortAlphabetically}
-                  onChange={handleToggleSort}
-                  isLightModeActive={isLightModeActive}
-                />
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
-                >
-                  Select All
-                </button>
-                <button
-                  type="button"
-                  onClick={deselectAll}
-                  className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
-                >
-                  Deselect All
-                </button>
-              </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={selectAll}
+                className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
+              >
+                Select All
+              </button>
+              <button
+                type="button"
+                onClick={deselectAll}
+                className={cn("text-[11px] font-semibold px-2.5 py-1 rounded border transition-colors", isLightModeActive ? "border-gray-300 text-gray-600 hover:bg-gray-100" : "border-gray-700 text-gray-400 hover:bg-gray-800")}
+              >
+                Deselect All
+              </button>
             </div>
           </div>
 
@@ -224,13 +192,12 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                             onChange={() => toggleRole(role.id)}
                             className="shrink-0 w-3.5 h-3.5"
                           />
-                          <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                          <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                             <img
-                              key={role.id}
                               src={`/icons/${role.id}.svg`}
                               alt=""
                               className="w-3.5 h-3.5 object-contain"
-                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                              onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                             />
                           </span>
                           <span className={cn("font-semibold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>

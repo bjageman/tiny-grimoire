@@ -10,10 +10,9 @@ interface RoomCodeModalProps {
   onClose: () => void;
   isLightModeActive: boolean;
   syncOnly?: boolean;
-  shareOnly?: boolean;
 }
 
-export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeActive, syncOnly = false, shareOnly = false }: RoomCodeModalProps) {
+export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeActive, syncOnly = false }: RoomCodeModalProps) {
   useScrollLock();
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -77,16 +76,7 @@ export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeA
         )}
         onClick={e => e.stopPropagation()}
       >
-        {shareOnly ? (
-          <div className="text-center">
-            <p className="text-sm font-display font-bold uppercase tracking-wider text-clocktower-blood">
-              Share Notes
-            </p>
-            <p className={cn('text-[11px] font-medium mt-0.5 leading-relaxed', isLightModeActive ? 'text-gray-500' : 'text-gray-450')}>
-              Scan to start their own copy of these Game Notes — player names and script only, no characters or status shared
-            </p>
-          </div>
-        ) : !syncOnly ? (
+        {!syncOnly ? (
           <div className="text-center">
             <p className={cn('text-xs font-semibold uppercase tracking-widest mb-0.5', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>
               Room Code
@@ -126,7 +116,7 @@ export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeA
           >
             {copiedUrl ? '✓ Copied!' : 'Copy Join URL'}
           </button>
-          {!syncOnly && !shareOnly && (
+          {!syncOnly && (
             <button
               onClick={() => copy(gameCode, 'code')}
               className={cn(

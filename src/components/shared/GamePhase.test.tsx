@@ -51,14 +51,14 @@ describe('GamePhase - Script Modal Integration', () => {
   it('renders active script button with correct counts', () => {
     render(<GamePhase {...defaultProps} />);
 
-    const scriptButton = document.getElementById('game-script-button');
+    const scriptButton = screen.getByText(/All Roles/i).closest('button');
     expect(scriptButton).toBeInTheDocument();
   });
 
   it('opens modal on script button click and displays active characters sorted by team', () => {
     render(<GamePhase {...defaultProps} />);
 
-    const scriptButton = document.getElementById('game-script-button');
+    const scriptButton = screen.getByText(/All Roles/i).closest('button');
     fireEvent.click(scriptButton!);
 
     expect(screen.getByRole('heading', { name: /All Roles/i })).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('GamePhase - Script Modal Integration', () => {
   it('opens character details modal when character is clicked', () => {
     render(<GamePhase {...defaultProps} />);
 
-    const scriptButton = document.getElementById('game-script-button');
+    const scriptButton = screen.getByText(/All Roles/i).closest('button');
     fireEvent.click(scriptButton!);
 
     const modalContainer = screen.getByPlaceholderText('Search character by name or type...').closest('.max-w-2xl') as HTMLElement;
@@ -242,24 +242,5 @@ describe('GamePhase - Reset Reminders confirmation', () => {
     expect(evilWinsBtn).toBeDisabled();
     expect(goodWinsBtn.className).toContain('opacity-50');
     expect(evilWinsBtn.className).toContain('opacity-50');
-  });
-
-  it('defaults the Grimoire Ledger Reference to collapsed, and expands/re-collapses on click', () => {
-    render(<GamePhase {...defaultProps} />);
-
-    const toggle = screen.getByRole('button', { name: /Grimoire Ledger Reference/i });
-    const ledgerList = document.getElementById('ledger-player-1')!.parentElement!;
-
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(ledgerList.className).toContain('hidden');
-    expect(ledgerList.className).toContain('md:grid');
-
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(ledgerList.className).not.toContain('hidden');
-
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(ledgerList.className).toContain('hidden');
   });
 });

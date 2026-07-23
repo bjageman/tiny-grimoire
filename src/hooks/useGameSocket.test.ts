@@ -156,46 +156,4 @@ describe('useGameSocket', () => {
     expect(calledOptions.method).toBe('POST');
     expect(calledOptions.body).toBe(JSON.stringify({ action: 'reveal' }));
   });
-
-  it('retries a rate-limited (429) publish and resolves true once it succeeds', async () => {
-    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-    fetchMock
-      .mockResolvedValueOnce({ ok: false, status: 429, statusText: 'Too Many Requests', headers: { get: () => null } } as unknown as Response)
-      .mockResolvedValueOnce({ ok: true, status: 200, statusText: 'OK' } as Response);
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    const { result } = renderHook(() => useGameSocket('ABCDE', () => {}));
-
-    let sendResult: boolean | undefined;
-    await act(async () => {
-      const p = result.current.sendMessage({ action: 'reveal' });
-      await vi.advanceTimersByTimeAsync(10_000); // let the backoff between attempts elapse
-      sendResult = await p;
-    });
-
-    expect(sendResult).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(2); // first 429, retry succeeds
-    warnSpy.mockRestore();
-  });
-
-  it('resolves false after exhausting retries so callers never treat a dropped publish as delivered', async () => {
-    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValue({ ok: false, status: 429, statusText: 'Too Many Requests', headers: { get: () => null } } as unknown as Response);
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    const { result } = renderHook(() => useGameSocket('ABCDE', () => {}));
-
-    let sendResult: boolean | undefined;
-    await act(async () => {
-      const p = result.current.sendMessage({ action: 'reveal' });
-      await vi.advanceTimersByTimeAsync(20_000);
-      sendResult = await p;
-    });
-
-    expect(sendResult).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(4); // PUBLISH_MAX_ATTEMPTS
-    warnSpy.mockRestore();
-    errorSpy.mockRestore();
-  });
 });

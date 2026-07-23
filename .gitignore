@@ -38,6 +38,3 @@ public/icons/
 /blob-report/
 /playwright/.cache/
 
-
-# Local-only scratch (not committed)
-local-only/

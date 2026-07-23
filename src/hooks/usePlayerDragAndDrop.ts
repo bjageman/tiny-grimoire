@@ -1,15 +1,8 @@
 import React, { useState, useRef } from 'react';
 
-function isBoundaryRotation(source: number, target: number, side: 'before' | 'after', n: number) {
-  if (source === n - 1 && target === 0 && side === 'before') return true;
-  if (source === 0 && target === n - 1 && side === 'after') return true;
-  return false;
-}
-
 export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => void) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [hoverSide, setHoverSide] = useState<'before' | 'after' | null>(null);
   const dragStartFromHandleRef = useRef(false);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -29,17 +22,15 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
     }
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number, side: 'before' | 'after' = 'before') => {
+  const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (index !== dragOverIndex || side !== hoverSide) {
+    if (dragOverIndex !== index) {
       setDragOverIndex(index);
-      setHoverSide(side);
     }
   };
 
   const handleDragLeave = () => {
     setDragOverIndex(null);
-    setHoverSide(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
@@ -48,29 +39,19 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
     const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex;
     if (sourceIndex !== null && sourceIndex !== undefined && !isNaN(sourceIndex)) {
       if (sourceIndex !== targetIndex) {
-        const side = hoverSide || 'before';
         const updated = [...items];
         const [removed] = updated.splice(sourceIndex, 1);
-        
-        const insertIndex = side === 'before'
-          ? (sourceIndex > targetIndex ? targetIndex : targetIndex - 1)
-          : (sourceIndex > targetIndex ? targetIndex + 1 : targetIndex);
-        
-        updated.splice(insertIndex, 0, removed);
-        if (items.length <= 3 || !isBoundaryRotation(sourceIndex, targetIndex, side, items.length)) {
-          setItems(updated);
-        }
+        updated.splice(targetIndex, 0, removed);
+        setItems(updated);
       }
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
-    setHoverSide(null);
   };
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
     setDragOverIndex(null);
-    setHoverSide(null);
   };
 
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
@@ -81,7 +62,7 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
     setDraggedIndex(index);
   };
 
-  const handleTouchMove = (e: React.TouchEvent, getTouchSide?: (clientX: number, clientY: number, targetIndex: number) => 'before' | 'after') => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (draggedIndex === null) return;
     
     // Prevent standard page scrolling when touch-dragging
@@ -104,35 +85,22 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
       current = current.parentElement;
     }
 
-    if (foundIndex !== null) {
-      const side = getTouchSide ? getTouchSide(touch.clientX, touch.clientY, foundIndex) : 'before';
-      if (foundIndex !== dragOverIndex || side !== hoverSide) {
-        setDragOverIndex(foundIndex);
-        setHoverSide(side);
-      }
+    if (foundIndex !== null && foundIndex !== dragOverIndex) {
+      setDragOverIndex(foundIndex);
     }
   };
 
   const handleTouchEnd = () => {
     if (draggedIndex !== null && dragOverIndex !== null) {
       if (draggedIndex !== dragOverIndex) {
-        const side = hoverSide || 'before';
         const updated = [...items];
         const [removed] = updated.splice(draggedIndex, 1);
-        
-        const insertIndex = side === 'before'
-          ? (draggedIndex > dragOverIndex ? dragOverIndex : dragOverIndex - 1)
-          : (draggedIndex > dragOverIndex ? dragOverIndex + 1 : dragOverIndex);
-        
-        updated.splice(insertIndex, 0, removed);
-        if (items.length <= 3 || !isBoundaryRotation(draggedIndex, dragOverIndex, side, items.length)) {
-          setItems(updated);
-        }
+        updated.splice(dragOverIndex, 0, removed);
+        setItems(updated);
       }
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
-    setHoverSide(null);
   };
 
   const movePlayer = (index: number, direction: 'up' | 'down') => {
@@ -147,7 +115,6 @@ export function usePlayerDragAndDrop<T>(items: T[], setItems: (items: T[]) => vo
   return {
     draggedIndex,
     dragOverIndex,
-    hoverSide,
     handleMouseDown,
     handleDragStart,
     handleDragOver,

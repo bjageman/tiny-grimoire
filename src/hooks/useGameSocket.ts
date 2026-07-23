@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Endpoints/credentials from env; leave USERNAME/PASSWORD blank for the public ntfy.sh broker.
+// Read endpoints and credentials from environment variables.
+// Leave USERNAME/PASSWORD blank when using the public ntfy.sh broker.
 const NTFY_SERVER_URL = import.meta.env.VITE_NTFY_SERVER_URL || 'ntfy.sh';
 const NTFY_USERNAME = import.meta.env.VITE_NTFY_ADMIN_USERNAME || '';
 const NTFY_PASSWORD = import.meta.env.VITE_NTFY_ADMIN_PASSWORD || '';
 
-// Retry a rejected publish (rate-limited / transient) rather than dropping it.
-const PUBLISH_MAX_ATTEMPTS = 4;
-const PUBLISH_BASE_DELAY_MS = 300;
-
-/** Build the ntfy ?auth= param (base64url of the full Authorization header value); ?auth= avoids a CORS preflight. */
+/**
+ * Build the ?auth= query parameter string for ntfy.
+ *
+ * ntfy expects the ?auth= value to be the *base64url-encoded* form of the
+ * entire Authorization header value (e.g. base64url("Basic <base64(u:p)>")).
+ * Standard URL-encoding ("Basic%20...") is NOT accepted and returns a 500.
+ * Using ?auth= for both the WebSocket URL and the POST URL avoids sending an
+ * Authorization header, which would otherwise trigger a CORS preflight that
+ * ntfy cannot satisfy when Access-Control-Allow-Origin is set to '*'.
+ */
 function buildAuthParam(): string {
   if (!NTFY_USERNAME || !NTFY_PASSWORD) return '';
   const headerValue = `Basic ${btoa(`${NTFY_USERNAME}:${NTFY_PASSWORD}`)}`;
@@ -94,8 +100,8 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
     };
   }, [gameCode]);
 
-  const sendMessage = useCallback(async (payload: unknown): Promise<boolean> => {
-    if (!gameCode) return false;
+  const sendMessage = useCallback(async (payload: unknown) => {
+    if (!gameCode) return;
     const topic = `botc-companion-${gameCode.toLowerCase()}`;
     const cleanDomain = NTFY_SERVER_URL.replace(/^(https?:\/\/|wss?:\/\/)/, '');
     const protocol = cleanDomain.startsWith('localhost') || cleanDomain.startsWith('127.0.0.1') ? 'http' : 'https';
@@ -103,30 +109,17 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
     const publishUrl = `${protocol}://${cleanDomain}/${topic}${buildAuthParam()}`;
 
     console.log(`[ntfy] Publishing message to: ${protocol}://${cleanDomain}/${topic}`, payload);
-
-    // POST to the ntfy broker with backoff+jitter retries (honoring 429 Retry-After); returns whether it truly delivered — false is NOT "delivered".
-    for (let attempt = 1; attempt <= PUBLISH_MAX_ATTEMPTS; attempt++) {
-      let retryAfterMs: number | null = null;
-      try {
-        const response = await fetch(publishUrl, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-        if (response.ok) return true;
-        const retryAfter = Number(response.headers.get('Retry-After'));
-        if (Number.isFinite(retryAfter) && retryAfter > 0) retryAfterMs = retryAfter * 1000;
-        console.warn(`[ntfy] publish attempt ${attempt}/${PUBLISH_MAX_ATTEMPTS} failed: ${response.status} ${response.statusText}`);
-      } catch (e) {
-        console.warn(`[ntfy] publish attempt ${attempt}/${PUBLISH_MAX_ATTEMPTS} errored:`, e);
+    try {
+      const response = await fetch(publishUrl, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        console.error(`[ntfy] HTTP POST publish failed with status: ${response.status} ${response.statusText}`);
       }
-      if (attempt < PUBLISH_MAX_ATTEMPTS) {
-        const backoff = retryAfterMs ?? PUBLISH_BASE_DELAY_MS * 2 ** (attempt - 1);
-        const jitter = Math.random() * PUBLISH_BASE_DELAY_MS;
-        await new Promise(resolve => setTimeout(resolve, backoff + jitter));
-      }
+    } catch (e) {
+      console.error(`[ntfy] Exception during HTTP POST publish:`, e);
     }
-    console.error(`[ntfy] HTTP POST publish permanently failed after ${PUBLISH_MAX_ATTEMPTS} attempts.`);
-    return false;
   }, [gameCode]);
 
   return { isConnected, sendMessage };

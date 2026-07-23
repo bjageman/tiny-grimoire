@@ -11,15 +11,14 @@ interface PlayerTrackerCircleProps {
   setActiveTrackerPlayerId: (id: string | null) => void;
   draggedIndex: number | null;
   dragOverIndex: number | null;
-  hoverSide: 'before' | 'after' | null;
   handleMouseDown: (e: React.MouseEvent) => void;
   handleDragStart: (e: React.DragEvent, index: number) => void;
-  handleDragOver: (e: React.DragEvent, index: number, side: 'before' | 'after') => void;
+  handleDragOver: (e: React.DragEvent, index: number) => void;
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
   handleTouchStart: (e: React.TouchEvent, index: number) => void;
-  handleTouchMove: (e: React.TouchEvent, getTouchSide?: (clientX: number, clientY: number, targetIndex: number) => 'before' | 'after') => void;
+  handleTouchMove: (e: React.TouchEvent) => void;
   handleTouchEnd: () => void;
 }
 
@@ -30,7 +29,6 @@ export default function PlayerTrackerCircle({
   setActiveTrackerPlayerId,
   draggedIndex,
   dragOverIndex,
-  hoverSide,
   handleMouseDown,
   handleDragStart,
   handleDragOver,
@@ -60,19 +58,6 @@ export default function PlayerTrackerCircle({
           const pos = positions[index] ?? { left: 50, top: 50 };
           const isDropTarget = !isSynced && dragOverIndex === index && draggedIndex !== index;
 
-          let rotateDeg = 0;
-          if (isDropTarget && hoverSide) {
-            const n = players.length;
-            const neighborIdx = hoverSide === 'before' ? (index - 1 + n) % n : (index + 1) % n;
-            const neighborPos = positions[neighborIdx];
-            if (neighborPos) {
-              const dy = neighborPos.top - pos.top;
-              const dx = neighborPos.left - pos.left;
-              const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
-              rotateDeg = angleDeg - 180;
-            }
-          }
-
           return (
             <div
               key={p.id}
@@ -80,53 +65,12 @@ export default function PlayerTrackerCircle({
               draggable={!isSynced}
               onMouseDown={isSynced ? undefined : handleMouseDown}
               onDragStart={isSynced ? undefined : (e) => handleDragStart(e, index)}
-              onDragOver={isSynced ? undefined : (e) => {
-                e.preventDefault();
-                const boardElement = boardRef.current;
-                if (!boardElement) return;
-                const boardRect = boardElement.getBoundingClientRect();
-                const cursorX = ((e.clientX - boardRect.left) / boardRect.width) * 100;
-                const cursorY = ((e.clientY - boardRect.top) / boardRect.height) * 100;
-                
-                const n = players.length;
-                const prevIdx = (index - 1 + n) % n;
-                const nextIdx = (index + 1) % n;
-                const prevPos = positions[prevIdx];
-                const nextPos = positions[nextIdx];
-                
-                if (prevPos && nextPos) {
-                  const dPrev = Math.pow(cursorX - prevPos.left, 2) + Math.pow(cursorY - prevPos.top, 2);
-                  const dNext = Math.pow(cursorX - nextPos.left, 2) + Math.pow(cursorY - nextPos.top, 2);
-                  const side = dPrev < dNext ? 'before' : 'after';
-                  handleDragOver(e, index, side);
-                }
-              }}
+              onDragOver={isSynced ? undefined : (e) => handleDragOver(e, index)}
               onDragLeave={isSynced ? undefined : handleDragLeave}
               onDrop={isSynced ? undefined : (e) => handleDrop(e, index)}
               onDragEnd={isSynced ? undefined : handleDragEnd}
               onTouchStart={isSynced ? undefined : (e) => handleTouchStart(e, index)}
-              onTouchMove={isSynced ? undefined : (e) => {
-                handleTouchMove(e, (clientX, clientY, targetIdx) => {
-                  const boardElement = boardRef.current;
-                  if (!boardElement) return 'before';
-                  const boardRect = boardElement.getBoundingClientRect();
-                  const cursorX = ((clientX - boardRect.left) / boardRect.width) * 100;
-                  const cursorY = ((clientY - boardRect.top) / boardRect.height) * 100;
-                  
-                  const n = players.length;
-                  const prevIdx = (targetIdx - 1 + n) % n;
-                  const nextIdx = (targetIdx + 1) % n;
-                  const prevPos = positions[prevIdx];
-                  const nextPos = positions[nextIdx];
-                  
-                  if (prevPos && nextPos) {
-                    const dPrev = Math.pow(cursorX - prevPos.left, 2) + Math.pow(cursorY - prevPos.top, 2);
-                    const dNext = Math.pow(cursorX - nextPos.left, 2) + Math.pow(cursorY - nextPos.top, 2);
-                    return dPrev < dNext ? 'before' : 'after';
-                  }
-                  return 'before';
-                });
-              }}
+              onTouchMove={isSynced ? undefined : handleTouchMove}
               onTouchEnd={isSynced ? undefined : handleTouchEnd}
               style={{
                 position: 'absolute',
@@ -149,19 +93,11 @@ export default function PlayerTrackerCircle({
                 style={btnStyle}
                 className={cn(
                   "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none",
-                  isSynced ? "cursor-default" : "hover:bg-[#fafafa]"
+                  isSynced ? "cursor-default" : "hover:bg-[#fafafa]",
+                  isDropTarget && "ring-4 ring-clocktower-blood shadow-[0_0_16px_rgba(139,0,0,0.5)]"
                 )}
                 title={isSynced ? p.name : "Edit player"}
               >
-                {isDropTarget && hoverSide && (
-                  <div
-                    className="absolute -inset-1 border-[4px] border-transparent border-l-red-500 rounded-full z-30 pointer-events-none"
-                    style={{
-                      transform: `rotate(${rotateDeg}deg)`,
-                      filter: 'drop-shadow(0 0 3px rgba(239, 68, 68, 0.8))'
-                    }}
-                  />
-                )}
                 <CharacterToken role={null} idPrefix={p.id} className="absolute inset-0" />
 
                 <span

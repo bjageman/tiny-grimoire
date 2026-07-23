@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import WhaleBucketDraftEditModal from './DraftEditModal';
 import type { Player } from '../../WhaleBucket';
 
@@ -23,6 +23,25 @@ describe('WhaleBucketDraftEditModal', () => {
     togglePlayerTheLilMonsta: vi.fn(),
     onClose: vi.fn(),
   };
+
+  it('picking the character the player already has clears it', () => {
+    const updatePlayerRole = vi.fn();
+    const aliceWithRole: Player = { ...alice, roleId: 'washerwoman' };
+    const { container } = render(
+      <WhaleBucketDraftEditModal
+        {...defaultProps}
+        players={[aliceWithRole]}
+        updatePlayerRole={updatePlayerRole}
+        isLightModeActive={false}
+      />
+    );
+
+    fireEvent.click(container.querySelector('#role-option-washerwoman')!);
+    expect(updatePlayerRole).toHaveBeenCalledWith('p1', '');
+
+    fireEvent.click(container.querySelector('#role-option-chef')!);
+    expect(updatePlayerRole).toHaveBeenCalledWith('p1', 'chef');
+  });
 
   it('never renders a solid-dark background class while in light mode', () => {
     const { container } = render(<WhaleBucketDraftEditModal {...defaultProps} isLightModeActive={true} />);

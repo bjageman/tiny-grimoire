@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import remindersData from '../../reminders.json';
 
@@ -30,24 +31,32 @@ export default function ReminderPickerModal({
   useScrollLock();
   const [search, setSearch] = useState('');
 
-  const options: ReminderOption[] = activeRoleIds.flatMap((charId) => {
-    const reminders = (remindersData as Record<string, string[]>)[charId] ?? [];
+  const options: ReminderOption[] = useMemo(() => activeRoleIds.flatMap((charId) => {
     const role = rolesData.find((r) => r.id === charId);
-    if (!role || reminders.length === 0) return [];
+    if (!role) return [];
+    // Official characters use reminders.json; custom characters bring their own on the role.
+    const official = (remindersData as Record<string, string[]>)[charId] ?? [];
+    const reminders = official.length > 0
+      ? official
+      : [...(role.reminders ?? []), ...(role.remindersGlobal ?? [])];
+    if (reminders.length === 0) return [];
     return reminders.map((text) => ({
       sourceCharId: charId,
       sourceCharName: role.name,
       text,
     }));
-  });
+  }), [activeRoleIds, rolesData]);
 
-  const filtered = search.trim()
-    ? options.filter(
-        (o) =>
-          o.text.toLowerCase().includes(search.toLowerCase()) ||
-          o.sourceCharName.toLowerCase().includes(search.toLowerCase())
-      )
-    : options;
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return term
+      ? options.filter(
+          (o) =>
+            o.text.toLowerCase().includes(term) ||
+            o.sourceCharName.toLowerCase().includes(term)
+        )
+      : options;
+  }, [options, search]);
 
   return (
     <div
@@ -121,7 +130,7 @@ export default function ReminderPickerModal({
                     src={`/icons/${opt.sourceCharId}.svg`}
                     alt={opt.sourceCharName}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    onError={roleIconFallback(rolesData.find((r) => r.id === opt.sourceCharId))}
                   />
                 </div>
                 <div className="min-w-0">

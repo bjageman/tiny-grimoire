@@ -4,10 +4,14 @@ import masterRoles from '../official_roles.json';
 
 const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
-function fillToCount(list: Role[], count: number, pool: Role[], ...fallbacks: (Role | undefined)[]): void {
+function fillToCount(list: Role[], count: number, pools: Role[][], ...fallbacks: (Role | undefined)[]): void {
   while (list.length < count) {
     const inPlay = new Set(list.map(r => r.id));
-    const unused = pool.find(r => !inPlay.has(r.id));
+    let unused: Role | undefined;
+    for (const pool of pools) {
+      unused = pool.find(r => !inPlay.has(r.id));
+      if (unused) break;
+    }
     if (unused) {
       list.push(unused);
     } else {
@@ -17,9 +21,73 @@ function fillToCount(list: Role[], count: number, pool: Role[], ...fallbacks: (R
   }
 }
 
-function splitTravelers(players: Player[], travelerCount: number): { travelerIds: Set<string>; basePlayers: Player[] } {
-  const shuffled = shuffle(players);
-  const travelerIds = new Set(shuffled.slice(0, travelerCount).map(p => p.id));
+function findUnusedRole(pools: Role[][], excludeIds: Set<string>): Role | null {
+  for (const pool of pools) {
+    const unused = pool.find(r => !excludeIds.has(r.id));
+    if (unused) return unused;
+  }
+  return null;
+}
+
+function getMasqueradeFakeRole(
+  activePool: Role[],
+  fallbackPool: Role[],
+  masterPool: Role[],
+  excludeIds: Set<string>,
+  lastResortFilter?: (r: Role) => boolean
+): Role | null {
+  // 1. Try unused in active pool or fallback pool
+  const unused = findUnusedRole([activePool, fallbackPool], excludeIds);
+  if (unused) return unused;
+
+  // 2. Try any role in active pool (even if in play)
+  const activeFallback = lastResortFilter ? activePool.filter(lastResortFilter) : activePool;
+  if (activeFallback.length > 0) {
+    return activeFallback[Math.floor(Math.random() * activeFallback.length)];
+  }
+
+  // 3. Try any role in fallback pool (even if in play)
+  const fallbackFallback = lastResortFilter ? fallbackPool.filter(lastResortFilter) : fallbackPool;
+  if (fallbackFallback.length > 0) {
+    return fallbackFallback[Math.floor(Math.random() * fallbackFallback.length)];
+  }
+
+  // 4. Try unused in master pool (outside script)
+  const unusedMaster = findUnusedRole([masterPool], excludeIds);
+  if (unusedMaster) return unusedMaster;
+
+  // 5. Absolute last resort: first master role
+  return masterPool[0] || null;
+}
+
+function isTravelerRole(roleId: string | undefined, selectionRoles: Role[]): boolean {
+  if (!roleId) return false;
+  const role = selectionRoles.find(r => r.id === roleId) || (masterRoles as Role[]).find(r => r.id === roleId);
+  return role?.team === 'traveler' || (role?.team as string) === 'traveller';
+}
+
+function splitTravelers(
+  players: Player[],
+  travelerCount: number,
+  manualTravelerIds: Set<string>
+): { travelerIds: Set<string>; basePlayers: Player[] } {
+  const travelerIds = new Set<string>();
+
+  for (const id of manualTravelerIds) {
+    if (travelerIds.size < travelerCount) {
+      travelerIds.add(id);
+    }
+  }
+
+  if (travelerIds.size < travelerCount) {
+    const nonManualPlayers = players.filter(p => !manualTravelerIds.has(p.id));
+    const shuffled = shuffle(nonManualPlayers);
+    for (const p of shuffled) {
+      if (travelerIds.size >= travelerCount) break;
+      travelerIds.add(p.id);
+    }
+  }
+
   return { travelerIds, basePlayers: players.filter(p => !travelerIds.has(p.id)) };
 }
 
@@ -69,11 +137,22 @@ function assignSimpleRolesToPlayers(
   isEvilId?: string
 ): Player[] {
   const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
-  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+  const travelerRoles = shuffle(
+    selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+  );
+  if (travelerRoles.length === 0) {
+    travelerRoles.push({ id: 'beggar', name: 'Beggar', team: 'traveler' } as Role);
+  }
 
+  let travelerIdx = 0;
   return players.map(p => {
     if (travelerIds.has(p.id)) {
-      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      if (isTravelerRole(p.roleId, selectionRoles)) {
+        return { ...p, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      }
+      const assignedTraveler = travelerRoles[travelerIdx % travelerRoles.length];
+      travelerIdx++;
+      return { ...p, roleId: assignedTraveler.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
     }
     const roleId = assignedRoles[basePlayerIndex.get(p.id) ?? 0]?.id;
     return {
@@ -91,14 +170,37 @@ function assignSimpleRolesToPlayers(
 export function performStandardAssignment(
   players: Player[],
   currentScriptRoles: Role[],
-  selectionRoles: Role[]
+  selectionRoles: Role[],
+  fallbackScriptRoles?: Role[],
+  sentinelOutsiderDelta: number = 0
 ): Player[] | null {
   const N = players.length;
   if (N < 5) return null;
 
-  const travelerCount = N > 15 ? N - 15 : 0;
+  const manualTravelerIds = new Set(
+    players.filter(p => isTravelerRole(p.roleId, selectionRoles)).map(p => p.id)
+  );
+
+  const neededTravelers = N > 15 ? N - 15 : 0;
+  let travelerCount = Math.max(manualTravelerIds.size, neededTravelers);
+  const maxTravelers = N - 5;
+  if (travelerCount > maxTravelers) {
+    travelerCount = maxTravelers;
+  }
+
   const baseCount = N - travelerCount;
   const base = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+
+  const fallbackPool = fallbackScriptRoles || [];
+  const fallbackTfs = fallbackPool.filter(r => r.team === 'townsfolk');
+  const fallbackOuts = fallbackPool.filter(r => r.team === 'outsider');
+  const fallbackMins = fallbackPool.filter(r => r.team === 'minion');
+  const fallbackDems = fallbackPool.filter(r => r.team === 'demon');
+
+  const masterTfs = (masterRoles as Role[]).filter(r => r.team === 'townsfolk');
+  const masterOuts = (masterRoles as Role[]).filter(r => r.team === 'outsider');
+  const masterMins = (masterRoles as Role[]).filter(r => r.team === 'minion');
+  const masterDems = (masterRoles as Role[]).filter(r => r.team === 'demon');
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');
@@ -122,9 +224,9 @@ export function performStandardAssignment(
     ({ tfs: selectedTownsfolk, outs: selectedOutsiders } = applyHuntsmanDamsel(outs, selectedTownsfolk, selectedOutsiders, ['atheist']));
 
     const finalRolesList = shuffle([...selectedOutsiders, ...selectedTownsfolk]);
-    fillToCount(finalRolesList, baseCount, tfs, tfs[0], outs[0]);
+    fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], outs[0]);
 
-    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles);
   }
 
@@ -140,14 +242,11 @@ export function performStandardAssignment(
   if (hasLegion && legionRole) {
     const L = Math.round(baseCount * 0.6);
     const finalRolesList = shuffle([...Array(L).fill(legionRole), ...shuffle(tfs).slice(0, baseCount - L)]);
-    fillToCount(finalRolesList, baseCount, tfs, tfs[0], dems[0]);
-    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+    fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], dems[0]);
+    const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'legion');
   }
 
-  // Riot's "Minions become Riot" transformation happens on day 3 during play, not at setup
-  // ([setup: false] on the character, unlike Legion's setup-time "[Most players are Legion]") —
-  // so at initial assignment it's just a normal single Demon, no distribution changes.
 
   // Normal / non-Legion setup
   const nonLegionDemons = dems.filter(d => d.id !== 'legion');
@@ -168,15 +267,60 @@ export function performStandardAssignment(
     selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
   }
 
-  let outsiderModifier = 0;
-  if (selectedMinions.some(m => m.id === 'baron')) outsiderModifier += 2;
-  if (selectedMinions.some(m => m.id === 'godfather')) outsiderModifier += Math.random() < 0.5 ? 1 : -1;
-  if (selectedDemons.some(d => d.id === 'fanggu')) outsiderModifier += 1;
-  if (selectedDemons.some(d => d.id === 'vigormortis')) outsiderModifier -= 1;
-
-  let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
+
+  // Sentinel (Fabled): a fixed Storyteller-chosen ±1 Outsider shift; ignored under Kazali/Xaan.
+  const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
+                               (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
+                               (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +
+                               (bypassAdjustments ? 0 : sentinelOutsiderDelta);
+
+  const gfRange = (!bypassAdjustments && selectedMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
+  const balRange = (!bypassAdjustments && tfs.some(t => t.id === 'balloonist')) ? [0, 1] : [0];
+  const hermRange = (!bypassAdjustments && outs.some(o => o.id === 'hermit')) ? [-1, 0] : [0];
+
+  const tfDelta = (selectedMinions.some(m => m.id === 'marionette') ? 1 : 0) + (outs.some(o => o.id === 'drunk') ? 1 : 0);
+
+  interface Combination {
+    gf: number;
+    bal: number;
+    herm: number;
+  }
+
+  const validCombos: Combination[] = [];
+
+  for (const gf of gfRange) {
+    for (const bal of balRange) {
+      for (const herm of hermRange) {
+        const tempOuts = Math.max(0, base.outsider + baseOutsiderModifier + gf + bal + herm);
+        let tempTfs = baseCount - selectedDemons.length - selectedMinions.length - tempOuts;
+        if (tempTfs < 0) tempTfs = 0;
+
+        const fitsOutsiders = tempOuts <= outs.length;
+        const fitsTownsfolk = (tempTfs + tfDelta) <= tfs.length;
+
+        if (fitsOutsiders && fitsTownsfolk) {
+          validCombos.push({ gf, bal, herm });
+        }
+      }
+    }
+  }
+
+  let chosenCombo: Combination;
+  if (validCombos.length > 0) {
+    chosenCombo = validCombos[Math.floor(Math.random() * validCombos.length)];
+  } else {
+    chosenCombo = {
+      gf: gfRange[Math.floor(Math.random() * gfRange.length)],
+      bal: balRange[Math.floor(Math.random() * balRange.length)],
+      herm: hermRange[Math.floor(Math.random() * hermRange.length)]
+    };
+  }
+
+  const outsiderModifier = baseOutsiderModifier + chosenCombo.gf;
+  let targetOutsiders = Math.max(0, base.outsider + outsiderModifier);
+
   if (bypassAdjustments) {
     const maxOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
     targetOutsiders = Math.floor(Math.random() * (maxOutsiders + 1));
@@ -187,15 +331,14 @@ export function performStandardAssignment(
     targetOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
   }
 
-  // Marionette fully counts as the 1 Minion it is (selectedMinions is unchanged below) and does
-  // not otherwise alter the real Outsider/Townsfolk counts.
   const hasMarionette = !bypassAdjustments && selectedMinions.some(m => m.id === 'marionette');
 
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
-  // 1. Balloonist adjustment
-  if (!bypassAdjustments && selectedTownsfolk.some(t => t.id === 'balloonist') && Math.random() < 0.5 && outs.length > selectedOutsiders.length) {
+  // 1. Balloonist's +0/+1 Outsider only applies if it was actually dealt (balRange is gated on the pool), so re-check the draw.
+  const balloonistInPlay = selectedTownsfolk.some(t => t.id === 'balloonist');
+  if (!bypassAdjustments && chosenCombo.bal === 1 && balloonistInPlay && outs.length > selectedOutsiders.length) {
     const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
     if (remainingOuts.length > 0) {
       const newOut = remainingOuts[Math.floor(Math.random() * remainingOuts.length)];
@@ -209,18 +352,17 @@ export function performStandardAssignment(
     }
   }
 
-  // 2. Hermit adjustment
-  if (!bypassAdjustments && selectedOutsiders.some(o => o.id === 'hermit') && Math.random() < 0.5) {
+  // 2. Hermit: same pool-vs-draw problem as Balloonist; only fires when another Outsider can absorb the -1 (removing the Hermit would invalidate it).
+  const hermitInPlay = selectedOutsiders.some(o => o.id === 'hermit');
+  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInPlay) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
     if (otherOutsiders.length > 0) {
       const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
       selectedOutsiders = selectedOutsiders.filter(o => o.id !== outToRemove.id);
-    } else {
-      selectedOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
-    }
-    const remainingTfs = tfs.filter(t => !selectedTownsfolk.some(st => st.id === t.id));
-    if (remainingTfs.length > 0) {
-      selectedTownsfolk.push(remainingTfs[Math.floor(Math.random() * remainingTfs.length)]);
+      const remainingTfs = tfs.filter(t => !selectedTownsfolk.some(st => st.id === t.id));
+      if (remainingTfs.length > 0) {
+        selectedTownsfolk.push(remainingTfs[Math.floor(Math.random() * remainingTfs.length)]);
+      }
     }
   }
 
@@ -237,109 +379,76 @@ export function performStandardAssignment(
     ...selectedTownsfolk
   ]);
 
-  fillToCount(finalRolesList, baseCount, tfs, tfs[0], outs[0], mins[0], dems[0]);
+  fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], outs[0], mins[0], dems[0]);
 
   const roleIdsInPlay = new Set(finalRolesList.map(r => r.id));
 
-  // Pick the Marionette's displayed identity now that the real role list is fully finalized
-  // (including any fillToCount padding). Its team's real target was already reduced by 1 above
-  // (with the freed slot handed to the other good team), so a non-colliding, not-actually-
-  // in-play character from that same team is guaranteed to exist in the script's own pool —
-  // no need to reach outside it, and the real Townsfolk/Outsider/Minion/Demon counts used for
-  // balance aren't perturbed. Falls back to the full official role list only in the (should be
-  // unreachable) case the script pool is somehow exhausted anyway.
-  // Marionette bluffs as a Townsfolk by default. It only bluffs as an Outsider if the script has
-  // no Townsfolk at all to draw from — a true last resort that should be unreachable on any real
-  // script, since every script has Townsfolk characters.
+  // Marionette's displayed identity: a non-colliding not-in-play Townsfolk (or Outsider only if no Townsfolk exist) from the script's own pool, since its target was already reduced by 1; falls back to the official list only if exhausted.
   const marionetteFakeTeam: 'townsfolk' | 'outsider' | null = !hasMarionette
     ? null
     : tfs.length > 0 ? 'townsfolk' : (outs.length > 0 ? 'outsider' : null);
 
   let marionetteFakeRole: Role | null = null;
   if (marionetteFakeTeam) {
+    const excludeIds = new Set([...roleIdsInPlay, 'drunk', 'lunatic']);
     const scriptPool = marionetteFakeTeam === 'outsider' ? outs : tfs;
-    const scriptCandidates = scriptPool.filter(r => !roleIdsInPlay.has(r.id) && r.id !== 'drunk' && r.id !== 'lunatic');
-    if (scriptCandidates.length > 0) {
-      marionetteFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
-    } else {
-      const scriptFallback = scriptPool.filter(r => r.id !== 'drunk' && r.id !== 'lunatic');
-      if (scriptFallback.length > 0) {
-        marionetteFakeRole = scriptFallback[Math.floor(Math.random() * scriptFallback.length)];
-      } else {
-        const masterCandidates = (masterRoles as Role[]).filter(r =>
-          r.team === marionetteFakeTeam && !roleIdsInPlay.has(r.id) && r.id !== 'drunk' && r.id !== 'lunatic'
-        );
-        marionetteFakeRole = masterCandidates.length > 0
-          ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]
-          : null;
-      }
-    }
+    const fallbackPool = marionetteFakeTeam === 'outsider' ? fallbackOuts : fallbackTfs;
+    const masterPool = marionetteFakeTeam === 'outsider' ? masterOuts : masterTfs;
+
+    marionetteFakeRole = getMasqueradeFakeRole(
+      scriptPool,
+      fallbackPool,
+      masterPool,
+      excludeIds,
+      r => r.id !== 'drunk' && r.id !== 'lunatic'
+    );
   }
 
-  // Same reasoning for the Drunk's fake Townsfolk identity: draw from this script's
-  // townsfolk first, guaranteeing a non-colliding "not-in-play" character if possible.
-  // Falls back to in-play script townsfolk, and finally the master list if necessary.
+  // Drunk's fake Townsfolk identity: script townsfolk first (non-colliding not-in-play if possible), then in-play, then master list.
   const hasDrunkInPlay = finalRolesList.some(r => r.id === 'drunk');
   let drunkFakeRole: Role | null = null;
   if (hasDrunkInPlay) {
-    const scriptCandidates = tfs.filter(r => !roleIdsInPlay.has(r.id) && r.id !== marionetteFakeRole?.id);
-    if (scriptCandidates.length > 0) {
-      drunkFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
-    } else {
-      const scriptFallback = tfs.filter(r => r.id !== marionetteFakeRole?.id);
-      if (scriptFallback.length > 0) {
-        drunkFakeRole = scriptFallback[Math.floor(Math.random() * scriptFallback.length)];
-      } else if (tfs.length > 0) {
-        drunkFakeRole = tfs[Math.floor(Math.random() * tfs.length)];
-      } else {
-        const masterCandidates = (masterRoles as Role[]).filter(r =>
-          r.team === 'townsfolk' && !roleIdsInPlay.has(r.id) && r.id !== marionetteFakeRole?.id
-        );
-        drunkFakeRole = masterCandidates.length > 0
-          ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]
-          : null;
-      }
-    }
+    const excludeIds = new Set([...roleIdsInPlay]);
+    if (marionetteFakeRole) excludeIds.add(marionetteFakeRole.id);
+
+    drunkFakeRole = getMasqueradeFakeRole(
+      tfs,
+      fallbackTfs,
+      masterTfs,
+      excludeIds,
+      r => r.id !== marionetteFakeRole?.id
+    );
   }
 
-  // Lil' Monsta displays as a Minion (it's secretly the Demon), so its fake identity is drawn
-  // from script minions first, falling back to master list if script minions are exhausted.
+  // Lil' Monsta displays as a Minion; draw its fake identity from script minions first, then master list.
   const hasLilMonstaInPlay = finalRolesList.some(r => r.id === 'lilmonsta');
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonstaInPlay) {
-    const scriptCandidates = mins.filter(r => !roleIdsInPlay.has(r.id));
-    if (scriptCandidates.length > 0) {
-      lilMonstaFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
-    } else if (mins.length > 0) {
-      lilMonstaFakeRole = mins[Math.floor(Math.random() * mins.length)];
-    } else {
-      const masterCandidates = (masterRoles as Role[]).filter(r => r.team === 'minion' && !roleIdsInPlay.has(r.id));
-      lilMonstaFakeRole = masterCandidates.length > 0
-        ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]
-        : null;
-    }
+    const excludeIds = new Set([...roleIdsInPlay]);
+
+    lilMonstaFakeRole = getMasqueradeFakeRole(
+      mins,
+      fallbackMins,
+      masterMins,
+      excludeIds
+    );
   }
 
-  // Lunatic displays as the Demon (it's secretly an Outsider). Exclude the real Demon if possible
-  // so the Lunatic can't coincidentally be told it's the exact same Demon that's actually in play.
-  // Drawn from script demons first.
+  // Lunatic displays as the Demon; draw from script demons first, excluding the real Demon if possible.
   const hasLunaticInPlay = finalRolesList.some(r => r.id === 'lunatic');
   let lunaticFakeRole: Role | null = null;
   if (hasLunaticInPlay) {
-    const scriptCandidates = dems.filter(r => !roleIdsInPlay.has(r.id));
-    if (scriptCandidates.length > 0) {
-      lunaticFakeRole = scriptCandidates[Math.floor(Math.random() * scriptCandidates.length)];
-    } else if (dems.length > 0) {
-      lunaticFakeRole = dems[Math.floor(Math.random() * dems.length)];
-    } else {
-      const masterCandidates = (masterRoles as Role[]).filter(r => r.team === 'demon' && !roleIdsInPlay.has(r.id));
-      lunaticFakeRole = masterCandidates.length > 0
-        ? masterCandidates[Math.floor(Math.random() * masterCandidates.length)]
-        : null;
-    }
+    const excludeIds = new Set([...roleIdsInPlay]);
+
+    lunaticFakeRole = getMasqueradeFakeRole(
+      dems,
+      fallbackDems,
+      masterDems,
+      excludeIds
+    );
   }
 
-  const { travelerIds, basePlayers } = splitTravelers(players, travelerCount);
+  const { travelerIds, basePlayers } = splitTravelers(players, travelerCount, manualTravelerIds);
   const basePlayerIndex = new Map(basePlayers.map((p, i) => [p.id, i]));
 
   const K = basePlayers.length;
@@ -436,11 +545,22 @@ export function performStandardAssignment(
     }
   }
 
-  const travelerRole = selectionRoles.find(r => r.team === 'traveler') ?? { id: 'beggar' };
+  const travelerRoles = shuffle(
+    selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+  );
+  if (travelerRoles.length === 0) {
+    travelerRoles.push({ id: 'beggar', name: 'Beggar', team: 'traveler' } as Role);
+  }
 
+  let travelerIdx = 0;
   const assignedPlayers = players.map(p => {
     if (travelerIds.has(p.id)) {
-      return { ...p, roleId: travelerRole.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      if (manualTravelerIds.has(p.id)) {
+        return { ...p, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
+      }
+      const assignedTraveler = travelerRoles[travelerIdx % travelerRoles.length];
+      travelerIdx++;
+      return { ...p, roleId: assignedTraveler.id, isTheDrunk: false, isTheMarionette: false, isTheLunatic: false, isTheLilMonsta: false };
     }
 
     const role = assignedRoles[basePlayerIndex.get(p.id) ?? 0];
@@ -488,7 +608,7 @@ export function performStandardAssignment(
     };
   });
 
-  const travelerRoleIds = new Set(selectionRoles.filter(r => r.team === 'traveler').map(r => r.id));
+  const travelerRoleIds = new Set(selectionRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller').map(r => r.id));
   const tfIds = new Set(tfs.map(r => r.id));
   const outIds = new Set(outs.map(r => r.id));
 

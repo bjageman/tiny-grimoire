@@ -1,4 +1,5 @@
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 
 interface CharacterTokenProps {
@@ -7,20 +8,28 @@ interface CharacterTokenProps {
   size?: number;
   idPrefix: string;
   className?: string;
+  /** Icon size as a percentage of the token, default 85 */
+  iconSizePct?: number;
+  /** Dims/grayscales the token to reflect a dead player */
+  isDead?: boolean;
+  /** When there's no role, still draw the colored ring (no text/icon) instead of the dashed "?" placeholder */
+  blankRing?: boolean;
 }
 
-const teamFill = (team: Role['team']) => ({
-  townsfolk: 'fill-clocktower-townsfolk',
-  outsider: 'fill-clocktower-outsider',
-  minion: 'fill-clocktower-minion',
-  demon: 'fill-clocktower-demon',
-  traveler: 'fill-clocktower-traveler',
-}[team] ?? 'fill-gray-500');
+const TEAM_COLOR: Record<Role['team'], string> = {
+  townsfolk: '#2563eb',
+  outsider: '#10b981',
+  minion: '#ef4444',
+  demon: '#7f1d1d',
+  traveler: '#a855f7',
+};
 
-export default function CharacterToken({ role, isEvil, size, idPrefix, className }: CharacterTokenProps) {
+const teamFill = (team: Role['team']) => TEAM_COLOR[team] ?? '#6b7280';
+
+export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, blankRing = false }: CharacterTokenProps) {
   const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
 
-  if (!role) {
+  if (!role && !blankRing) {
     return (
       <div
         className={cn(
@@ -35,34 +44,65 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
     );
   }
 
-  const evil = isEvil ?? (role.team === 'minion' || role.team === 'demon');
+  const evil = isEvil ?? (role ? (role.team === 'minion' || role.team === 'demon') : false);
 
   return (
     <div className={cn('relative shrink-0', size === undefined && 'w-full h-full', className)} style={sizeStyle}>
-      <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none">
+      {/* Background layer: ring + dashed guide circle, behind the icon */}
+      <svg
+        viewBox="0 0 200 200"
+        opacity={isDead ? 0.6 : 1}
+        className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none"
+      >
         <defs>
           <path id={`token-top-${idPrefix}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
           <path id={`token-bottom-${idPrefix}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
         </defs>
-        <circle cx="100" cy="100" r="90" fill="#ffffff" className={cn('stroke-[6px]', evil ? 'stroke-clocktower-minion' : 'stroke-clocktower-townsfolk')} />
+        <circle
+          cx="100"
+          cy="100"
+          r="90"
+          fill={isDead ? '#e4e4e7' : '#ffffff'}
+          stroke={evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk}
+          strokeWidth={6}
+        />
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-        <text className={cn('font-bold text-[18px] tracking-wider uppercase', teamFill(role.team))}>
-          <textPath href={`#token-top-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.name}</textPath>
-        </text>
-        <text className={cn('font-bold text-[11px] tracking-widest uppercase', teamFill(role.team))}>
-          <textPath href={`#token-bottom-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.team}</textPath>
-        </text>
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none select-none">
-        <div className="w-[65%] h-[65%] flex items-center justify-center">
-          <img
-            src={`/icons/${role.id}.svg`}
-            alt={role.name}
-            className="w-full h-full object-contain opacity-35"
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
+      {/* Icon layer: clipped to the token circle so any image, whatever its shape, stays inside the ring */}
+      {role && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none select-none">
+          <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
+            <img
+              key={role.id}
+              src={`/icons/${role.id}.svg`}
+              alt={role.name}
+              className={cn('w-full h-full object-contain', isDead ? 'grayscale opacity-15' : 'opacity-35')}
+              onError={roleIconFallback(role, evil)}
+            />
+          </div>
         </div>
-      </div>
+      )}
+      {/* Text layer: curved name/team labels, always drawn on top of the icon */}
+      {role && (
+        <svg
+          viewBox="0 0 200 200"
+          opacity={isDead ? 0.6 : 1}
+          className="w-full h-full absolute inset-0 z-20 select-none pointer-events-none"
+        >
+          <text
+            fill={teamFill(role.team)}
+            style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.025em', textTransform: 'uppercase' }}
+          >
+            <textPath href={`#token-top-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.name}</textPath>
+          </text>
+          <text
+            fill={teamFill(role.team)}
+            style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+          >
+            <textPath href={`#token-bottom-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.team}</textPath>
+          </text>
+        </svg>
+      )}
     </div>
   );
 }

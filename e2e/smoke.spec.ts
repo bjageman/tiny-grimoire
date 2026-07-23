@@ -2,5 +2,5 @@ import { test, expect } from '@playwright/test';
 
 test('home page loads', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('BOTC Grimoire')).toBeVisible();
+  await expect(page.getByText('Tiny Grimoire')).toBeVisible();
 });

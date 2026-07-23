@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { GripVertical, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
+import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
@@ -12,6 +14,11 @@ import ScriptCharactersModal from './ScriptCharactersModal';
 import BaseDistributionCard from './BaseDistributionCard';
 import AutoResizeTextarea from './AutoResizeTextarea';
 import DialogModal from './DialogModal';
+import ToggleSwitch from './ToggleSwitch';
+import RecapImageExport from './RecapImageExport';
+import { DiscordIcon } from './DiscordIcon';
+import { buildDiscordPost } from '../../utils/discordRecap';
+import { copyText } from '../../utils/clipboard';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Props {
@@ -39,6 +46,7 @@ interface Props {
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
+  remotePlayerIds?: Set<string>;
   // Optional / mode-specific
   selectionRoles?: Role[];
   showNightOrder?: boolean;
@@ -48,6 +56,7 @@ interface Props {
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;
+  includeAllScriptReminders?: boolean;
   travelerCardTitle?: string;
   demonBluffs?: string[];
   onUpdateDemonBluffs?: (bluffs: string[]) => void;
@@ -63,6 +72,8 @@ interface Props {
   onRotationChange?: (offset: number) => void;
   notes?: string;
   onNotesChange?: (notes: string) => void;
+  showReminderToggle?: boolean;
+  onToggleReminders?: (enabled: boolean) => void;
 }
 
 export default function GamePhase({
@@ -73,6 +84,7 @@ export default function GamePhase({
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   handleTouchStart, handleTouchMove, handleTouchEnd,
   onResetDead, onResetTime,
+  remotePlayerIds,
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
@@ -81,6 +93,7 @@ export default function GamePhase({
   isSynced = false,
   isSecondary = false,
   enableReminders = true,
+  includeAllScriptReminders = false,
   travelerCardTitle = 'Add Traveler',
   demonBluffs = [],
   onUpdateDemonBluffs,
@@ -96,9 +109,14 @@ export default function GamePhase({
   onRotationChange,
   notes,
   onNotesChange,
+  showReminderToggle = false,
+  onToggleReminders,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [postCopied, setPostCopied] = useState(false);
+  const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
   const [isBluffOverlayOpen, setIsBluffOverlayOpen] = useState(false);
   const [bluffPickerSlot, setBluffPickerSlot] = useState<number | null>(null);
   const [bluffSearch, setBluffSearch] = useState('');
@@ -114,19 +132,19 @@ export default function GamePhase({
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
     const targetName = players.find(p => p.id === targetPlayerId)?.name ?? targetPlayerId;
-    const charName = (rolesData as Role[]).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
+    const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
     onLogEvent?.(`Reminder "${text} (${charName})" placed on ${targetName}`);
   };
   const handleRemoveReminder = (reminderId: string) => {
     const token = reminderTokens.find(r => r.id === reminderId);
     if (token) {
       const targetName = players.find(p => p.id === token.targetPlayerId)?.name ?? token.targetPlayerId;
-      const charName = (rolesData as Role[]).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
+      const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
       onLogEvent?.(`Reminder "${token.text} (${charName})" removed from ${targetName}`);
     }
     setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
   };
-  const { dialogProps, showConfirm } = useDialog();
+  const { dialogProps, showConfirm, showAlert } = useDialog();
 
   const handleRemoveAllReminders = () => {
     showConfirm('Remove all reminder tokens?', () => {
@@ -137,17 +155,7 @@ export default function GamePhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    const roles = [...baseRoles];
-    players.forEach(p => {
-      const displayRoles = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
-      displayRoles.forEach(roleId => {
-        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
-        if (rObj && rObj.team === 'traveler' && !roles.some(r => r.id === rObj.id)) {
-          roles.push(rObj);
-        }
-      });
-    });
-    return roles.sort((a, b) => a.name.localeCompare(b.name));
+    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);
@@ -168,8 +176,8 @@ export default function GamePhase({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [customScriptRoles, assignedRoleIds, showAllBluffCandidates]);
 
-  const officialRoleAbility = (id: string) =>
-    (officialRoles as (Role & { ability?: string })[]).find(r => r.id === id)?.ability;
+  const officialRoleAbility = (role: Pick<Role, 'id' | 'ability'>) =>
+    role.ability ?? (officialRoles as (Role & { ability?: string })[]).find(r => r.id === role.id)?.ability;
 
   const bluffTeamLabel: Record<Role['team'], string> = {
     townsfolk: 'Townsfolk',
@@ -199,11 +207,36 @@ export default function GamePhase({
     if (!bluffSearch.trim()) return bluffCandidates;
     const q = bluffSearch.toLowerCase();
     return bluffCandidates.filter(r =>
-      r.name.toLowerCase().includes(q) || officialRoleAbility(r.id)?.toLowerCase().includes(q)
+      r.name.toLowerCase().includes(q) || officialRoleAbility(r)?.toLowerCase().includes(q)
     );
   }, [bluffCandidates, bluffSearch]);
 
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!postCopied) return;
+    const t = setTimeout(() => setPostCopied(false), 1800);
+    return () => clearTimeout(t);
+  }, [postCopied]);
+
+  const handleCopyPost = async () => {
+    const { text } = buildDiscordPost({
+      players,
+      rolesData: grimoireRolesData,
+      gameLog: gameLog ?? [],
+      scriptName,
+      dayNumber,
+      timeOfDay,
+    });
+    if (await copyText(text)) {
+      setPostCopied(true);
+    } else {
+      showAlert(
+        'Your browser would not let the page write to the clipboard. Select the log text and copy it by hand, or open the app over https (or on localhost) where copying is permitted.',
+        'Copy failed'
+      );
+    }
+  };
 
   useEffect(() => {
     if (bluffPickerSlot !== null && !isMobile) {
@@ -227,10 +260,37 @@ export default function GamePhase({
     onUpdateDemonBluffs(arr);
   };
 
+  const renderScriptButton = (id: string, visibilityClassName: string) => (
+    <button
+      id={id}
+      type="button"
+      onClick={() => setIsScriptModalOpen(true)}
+      className={cn(
+        visibilityClassName,
+        "flex-col w-full border py-3.5 px-4 rounded-lg items-center justify-center gap-1 text-center transition-colors duration-300 cursor-pointer focus:outline-none hover:opacity-90 active:scale-[0.98]",
+        isLightModeActive
+          ? "bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-800"
+          : "bg-gray-955 border-gray-800 hover:bg-gray-900 text-gray-300"
+      )}
+    >
+      <span className={cn(
+        "flex items-center gap-1.5 text-base font-extrabold transition-colors",
+        isLightModeActive ? "text-gray-900" : "text-white"
+      )}>
+        📜 {scriptName}
+      </span>
+      {scriptAuthor && (
+        <span className="text-[10px] text-gray-500 font-medium">
+          by {scriptAuthor}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     <>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
-    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start max-md:landscape:grid max-md:landscape:grid-cols-[3fr_2fr] max-md:landscape:gap-6 max-md:landscape:space-y-0 max-md:landscape:items-start">
+    <div className="space-y-6 animate-fadeIn md:grid md:grid-cols-[3fr_2fr] xl:grid-cols-[2fr_1fr] md:gap-8 md:space-y-0 md:items-start">
       {/* Column 1: Board & Night Order */}
       <div className="space-y-6">
         <div id="grimoire-board-container" className="space-y-4">
@@ -238,21 +298,24 @@ export default function GamePhase({
             players={players}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
-            toggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
+            toggleTimeOfDay={!isSynced && !showNightOrder ? toggleTimeOfDay : undefined}
             onSelectPlayer={setSelectedPlayerId}
             rolesData={grimoireRolesData}
             onResetDead={onResetDead}
             onResetTime={onResetTime}
             isSynced={isSynced}
             isLightModeActive={isLightModeActive}
+            remotePlayerIds={remotePlayerIds}
+            includeAllScriptReminders={includeAllScriptReminders}
             reminderTokens={enableReminders ? reminderTokens : []}
-            onAddReminder={enableReminders && !isSynced ? handleAddReminder : undefined}
-            onRemoveReminder={enableReminders && !isSynced ? handleRemoveReminder : undefined}
-            onRemoveAllReminders={enableReminders && !isSynced ? handleRemoveAllReminders : undefined}
+            onAddReminder={enableReminders ? handleAddReminder : undefined}
+            onRemoveReminder={enableReminders ? handleRemoveReminder : undefined}
+            onRemoveAllReminders={enableReminders ? handleRemoveAllReminders : undefined}
             rotationOffset={rotationOffset}
             onRotationChange={onRotationChange}
           />
         </div>
+        {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}
         {showNightOrder && (
           <NightOrderWidget
             players={players}
@@ -262,10 +325,11 @@ export default function GamePhase({
             onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
             checkedItems={checkedItems}
             onSetCheckedItems={onSetCheckedItems}
+            scriptRoles={customScriptRoles ?? undefined}
           />
         )}
         {onNotesChange && (
-          <div className="hidden md:block landscape:block space-y-1.5">
+          <div className="hidden md:block space-y-1.5">
             <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
             <AutoResizeTextarea
               value={notes ?? ''}
@@ -273,6 +337,20 @@ export default function GamePhase({
               placeholder="Write anything here. Deductions, suspicions, reminders..."
               isLightModeActive={isLightModeActive}
             />
+            {showReminderToggle && onToggleReminders && (
+              <label className={cn(
+                "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
+                isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+              )}>
+                <ToggleSwitch
+                  id="toggle-reminders-checkbox-desktop"
+                  checked={enableReminders}
+                  onChange={onToggleReminders}
+                  isLightModeActive={isLightModeActive}
+                />
+                <span>Turn on Reminder Tokens</span>
+              </label>
+            )}
           </div>
         )}
       </div>
@@ -281,35 +359,13 @@ export default function GamePhase({
       <div id="grimoire-controls-container" className="space-y-6">
 
         {/* Active Script Display */}
-        <button
-          id="game-script-button"
-          type="button"
-          onClick={() => setIsScriptModalOpen(true)}
-          className={cn(
-            "w-full border py-3.5 px-4 rounded-lg flex flex-col items-center justify-center gap-1 text-center transition-colors duration-300 cursor-pointer focus:outline-none hover:opacity-90 active:scale-[0.98]",
-            isLightModeActive
-              ? "bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-800"
-              : "bg-gray-955 border-gray-800 hover:bg-gray-900 text-gray-300"
-          )}
-        >
-          <span className={cn(
-            "flex items-center gap-1.5 text-base font-extrabold transition-colors",
-            isLightModeActive ? "text-gray-900" : "text-white"
-          )}>
-            📜 {scriptName}
-          </span>
-          {scriptAuthor && (
-            <span className="text-[10px] text-gray-500 font-medium">
-              by {scriptAuthor}
-            </span>
-          )}
-        </button>
+        {renderScriptButton('game-script-button', 'hidden md:flex')}
 
         {/* Standard Base Distribution */}
         {players.length >= 5 && (() => {
           const travelerCountInPlay = players.filter(p => {
             if (!p.roleId) return false;
-            const r = (rolesData as Role[]).find(role => role.id === p.roleId);
+            const r = (customScriptRoles || (rolesData as Role[])).find(role => role.id === p.roleId);
             return r?.team === 'traveler';
           }).length;
           const baseCount = players.length - travelerCountInPlay;
@@ -341,7 +397,7 @@ export default function GamePhase({
             <div className="flex flex-col gap-1.5">
               {[0, 1, 2].map(slot => {
                 const roleId = demonBluffs[slot] || '';
-                const role = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : null;
+                const role = roleId ? grimoireRolesData.find(r => r.id === roleId) : null;
                 return (
                   <div key={slot} className="relative">
                     {bluffPickerSlot === slot ? (
@@ -393,8 +449,8 @@ export default function GamePhase({
                         >
                           {role ? (
                             <span className="flex items-center gap-1.5">
-                              <div className="w-5 h-5 shrink-0 rounded-full bg-white flex items-center justify-center p-0.5">
-                                <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                              <div className="w-5 h-5 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
+                                <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                               </div>
                               <span>{role.name}</span>
                               <span className={cn('text-[10px] font-semibold', bluffTeamTextColor[role.team])}>
@@ -421,14 +477,13 @@ export default function GamePhase({
                 );
               })}
             </div>
-            <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none pt-0.5">
-              <input
-                type="checkbox"
+            <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none pt-0.5">
+              <ToggleSwitch
                 checked={showAllBluffCandidates}
-                onChange={e => setShowAllBluffCandidates(e.target.checked)}
-                className="accent-clocktower-blood"
+                onChange={setShowAllBluffCandidates}
+                isLightModeActive={isLightModeActive}
               />
-              Lunatic Mode
+              <span className="font-semibold">Lunatic Mode</span>
             </label>
           </div>
         )}
@@ -549,15 +604,31 @@ export default function GamePhase({
             ? 'bg-white/50 border-gray-300 text-clocktower-night'
             : 'bg-gray-900/40 border-gray-800/80'
         )}>
-          <div className="flex justify-between items-center mb-1">
+          <button
+            type="button"
+            onClick={() => setIsLedgerCollapsed(prev => !prev)}
+            aria-expanded={!isLedgerCollapsed}
+            className="w-full flex justify-between items-center mb-1 text-left"
+          >
             <h4 className={cn(
               'text-xs uppercase font-bold tracking-wider',
               isLightModeActive ? 'text-gray-655' : 'text-gray-500'
             )}>Grimoire Ledger Reference</h4>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5 text-xs">
+            <ChevronDown
+              size={14}
+              className={cn(
+                'md:hidden shrink-0 transition-transform duration-200',
+                isLightModeActive ? 'text-gray-655' : 'text-gray-500',
+                !isLedgerCollapsed && 'rotate-180'
+              )}
+            />
+          </button>
+          <div className={cn(
+            'gap-1.5 text-xs grid-cols-1',
+            isLedgerCollapsed ? 'hidden md:grid' : 'grid'
+          )}>
             {players.map((p, index) => {
-              const rObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+              const rObj = grimoireRolesData.find(r => r.id === p.roleId);
               return (
                 <div
                   id={`ledger-player-${p.id}`}
@@ -633,7 +704,7 @@ export default function GamePhase({
                         return <span className="text-gray-500 font-semibold text-[10px]">—</span>;
                       }
                       return displayRoles.map((roleId) => {
-                        const rObj = (rolesData as Role[]).find(r => r.id === roleId);
+                        const rObj = grimoireRolesData.find(r => r.id === roleId);
                         if (!rObj) return null;
                         return (
                           <span
@@ -647,9 +718,9 @@ export default function GamePhase({
                               rObj.team === 'traveler' && 'text-clocktower-traveler',
                             )}
                           >
-                            <span className="w-4.5 h-4.5 bg-white rounded-full flex items-center justify-center shrink-0">
-                              <img src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
-                                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }} />
+                            <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
+                              <img key={rObj.id} src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
+                                onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')} />
                             </span>
                             <span className="truncate">{rObj.name}</span>
                           </span>
@@ -680,15 +751,48 @@ export default function GamePhase({
                 'text-xs uppercase font-bold tracking-wider',
                 isLightModeActive ? 'text-gray-600' : 'text-gray-500'
               )}>Game Log</h4>
-              {gameLog && gameLog.length > 0 && (
-                <button
-                  type="button"
-                  onClick={onDownloadLog}
-                  className="text-xs font-bold px-2 py-0.5 rounded bg-clocktower-blood text-white hover:opacity-90 transition-opacity"
-                >
-                  Download
-                </button>
-              )}
+              {gameLog && gameLog.length > 0 && (() => {
+                const logBtn = cn(
+                  'inline-flex items-center gap-1.5 rounded text-white hover:opacity-90 transition-opacity text-xs font-bold disabled:opacity-50 disabled:cursor-wait',
+                  isMobile ? 'p-1.5' : 'px-2 py-0.5'
+                );
+                const iconSize = isMobile ? 14 : 12;
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsSavingImage(true)}
+                      disabled={isSavingImage}
+                      title="Save an image of the final grimoire"
+                      aria-label="Save an image of the final grimoire"
+                      className={cn(logBtn, 'bg-clocktower-gold text-clocktower-night')}
+                    >
+                      <ImageDown size={iconSize} />
+                      {!isMobile && (isSavingImage ? 'Saving…' : 'Image')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyPost}
+                      title="Copy the grimoire and log as a Discord post"
+                      aria-label="Copy the grimoire and log as a Discord post"
+                      className={cn(logBtn, 'bg-[#5865F2]')}
+                    >
+                      {postCopied ? <Check size={iconSize} /> : <DiscordIcon size={iconSize} />}
+                      {!isMobile && (postCopied ? 'Copied' : 'Copy Logs')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onDownloadLog}
+                      title="Download the game log as a text file"
+                      aria-label="Download the game log as a text file"
+                      className={cn(logBtn, 'bg-clocktower-blood')}
+                    >
+                      <Download size={iconSize} />
+                      {!isMobile && 'Logs'}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
             <div className={cn(
               'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
@@ -714,6 +818,22 @@ export default function GamePhase({
         isLightModeActive={isLightModeActive}
       />
 
+      {isSavingImage && (
+        <RecapImageExport
+          players={players}
+          rolesData={grimoireRolesData}
+          reminderTokens={reminderTokens}
+          gameLog={gameLog ?? []}
+          scriptName={scriptName}
+          dayNumber={dayNumber}
+          timeOfDay={timeOfDay}
+          onDone={(error) => {
+            setIsSavingImage(false);
+            if (error) showAlert(`The grimoire image could not be saved — ${error}.`, 'Save failed');
+          }}
+        />
+      )}
+
       {/* Demon Bluffs full-screen overlay — always dark */}
       {isBluffOverlayOpen && (
         <div
@@ -725,7 +845,7 @@ export default function GamePhase({
           <div className="flex flex-col gap-5 w-full max-w-sm">
             {[0, 1, 2].map(slot => {
               const roleId = demonBluffs[slot] || '';
-              const role = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : null;
+              const role = roleId ? grimoireRolesData.find(r => r.id === roleId) : null;
               const overlayColor = role ? bluffTeamOverlayColor[role.team] : null;
               return (
                 <div
@@ -737,12 +857,13 @@ export default function GamePhase({
                 >
                   {role ? (
                     <>
-                      <div className="w-16 h-16 shrink-0 rounded-full bg-white flex items-center justify-center p-1">
+                      <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-1">
                         <img
+                          key={role.id}
                           src={`/icons/${role.id}.svg`}
                           alt={role.name}
                           className="w-full h-full object-contain"
-                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -750,8 +871,8 @@ export default function GamePhase({
                           'text-2xl font-extrabold',
                           overlayColor?.text
                         )}>{role.name}</p>
-                        {officialRoleAbility(role.id) && (
-                          <p className="text-sm text-gray-300 mt-1 leading-snug">{officialRoleAbility(role.id)}</p>
+                        {officialRoleAbility(role) && (
+                          <p className="text-sm text-gray-300 mt-1 leading-snug">{officialRoleAbility(role)}</p>
                         )}
                       </div>
                     </>
@@ -767,7 +888,7 @@ export default function GamePhase({
     </div>
 
     {onNotesChange && (
-      <div className="md:hidden landscape:hidden mt-6 space-y-1.5">
+      <div className="md:hidden mt-6 space-y-1.5">
         <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
         <AutoResizeTextarea
           value={notes ?? ''}
@@ -775,6 +896,20 @@ export default function GamePhase({
           placeholder="Write anything here. Deductions, suspicions, reminders..."
           isLightModeActive={isLightModeActive}
         />
+        {showReminderToggle && onToggleReminders && (
+          <label className={cn(
+            "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
+            isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+          )}>
+            <ToggleSwitch
+              id="toggle-reminders-checkbox-mobile"
+              checked={enableReminders}
+              onChange={onToggleReminders}
+              isLightModeActive={isLightModeActive}
+            />
+            <span>Turn on Reminder Tokens</span>
+          </label>
+        )}
       </div>
     )}
     </>

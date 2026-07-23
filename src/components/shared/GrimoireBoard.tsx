@@ -1,13 +1,56 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, RotateCcw, RotateCw } from 'lucide-react';
+import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
 import DayNightLabel from './DayNightLabel';
+import CharacterToken from './CharacterToken';
+import { useIsMobile } from '../../hooks/useIsMobile';
+
+// Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
+const REMINDER_LABEL_ARC_CQW = 95;
+const REMINDER_LABEL_MAX_CQW = 46;
+interface ReminderLabelMetrics { fontSize: number; letterSpacing: number; }
+let reminderLabelMeasureCtx: CanvasRenderingContext2D | null = null;
+const reminderLabelMetricsCache = new Map<string, ReminderLabelMetrics>();
+
+// Extra letter-spacing (em) so short labels spread across the arc; tapers off as the word lengthens.
+function reminderLabelSpacingEm(len: number): number {
+  return len <= 2 ? 0.14 : len <= 4 ? 0.11 : len === 5 ? 0.06 : 0.03;
+}
+
+function reminderLabelMetrics(text: string, targetCqw: number): ReminderLabelMetrics {
+  if (!text) return { fontSize: REMINDER_LABEL_MAX_CQW, letterSpacing: 0 };
+  const cacheKey = `${targetCqw}:${text}`;
+  const cached = reminderLabelMetricsCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  const spacingEm = reminderLabelSpacingEm(text.length);
+  let fontSize = REMINDER_LABEL_MAX_CQW;
+  if (typeof document !== 'undefined') {
+    if (!reminderLabelMeasureCtx) reminderLabelMeasureCtx = document.createElement('canvas').getContext('2d');
+    if (reminderLabelMeasureCtx) {
+      // Measure against the same face the label renders in (Cinzel), so the fit stays accurate.
+      reminderLabelMeasureCtx.font = '900 100px "Cinzel", Georgia, serif';
+      const rawPerFont = reminderLabelMeasureCtx.measureText(text).width / 100;
+      // Solve for the font size that makes glyphs + inter-letter gaps fill the target length.
+      const gaps = spacingEm * Math.max(0, text.length - 1);
+      fontSize = Math.min(REMINDER_LABEL_MAX_CQW, targetCqw / Math.max(0.01, rawPerFont + gaps));
+    }
+  }
+  const metrics = { fontSize, letterSpacing: spacingEm * fontSize };
+  reminderLabelMetricsCache.set(cacheKey, metrics);
+  return metrics;
+}
+
+// Cinzel loads async: drop the cache once fonts settle so labels re-measure against the real font.
+if (typeof document !== 'undefined' && document.fonts?.ready) {
+  document.fonts.ready.then(() => reminderLabelMetricsCache.clear());
+}
 
 interface GrimoireBoardProps {
   players: Player[];
@@ -26,6 +69,8 @@ interface GrimoireBoardProps {
   onRemoveAllReminders?: () => void;
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
+  remotePlayerIds?: Set<string>;
+  includeAllScriptReminders?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -45,6 +90,8 @@ export default function GrimoireBoard({
   onRemoveAllReminders,
   rotationOffset: controlledRotation,
   onRotationChange,
+  remotePlayerIds,
+  includeAllScriptReminders = false,
 }: GrimoireBoardProps) {
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
@@ -65,8 +112,17 @@ export default function GrimoireBoard({
   const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
   const [boardAspect, setBoardAspect] = useState<number>(1.3);
   const [boardWidth, setBoardWidth] = useState<number>(0);
+  const [seatsReady, setSeatsReady] = useState(false);
+  const [seatedCount, setSeatedCount] = useState(players.length);
   const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+
+  if (seatedCount !== players.length) {
+    setSeatedCount(players.length);
+    setSeatsReady(false);
+  }
   const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
+  const isMobile = useIsMobile();
+  const reminderTokenSizePct = isMobile ? 32 : 26;
   const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +156,12 @@ export default function GrimoireBoard({
   }, []);
 
   useEffect(() => {
+    if (boardWidth <= 0 || seatsReady) return;
+    const frame = requestAnimationFrame(() => setSeatsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [boardWidth, seatsReady]);
+
+  useEffect(() => {
     if (pickerPlayerId !== null || selectedReminder !== null) {
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = ''; };
@@ -108,37 +170,39 @@ export default function GrimoireBoard({
 
   const activeCharIds = useMemo(() => {
     const ids = new Set<string>();
-    players.forEach(p => {
-      if (p.roleId) ids.add(p.roleId);
-      p.roleIds?.forEach(id => ids.add(id));
-      if (p.isTheDrunk) ids.add('drunk');
-      if (p.isTheMarionette) ids.add('marionette');
-      if (p.isTheLunatic) ids.add('lunatic');
-      if (p.isTheLilMonsta) ids.add('lilmonsta');
-    });
+    if (includeAllScriptReminders) {
+      rolesData.forEach(r => ids.add(r.id));
+    } else {
+      players.forEach(p => {
+        if (p.roleId) ids.add(p.roleId);
+        p.roleIds?.forEach(id => ids.add(id));
+        if (p.isTheDrunk) ids.add('drunk');
+        if (p.isTheMarionette) ids.add('marionette');
+        if (p.isTheLunatic) ids.add('lunatic');
+        if (p.isTheLilMonsta) ids.add('lilmonsta');
+      });
+    }
     return [...ids];
-  }, [players]);
+  }, [players, rolesData, includeAllScriptReminders]);
+
+  // Living players who count toward the game's end conditions — travelers are excluded.
+  const finalCount = useMemo(() => players.filter(p => {
+    if (p.isDead) return false;
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    return !ids.some(id => {
+      const r = rolesData.find(role => role.id === id) || (officialRoles as Role[]).find(role => role.id === id);
+      return r?.team === 'traveler';
+    });
+  }).length, [players, rolesData]);
 
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
-
-  const teamFill = (team: Role['team']) => ({
-    townsfolk: 'fill-clocktower-townsfolk',
-    outsider: 'fill-clocktower-outsider',
-    minion: 'fill-clocktower-minion',
-    demon: 'fill-clocktower-demon',
-    traveler: 'fill-clocktower-traveler',
-  }[team] ?? 'fill-gray-500');
 
   const grimoireConfig = useMemo(() => {
     const count = players.length;
     const isDesktop = boardAspect < 1.15;
 
-    // On desktop the board grows to fill its (now wider) column. Token sizes
-    // were hand-tuned in px against a fixed baseline width, so scale them by
-    // how much wider the board actually is. Floored at 1x so this never
-    // shrinks anything on mobile/landscape (where the board is capped at the
-    // baseline) — only enlarges on true desktop where md: lifts the width cap.
+    // Desktop board fills its wider column; scale px token sizes by board width vs baseline, floored at 1x so mobile/landscape never shrink.
     const baseline = count <= 6 ? 560 : 680;
     const s = Math.max(1, boardWidth / baseline);
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
@@ -299,12 +363,10 @@ export default function GrimoireBoard({
     return angles;
   }, [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect]);
 
-  const rotatedPlayers = useMemo(() => {
-    if (rotationOffset === 0 || players.length === 0) return players;
-    const n = players.length;
-    const off = ((rotationOffset % n) + n) % n;
-    return [...players.slice(off), ...players.slice(0, off)];
-  }, [players, rotationOffset]);
+  const playerCount = players.length;
+  const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
+  const seatOf = (playerIndex: number) =>
+    playerCount > 0 ? ((playerIndex - seatOffset) % playerCount + playerCount) % playerCount : 0;
 
   return (
     <>
@@ -328,7 +390,7 @@ export default function GrimoireBoard({
         ) : <div />}
 
         <div className="flex justify-center items-center gap-2">
-          {!isSynced && onRemoveAllReminders && reminderTokens.length > 0 && (
+          {onRemoveAllReminders && reminderTokens.length > 0 && (
             <button
               id="grimoire-reset-reminders-button"
               onClick={onRemoveAllReminders}
@@ -361,8 +423,7 @@ export default function GrimoireBoard({
         ) : <div />}
       </div>
 
-      {/* Row 2: info badges — mobile only. Independent flex row so label width is sized to its
-          own content, not tied to the button row's fixed column widths. */}
+      {/* Row 2: info badges (mobile only) — own flex row so label width fits its content, not the button row's columns. */}
       <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
         <div
           id="grimoire-info-row"
@@ -392,7 +453,7 @@ export default function GrimoireBoard({
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          {players.filter(p => !p.isDead).length}/{players.length} Alive (Final {finalCount})
         </div>
       </div>
 
@@ -426,19 +487,20 @@ export default function GrimoireBoard({
           )}
         </div>
 
-        {/* Alive count — upper right, desktop only */}
+        {/* Alive + final counts — upper right, desktop only */}
         <div
           id="grimoire-alive-badge"
           onClick={onResetDead}
           className={cn(
-            "hidden md:block absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity",
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          <span>{players.filter(p => !p.isDead).length}/{players.length} Alive</span>
+          <span>Final {finalCount}</span>
         </div>
 
         {/* Rotate buttons — center of board */}
@@ -475,8 +537,9 @@ export default function GrimoireBoard({
           </div>
         )}
 
-        {rotatedPlayers.map((p, index) => {
-          const angle = evenAngles[index] !== undefined ? evenAngles[index] : 0;
+        {players.map((p, playerIndex) => {
+          const seat = seatOf(playerIndex);
+          const angle = evenAngles[seat] !== undefined ? evenAngles[seat] : 0;
 
           const cosVal = Math.cos(angle);
           const sinVal = Math.sin(angle);
@@ -531,6 +594,7 @@ export default function GrimoireBoard({
                 top: `${topPos}%`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: zIndex,
+                transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
               }}
               onMouseEnter={() => {
                 setFannedPlayerId(p.id);
@@ -552,16 +616,19 @@ export default function GrimoireBoard({
               className="hover:z-50 group"
             >
               {/* "+" add-reminder — at anchor when empty, shifted inward when reminders exist */}
-              {!isSynced && onAddReminder && playerReminders.length < 5 && (
+              {onAddReminder && playerReminders.length < 5 && (
                 <button
                   style={{
                     position: 'absolute',
                     left: `calc(50% + ${(inwardDx * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
                     top: `calc(50% + ${(inwardDy * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
                     transform: 'translate(-50%, -50%)',
-                    width: '23%',
-                    height: '23%',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
+                    transition: seatsReady
+                      ? 'left 250ms ease-in-out, top 250ms ease-in-out, background-color 150ms'
+                      : 'none',
                   }}
                   onTouchStart={(e) => e.stopPropagation()}
                   onClick={(e) => {
@@ -588,6 +655,10 @@ export default function GrimoireBoard({
                 const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
                 const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
                 const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
+                const labelText = reminder.text.slice(0, 7);
+                const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
+                // Try the bundled local icon first; roleIconFallback swaps in a custom character's own image on 404.
+                const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
 
                 return (
                 <div
@@ -597,9 +668,10 @@ export default function GrimoireBoard({
                     left: `calc(50% + ${reminderLeft.toFixed(1)}%)`,
                     top: `calc(50% + ${reminderTop.toFixed(1)}%)`,
                     transform: 'translate(-50%, -50%)',
-                    width: '23%',
-                    height: '23%',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
                     zIndex: 55,
+                    transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
                   }}
                 >
                 <button
@@ -608,15 +680,48 @@ export default function GrimoireBoard({
                     e.stopPropagation();
                     setSelectedReminder(reminder);
                   }}
-                  className="w-full h-full rounded-full bg-gray-200 border-2 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-125 hover:shadow-md"
+                  className={cn(
+                    "w-full h-full rounded-full bg-gray-200 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-125 hover:shadow-md",
+                    isMobile ? "border" : "border-2"
+                  )}
                   title={reminder.text}
                 >
                   <img
                     src={`/icons/${reminder.sourceCharId}.svg`}
                     alt={reminder.text}
                     className="w-full h-full object-contain opacity-80"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    onError={roleIconFallback(reminderRole)}
                   />
+                  {reminder.text && (
+                    <svg
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="xMidYMid meet"
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <path id={`rt-arc-${reminder.id}`} d="M6.3 56.2 A46 46 0 0 0 93.7 56.2" fill="none" />
+                      </defs>
+                      <text
+                        textAnchor="middle"
+                        style={{
+                          fontFamily: '"Cinzel", Georgia, serif',
+                          fontSize: `${labelMetrics.fontSize.toFixed(2)}px`,
+                          letterSpacing: `${labelMetrics.letterSpacing.toFixed(2)}px`,
+                          fontWeight: 900,
+                          fill: '#111827',
+                          paintOrder: 'stroke',
+                          stroke: 'rgba(255,255,255,0.92)',
+                          strokeWidth: `${(labelMetrics.fontSize * 0.13).toFixed(2)}px`,
+                          strokeLinejoin: 'round',
+                        }}
+                      >
+                        <textPath href={`#rt-arc-${reminder.id}`} startOffset="50%">
+                          {labelText}
+                        </textPath>
+                      </text>
+                    </svg>
+                  )}
                 </button>
                 </div>
                 );
@@ -644,8 +749,9 @@ export default function GrimoireBoard({
                   }}
                   style={grimoireConfig.btnStyle}
                   className={cn(
-                    "rounded-full flex flex-col items-center justify-center transition-all duration-200 shadow-md relative select-none",
-                    isFanned ? "group-hover:scale-125 group-hover:shadow-lg" : "",
+                    "rounded-full flex flex-col items-center justify-center shadow-md relative select-none",
+                    seatsReady && "transition-all duration-200",
+                    isFanned ? "group-hover:rotate-3 group-hover:shadow-lg" : "",
                     p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
                   )}
                 >
@@ -715,71 +821,15 @@ export default function GrimoireBoard({
                             touchStartedFannedRef.current = false;
                           }}
                         >
-                          {/* SVG representing the token */}
-                          <svg viewBox="0 0 200 200" className={cn("w-full h-full absolute inset-0 z-0 select-none pointer-events-none", p.isDead && "opacity-60")}>
-                            <defs>
-                              <path id={`topTextPath-${p.id}-${idx}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                              <path id={`bottomTextPath-${p.id}-${idx}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                            </defs>
-                            
-                            {/* Token background circle */}
-                            <circle
-                              cx="100"
-                              cy="100"
-                              r="90"
-                              fill={p.isDead ? "#e4e4e7" : "#ffffff"}
-                              className={cn(
-                                "stroke-[6px]",
-                                isEvil ? "stroke-clocktower-minion" : "stroke-clocktower-townsfolk"
-                              )}
-                            />
-                            
-                            {/* Inner ring */}
-                            <circle
-                              cx="100"
-                              cy="100"
-                              r="58"
-                              fill="none"
-                              stroke="#e4e4e7"
-                              strokeWidth="1"
-                              strokeDasharray="3 3"
-                            />
-                            
-                            {roleObj && (
-                              <>
-                                {/* Curved Character Name */}
-                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(roleObj.team))}>
-                                  <textPath href={`#topTextPath-${p.id}-${idx}`} startOffset="50%" textAnchor="middle">
-                                    {roleObj.name}
-                                  </textPath>
-                                </text>
-                                
-                                {/* Curved Character Type */}
-                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(roleObj.team))}>
-                                  <textPath href={`#bottomTextPath-${p.id}-${idx}`} startOffset="50%" textAnchor="middle">
-                                    {roleObj.team}
-                                  </textPath>
-                                </text>
-                              </>
-                            )}
-                          </svg>
-
-                          {/* Centered character icon */}
-                          {roleObj && (
-                            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none select-none">
-                              <div className="w-[65%] h-[65%] flex items-center justify-center">
-                                <img
-                                  src={`/icons/${roleObj.id}.svg`}
-                                  alt={roleObj.name}
-                                  className={cn(
-                                    "w-full h-full object-contain transition-all duration-200 select-none",
-                                    p.isDead ? "grayscale opacity-15" : "opacity-35"
-                                  )}
-                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                />
-                              </div>
-                            </div>
-                          )}
+                          <CharacterToken
+                            role={roleObj}
+                            isEvil={isEvil}
+                            isDead={p.isDead}
+                            iconSizePct={80}
+                            blankRing
+                            idPrefix={`${p.id}-${idx}`}
+                            className="absolute inset-0"
+                          />
                         </div>
                       );
                     });
@@ -795,11 +845,14 @@ export default function GrimoireBoard({
                         : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
                     }}
                     className={cn(
-                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none break-words whitespace-normal max-w-[82%] inline-block align-middle",
+                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle",
                       p.isDead ? "line-through text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
                     )}
                   >
-                    {p.name}
+                    {remotePlayerIds?.has(p.id) && (
+                      <Wifi size={10} className="shrink-0" strokeWidth={3} />
+                    )}
+                    <span className="break-words whitespace-normal">{p.name}</span>
                   </span>
 
                   {p.pronouns && (

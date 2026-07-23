@@ -1,8 +1,12 @@
 import { getDistribution } from '../constants';
+import officialRolesData from '../official_roles.json';
 import type { Role } from '../types';
 
+const OFFICIAL_ROLE_IDS = new Set((officialRolesData as { id: string }[]).map(r => r.id));
+
 export function computeBalance(selectedRoles: Role[], playerCount: number) {
-  const base = getDistribution(playerCount);
+  const basePlayerCount = Math.min(15, playerCount);
+  const base = getDistribution(basePlayerCount);
 
   const has = (id: string) => selectedRoles.some(r => r.id === id);
   const hasDrunk       = has('drunk');
@@ -37,7 +41,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const modifications: string[] = [];
 
   if (hasLegion) {
-    const L = Math.round(playerCount * 0.6);
+    const L = Math.round(basePlayerCount * 0.6);
     expectedDemon  = L;
     expectedMinion = 0;
     modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
@@ -72,9 +76,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   expectedDemon = Math.max(0, expectedDemon);
 
-  // Drunk and Marionette each need their own extra Townsfolk selected beyond the real target
-  // count, to serve as a fake identity without colliding with an actual in-play Townsfolk (or,
-  // if both are selected, with each other's fake identity) — see standardAssignment.ts.
+  // Drunk and Marionette each need an extra Townsfolk beyond the real target for a non-colliding fake identity (see standardAssignment.ts).
   const tfDelta = hasLegion ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
 
   const gfMods   = (hasGodfather  && !hasLegion) ? [-1, 1] : [0];
@@ -87,7 +89,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (hasLegion) {
     possibleOutsiders.add(0);
   } else if (hasKazali || hasXaan) {
-    const max = Math.max(0, playerCount - expectedDemon - expectedMinion);
+    const max = Math.max(0, basePlayerCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= max; i++) possibleOutsiders.add(i);
   } else {
     for (const gf of gfMods) for (const bal of balMods) for (const hunt of huntMods) for (const herm of hermMods) {
@@ -96,11 +98,11 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   }
 
   const validOutsiders  = Array.from(possibleOutsiders).sort((a, b) => a - b);
-  const validTownsfolk  = validOutsiders.map(out => Math.max(0, playerCount - expectedDemon - expectedMinion - out) + tfDelta);
+  const validTownsfolk  = validOutsiders.map(out => Math.max(0, basePlayerCount - expectedDemon - expectedMinion - out) + tfDelta);
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
   const isOutsiderValid  = (hasKazali || hasXaan) ? true : validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = (hasKazali || hasXaan) ? true : (isOutsiderValid && counts.townsfolk === playerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
+  const isTownsfolkValid = (hasKazali || hasXaan) ? true : (isOutsiderValid && counts.townsfolk === basePlayerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
   const isDemonValid     = hasLunatic
     ? (counts.demon === expectedDemon || counts.demon === expectedDemon + 1)
     : (counts.demon === expectedDemon);
@@ -116,6 +118,11 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (has('choirboy') && !has('king'))     jinxWarnings.push("Choirboy in play, but no King selected.");
   if (hasHuntsman && !has('damsel'))   jinxWarnings.push("Huntsman in play, but no Damsel selected.");
   if (hasAlchemist) jinxWarnings.push("Alchemist in play — ability may affect setup.");
+
+  const customRolesInPlay = selectedRoles.filter(r => !OFFICIAL_ROLE_IDS.has(r.id));
+  if (customRolesInPlay.length > 0) {
+    jinxWarnings.push(`Custom: ${customRolesInPlay.map(r => r.name).join(', ')} — adjust setup manually.`);
+  }
 
   const isValid = isDemonValid && isMinionValid && isOutsiderValid && isTownsfolkValid && jinxWarnings.length === 0;
 

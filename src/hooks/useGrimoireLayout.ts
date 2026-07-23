@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-/**
- * Reproduces GrimoireBoard's superellipse seating layout (board sizing,
- * token sizing, and per-seat angle/position math) so other screens can
- * arrange players in the same circle without duplicating the live board's
- * fan-out/reminder logic.
- */
+/** Reproduces GrimoireBoard's superellipse seating math so other screens arrange players in the same circle. */
+/** Width the desktop token/name pixel sizes below were hand-tuned against (`max-w-[680px]`). */
+const BOARD_BASELINE_WIDTH = 680;
+
 export function useGrimoireLayout(playerCount: number) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [boardAspect, setBoardAspect] = useState(1.3);
+  const [boardWidth, setBoardWidth] = useState(BOARD_BASELINE_WIDTH);
+  const [isMeasured, setIsMeasured] = useState(false);
 
   useEffect(() => {
     const boardElement = boardRef.current;
@@ -19,6 +19,8 @@ export function useGrimoireLayout(playerCount: number) {
       const rect = boardElement.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         setBoardAspect(rect.height / rect.width);
+        setBoardWidth(rect.width);
+        setIsMeasured(true);
       }
     };
 
@@ -37,44 +39,48 @@ export function useGrimoireLayout(playerCount: number) {
     const count = playerCount;
     const isDesktop = boardAspect < 1.15;
 
+    // Desktop sizes are px tuned for a 680px board; scale down when the actual board is narrower or tokens overhang.
+    const s = boardWidth > 0 ? Math.min(1, boardWidth / BOARD_BASELINE_WIDTH) : 1;
+    const px = (v: number) => `${+(v * s).toFixed(2)}px`;
+
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[112vw] max-w-[680px] max-h-[760px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
+        boardClass: "w-[88vw] h-[112vw] max-w-[680px] max-h-[760px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
         radiusX: 38,
         radiusY: 36,
         btnStyle: isDesktop
-          ? { width: '140px', height: '140px' } as CSSProperties
+          ? { width: px(140), height: px(140) } as CSSProperties
           : { width: '30cqw', height: '30cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '23.5px', maxWidth: '130px', marginTop: '2.8px' } as CSSProperties
+          ? { fontSize: px(23.5), maxWidth: px(130), marginTop: px(2.8) } as CSSProperties
           : { fontSize: '4.8cqw', maxWidth: '28cqw', marginTop: '0.5cqw' } as CSSProperties,
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[34px]",
+        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[34px]",
         radiusX: 40,
         radiusY: 38,
         btnStyle: isDesktop
-          ? { width: '130px', height: '130px' } as CSSProperties
+          ? { width: px(130), height: px(130) } as CSSProperties
           : { width: '26cqw', height: '26cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '22.3px', maxWidth: '118px', marginTop: '2.5px' } as CSSProperties
+          ? { fontSize: px(22.3), maxWidth: px(118), marginTop: px(2.5) } as CSSProperties
           : { fontSize: '4.3cqw', maxWidth: '24cqw', marginTop: '0.4cqw' } as CSSProperties,
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-[680px] md:h-[500px] landscape:max-h-[500px] rounded-[40px]",
+        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[40px]",
         radiusX: 42,
         radiusY: 40,
         btnStyle: isDesktop
-          ? { width: '112px', height: '112px' } as CSSProperties
+          ? { width: px(112), height: px(112) } as CSSProperties
           : { width: '21cqw', height: '21cqw' } as CSSProperties,
         nameStyle: isDesktop
-          ? { fontSize: '20.4px', maxWidth: '102px', marginTop: '2.0px' } as CSSProperties
+          ? { fontSize: px(20.4), maxWidth: px(102), marginTop: px(2.0) } as CSSProperties
           : { fontSize: '3.7cqw', maxWidth: '19cqw', marginTop: '0.3cqw' } as CSSProperties,
       };
     }
-  }, [playerCount, boardAspect]);
+  }, [playerCount, boardAspect, boardWidth]);
 
   const dynamicRadiusX = grimoireConfig.radiusX;
   const dynamicRadiusY = useMemo(() => {
@@ -176,6 +182,7 @@ export function useGrimoireLayout(playerCount: number) {
 
   return {
     boardRef,
+    isMeasured,
     boardClass: grimoireConfig.boardClass,
     btnStyle: grimoireConfig.btnStyle,
     nameStyle: grimoireConfig.nameStyle,

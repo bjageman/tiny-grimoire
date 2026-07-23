@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
@@ -11,6 +11,9 @@ export default function GrimoireBalanceVerification({
   validationSummary,
   isLightModeActive = false,
 }: GrimoireBalanceVerificationProps) {
+  const hasFailures = validationSummary.failures && validationSummary.failures.length > 0;
+  const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
+
   return (
     <div
       id="grimoire-balance-verification"
@@ -24,6 +27,8 @@ export default function GrimoireBalanceVerification({
       <div className="flex items-center gap-1.5">
         {validationSummary.isValid ? (
           <CheckCircle size={16} className="text-clocktower-outsider" />
+        ) : hasFailures ? (
+          <XCircle size={16} className="text-red-500" />
         ) : (
           <AlertTriangle size={16} className="text-clocktower-minion" />
         )}
@@ -56,7 +61,7 @@ export default function GrimoireBalanceVerification({
       <div className={cn(
         "grid text-center text-[10px] font-mono border-t pt-2.5",
         isLightModeActive ? "border-gray-200" : "border-gray-800",
-        validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0
+        validationSummary.counts.traveler > 0
           ? "grid-cols-5 gap-1"
           : "grid-cols-4 gap-2"
       )}>
@@ -84,21 +89,31 @@ export default function GrimoireBalanceVerification({
             {validationSummary.counts.demon} / {validationSummary.expected.demon}
           </div>
         </div>
-        {(validationSummary.expected.traveler > 0 || validationSummary.counts.traveler > 0) && (
+        {validationSummary.counts.traveler > 0 && (
           <div>
             <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
             <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
-              {validationSummary.counts.traveler} / {validationSummary.expected.traveler}
+              {validationSummary.counts.traveler} / 5
             </div>
           </div>
         )}
       </div>
 
-      {validationSummary.jinxWarnings.length > 0 && (
+      {hasFailures && (
         <div className={cn("border-t pt-2 space-y-1", isLightModeActive ? "border-gray-200" : "border-gray-800")}>
-          {validationSummary.jinxWarnings.map((w, idx) => (
+          {validationSummary.failures.map((f, idx) => (
+            <div key={idx} className={cn("text-[10px] flex items-center gap-1 font-semibold", isLightModeActive ? "text-red-700" : "text-red-400")}>
+              <XCircle size={10} className="flex-shrink-0" /> {f}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasWarnings && (
+        <div className={cn("border-t pt-2 space-y-1", isLightModeActive ? "border-gray-200" : "border-gray-800", hasFailures ? "border-t-0 pt-0" : "")}>
+          {validationSummary.warnings.map((w, idx) => (
             <div key={idx} className={cn("text-[10px] flex items-center gap-1 font-medium", isLightModeActive ? "text-amber-700" : "text-yellow-500")}>
-              <AlertTriangle size={10} /> {w}
+              <AlertTriangle size={10} className="flex-shrink-0" /> {w}
             </div>
           ))}
         </div>

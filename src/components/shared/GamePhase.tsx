@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
@@ -838,8 +839,8 @@ export default function GamePhase({
         />
       )}
 
-      {/* Demon Bluffs full-screen overlay — always dark */}
-      {isBluffOverlayOpen && (
+      {/* Demon Bluffs full-screen overlay — always dark; portaled to body so its fixed inset covers the viewport (not a transformed ancestor) */}
+      {isBluffOverlayOpen && createPortal(
         <div
           id="demon-bluffs-overlay"
           className="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-8 p-8 cursor-pointer"
@@ -887,7 +888,8 @@ export default function GamePhase({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
 

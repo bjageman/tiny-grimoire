@@ -180,18 +180,18 @@ describe('PlayerDetailsModal', () => {
     const onUpdatePronouns = vi.fn();
     render(<PlayerDetailsModal {...defaultProps} onUpdatePronouns={onUpdatePronouns} />);
 
-    const select = document.getElementById('detail-player-pronouns-select') as HTMLSelectElement;
-    expect(select).toBeInTheDocument();
-    expect(select.value).toBe('');
-    fireEvent.change(select, { target: { value: 'They/Them' } });
+    const trigger = document.getElementById('detail-player-pronouns-select') as HTMLButtonElement;
+    expect(trigger).toBeInTheDocument();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByText('They/Them'));
 
     expect(onUpdatePronouns).toHaveBeenCalledWith('p1', 'They/Them');
   });
 
-  it('reflects the player\'s current pronouns as the selected dropdown value', () => {
+  it('reflects the player\'s current pronouns on the dropdown trigger', () => {
     render(<PlayerDetailsModal {...defaultProps} player={{ ...player, pronouns: 'She/Her' }} onUpdatePronouns={vi.fn()} />);
-    const select = document.getElementById('detail-player-pronouns-select') as HTMLSelectElement;
-    expect(select.value).toBe('She/Her');
+    const trigger = document.getElementById('detail-player-pronouns-select') as HTMLButtonElement;
+    expect(trigger.title).toBe('She/Her');
   });
 
   it('hides the pronoun dropdown and shows read-only pronouns for synced players', () => {

@@ -1,8 +1,8 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search, VenusAndMars, Venus, Mars, NonBinary, MessageCircleQuestionMark } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../types';
@@ -62,6 +62,12 @@ interface PlayerDetailsModalProps {
 }
 
 const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
+const PRONOUN_ICON: Record<string, typeof VenusAndMars> = {
+  'He/Him': Mars,
+  'She/Her': Venus,
+  'They/Them': NonBinary,
+  'Ask Me': MessageCircleQuestionMark,
+};
 
 export default function PlayerDetailsModal({
   player: p,
@@ -99,6 +105,17 @@ export default function PlayerDetailsModal({
   const [editedNotes, setEditedNotes] = useBufferedField(p.id, p.notes ?? '', (id, notes) => onUpdateNotes?.(id, notes));
   const isMobile = useIsMobile();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [pronounsOpen, setPronounsOpen] = useState(false);
+  const pronounsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pronounsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pronounsRef.current && !pronounsRef.current.contains(e.target as Node)) setPronounsOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pronounsOpen]);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
     return localStorage.getItem('botc-sort-alphabetically') === 'true';
   });
@@ -245,42 +262,81 @@ export default function PlayerDetailsModal({
                     {p.pronouns}
                   </p>
                 )
-              ) : !allowMultipleRoles && onUpdatePronouns && (
-                <select
-                  id="detail-player-pronouns-select"
-                  value={p.pronouns || ''}
-                  onChange={(e) => onUpdatePronouns(p.id, e.target.value)}
-                  className={cn(
-                    'rounded px-1.5 py-1 mt-1.5 text-sm font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer',
-                    isLightModeActive
-                      ? 'bg-white border-gray-300 text-gray-600'
-                      : 'bg-gray-800/50 border-gray-700 text-gray-400'
+              ) : (
+                <div className="flex items-center gap-2 mt-1.5 -mb-2">
+                  {!allowMultipleRoles && onUpdatePronouns && (
+                    <div className="relative shrink-0" ref={pronounsRef}>
+                      <button
+                        id="detail-player-pronouns-select"
+                        type="button"
+                        onClick={() => setPronounsOpen(o => !o)}
+                        aria-expanded={pronounsOpen}
+                        aria-label="Pronouns"
+                        title={p.pronouns || 'Pronouns'}
+                        className={cn(
+                          'flex items-center justify-center w-9 h-9 rounded-full text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-95 ring-2 ring-white/30',
+                          pronounsOpen ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
+                        )}
+                      >
+                        {(() => {
+                          const PronounIcon = (p.pronouns && PRONOUN_ICON[p.pronouns]) || VenusAndMars;
+                          return <PronounIcon size={18} />;
+                        })()}
+                      </button>
+                      {pronounsOpen && (
+                        <div className={cn(
+                          'absolute left-0 top-full mt-1.5 z-20 w-40 rounded-lg border shadow-xl p-1.5 space-y-0.5',
+                          isLightModeActive ? 'bg-white border-gray-300' : 'bg-gray-950 border-gray-700'
+                        )}>
+                          {PRONOUN_OPTIONS.map(option => (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => { onUpdatePronouns(p.id, option); setPronounsOpen(false); }}
+                              className={cn(
+                                'block w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors hover:bg-gray-500/10',
+                                p.pronouns === option
+                                  ? 'text-clocktower-blood'
+                                  : isLightModeActive ? 'text-gray-700' : 'text-gray-300'
+                              )}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                          {p.pronouns && (
+                            <button
+                              type="button"
+                              onClick={() => { onUpdatePronouns(p.id, ''); setPronounsOpen(false); }}
+                              className={cn(
+                                'block w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors hover:bg-gray-500/10 border-t mt-0.5 pt-1.5',
+                                isLightModeActive ? 'text-gray-500 border-gray-200' : 'text-gray-400 border-gray-800'
+                              )}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
-                >
-                  <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
-                  {PRONOUN_OPTIONS.map(option => (
-                    <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {!isSynced && onUpdateNotes && (
-                <input
-                  type="text"
-                  placeholder="Notes..."
-                  value={editedNotes}
-                  onFocus={(e) => { originalNotes.current = e.target.value; }}
-                  onChange={(e) => setEditedNotes(e.target.value)}
-                  onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalNotes.current) onLogEvent(`Note — ${p.name}: ${e.target.value}`); }}
-                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                  className={cn(
-                    'w-full mt-1.5 rounded px-2 py-1.5 -mb-2 text-xs border focus:outline-none focus:border-clocktower-blood/60 transition-colors',
-                    isLightModeActive
-                      ? 'bg-gray-50 border-gray-200 text-gray-700 placeholder-gray-400'
-                      : 'bg-gray-800/50 border-gray-700 text-gray-300 placeholder-gray-500'
+                  {onUpdateNotes && (
+                    <input
+                      type="text"
+                      placeholder="Notes..."
+                      value={editedNotes}
+                      onFocus={(e) => { originalNotes.current = e.target.value; }}
+                      onChange={(e) => setEditedNotes(e.target.value)}
+                      onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalNotes.current) onLogEvent(`Note — ${p.name}: ${e.target.value}`); }}
+                      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                      className={cn(
+                        'flex-1 min-w-0 rounded px-2 py-1.5 text-xs border focus:outline-none focus:border-clocktower-blood/60 transition-colors',
+                        isLightModeActive
+                          ? 'bg-gray-50 border-gray-200 text-gray-700 placeholder-gray-400'
+                          : 'bg-gray-800/50 border-gray-700 text-gray-300 placeholder-gray-500'
+                      )}
+                    />
                   )}
-                />
+                </div>
               )}
             </div>
           </div>
@@ -299,6 +355,115 @@ export default function PlayerDetailsModal({
             <X size={20} />
           </button>
         </div>
+
+        {/* Status toggles */}
+        <div className="flex items-center gap-2">
+           <button
+             id="detail-status-toggle-button"
+             type="button"
+             disabled={isSynced}
+             onClick={(e) => { e.stopPropagation(); onToggleDead(p.id); }}
+             className={cn(
+               'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
+               isSynced && 'opacity-60 cursor-not-allowed hover:bg-transparent',
+               !isSynced && (!p.isDead
+                 ? 'bg-clocktower-outsider border-clocktower-outsider/40 text-white hover:bg-emerald-600'
+                 : 'bg-clocktower-blood border-clocktower-blood/40 text-white hover:bg-red-800'),
+               isSynced && (p.isDead
+                 ? 'bg-clocktower-blood/70 border-clocktower-blood/30 text-white'
+                 : 'bg-clocktower-outsider/70 border-clocktower-outsider/30 text-white')
+             )}
+             title={isSynced ? "Status is synced from Storyteller" : undefined}
+           >
+             {p.isDead ? 'Dead' : 'Alive'}
+           </button>
+           <button
+             id="detail-alignment-toggle-button"
+             type="button"
+             onClick={(e) => { e.stopPropagation(); onToggleEvil(p.id); }}
+             className={cn(
+               'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
+               !isEvil
+                 ? 'bg-clocktower-townsfolk border-clocktower-townsfolk/40 text-white hover:bg-blue-600'
+                 : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
+             )}
+           >
+             {isEvil ? 'Evil' : 'Good'}
+           </button>
+           {!allowMultipleRoles && (
+             <button
+               id="detail-drunk-poisoned-toggle-button"
+               type="button"
+               onClick={(e) => { e.stopPropagation(); onToggleDrunkOrPoisoned(p.id); }}
+               className={cn(
+                 'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
+                 p.isDrunkOrPoisoned
+                   ? 'bg-purple-600 border-purple-600/40 text-white hover:bg-purple-700'
+                   : isLightModeActive
+                     ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
+                     : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
+               )}
+             >
+               Droisoned
+             </button>
+           )}
+         </div>
+
+         {(p.isDead || isLilMonstaGame) && (
+           <div className="flex items-center gap-2">
+             {p.isDead && (
+               <button
+                 id="detail-vote-token-toggle"
+                 type="button"
+                 disabled={isSynced}
+                 onClick={(e) => { e.stopPropagation(); onToggleDeadVote?.(p.id); }}
+                 className={cn(
+                   'px-3 py-2 rounded text-[11px] font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
+                   isSynced && 'opacity-60 cursor-not-allowed',
+                   !isSynced && (p.hasDeadVote
+                     ? 'bg-amber-600 border-amber-600/40 text-white hover:bg-amber-700'
+                     : isLightModeActive
+                       ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
+                       : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'),
+                   isSynced && (p.hasDeadVote
+                     ? 'bg-amber-600/70 border-amber-600/30 text-white'
+                     : isLightModeActive
+                       ? 'bg-gray-100 border-gray-250 text-gray-400'
+                       : 'bg-gray-900 border-gray-850 text-gray-500')
+                 )}
+                 title={isSynced ? "Dead vote token is synced from Storyteller" : undefined}
+               >
+                 🗳️ {p.hasDeadVote ? 'Vote: Active' : 'Vote: Spent'}
+               </button>
+             )}
+
+             {isLilMonstaGame && (
+               <button
+                 id="detail-lilmonsta-toggle-button"
+                 type="button"
+                 onClick={(e) => { e.stopPropagation(); onToggleLilMonsta?.(p.id); }}
+                 className={cn(
+                   'px-3 py-2 rounded text-[11px] font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
+                   p.isTheLilMonsta
+                     ? 'bg-clocktower-demon border-clocktower-demon/40 text-white font-black hover:bg-red-800'
+                     : isLightModeActive
+                       ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-600'
+                       : 'bg-gray-955/40 border-gray-800 text-gray-550 hover:text-gray-300'
+                 )}
+               >
+                 <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                   <img
+                     src="/icons/lilmonsta.svg"
+                     alt=""
+                     className="w-3 h-3 object-contain"
+                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                   />
+                 </span>
+                 Lil' Monsta
+               </button>
+             )}
+           </div>
+         )}
 
         {/* Character section */}
         <div className="py-3 border-t border-b border-dashed border-gray-300/20">
@@ -596,115 +761,6 @@ export default function PlayerDetailsModal({
            )}
          </div>
 
-         {/* Status toggles - hidden when name is hidden */}
-         {/* Status toggles */}
-         <div className="flex items-center gap-2">
-           <button
-             id="detail-status-toggle-button"
-             type="button"
-             disabled={isSynced}
-             onClick={(e) => { e.stopPropagation(); onToggleDead(p.id); }}
-             className={cn(
-               'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
-               isSynced && 'opacity-60 cursor-not-allowed hover:bg-transparent',
-               !isSynced && (!p.isDead
-                 ? 'bg-clocktower-outsider border-clocktower-outsider/40 text-white hover:bg-emerald-600'
-                 : 'bg-clocktower-blood border-clocktower-blood/40 text-white hover:bg-red-800'),
-               isSynced && (p.isDead
-                 ? 'bg-clocktower-blood/70 border-clocktower-blood/30 text-white'
-                 : 'bg-clocktower-outsider/70 border-clocktower-outsider/30 text-white')
-             )}
-             title={isSynced ? "Status is synced from Storyteller" : undefined}
-           >
-             {p.isDead ? 'Dead' : 'Alive'}
-           </button>
-           <button
-             id="detail-alignment-toggle-button"
-             type="button"
-             onClick={(e) => { e.stopPropagation(); onToggleEvil(p.id); }}
-             className={cn(
-               'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1',
-               !isEvil
-                 ? 'bg-clocktower-townsfolk border-clocktower-townsfolk/40 text-white hover:bg-blue-600'
-                 : 'bg-clocktower-minion border-clocktower-minion/40 text-white hover:bg-red-500'
-             )}
-           >
-             {isEvil ? 'Evil' : 'Good'}
-           </button>
-           {!allowMultipleRoles && (
-             <button
-               id="detail-drunk-poisoned-toggle-button"
-               type="button"
-               onClick={(e) => { e.stopPropagation(); onToggleDrunkOrPoisoned(p.id); }}
-               className={cn(
-                 'px-4 py-2 rounded text-xs font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
-                 p.isDrunkOrPoisoned
-                   ? 'bg-purple-600 border-purple-600/40 text-white hover:bg-purple-700'
-                   : isLightModeActive
-                     ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
-                     : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'
-               )}
-             >
-               Droisoned
-             </button>
-           )}
-         </div>
-
-         {(p.isDead || isLilMonstaGame) && (
-           <div className="flex items-center gap-2">
-             {p.isDead && (
-               <button
-                 id="detail-vote-token-toggle"
-                 type="button"
-                 disabled={isSynced}
-                 onClick={(e) => { e.stopPropagation(); onToggleDeadVote?.(p.id); }}
-                 className={cn(
-                   'px-3 py-2 rounded text-[11px] font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
-                   isSynced && 'opacity-60 cursor-not-allowed',
-                   !isSynced && (p.hasDeadVote
-                     ? 'bg-amber-600 border-amber-600/40 text-white hover:bg-amber-700'
-                     : isLightModeActive
-                       ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-655'
-                       : 'bg-gray-955 border-gray-800 text-gray-555 hover:text-gray-300'),
-                   isSynced && (p.hasDeadVote
-                     ? 'bg-amber-600/70 border-amber-600/30 text-white'
-                     : isLightModeActive
-                       ? 'bg-gray-100 border-gray-250 text-gray-400'
-                       : 'bg-gray-900 border-gray-850 text-gray-500')
-                 )}
-                 title={isSynced ? "Dead vote token is synced from Storyteller" : undefined}
-               >
-                 🗳️ {p.hasDeadVote ? 'Vote: Active' : 'Vote: Spent'}
-               </button>
-             )}
-
-             {isLilMonstaGame && (
-               <button
-                 id="detail-lilmonsta-toggle-button"
-                 type="button"
-                 onClick={(e) => { e.stopPropagation(); onToggleLilMonsta?.(p.id); }}
-                 className={cn(
-                   'px-3 py-2 rounded text-[11px] font-bold border transition-all shadow-sm flex-1 flex items-center justify-center gap-1',
-                   p.isTheLilMonsta
-                     ? 'bg-clocktower-demon border-clocktower-demon/40 text-white font-black hover:bg-red-800'
-                     : isLightModeActive
-                       ? 'bg-white border-gray-300 text-gray-400 hover:text-gray-600'
-                       : 'bg-gray-955/40 border-gray-800 text-gray-550 hover:text-gray-300'
-                 )}
-               >
-                 <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                   <img
-                     src="/icons/lilmonsta.svg"
-                     alt=""
-                     className="w-3 h-3 object-contain"
-                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                   />
-                 </span>
-                 Lil' Monsta
-               </button>
-             )}
-           </div>
-         )}
         </div>
       </div>
       {/* Inline role details modal */}

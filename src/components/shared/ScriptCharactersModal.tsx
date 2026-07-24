@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
-import { Search, X, Scroll } from 'lucide-react';
+import { Search, X, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import ToggleSwitch from './ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import officialRoles from '../../official_roles.json';
+import rolesData from '../../roles.json';
 import type { Role } from '../../types';
 
 const officialAbility = new Map(
@@ -13,6 +14,8 @@ const officialAbility = new Map(
 );
 
 const abilityFor = (role: Role) => role.ability ?? officialAbility.get(role.id) ?? '';
+
+const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
 
 interface Props {
   isOpen: boolean;
@@ -40,6 +43,13 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const [showDetail, setShowDetail] = useState(() => {
     return localStorage.getItem('botc-script-show-detail') === 'true';
   });
+  const [showAllTravelers, setShowAllTravelers] = useState(() => {
+    return localStorage.getItem('botc-script-show-all-travelers') === 'true';
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const titleBoxRef = useRef<HTMLDivElement>(null);
 
   const handleToggleSort = (val: boolean) => {
     setSortAlphabetically(val);
@@ -51,19 +61,58 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     localStorage.setItem('botc-script-show-detail', String(val));
   };
 
+  const handleToggleAllTravelers = (val: boolean) => {
+    setShowAllTravelers(val);
+    localStorage.setItem('botc-script-show-all-travelers', String(val));
+  };
+
   useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (selectedRole) setSelectedRole(null);
+        if (settingsOpen) setSettingsOpen(false);
+        else if (selectedRole) setSelectedRole(null);
         else { onClose(); setSearchTerm(''); }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, selectedRole, onClose]);
+  }, [isOpen, selectedRole, settingsOpen, onClose]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const fit = () => {
+      const title = titleRef.current;
+      const box = titleBoxRef.current;
+      if (!title || !box) return;
+      title.style.fontSize = '';
+      const base = parseFloat(getComputedStyle(title).fontSize);
+      const natural = title.scrollWidth;
+      const available = box.clientWidth;
+      if (natural > available && available > 0) {
+        title.style.fontSize = `${Math.max(base * (available / natural), 12)}px`;
+      }
+    };
+    fit();
+    const box = titleBoxRef.current;
+    if (!box || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [isOpen, scriptName]);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,11 +121,17 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     }
   }, [isOpen]);
 
+  const effectiveRoles = useMemo(() => {
+    if (!showAllTravelers) return roles;
+    const missing = allTravelers.filter(t => !roles.some(r => r.id === t.id));
+    return [...roles, ...missing];
+  }, [roles, showAllTravelers]);
+
   const filteredRoles = useMemo(() => {
-    if (!searchTerm.trim()) return roles;
+    if (!searchTerm.trim()) return effectiveRoles;
     const term = searchTerm.toLowerCase();
-    return roles.filter(r => r.name.toLowerCase().includes(term) || r.team.toLowerCase().includes(term));
-  }, [roles, searchTerm]);
+    return effectiveRoles.filter(r => r.name.toLowerCase().includes(term) || r.team.toLowerCase().includes(term));
+  }, [effectiveRoles, searchTerm]);
 
   const byTeam = useMemo(() => {
     const grouped = Object.fromEntries(TEAMS.map(t => [t.key, filteredRoles.filter(r => r.team === t.key)]));
@@ -109,12 +164,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-start gap-4 mb-4">
-            <div>
-              <h3 className={cn("font-display font-bold text-xl leading-tight tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
-                <Scroll size={20} className={cn("inline-block align-middle mr-2 -mt-1", isLightModeActive ? "text-clocktower-blood" : "text-clocktower-townsfolk")} />
+            <div ref={titleBoxRef} className="min-w-0 flex-1">
+              <h3 ref={titleRef} className={cn("font-display font-bold text-xl leading-tight tracking-wider whitespace-nowrap inline-block max-w-full", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
                 {scriptName}
-                {scriptAuthor && <span className="text-xs font-medium text-gray-500 ml-2 align-middle">by {scriptAuthor}</span>}
               </h3>
+              {scriptAuthor && <p className="text-xs font-medium text-gray-500 mt-0.5">by {scriptAuthor}</p>}
             </div>
             <button
               type="button"
@@ -143,28 +197,66 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 </button>
               )}
             </div>
-             <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
-              <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                Detail
-              </span>
-                <ToggleSwitch
-                  id="script-show-detail-checkbox"
-                  checked={showDetail}
-                  onChange={handleToggleDetail}
-                  isLightModeActive={isLightModeActive}
-                />
-            </label>
-             <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
-              <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                Sort
-              </span>
-                <ToggleSwitch
-                  id="script-sort-alphabetically-checkbox"
-                  checked={sortAlphabetically}
-                  onChange={handleToggleSort}
-                  isLightModeActive={isLightModeActive}
-                />
-            </label>
+            <div className="relative shrink-0" ref={settingsRef}>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(o => !o)}
+                aria-label="View settings"
+                aria-expanded={settingsOpen}
+                className={cn(
+                  "p-2 rounded-lg border transition-colors",
+                  settingsOpen
+                    ? "border-clocktower-blood text-clocktower-blood"
+                    : isLightModeActive
+                      ? "border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400"
+                      : "border-gray-700 text-gray-400 hover:text-gray-100 hover:border-gray-600"
+                )}
+              >
+                <Settings size={16} />
+              </button>
+              {settingsOpen && (
+                <div
+                  className={cn(
+                    "absolute right-0 top-full mt-2 z-10 w-44 rounded-lg border shadow-xl p-2 space-y-1",
+                    isLightModeActive ? "bg-[#fdfaf2] border-amber-900/15" : "bg-gray-900 border-gray-800"
+                  )}
+                >
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Detail
+                    </span>
+                    <ToggleSwitch
+                      id="script-show-detail-checkbox"
+                      checked={showDetail}
+                      onChange={handleToggleDetail}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Sort A–Z
+                    </span>
+                    <ToggleSwitch
+                      id="script-sort-alphabetically-checkbox"
+                      checked={sortAlphabetically}
+                      onChange={handleToggleSort}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Travelers
+                    </span>
+                    <ToggleSwitch
+                      id="script-show-all-travelers-checkbox"
+                      checked={showAllTravelers}
+                      onChange={handleToggleAllTravelers}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="overflow-y-auto overscroll-contain flex-1 space-y-5 pr-1 select-none">
@@ -219,6 +311,8 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
           role={selectedRole}
           isLightModeActive={isLightModeActive}
           onClose={() => setSelectedRole(null)}
+          backdropId="script-character-details-backdrop"
+          modalId="script-character-details-modal"
         />
       )}
     </>

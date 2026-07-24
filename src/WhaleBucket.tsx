@@ -1089,6 +1089,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <GamePhase
           players={players}
           isSynced={false}
+          enableStorytellerNotes
           isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}

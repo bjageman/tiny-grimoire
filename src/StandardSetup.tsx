@@ -1071,6 +1071,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <GamePhase
           players={players}
           isSynced={false}
+          enableStorytellerNotes
           isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}

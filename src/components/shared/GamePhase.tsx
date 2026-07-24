@@ -74,6 +74,8 @@ interface Props {
   onNotesChange?: (notes: string) => void;
   showReminderToggle?: boolean;
   onToggleReminders?: (enabled: boolean) => void;
+  /** Storyteller-only: enables the per-character Notes prompts in the script character detail modal. */
+  enableStorytellerNotes?: boolean;
 }
 
 export default function GamePhase({
@@ -111,6 +113,7 @@ export default function GamePhase({
   onNotesChange,
   showReminderToggle = false,
   onToggleReminders,
+  enableStorytellerNotes = false,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -816,6 +819,7 @@ export default function GamePhase({
         roles={sortedRoles}
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
+        enableStorytellerNotes={enableStorytellerNotes}
       />
 
       {isSavingImage && (

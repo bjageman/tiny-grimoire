@@ -37,7 +37,7 @@ export default function VoteToken({ size = 24, className, style, title }: VoteTo
       </g>
       <path fill="#312e81" d="M256,53.163c-97.707,0-177.237,79.531-177.237,177.237S158.293,407.637,256,407.637S433.237,328.107,433.237,230.4 S353.707,53.163,256,53.163z M256,389.888c-87.979,0-159.488-71.509-159.488-159.488S168.021,70.912,256,70.912 S415.488,142.421,415.488,230.4S343.979,389.888,256,389.888z"/>
       <circle cx="256" cy="230.4" r="159.488" fill="#1e3a8a"/>
-      <g transform="translate(154 128.4) scale(8.5)" fill="none" stroke="#f1f5f9" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <g transform="translate(124 98.4) scale(11)" fill="none" stroke="#f1f5f9" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
         <path d="M15 22a1 1 0 0 0 1-1v-1a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 9 20v1a1 1 0 0 0 1 1z" />
         <path d="m12.5 17-.5-1-.5 1h1z" />
         <circle cx="15" cy="12" r="1" />

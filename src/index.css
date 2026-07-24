@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Single source of truth for the app's palette. tailwind.config.js reads these,
+ * so editing a value here (or live in devtools) restyles everything that uses it.
+ * Values are RGB channels rather than hex so Tailwind can still apply /opacity modifiers.
+ */
+:root {
+  /* Clocktower palette — RGB channels so Tailwind can apply /opacity modifiers. */
+  --clocktower-parchment: 244 228 188;
+  --clocktower-blood: 139 0 0;
+  --clocktower-night: 26 26 26;
+  --clocktower-townsfolk: 37 99 235;
+  --clocktower-outsider: 16 185 129;
+  --clocktower-minion: 239 68 68;
+  --clocktower-demon: 127 29 29;
+  --clocktower-traveler: 168 85 247;
+  --clocktower-gold: 201 168 76;
+  --clocktower-gold-dim: 122 96 40;
+
+  /* Intermediate gray shades not in Tailwind's default palette. */
+  --gray-150: 236 238 241;
+  --gray-250: 221 224 231;
+  --gray-505: 103 112 128;
+  --gray-550: 92 101 117;
+  --gray-555: 91 100 116;
+  --gray-650: 66 75 90;
+  --gray-655: 65 74 89;
+  --gray-750: 45 55 72;
+  --gray-850: 22 29 43;
+  --gray-855: 21 27 41;
+  --gray-955: 2 6 16;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

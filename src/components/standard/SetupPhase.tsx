@@ -429,7 +429,8 @@ export default function StandardSetupPhase({
       roles={sortedRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
-      enableStorytellerNotes
+      isStoryteller
+      players={players}
     />
     <SelectCharactersModal
       isOpen={isSelectCharactersModalOpen}

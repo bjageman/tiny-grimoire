@@ -4,11 +4,12 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { Search, X, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
+import { inPlayRoleIds } from '../../utils/scriptUtils';
 import ToggleSwitch from './ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import officialRoles from '../../official_roles.json';
 import rolesData from '../../roles.json';
-import type { Role } from '../../types';
+import type { Player, Role } from '../../types';
 
 const officialAbility = new Map(
   (officialRoles as Array<{ id: string; ability?: string }>).map(r => [r.id, r.ability])
@@ -25,8 +26,10 @@ interface Props {
   roles: Role[];
   scriptAuthor?: string;
   isLightModeActive: boolean;
-  /** Storyteller-only: enables the per-character Notes prompts in the detail modal. Omitted in player game notes. */
-  enableStorytellerNotes?: boolean;
+  /** Storyteller-only features (Notes prompts, the in-play filter). Omitted in player game notes. */
+  isStoryteller?: boolean;
+  /** Seated players, used to work out which characters are actually in play. */
+  players?: Player[];
 }
 
 const TEAMS = [
@@ -39,7 +42,7 @@ const TEAMS = [
 
 const TEAM_HOVER: Record<string, string> = Object.fromEntries(TEAMS.map(t => [t.key, t.hover]));
 
-export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptAuthor, isLightModeActive, enableStorytellerNotes = false }: Props) {
+export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
@@ -59,6 +62,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   });
   const [doubleColumn, setDoubleColumn] = useState(() => {
     return localStorage.getItem('botc-script-double-column') !== 'false';
+  });
+  const [inPlayOnly, setInPlayOnly] = useState(() => {
+    return localStorage.getItem('botc-script-in-play-only') === 'true';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -88,6 +94,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const handleToggleGroupByType = (val: boolean) => {
     setGroupByType(val);
     localStorage.setItem('botc-script-group-by-type', String(val));
+  };
+
+  const handleToggleInPlayOnly = (val: boolean) => {
+    setInPlayOnly(val);
+    localStorage.setItem('botc-script-in-play-only', String(val));
   };
 
   const handleToggleDoubleColumn = (val: boolean) => {
@@ -150,11 +161,19 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     }
   }, [isOpen]);
 
+  // Gate on the role too, so a stored preference can never filter a player's view.
+  const showInPlayOnly = isStoryteller && inPlayOnly;
+
+  // Characters actually in play — drives the storyteller's in-play filter.
+  const inPlayIds = useMemo(() => inPlayRoleIds(players), [players]);
+
   const effectiveRoles = useMemo(() => {
-    if (!showAllTravelers) return roles;
-    const missing = allTravelers.filter(t => !roles.some(r => r.id === t.id));
-    return [...roles, ...missing];
-  }, [roles, showAllTravelers]);
+    const withTravelers = showAllTravelers
+      ? [...roles, ...allTravelers.filter(t => !roles.some(r => r.id === t.id))]
+      : roles;
+    if (!showInPlayOnly) return withTravelers;
+    return withTravelers.filter(r => inPlayIds.has(r.id));
+  }, [roles, showAllTravelers, showInPlayOnly, inPlayIds]);
 
   const filteredRoles = useMemo(() => {
     if (!searchTerm.trim()) return effectiveRoles;
@@ -301,6 +320,19 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                       isLightModeActive={isLightModeActive}
                     />
                   </label>
+                  {isStoryteller && (
+                    <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                      <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                        In Play Only
+                      </span>
+                      <ToggleSwitch
+                        id="script-in-play-only-checkbox"
+                        checked={inPlayOnly}
+                        onChange={handleToggleInPlayOnly}
+                        isLightModeActive={isLightModeActive}
+                      />
+                    </label>
+                  )}
                   <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
                       Sort A–Z
@@ -395,7 +427,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
           role={selectedRole}
           isLightModeActive={isLightModeActive}
           onClose={() => setSelectedRole(null)}
-          enableStorytellerNotes={enableStorytellerNotes}
+          enableStorytellerNotes={isStoryteller}
           backdropId="script-character-details-backdrop"
           modalId="script-character-details-modal"
         />

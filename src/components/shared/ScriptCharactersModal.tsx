@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { Search, X, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { displayRoleIds } from '../../utils/discordRecap';
 import { roleIconFallback } from '../../utils/roleIcon';
+import { inPlayRoleIds } from '../../utils/scriptUtils';
 import ToggleSwitch from './ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import officialRoles from '../../official_roles.json';
@@ -164,20 +164,16 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   // Gate on the role too, so a stored preference can never filter a player's view.
   const showInPlayOnly = isStoryteller && inPlayOnly;
 
-  // Characters a seated player is actually assigned — drives the storyteller's in-play filter.
-  const inPlayRoleIds = useMemo(() => {
-    const ids = new Set<string>();
-    players.forEach(p => displayRoleIds(p).forEach(id => { if (id) ids.add(id); }));
-    return ids;
-  }, [players]);
+  // Characters actually in play — drives the storyteller's in-play filter.
+  const inPlayIds = useMemo(() => inPlayRoleIds(players), [players]);
 
   const effectiveRoles = useMemo(() => {
     const withTravelers = showAllTravelers
       ? [...roles, ...allTravelers.filter(t => !roles.some(r => r.id === t.id))]
       : roles;
     if (!showInPlayOnly) return withTravelers;
-    return withTravelers.filter(r => inPlayRoleIds.has(r.id));
-  }, [roles, showAllTravelers, showInPlayOnly, inPlayRoleIds]);
+    return withTravelers.filter(r => inPlayIds.has(r.id));
+  }, [roles, showAllTravelers, showInPlayOnly, inPlayIds]);
 
   const filteredRoles = useMemo(() => {
     if (!searchTerm.trim()) return effectiveRoles;

@@ -78,6 +78,22 @@ describe('GamePhase - Script Modal Integration', () => {
     expect(modal.queryByText('Chef')).not.toBeInTheDocument();
   });
 
+  it('counts both the shown role and the token a player carries as in play', () => {
+    const drunkTownCrier: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'towncrier', isTheDrunk: true, isDead: false },
+    ];
+    render(<GamePhase {...defaultProps} players={drunkTownCrier} isStoryteller />);
+    openScriptModal();
+
+    fireEvent.click(screen.getByLabelText('View settings'));
+    fireEvent.click(document.getElementById('script-in-play-only-checkbox')!);
+
+    const modal = within(screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement);
+    expect(modal.getByText('Town Crier')).toBeInTheDocument();
+    expect(modal.getByText('Drunk')).toBeInTheDocument();
+    expect(modal.queryByText('Chef')).not.toBeInTheDocument();
+  });
+
   it('renders active script button with correct counts', () => {
     render(<GamePhase {...defaultProps} />);
 

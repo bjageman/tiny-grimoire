@@ -5,12 +5,7 @@ interface DayNightLabelProps {
   dayNumber: number;
 }
 
-/**
- * Renders the emoji + "Day N" / "Night N" text for the time-of-day badges.
- * Both label variants are stacked in the same grid cell (only one visible)
- * so the badge's width is always driven by the wider "Night" text, instead
- * of shrinking to fit "Day" and resizing the badge when the state toggles.
- */
+/** Emoji + "Day N"/"Night N" badge; both variants are stacked so width always tracks the wider "Night" text. */
 export default function DayNightLabel({ timeOfDay, dayNumber }: DayNightLabelProps) {
   return (
     <>

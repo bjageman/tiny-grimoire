@@ -225,7 +225,7 @@ export default function SetupPlayerEditModal({
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
                 )}
               >
-                <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                   <img
                     src="/icons/drunk.svg"
                     alt=""
@@ -249,7 +249,7 @@ export default function SetupPlayerEditModal({
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
                 )}
               >
-                <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                   <img
                     src="/icons/marionette.svg"
                     alt=""
@@ -273,7 +273,7 @@ export default function SetupPlayerEditModal({
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
                 )}
               >
-                <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                   <img
                     src="/icons/lunatic.svg"
                     alt=""
@@ -296,7 +296,7 @@ export default function SetupPlayerEditModal({
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
                 )}
               >
-                <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
                   <img
                     src="/icons/lilmonsta.svg"
                     alt=""
@@ -339,7 +339,7 @@ export default function SetupPlayerEditModal({
                 )}
               >
                 <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
-                  <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
+                  <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
                     <img
                       key={role.id}
                       src={`/icons/${role.id}.svg`}

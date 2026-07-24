@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
-import { sortByScriptOrder } from '../../utils/scriptUtils';
+import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getDistribution } from '../../constants';
 import type { Player, Role, PlacedReminder } from '../../types';
@@ -74,6 +75,8 @@ interface Props {
   onNotesChange?: (notes: string) => void;
   showReminderToggle?: boolean;
   onToggleReminders?: (enabled: boolean) => void;
+  /** Storyteller-only features in the script modal (Notes prompts, in-play filter). */
+  isStoryteller?: boolean;
 }
 
 export default function GamePhase({
@@ -111,6 +114,7 @@ export default function GamePhase({
   onNotesChange,
   showReminderToggle = false,
   onToggleReminders,
+  isStoryteller = false,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -155,17 +159,7 @@ export default function GamePhase({
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (rolesData as Role[]);
-    const roles = [...baseRoles];
-    players.forEach(p => {
-      const displayRoles = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
-      displayRoles.forEach(roleId => {
-        const rObj = baseRoles.find(r => r.id === roleId);
-        if (rObj && rObj.team === 'traveler' && !roles.some(r => r.id === rObj.id)) {
-          roles.push(rObj);
-        }
-      });
-    });
-    return sortByScriptOrder(roles, baseRoles);
+    return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);
@@ -459,7 +453,7 @@ export default function GamePhase({
                         >
                           {role ? (
                             <span className="flex items-center gap-1.5">
-                              <div className="w-5 h-5 shrink-0 rounded-full bg-white flex items-center justify-center p-0.5">
+                              <div className="w-5 h-5 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
                                 <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
                               </div>
                               <span>{role.name}</span>
@@ -728,7 +722,7 @@ export default function GamePhase({
                               rObj.team === 'traveler' && 'text-clocktower-traveler',
                             )}
                           >
-                            <span className="w-4.5 h-4.5 bg-white rounded-full flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
                               <img key={rObj.id} src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
                                 onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')} />
                             </span>
@@ -826,6 +820,8 @@ export default function GamePhase({
         roles={sortedRoles}
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
+        isStoryteller={isStoryteller}
+        players={players}
       />
 
       {isSavingImage && (
@@ -837,6 +833,7 @@ export default function GamePhase({
           scriptName={scriptName}
           dayNumber={dayNumber}
           timeOfDay={timeOfDay}
+          isLightModeActive={isLightModeActive}
           onDone={(error) => {
             setIsSavingImage(false);
             if (error) showAlert(`The grimoire image could not be saved — ${error}.`, 'Save failed');
@@ -844,8 +841,8 @@ export default function GamePhase({
         />
       )}
 
-      {/* Demon Bluffs full-screen overlay — always dark */}
-      {isBluffOverlayOpen && (
+      {/* Demon Bluffs full-screen overlay — always dark; portaled to body so its fixed inset covers the viewport (not a transformed ancestor) */}
+      {isBluffOverlayOpen && createPortal(
         <div
           id="demon-bluffs-overlay"
           className="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-8 p-8 cursor-pointer"
@@ -867,7 +864,7 @@ export default function GamePhase({
                 >
                   {role ? (
                     <>
-                      <div className="w-16 h-16 shrink-0 rounded-full bg-white flex items-center justify-center p-1">
+                      <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-1">
                         <img
                           key={role.id}
                           src={`/icons/${role.id}.svg`}
@@ -893,7 +890,8 @@ export default function GamePhase({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
 

@@ -89,10 +89,7 @@ export function getValidationSummary(
   const hasKazali = assignedRoles.some(r => r.id === 'kazali');
   const hasXaan = assignedRoles.some(r => r.id === 'xaan');
 
-  // Marionette's own seat is always tallied as a Minion (see `counts` above). If it displays
-  // as the Outsider, it fills the one Outsider slot itself, so the expected Outsider count drops
-  // by 1 and that freed good seat is instead a real Townsfolk (+1 Townsfolk) — keeping the total
-  // number of good seats constant. If it displays as Townsfolk, nothing changes.
+  // The Marionette's seat counts as a Minion; if it displays as Outsider it fills the one Outsider slot, so expected Outsiders drop 1 and Townsfolk rise 1 (good-seat total constant).
   const marionettePlayer = players.find(p => p.isTheMarionette);
   const marionetteFakeTeam = marionettePlayer
     ? allRoles.find(r => r.id === marionettePlayer.roleId)?.team
@@ -314,8 +311,7 @@ export function getValidationSummary(
     }
   }
 
-  // Drunk/Marionette/Lunatic are always supposed to display as a different, fake character —
-  // if a player's shown icon is literally one of these three, their true identity is exposed.
+  // Drunk/Marionette/Lunatic must display as a different fake character; showing the role itself exposes their true identity.
   const revealingMasqueradeIds = new Set(['drunk', 'marionette', 'lunatic']);
   for (const p of players) {
     if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {

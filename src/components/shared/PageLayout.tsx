@@ -40,11 +40,7 @@ export default function PageLayout({
     };
   }, [isLight]);
 
-  // Makes the Android/browser back button behave the same as the on-screen
-  // back button whenever it triggers an in-app action (onBack) rather than
-  // a real navigation (backHref). We keep a buffer history entry pushed
-  // (same URL, marker state) so the back gesture pops it instead of leaving
-  // the page, and run onBack instead.
+  // Make the browser/Android back button run onBack (in-app action) not navigate: keep a buffer history entry so back pops it and runs onBack.
   const onBackRef = useRef(onBack);
   useEffect(() => {
     onBackRef.current = onBack;
@@ -55,10 +51,7 @@ export default function PageLayout({
     hasInAppBackRef.current = hasInAppBack;
   });
 
-  // Runs after every commit (no dependency array) so it re-arms the buffer
-  // once it's consumed by a back-press — needed for chained in-app phases
-  // (e.g. WhaleBucket's game -> draft -> setup) where onBack stays truthy
-  // across the pop. The history.state check keeps this a no-op otherwise.
+  // Runs every commit to re-arm the buffer after a back-press consumes it (for chained in-app phases); the history.state check keeps it a no-op otherwise.
   useEffect(() => {
     if (!hasInAppBack) return;
     const currentState = window.history.state as { pageLayoutBackBuffer?: boolean } | null;
@@ -68,12 +61,7 @@ export default function PageLayout({
   });
 
   useEffect(() => {
-    // A genuine back-through-our-buffer pop never changes the URL (we push
-    // the buffer with the current href), so it never fires 'hashchange'.
-    // Some environments (older WebViews, jsdom) incorrectly fire 'popstate'
-    // for plain hash assignments too — those are always paired with a
-    // 'hashchange' in the same tick, so deferring one microtask lets us
-    // tell the two apart and ignore the latter.
+    // Our buffer pop never changes the URL so never fires 'hashchange'; defer a microtask to ignore plain hash-assignment popstates that some WebViews/jsdom mis-fire.
     let hashChangedSincePop = false;
     const handleHashChange = () => {
       hashChangedSincePop = true;

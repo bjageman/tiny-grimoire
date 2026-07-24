@@ -13,6 +13,7 @@ interface RecapImageExportProps {
   scriptName: string;
   dayNumber: number;
   timeOfDay: 'night' | 'day';
+  isLightModeActive?: boolean;
   onDone: (error?: string) => void;
 }
 

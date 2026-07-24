@@ -1,4 +1,4 @@
-import type { Role } from '../types';
+import type { Player, Role } from '../types';
 import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 
@@ -16,6 +16,35 @@ export function compareByScriptOrder(baseRoles: { id: string }[]) {
 /** Sorts `roles` by their position in `baseRoles` (the active script), unrecognized roles last. */
 export function sortByScriptOrder<T extends { id: string }>(roles: T[], baseRoles: T[]): T[] {
   return [...roles].sort(compareByScriptOrder(baseRoles));
+}
+
+/** Ids of every character in play: each seated player's assigned role(s) plus any "believes they are" tag they carry, since a Drunk holds both their shown role and the Drunk token. */
+export function inPlayRoleIds(players: Player[]): Set<string> {
+  const ids = new Set<string>();
+  players.forEach(p => {
+    const assigned = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    assigned.forEach(id => { if (id) ids.add(id); });
+    if (p.isTheDrunk) ids.add('drunk');
+    if (p.isTheMarionette) ids.add('marionette');
+    if (p.isTheLunatic) ids.add('lunatic');
+    if (p.isTheLilMonsta) ids.add('lilmonsta');
+  });
+  return ids;
+}
+
+/** Returns baseRoles plus any traveler a seated player is assigned that the script itself omits, resolving unknown traveler definitions from the official role list so imported scripts (which rarely list travelers) still show them. */
+export function withInPlayTravelers(baseRoles: Role[], players: Player[]): Role[] {
+  const all = rolesData as Role[];
+  const roles = [...baseRoles];
+  players.forEach(p => {
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    ids.forEach(roleId => {
+      if (!roleId || roles.some(r => r.id === roleId)) return;
+      const def = all.find(r => r.id === roleId);
+      if (def?.team === 'traveler') roles.push(def);
+    });
+  });
+  return roles;
 }
 
 export function generateGameCode(): string {
@@ -105,10 +134,7 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
             );
             if (matched) return matched;
 
-            // Custom/homebrew character not in our known role list — best-effort synthesize
-            // it from whatever the script JSON itself provided, instead of silently forcing
-            // it to Townsfolk (which used to corrupt the evil-team distribution whenever a
-            // custom Minion/Demon/Outsider was uploaded).
+            // Custom character not in our list — synthesize from the script JSON's own fields instead of forcing Townsfolk (which corrupted evil-team distribution).
             const itemObj = item as Record<string, unknown>;
             const rawTeam = typeof itemObj.team === 'string' ? itemObj.team.toLowerCase() : '';
             const normalizedTeam = rawTeam === 'traveller' ? 'traveler' : rawTeam;
@@ -131,8 +157,7 @@ export function parseScriptFile(file: File): Promise<{ name: string; author: str
                 ? rawImage as string[]
                 : undefined;
 
-            // Carry the character's own reminders and night order straight from the script JSON,
-            // so a homebrew character offers its own tokens and slots into the night order.
+            // Carry the character's own reminders and night order straight from the script JSON.
             const reminders = toStringArray(itemObj.reminders);
             const remindersGlobal = toStringArray(itemObj.remindersGlobal);
             const firstNight = toNightOrder(itemObj.firstNight);

@@ -247,9 +247,6 @@ export function performStandardAssignment(
     return assignSimpleRolesToPlayers(players, shuffle(finalRolesList), travelerIds, basePlayers, selectionRoles, 'legion');
   }
 
-  // Riot's "Minions become Riot" transformation happens on day 3 during play, not at setup
-  // ([setup: false] on the character, unlike Legion's setup-time "[Most players are Legion]") —
-  // so at initial assignment it's just a normal single Demon, no distribution changes.
 
   // Normal / non-Legion setup
   const nonLegionDemons = dems.filter(d => d.id !== 'legion');
@@ -273,9 +270,7 @@ export function performStandardAssignment(
   const hasXaan = selectedMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
 
-  // The Sentinel (Fabled) may put 1 extra or 1 fewer Outsider in play. It's a fixed,
-  // Storyteller-chosen shift, so it folds into the base Outsider modifier alongside Baron/
-  // Fang Gu/Vigormortis. Kazali/Xaan already pick "any" Outsider count, so it's ignored there.
+  // Sentinel (Fabled): a fixed Storyteller-chosen ±1 Outsider shift; ignored under Kazali/Xaan.
   const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
                                (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
                                (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +
@@ -341,9 +336,7 @@ export function performStandardAssignment(
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
 
-  // 1. Balloonist adjustment — its [+0 or +1 Outsider] only applies if the Balloonist was
-  // actually dealt. `balRange` above is gated on the script *pool*, which on an all-roles
-  // script always contains it, so the draw must be re-checked here.
+  // 1. Balloonist's +0/+1 Outsider only applies if it was actually dealt (balRange is gated on the pool), so re-check the draw.
   const balloonistInPlay = selectedTownsfolk.some(t => t.id === 'balloonist');
   if (!bypassAdjustments && chosenCombo.bal === 1 && balloonistInPlay && outs.length > selectedOutsiders.length) {
     const remainingOuts = outs.filter(o => !selectedOutsiders.some(so => so.id === o.id));
@@ -359,9 +352,7 @@ export function performStandardAssignment(
     }
   }
 
-  // 2. Hermit adjustment — same pool-vs-draw problem as the Balloonist above. Removing the
-  // Hermit itself would take it out of play and invalidate the -1 that justified the removal,
-  // so this only fires when some other Outsider can absorb it.
+  // 2. Hermit: same pool-vs-draw problem as Balloonist; only fires when another Outsider can absorb the -1 (removing the Hermit would invalidate it).
   const hermitInPlay = selectedOutsiders.some(o => o.id === 'hermit');
   if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInPlay) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
@@ -392,16 +383,7 @@ export function performStandardAssignment(
 
   const roleIdsInPlay = new Set(finalRolesList.map(r => r.id));
 
-  // Pick the Marionette's displayed identity now that the real role list is fully finalized
-  // (including any fillToCount padding). Its team's real target was already reduced by 1 above
-  // (with the freed slot handed to the other good team), so a non-colliding, not-actually-
-  // in-play character from that same team is guaranteed to exist in the script's own pool —
-  // no need to reach outside it, and the real Townsfolk/Outsider/Minion/Demon counts used for
-  // balance aren't perturbed. Falls back to the full official role list only in the (should be
-  // unreachable) case the script pool is somehow exhausted anyway.
-  // Marionette bluffs as a Townsfolk by default. It only bluffs as an Outsider if the script has
-  // no Townsfolk at all to draw from — a true last resort that should be unreachable on any real
-  // script, since every script has Townsfolk characters.
+  // Marionette's displayed identity: a non-colliding not-in-play Townsfolk (or Outsider only if no Townsfolk exist) from the script's own pool, since its target was already reduced by 1; falls back to the official list only if exhausted.
   const marionetteFakeTeam: 'townsfolk' | 'outsider' | null = !hasMarionette
     ? null
     : tfs.length > 0 ? 'townsfolk' : (outs.length > 0 ? 'outsider' : null);
@@ -422,9 +404,7 @@ export function performStandardAssignment(
     );
   }
 
-  // Same reasoning for the Drunk's fake Townsfolk identity: draw from this script's
-  // townsfolk first, guaranteeing a non-colliding "not-in-play" character if possible.
-  // Falls back to in-play script townsfolk, and finally the master list if necessary.
+  // Drunk's fake Townsfolk identity: script townsfolk first (non-colliding not-in-play if possible), then in-play, then master list.
   const hasDrunkInPlay = finalRolesList.some(r => r.id === 'drunk');
   let drunkFakeRole: Role | null = null;
   if (hasDrunkInPlay) {
@@ -440,8 +420,7 @@ export function performStandardAssignment(
     );
   }
 
-  // Lil' Monsta displays as a Minion (it's secretly the Demon), so its fake identity is drawn
-  // from script minions first, falling back to master list if script minions are exhausted.
+  // Lil' Monsta displays as a Minion; draw its fake identity from script minions first, then master list.
   const hasLilMonstaInPlay = finalRolesList.some(r => r.id === 'lilmonsta');
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonstaInPlay) {
@@ -455,9 +434,7 @@ export function performStandardAssignment(
     );
   }
 
-  // Lunatic displays as the Demon (it's secretly an Outsider). Exclude the real Demon if possible
-  // so the Lunatic can't coincidentally be told it's the exact same Demon that's actually in play.
-  // Drawn from script demons first.
+  // Lunatic displays as the Demon; draw from script demons first, excluding the real Demon if possible.
   const hasLunaticInPlay = finalRolesList.some(r => r.id === 'lunatic');
   let lunaticFakeRole: Role | null = null;
   if (hasLunaticInPlay) {

@@ -177,26 +177,20 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
-    // A full reset (Disconnect / Reset Game) starts a fresh session, so re-arm
-    // the one-time "Send character assignments?" warning — mirrors
-    // resetGameKeepConnected so both reset paths behave the same.
+    // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('standard-botc-game-code', newCode);
     const newSync = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
     localStorage.setItem('standard-botc-sync-code', newSync);
-    // Both the reset-game confirm and the synced "disconnect" path land on
-    // this mode's setup page (not home) — phase is already 'setup'.
+    // Both reset-game confirm and synced disconnect land on this mode's setup page (phase already 'setup'), not home.
     window.location.hash = '#/standard';
     setGameCode(newCode);
     setSyncCode(newSync);
   };
 
-  // Reset the round but keep the sync session (and every connected player)
-  // alive. Clears role assignments and per-round state, drops back to setup,
-  // and — most importantly — tells every synced player to return to the
-  // waiting room so they'll get a fresh character when the grimoire reopens.
+  // Reset the round but keep the sync session and connected players: clear roles/per-round state, return to setup, and send players to the waiting room for fresh characters.
   const resetGameKeepConnected = () => {
     const clearedPlayers = players.map(p => ({
       ...p,
@@ -223,10 +217,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setCheckedItems({});
     setGrimoireConfirmed(false);
 
-    // Broadcast immediately (no debounce): first the explicit reset command,
-    // then a setup_update carrying the cleared roster + script. The reset
-    // command is the primary signal; the setup_update doubles as a backup that
-    // pulls any player who missed it back to the waiting room.
+    // Broadcast immediately (no debounce): the reset command (primary signal) then a setup_update with the cleared roster/script as backup.
     if (sendMessageRef.current) {
       sendMessageRef.current({ type: 'game_reset', gameType: 'standard' });
       sendMessageRef.current({
@@ -404,8 +395,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   // Broadcast player list to players during setup phase
   useEffect(() => {
     if (!isSecondary && phase === 'setup') {
-      // Only broadcast standard setup updates on initial mount or phase change
-      // rather than on every players list alteration to prevent loop storm
+      // Only broadcast standard setup updates on mount or phase change, not every players change, to prevent a loop storm.
       const initialTimer = setTimeout(() => {
         broadcastSetupUpdate(players);
       }, 500);
@@ -842,8 +832,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
 
-  // Un-assign every player's character (and any special-role state), keeping
-  // the players themselves — the Standard analog of Whale Bucket's "Clear All".
+  // Un-assign every player's character and special-role state, keeping the players — the Standard analog of Whale Bucket's "Clear All".
   const clearAllRoles = () => {
     showConfirm('Clear all assigned roles? This keeps players but removes their character assignments.', () => {
       setPlayers(prev => prev.map(p => ({
@@ -924,14 +913,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
-            // Stepping back to setup keeps the one-time grimoire confirmation:
-            // you've already acknowledged sending assignments, so re-opening
-            // shouldn't nag again. Only a Reset (Keep Players / Disconnect)
-            // re-arms it.
+            // Stepping back to setup keeps the one-time grimoire confirmation; only a Reset (Keep Players / Disconnect) re-arms it.
             ? () => setPhase('setup')
             : remotePlayerIds.size > 0
-              // Synced with players: don't silently abandon them by returning to
-              // the Host menu — surface the reset/disconnect choice first.
+              // Synced with players: surface the reset/disconnect choice first instead of silently abandoning them to the Host menu.
               ? () => setShowResetModal(true)
               : undefined
       }
@@ -1086,6 +1071,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <GamePhase
           players={players}
           isSynced={false}
+          isStoryteller
           isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}

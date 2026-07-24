@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-/**
- * Reproduces GrimoireBoard's superellipse seating layout (board sizing,
- * token sizing, and per-seat angle/position math) so other screens can
- * arrange players in the same circle without duplicating the live board's
- * fan-out/reminder logic.
- */
+/** Reproduces GrimoireBoard's superellipse seating math so other screens arrange players in the same circle. */
 /** Width the desktop token/name pixel sizes below were hand-tuned against (`max-w-[680px]`). */
 const BOARD_BASELINE_WIDTH = 680;
 
@@ -44,9 +39,7 @@ export function useGrimoireLayout(playerCount: number) {
     const count = playerCount;
     const isDesktop = boardAspect < 1.15;
 
-    // The desktop sizes are absolute pixels tuned for a 680px-wide board. Once `md:` lifts the
-    // width cap the board fills its grid column, which on a narrow tablet is well under 680 —
-    // so scale the tokens down to match, or they overhang the board's rounded edge.
+    // Desktop sizes are px tuned for a 680px board; scale down when the actual board is narrower or tokens overhang.
     const s = boardWidth > 0 ? Math.min(1, boardWidth / BOARD_BASELINE_WIDTH) : 1;
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
 

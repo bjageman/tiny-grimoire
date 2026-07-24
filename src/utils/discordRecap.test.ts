@@ -57,17 +57,18 @@ describe('buildDiscordPost', () => {
       gameLog: ['[Day 3 · 23:20] Game over 😈 Evil wins!'],
     });
 
-    expect(text).toContain('## Trouble Brewing — 😈 Evil wins');
+    expect(text).toContain('## Trouble Brewing — 😈 Evil Wins');
     expect(text).toContain('4 players · 3 alive · ended Day 3');
     expect(text).toContain('🔵 **Alice** — Washerwoman');
-    expect(text).toContain('😈 **Jonas** — Imp');
+    expect(text).toContain('🟥 ***Jonas*** — _Imp_');
     expect(truncated).toBe(false);
   });
 
   it('marks the dead', () => {
     const { text } = buildDiscordPost({ ...base, gameLog: [] });
-    expect(text).toContain('🟢 **Bob** — Butler 💀');
-    expect(text).not.toContain('**Alice** — Washerwoman 💀');
+    expect(text).toContain('🔷 ~~**Bob** — Butler~~');
+    expect(text).toContain('🔵 **Alice** — Washerwoman');
+    expect(text).not.toContain('~~**Alice**~~');
   });
 
   it('names the character a player only thinks they are', () => {
@@ -84,26 +85,18 @@ describe('buildDiscordPost', () => {
     expect(text).toContain('In progress');
   });
 
-  it('keeps the closing moves and drops the opening ones when the log will not fit', () => {
+  it('never includes a game log section', () => {
     const gameLog = [
       ...Array.from({ length: 200 }, (_, i) => `[Day 1 · 20:${String(i % 60).padStart(2, '0')}] filler entry number ${i}`),
       '[Day 9 · 23:20] Game over 🌟 Good wins!',
     ];
 
-    const { text, truncated } = buildDiscordPost({ ...base, gameLog });
+    const { text } = buildDiscordPost({ ...base, gameLog });
 
-    expect(truncated).toBe(true);
-    expect(text.length).toBeLessThanOrEqual(DISCORD_MESSAGE_LIMIT);
-    expect(text).toContain('Game over 🌟 Good wins!');
-    expect(text).toContain('earlier entries trimmed');
-    expect(text).not.toContain('filler entry number 0]');
-    // The roster is the point of the recap, so it survives trimming intact.
-    expect(text).toContain('😈 **Jonas** — Imp');
-  });
-
-  it('omits the log section entirely when there is nothing logged', () => {
-    const { text } = buildDiscordPost({ ...base, gameLog: [] });
     expect(text).not.toContain('**Game Log**');
+    expect(text).not.toContain('filler entry number');
+    // The roster is the point of the recap, so it survives intact.
+    expect(text).toContain('🟥 ***Jonas*** — _Imp_');
   });
 
   it('never exceeds the limit even when the roster alone overflows it', () => {
@@ -123,7 +116,6 @@ describe('buildDiscordPost', () => {
   it('leaves a post that already fits completely untouched', () => {
     const { text, truncated } = buildDiscordPost({ ...base, gameLog: ['[Day 1 · 20:00] Dev died'] });
     expect(truncated).toBe(false);
-    expect(text).toContain('[Day 1 · 20:00] Dev died');
     expect(text).not.toContain('…');
   });
 });

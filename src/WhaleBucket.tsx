@@ -814,8 +814,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
-    // A full reset starts a fresh session, so re-arm the one-time "Send
-    // character assignments?" warning (mirrors resetGameKeepConnected).
+    // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
     const newCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
@@ -824,15 +823,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     localStorage.setItem('whale-bucket-sync-code', newSync);
     setGameCode(newCode);
     setSyncCode(newSync);
-    // Both the reset-game confirm and the synced "disconnect" path land on
-    // this mode's setup page (not home) — phase is already 'setup'.
+    // Both reset-game confirm and synced disconnect land on this mode's setup page (phase already 'setup'), not home.
     window.location.hash = '#/whale-bucket';
   };
 
-  // Reset the round but keep the sync session (and every connected player)
-  // alive. Player preferences are retained; only role assignments and
-  // per-round state are cleared. Every synced player is told to return to the
-  // waiting room so they'll get a fresh character when the grimoire reopens.
+  // Reset the round but keep the sync session and players: retain preferences, clear only roles/per-round state, and send players to the waiting room for fresh characters.
   const resetGameKeepConnected = () => {
     const clearedPlayers = players.map(p => ({
       ...p,
@@ -863,9 +858,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     // Re-arm the one-time "Send character assignments?" warning for the next round.
     setGrimoireConfirmed(false);
 
-    // Broadcast immediately (no debounce): the explicit reset command first,
-    // then a setup_update carrying the cleared roster as a backup that pulls
-    // any player who missed the command back to the preferences picker.
+    // Broadcast immediately (no debounce): the reset command first, then a setup_update with the cleared roster as backup to the preferences picker.
     if (sendMessageRef.current) {
       sendMessageRef.current({ type: 'game_reset', gameType: 'whale-bucket' });
       sendMessageRef.current({
@@ -959,8 +952,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           : phase !== 'setup'
             ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
             : remotePlayerIds.size > 0
-              // Synced with players: surface the reset/disconnect choice instead
-              // of silently returning to the Host menu.
+              // Synced with players: surface the reset/disconnect choice instead of silently returning to the Host menu.
               ? () => setShowResetModal(true)
               : undefined
       }
@@ -1097,6 +1089,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <GamePhase
           players={players}
           isSynced={false}
+          isStoryteller
           isSecondary={isSecondary}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}

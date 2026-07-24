@@ -77,10 +77,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const isSynced = !!gameCode;
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
-  // A one-way "share my local notes" code — separate from `gameCode` (which
-  // is only ever set when this tracker has joined a live Storyteller game).
-  // Anyone with this code can view a read-only copy of the grimoire and
-  // player names; no characters, status, or notes are ever sent.
+  // A one-way "share my local notes" code, separate from gameCode; viewers get a read-only copy of the grimoire and player names only — no characters/status/notes.
   const [shareCode, setShareCode] = useState<string>(() => {
     const saved = localStorage.getItem('tracker-botc-share-code');
     if (saved) return saved;
@@ -118,11 +115,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       customScriptRoles?: Role[] | null;
       playerId?: string;
     };
-    // Only an explicit reset returns a joined game-tracker player to the
-    // JoinPage lobby (waiting room for Standard, reset preferences picker for
-    // Whale Bucket). A plain setup_update is NOT a reset: the storyteller may
-    // just step back to setup to tweak something, and that should leave players
-    // on their character / tracker untouched.
+    // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
     const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
     if (payload.type === 'game_reset') {
       if (joinedFromLobby) {
@@ -214,11 +207,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   useGameSocket(gameCode || '', handleIncomingMessage);
 
-  // Hand a one-time copy of the initial setup (player names + script) to
-  // anyone who opens the share link — not an ongoing sync. The recipient
-  // gets their own independent, fully-editable tracker seeded with this
-  // data; no characters, status, or notes are ever sent, and nothing here
-  // pushes again after the recipient's one request.
+  // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
   const handleShareSocketMessage = (data: unknown) => {
@@ -239,18 +228,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     sendShareMessageRef.current = sendShareMessage;
   }, [sendShareMessage]);
 
-  // Receiving side: this device opened someone else's share link. Request
-  // their setup once, apply it as our own local (independent, editable)
-  // tracker state, then forget the code — this is a one-time import, not a
-  // live connection.
+  // Receiving side: request the sharer's setup once, apply it as our own editable tracker, then forget the code — a one-time import, not a live connection.
   const [incomingShareCode, setIncomingShareCode] = useState<string | null>(() => parseShareCodeFromHash());
   const hasAppliedIncomingShare = useRef(false);
 
-  // A share link often opens in a tab that already has the tracker mounted
-  // (e.g. a previously-used browser tab) — the initial-state lookup above
-  // only runs once at mount, so it'd otherwise never notice a shareCode
-  // that appears later via a plain hash navigation (which doesn't remount
-  // this component). Re-check on every hash change too.
+  // A share link may open in a tab already mounted, so the mount-only lookup misses a shareCode appearing later via hash nav — re-check on every hash change.
   useEffect(() => {
     const onHashChange = () => {
       const code = parseShareCodeFromHash();
@@ -288,11 +270,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const { sendMessage: sendIncomingShareRequest, isConnected: isIncomingShareConnected } = useGameSocket(incomingShareCode || '', handleIncomingShareMessage);
   useEffect(() => {
     if (!incomingShareCode || !isIncomingShareConnected) return;
-    // Ask as soon as our socket is actually subscribed (not on a blind
-    // timer — real WebSocket handshakes can take longer than a fixed
-    // delay), then keep retrying: the sharer's reply is only delivered to
-    // subscribers connected at the moment it's sent, so a single request
-    // can go unanswered if either side's socket wasn't fully up yet.
+    // Ask once our socket is actually subscribed (not a blind timer), then keep retrying: the sharer's reply only reaches subscribers connected when it's sent.
     sendIncomingShareRequest({ type: 'notes_share_sync_request' });
     const retry = setInterval(() => {
       sendIncomingShareRequest({ type: 'notes_share_sync_request' });
@@ -327,8 +305,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
   };
 
-  // Back-button guard: a synced player about to leave to the main menu is
-  // asked to confirm first (cancel keeps them in the session).
+  // Back-button guard: a synced player leaving to the main menu is asked to confirm first (cancel keeps them in the session).
   const confirmDisconnectAndLeave = () => {
     showConfirm("Disconnect from this synced session and return to the main menu?", () => {
       clearSyncSession();
@@ -600,8 +577,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         phase !== 'setup'
           ? () => setPhase('setup')
           : isSynced
-            // Synced tracker: confirm before leaving so a stray back press
-            // doesn't silently drop the player out of the game.
+            // Synced tracker: confirm before leaving so a stray back press doesn't silently drop the player from the game.
             ? confirmDisconnectAndLeave
             : undefined
       }

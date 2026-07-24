@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Read endpoints and credentials from environment variables.
-// Leave USERNAME/PASSWORD blank when using the public ntfy.sh broker.
+// Endpoints/credentials from env; leave USERNAME/PASSWORD blank for the public ntfy.sh broker.
 const NTFY_SERVER_URL = import.meta.env.VITE_NTFY_SERVER_URL || 'ntfy.sh';
 const NTFY_USERNAME = import.meta.env.VITE_NTFY_ADMIN_USERNAME || '';
 const NTFY_PASSWORD = import.meta.env.VITE_NTFY_ADMIN_PASSWORD || '';
@@ -10,16 +9,7 @@ const NTFY_PASSWORD = import.meta.env.VITE_NTFY_ADMIN_PASSWORD || '';
 const PUBLISH_MAX_ATTEMPTS = 4;
 const PUBLISH_BASE_DELAY_MS = 300;
 
-/**
- * Build the ?auth= query parameter string for ntfy.
- *
- * ntfy expects the ?auth= value to be the *base64url-encoded* form of the
- * entire Authorization header value (e.g. base64url("Basic <base64(u:p)>")).
- * Standard URL-encoding ("Basic%20...") is NOT accepted and returns a 500.
- * Using ?auth= for both the WebSocket URL and the POST URL avoids sending an
- * Authorization header, which would otherwise trigger a CORS preflight that
- * ntfy cannot satisfy when Access-Control-Allow-Origin is set to '*'.
- */
+/** Build the ntfy ?auth= param (base64url of the full Authorization header value); ?auth= avoids a CORS preflight. */
 function buildAuthParam(): string {
   if (!NTFY_USERNAME || !NTFY_PASSWORD) return '';
   const headerValue = `Basic ${btoa(`${NTFY_USERNAME}:${NTFY_PASSWORD}`)}`;
@@ -114,14 +104,7 @@ export function useGameSocket(gameCode: string, onMessage: (data: unknown) => vo
 
     console.log(`[ntfy] Publishing message to: ${protocol}://${cleanDomain}/${topic}`, payload);
 
-    // Publishing is a plain HTTP POST to the ntfy broker. Under a burst of
-    // near-simultaneous messages (e.g. many players joining at once) the public
-    // broker rate-limits and rejects some POSTs — a silently dropped publish
-    // means the storyteller never sees that join, or a player never gets their
-    // ack. Retry with exponential backoff + jitter (honoring Retry-After on a
-    // 429) so a transient rejection recovers instead of vanishing. Returns
-    // whether the publish ultimately succeeded; callers must NOT treat a false
-    // result as "delivered".
+    // POST to the ntfy broker with backoff+jitter retries (honoring 429 Retry-After); returns whether it truly delivered — false is NOT "delivered".
     for (let attempt = 1; attempt <= PUBLISH_MAX_ATTEMPTS; attempt++) {
       let retryAfterMs: number | null = null;
       try {

@@ -45,9 +45,7 @@ export default function WhaleBucketDraftPhase({
     }, 100);
   };
 
-  // Warn once before sending assignments to connected players — mirrors the
-  // Standard mode flow (grimoireConfirmed is re-armed only on Reset, not when
-  // stepping back to setup/draft).
+  // Warn once before sending assignments to players, mirroring Standard mode (grimoireConfirmed re-arms only on Reset).
   const handleOpenGrimoire = () => {
     if (remotePlayerCount > 0 && !grimoireConfirmed) {
       setShowGrimoireWarning(true);

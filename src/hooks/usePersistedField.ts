@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 
-/**
- * Read a single field from a JSON blob stored in localStorage.
- * Returns the fallback when the key is missing, the JSON is corrupt,
- * or the field is null/undefined. Falsy stored values (false, 0, '')
- * are returned as-is.
- */
+/** Read a field from a JSON blob in localStorage; returns fallback when missing/corrupt/null (falsy values kept). */
 export function readPersistedField<T>(storageKey: string, field: string, fallback: T): T {
   const saved = localStorage.getItem(storageKey);
   if (saved) {
@@ -20,11 +15,7 @@ export function readPersistedField<T>(storageKey: string, field: string, fallbac
   return fallback;
 }
 
-/**
- * useState initialized from a field of a JSON blob in localStorage.
- * Persisting changes back is the caller's responsibility (the game
- * components save the whole blob in a single effect).
- */
+/** useState seeded from a field of a JSON blob in localStorage; persisting back is the caller's job. */
 export function usePersistedField<T>(
   storageKey: string,
   field: string,

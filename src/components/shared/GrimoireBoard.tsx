@@ -4,27 +4,32 @@ import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import { displayRoleIds } from '../../utils/discordRecap';
+import {
+  inwardVector,
+  reminderArcOffset,
+  seatIsEvil,
+  seatTextShadow,
+  SEAT_NAME_GLOW,
+  SEAT_PRONOUN_GLOW,
+} from '../../utils/playerSeat';
 import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
 import DayNightLabel from './DayNightLabel';
 import CharacterToken from './CharacterToken';
+import VoteToken from './VoteToken';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
-// Fit a reminder label to the token: measure the text once and scale the font (in cqw,
-// relative to the token) so every label fills roughly the same width along its baseline —
-// short labels render larger, long ones smaller. `targetCqw` is the length the text should
-// fill; the curved baseline is longer than the token is wide, so it uses a larger target
-// than a straight line would. Capped so a 1–2 character label doesn't blow up past the token.
+// Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
 const REMINDER_LABEL_ARC_CQW = 95;
 const REMINDER_LABEL_MAX_CQW = 46;
 interface ReminderLabelMetrics { fontSize: number; letterSpacing: number; }
 let reminderLabelMeasureCtx: CanvasRenderingContext2D | null = null;
 const reminderLabelMetricsCache = new Map<string, ReminderLabelMetrics>();
 
-// Extra tracking so short labels spread across the arc instead of clustering in the middle;
-// tapers to almost nothing once the word is long enough to fill the arc on its own. In em.
+// Extra letter-spacing (em) so short labels spread across the arc; tapers off as the word lengthens.
 function reminderLabelSpacingEm(len: number): number {
   return len <= 2 ? 0.14 : len <= 4 ? 0.11 : len === 5 ? 0.06 : 0.03;
 }
@@ -52,8 +57,7 @@ function reminderLabelMetrics(text: string, targetCqw: number): ReminderLabelMet
   return metrics;
 }
 
-// Cinzel loads async; any measurements taken before it's ready used a fallback face and are
-// wrong. Drop the cache once fonts settle so later renders re-measure against the real font.
+// Cinzel loads async: drop the cache once fonts settle so labels re-measure against the real font.
 if (typeof document !== 'undefined' && document.fonts?.ready) {
   document.fonts.ready.then(() => reminderLabelMetricsCache.clear());
 }
@@ -191,6 +195,16 @@ export default function GrimoireBoard({
     return [...ids];
   }, [players, rolesData, includeAllScriptReminders]);
 
+  // Living players who count toward the game's end conditions — travelers are excluded.
+  const finalCount = useMemo(() => players.filter(p => {
+    if (p.isDead) return false;
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    return !ids.some(id => {
+      const r = rolesData.find(role => role.id === id) || (officialRoles as Role[]).find(role => role.id === id);
+      return r?.team === 'traveler';
+    });
+  }).length, [players, rolesData]);
+
   const touchStartedFannedRef = useRef<boolean>(false);
   const touchStartTimeRef = useRef<number>(0);
 
@@ -198,11 +212,7 @@ export default function GrimoireBoard({
     const count = players.length;
     const isDesktop = boardAspect < 1.15;
 
-    // On desktop the board grows to fill its (now wider) column. Token sizes
-    // were hand-tuned in px against a fixed baseline width, so scale them by
-    // how much wider the board actually is. Floored at 1x so this never
-    // shrinks anything on mobile/landscape (where the board is capped at the
-    // baseline) — only enlarges on true desktop where md: lifts the width cap.
+    // Desktop board fills its wider column; scale px token sizes by board width vs baseline, floored at 1x so mobile/landscape never shrink.
     const baseline = count <= 6 ? 560 : 680;
     const s = Math.max(1, boardWidth / baseline);
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
@@ -423,8 +433,7 @@ export default function GrimoireBoard({
         ) : <div />}
       </div>
 
-      {/* Row 2: info badges — mobile only. Independent flex row so label width is sized to its
-          own content, not tied to the button row's fixed column widths. */}
+      {/* Row 2: info badges (mobile only) — own flex row so label width fits its content, not the button row's columns. */}
       <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
         <div
           id="grimoire-info-row"
@@ -454,7 +463,7 @@ export default function GrimoireBoard({
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          {players.filter(p => !p.isDead).length}/{players.length} Alive (Final {finalCount})
         </div>
       </div>
 
@@ -488,19 +497,20 @@ export default function GrimoireBoard({
           )}
         </div>
 
-        {/* Alive count — upper right, desktop only */}
+        {/* Alive + final counts — upper right, desktop only */}
         <div
           id="grimoire-alive-badge"
           onClick={onResetDead}
           className={cn(
-            "hidden md:block absolute top-4 right-4 z-30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity",
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
               : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
           )}
         >
-          {players.filter(p => !p.isDead).length} Alive
+          <span>{players.filter(p => !p.isDead).length}/{players.length} Alive</span>
+          <span>Final {finalCount}</span>
         </div>
 
         {/* Rotate buttons — center of board */}
@@ -578,11 +588,9 @@ export default function GrimoireBoard({
 
           const isFanned = fannedPlayerId === p.id;
 
-          const dx = 50 - leftPos;
-          const dy = 50 - topPos;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const inwardDx = dist > 0 ? dx / dist : 0;
-          const inwardDy = dist > 0 ? dy / dist : 0;
+          const inward = inwardVector(leftPos, topPos);
+          const inwardDx = inward.x;
+          const inwardDy = inward.y;
           const playerReminders = reminderTokens.filter(r => r.targetPlayerId === p.id);
 
           return (
@@ -644,22 +652,10 @@ export default function GrimoireBoard({
 
               {/* Placed reminder token circles — last at anchor, earlier ones arc around it */}
               {playerReminders.map((reminder, ri) => {
-                const n = playerReminders.length;
-                const isLast = ri === n - 1;
-                const arcN = n - 1;
-                const totalAngle = Math.PI;
-                const startAngle = -totalAngle / 2;
-                const theta = startAngle + (arcN > 1 ? (ri / (arcN - 1)) * totalAngle : 0);
-                const arcRadius = 30;
-                const rx = inwardDx * Math.cos(theta) - inwardDy * Math.sin(theta);
-                const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
-                const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
-                const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
+                const { left: reminderLeft, top: reminderTop } = reminderArcOffset(ri, playerReminders.length, inward);
                 const labelText = reminder.text.slice(0, 7);
                 const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
-                // Custom/homebrew characters carry their own icon URL on the role; the local
-                // bundled icon is tried first, and roleIconFallback swaps in the custom image
-                // (or hides) when it 404s — same as everywhere else reminder icons render.
+                // Try the bundled local icon first; roleIconFallback swaps in a custom character's own image on 404.
                 const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
 
                 return (
@@ -759,31 +755,12 @@ export default function GrimoireBoard({
                 >
                   {/* Render fanned character tokens */}
                   {(() => {
-                    const displayRoles = p.roleIds && p.roleIds.length > 0
-                      ? p.roleIds
-                      : (p.roleId
-                          ? [p.roleId]
-                          : p.isTheDrunk
-                            ? ['drunk']
-                            : p.isTheMarionette
-                              ? ['marionette']
-                              : p.isTheLunatic
-                                ? ['lunatic']
-                                : p.isTheLilMonsta
-                                  ? ['lilmonsta']
-                                  : [null]);
+                    const displayRoles = displayRoleIds(p);
                     return displayRoles.map((roleId, idx) => {
-                      const roleObj = roleId 
+                      const roleObj = roleId
                         ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
                         : null;
-                      const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-                      const isEvil = p.isEvil !== undefined
-                        ? p.isEvil
-                        : p.isTheLunatic
-                        ? false
-                        : p.isTheMarionette
-                        ? true
-                        : defaultEvil;
+                      const isEvil = seatIsEvil(p, roleObj);
 
                       let transformClass = "absolute inset-0 transition-all duration-300 ease-out hover:z-20";
                       if (displayRoles.length > 1) {
@@ -842,13 +819,11 @@ export default function GrimoireBoard({
                     style={{
                       ...grimoireConfig.nameStyle,
                       fontSize: dynamicFontSize,
-                      textShadow: p.isDead
-                        ? 'none'
-                        : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
+                      textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW)
                     }}
                     className={cn(
                       "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle",
-                      p.isDead ? "line-through text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
+                      p.isDead ? "text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
                     )}
                   >
                     {remotePlayerIds?.has(p.id) && (
@@ -861,7 +836,7 @@ export default function GrimoireBoard({
                     <span
                       style={{
                         fontSize: dynamicPronounFontSize,
-                        textShadow: '0 1px 2px rgba(255,255,255,1.0), 0 0 4px rgba(255,255,255,0.9)'
+                        textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW)
                       }}
                       className="text-[#555] font-medium leading-none pointer-events-none select-none z-20 relative"
                     >
@@ -920,16 +895,14 @@ export default function GrimoireBoard({
                     <div
                       style={{
                         position: 'absolute',
-                        top: '25%',
+                        top: '10%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        fontSize: '4.0cqw',
                         lineHeight: 1,
                         zIndex: 30,
                       }}
-                      title="Vote Token Active"
                     >
-                      🗳️
+                      <VoteToken size="8cqw" title="Vote Token Active" />
                     </div>
                   )}
                 </button>

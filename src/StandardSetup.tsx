@@ -4,7 +4,7 @@ import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
 import { TEAM_ORDER } from './types';
-import { parseScriptFile } from './utils/scriptUtils';
+import { useScriptUpload } from './hooks/useScriptUpload';
 
 import { performStandardAssignment } from './utils/standardAssignment';
 import { getValidationSummary } from './utils/validationSummary';
@@ -768,30 +768,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }));
   };
 
-  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    parseScriptFile(file)
-      .then(({ name, author, roles, unknownRoles }) => {
-        setCustomScriptRoles(roles);
-        setScriptName(name);
-        setScriptAuthor(author);
-        if (unknownRoles.length > 0) {
-          const list = unknownRoles.map(r => r.name).join(', ');
-          showAlert(`This script includes custom character(s) not recognized by the app: ${list}. They'll still be usable, but their team was inferred from the script file and they won't have official icons or ability text.`);
-        }
-      })
-      .catch(err => showAlert((err as Error).message));
-  };
-
-  const clearCustomScript = () => {
-    setCustomScriptRoles(null);
-    setScriptName("All Roles");
-    setScriptAuthor("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
 
@@ -860,6 +836,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
+
+  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+    setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+  });
 
   const confirmDisconnect = useCallback(() => {
     showConfirm(

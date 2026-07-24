@@ -63,7 +63,7 @@ describe('GamePhase - Script Modal Integration', () => {
 
     expect(screen.getByRole('heading', { name: /All Roles/i })).toBeInTheDocument();
 
-    const modalContainer = screen.getByPlaceholderText('Search character by name or type...').closest('.max-w-2xl') as HTMLElement;
+    const modalContainer = screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement;
     const modal = within(modalContainer);
 
     expect(modal.getByText(/Townsfolk/i)).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('GamePhase - Script Modal Integration', () => {
     const scriptButton = document.getElementById('game-script-button');
     fireEvent.click(scriptButton!);
 
-    const modalContainer = screen.getByPlaceholderText('Search character by name or type...').closest('.max-w-2xl') as HTMLElement;
+    const modalContainer = screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement;
     const modal = within(modalContainer);
 
     const washerwomanBtn = modal.getByText('Washerwoman').closest('button');

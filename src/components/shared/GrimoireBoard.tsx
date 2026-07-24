@@ -10,6 +10,7 @@ import ReminderPickerModal from './ReminderPickerModal';
 import ReminderTokenModal from './ReminderTokenModal';
 import DayNightLabel from './DayNightLabel';
 import CharacterToken from './CharacterToken';
+import VoteToken from './VoteToken';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
@@ -921,13 +922,11 @@ export default function GrimoireBoard({
                         top: '25%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        fontSize: '4.0cqw',
                         lineHeight: 1,
                         zIndex: 30,
                       }}
-                      title="Vote Token Active"
                     >
-                      🗳️
+                      <VoteToken size="6cqw" title="Vote Token Active" />
                     </div>
                   )}
                 </button>

@@ -46,6 +46,36 @@ describe('GamePhase - Script Modal Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  const openScriptModal = () => {
+    fireEvent.click(document.getElementById('game-script-button')!);
+    return within(screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement);
+  };
+
+  it('hides the in-play filter from players', () => {
+    render(<GamePhase {...defaultProps} />);
+    openScriptModal();
+    fireEvent.click(screen.getByLabelText('View settings'));
+
+    expect(document.getElementById('script-in-play-only-checkbox')).not.toBeInTheDocument();
+  });
+
+  it('lets a storyteller narrow the script to the characters in play', () => {
+    render(<GamePhase {...defaultProps} isStoryteller />);
+    let modal = openScriptModal();
+
+    // The full script lists characters nobody is assigned.
+    expect(modal.getByText('Chef')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('View settings'));
+    fireEvent.click(document.getElementById('script-in-play-only-checkbox')!);
+
+    modal = within(screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement);
+    expect(modal.getByText('Washerwoman')).toBeInTheDocument();
+    expect(modal.getByText('Poisoner')).toBeInTheDocument();
+    expect(modal.queryByText('Chef')).not.toBeInTheDocument();
   });
 
   it('renders active script button with correct counts', () => {

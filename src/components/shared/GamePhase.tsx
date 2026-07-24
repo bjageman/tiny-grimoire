@@ -832,6 +832,7 @@ export default function GamePhase({
           scriptName={scriptName}
           dayNumber={dayNumber}
           timeOfDay={timeOfDay}
+          isLightModeActive={isLightModeActive}
           onDone={(error) => {
             setIsSavingImage(false);
             if (error) showAlert(`The grimoire image could not be saved — ${error}.`, 'Save failed');

@@ -4,6 +4,15 @@ import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../types';
 import { cn } from '../../utils/cn';
+import { displayRoleIds } from '../../utils/discordRecap';
+import {
+  inwardVector,
+  reminderArcOffset,
+  seatIsEvil,
+  seatTextShadow,
+  SEAT_NAME_GLOW,
+  SEAT_PRONOUN_GLOW,
+} from '../../utils/playerSeat';
 import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import ReminderPickerModal from './ReminderPickerModal';
@@ -579,11 +588,9 @@ export default function GrimoireBoard({
 
           const isFanned = fannedPlayerId === p.id;
 
-          const dx = 50 - leftPos;
-          const dy = 50 - topPos;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const inwardDx = dist > 0 ? dx / dist : 0;
-          const inwardDy = dist > 0 ? dy / dist : 0;
+          const inward = inwardVector(leftPos, topPos);
+          const inwardDx = inward.x;
+          const inwardDy = inward.y;
           const playerReminders = reminderTokens.filter(r => r.targetPlayerId === p.id);
 
           return (
@@ -645,17 +652,7 @@ export default function GrimoireBoard({
 
               {/* Placed reminder token circles — last at anchor, earlier ones arc around it */}
               {playerReminders.map((reminder, ri) => {
-                const n = playerReminders.length;
-                const isLast = ri === n - 1;
-                const arcN = n - 1;
-                const totalAngle = Math.PI;
-                const startAngle = -totalAngle / 2;
-                const theta = startAngle + (arcN > 1 ? (ri / (arcN - 1)) * totalAngle : 0);
-                const arcRadius = 30;
-                const rx = inwardDx * Math.cos(theta) - inwardDy * Math.sin(theta);
-                const ry = inwardDx * Math.sin(theta) + inwardDy * Math.cos(theta);
-                const reminderLeft = isLast ? inwardDx * 70 : inwardDx * 70 + rx * arcRadius;
-                const reminderTop = isLast ? inwardDy * 70 : inwardDy * 70 + ry * arcRadius;
+                const { left: reminderLeft, top: reminderTop } = reminderArcOffset(ri, playerReminders.length, inward);
                 const labelText = reminder.text.slice(0, 7);
                 const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
                 // Try the bundled local icon first; roleIconFallback swaps in a custom character's own image on 404.
@@ -758,31 +755,12 @@ export default function GrimoireBoard({
                 >
                   {/* Render fanned character tokens */}
                   {(() => {
-                    const displayRoles = p.roleIds && p.roleIds.length > 0
-                      ? p.roleIds
-                      : (p.roleId
-                          ? [p.roleId]
-                          : p.isTheDrunk
-                            ? ['drunk']
-                            : p.isTheMarionette
-                              ? ['marionette']
-                              : p.isTheLunatic
-                                ? ['lunatic']
-                                : p.isTheLilMonsta
-                                  ? ['lilmonsta']
-                                  : [null]);
+                    const displayRoles = displayRoleIds(p);
                     return displayRoles.map((roleId, idx) => {
-                      const roleObj = roleId 
+                      const roleObj = roleId
                         ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
                         : null;
-                      const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-                      const isEvil = p.isEvil !== undefined
-                        ? p.isEvil
-                        : p.isTheLunatic
-                        ? false
-                        : p.isTheMarionette
-                        ? true
-                        : defaultEvil;
+                      const isEvil = seatIsEvil(p, roleObj);
 
                       let transformClass = "absolute inset-0 transition-all duration-300 ease-out hover:z-20";
                       if (displayRoles.length > 1) {
@@ -841,9 +819,7 @@ export default function GrimoireBoard({
                     style={{
                       ...grimoireConfig.nameStyle,
                       fontSize: dynamicFontSize,
-                      textShadow: p.isDead
-                        ? 'none'
-                        : '0 1.5px 3px rgba(255,255,255,1.0), 0 0 5px rgba(255,255,255,1.0), 0 0 8px rgba(255,255,255,0.9)'
+                      textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW)
                     }}
                     className={cn(
                       "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle",
@@ -860,7 +836,7 @@ export default function GrimoireBoard({
                     <span
                       style={{
                         fontSize: dynamicPronounFontSize,
-                        textShadow: '0 1px 2px rgba(255,255,255,1.0), 0 0 4px rgba(255,255,255,0.9)'
+                        textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW)
                       }}
                       className="text-[#555] font-medium leading-none pointer-events-none select-none z-20 relative"
                     >

@@ -3,7 +3,7 @@ import { Undo2 } from 'lucide-react';
 import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
-import { TEAM_ORDER } from './types';
+import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { assignCharacters } from './utils/assignment';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
@@ -908,36 +908,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [showConfirm]);
 
   // Details Modal variables
-  const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? (() => {
-    const actualRoleId = modalPlayer.isTheDrunk
-      ? 'drunk'
-      : modalPlayer.isTheMarionette
-        ? (modalPlayer.roleId || 'marionette')
-        : modalPlayer.isTheLunatic
-          ? (modalPlayer.roleId || 'lunatic')
-          : modalPlayer.roleId;
-    return (rolesData as Role[]).find(r => r.id === actualRoleId);
-  })() : undefined;
-  const filteredModalRoles = (rolesData as Role[])
-    .filter(r =>
-      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
-      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
-    )
-    .sort((a, b) => {
-      const isCurrentA = a.id === modalPlayer?.roleId;
-      const isCurrentB = b.id === modalPlayer?.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-  const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
-  const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
-  const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
+  const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
+    usePlayerDetailsNav(players, selectedPlayerId, rolesData as Role[], modalRoleSearch);
 
   return (
     <>

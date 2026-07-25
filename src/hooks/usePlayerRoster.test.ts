@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import { usePlayerRoster } from './usePlayerRoster';
 import type { Player, Role } from '../types';
 
@@ -15,16 +16,14 @@ const findRole = (id?: string) => (id ? ROLES[id] : undefined);
 function make(players: Player[], opts: Partial<Parameters<typeof usePlayerRoster>[0]> = {}) {
   const setPlayers = vi.fn();
   const onLilMonstaEnabled = vi.fn();
-  // usePlayerRoster holds no React state itself; call it directly to exercise the returned handlers.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const roster = usePlayerRoster({
+  const { result: hook } = renderHook(() => usePlayerRoster({
     players, setPlayers, findRole, phase: 'setup', onLog: () => {}, onLilMonstaEnabled, ...opts,
-  });
+  }));
   const result = () => {
     const arg = setPlayers.mock.calls.at(-1)![0];
     return (typeof arg === 'function' ? arg(players) : arg) as Player[];
   };
-  return { roster, setPlayers, onLilMonstaEnabled, result };
+  return { roster: hook.current, setPlayers, onLilMonstaEnabled, result };
 }
 
 const seat = (id: string, extra: Partial<Player> = {}): Player => ({ id, name: id, isDead: false, ...extra });

@@ -3,7 +3,7 @@ import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
-import { TEAM_ORDER } from './types';
+import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 
 import { performStandardAssignment } from './utils/standardAssignment';
@@ -851,36 +851,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [showConfirm]);
 
   // Modal logic details
-  const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? (() => {
-    const actualRoleId = modalPlayer.isTheDrunk
-      ? 'drunk'
-      : modalPlayer.isTheMarionette
-        ? (modalPlayer.roleId || 'marionette')
-        : modalPlayer.isTheLunatic
-          ? (modalPlayer.roleId || 'lunatic')
-          : modalPlayer.roleId;
-    return selectionRoles.find(r => r.id === actualRoleId);
-  })() : undefined;
-  const filteredModalRoles = selectionRoles
-    .filter(r =>
-      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
-      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
-    )
-    .sort((a, b) => {
-      const isCurrentA = a.id === modalPlayer?.roleId;
-      const isCurrentB = b.id === modalPlayer?.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-  const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
-  const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
-  const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
+  const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
+    usePlayerDetailsNav(players, selectedPlayerId, selectionRoles, modalRoleSearch);
 
   return (
     <>

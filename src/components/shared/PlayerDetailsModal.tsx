@@ -11,6 +11,7 @@ import officialRoles from '../../official_roles.json';
 import DialogModal from './DialogModal';
 import ToggleSwitch from './ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
+import CharacterToken from './CharacterToken';
 import { useDialog } from '../../hooks/useDialog';
 
 interface Player {
@@ -163,14 +164,6 @@ export default function PlayerDetailsModal({
 
   const resolveRole = (roleId: string) =>
     allRoles.find(r => r.id === roleId) ?? (rolesData as Role[]).find(r => r.id === roleId);
-
-  const teamFill = (team: Role['team']) => ({
-    townsfolk: 'fill-clocktower-townsfolk',
-    outsider: 'fill-clocktower-outsider',
-    minion: 'fill-clocktower-minion',
-    demon: 'fill-clocktower-demon',
-    traveler: 'fill-clocktower-traveler',
-  }[team] ?? 'fill-gray-500');
 
   const navBtnClass = cn(
     'absolute top-1/2 -translate-y-1/2 p-2.5 rounded-full border transition-all duration-200 z-10 shadow-lg hover:scale-110',
@@ -565,37 +558,7 @@ export default function PlayerDetailsModal({
                               title={`${rObj.name} - View Details`}
                               className="w-full h-full relative transition-all duration-200 hover:scale-105 active:scale-95 rounded-full shadow-md hover:shadow-lg outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 cursor-pointer"
                             >
-                              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-md absolute inset-0 z-0">
-                                <defs>
-                                  <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                  <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                                </defs>
-                                <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                                <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                              </svg>
-                              <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
-                                <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                  <img
-                                    key={rObj.id}
-                                    src={`/icons/${rObj.id}.svg`}
-                                    alt={rObj.name}
-                                    className="w-full h-full object-contain"
-                                    onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                  />
-                                </div>
-                              </div>
-                              <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
-                                <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                  <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                    {rObj.name}
-                                  </textPath>
-                                </text>
-                                <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                  <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                    {rObj.team}
-                                  </textPath>
-                                </text>
-                              </svg>
+                              <CharacterToken role={rObj} idPrefix={`detail-${roleId}`} neutralRing solidIcon iconSizePct={80} className="drop-shadow-md" />
                             </button>
                             <button
                               type="button"
@@ -678,37 +641,7 @@ export default function PlayerDetailsModal({
                         if (!rObj) return null;
                         return (
                           <div key={roleId} className="absolute inset-0">
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl absolute inset-0 z-0">
-                              <defs>
-                                <path id={`topTextPath-${roleId}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
-                                <path id={`bottomTextPath-${roleId}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
-                              </defs>
-                              <circle cx="100" cy="100" r="90" fill="#ffffff" stroke="#d4d4d8" strokeWidth="6" />
-                              <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none">
-                              <div className="w-[80%] h-[80%] flex items-center justify-center">
-                                <img
-                                  key={rObj.id}
-                                  src={`/icons/${rObj.id}.svg`}
-                                  alt={rObj.name}
-                                  className="w-full h-full object-contain"
-                                  onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')}
-                                />
-                              </div>
-                            </div>
-                            <svg viewBox="0 0 200 200" className="w-full h-full absolute inset-0 z-20 pointer-events-none">
-                              <text className={cn("font-bold text-[18px] tracking-wider uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#topTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.name}
-                                </textPath>
-                              </text>
-                              <text className={cn("font-bold text-[11px] tracking-widest uppercase", teamFill(rObj.team))}>
-                                <textPath href={`#bottomTextPath-${roleId}`} startOffset="50%" textAnchor="middle">
-                                  {rObj.team}
-                                </textPath>
-                              </text>
-                            </svg>
+                            <CharacterToken role={rObj} idPrefix={`detail-${roleId}`} neutralRing solidIcon iconSizePct={80} className="drop-shadow-xl" />
                           </div>
                         );
                       })}

@@ -14,6 +14,10 @@ interface CharacterTokenProps {
   isDead?: boolean;
   /** When there's no role, still draw the colored ring (no text/icon) instead of the dashed "?" placeholder */
   blankRing?: boolean;
+  /** Use a neutral gray ring instead of the alignment-coloured (blue/red) one. */
+  neutralRing?: boolean;
+  /** Show the icon at full opacity (a selectable token) rather than the faded grimoire watermark. */
+  solidIcon?: boolean;
 }
 
 const TEAM_COLOR: Record<Role['team'], string> = {
@@ -26,7 +30,7 @@ const TEAM_COLOR: Record<Role['team'], string> = {
 
 const teamFill = (team: Role['team']) => TEAM_COLOR[team] ?? '#6b7280';
 
-export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, blankRing = false }: CharacterTokenProps) {
+export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, blankRing = false, neutralRing = false, solidIcon = false }: CharacterTokenProps) {
   const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
 
   if (!role && !blankRing) {
@@ -63,7 +67,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
           cy="100"
           r="90"
           fill={isDead ? '#e4e4e7' : '#ffffff'}
-          stroke={evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk}
+          stroke={neutralRing ? '#d4d4d8' : (evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk)}
           strokeWidth={6}
         />
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
@@ -76,7 +80,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
               key={role.id}
               src={`/icons/${role.id}.svg`}
               alt={role.name}
-              className={cn('w-full h-full object-contain', isDead ? 'grayscale opacity-15' : 'opacity-35')}
+              className={cn('w-full h-full object-contain', solidIcon ? '' : (isDead ? 'grayscale opacity-15' : 'opacity-35'))}
               onError={roleIconFallback(role, evil)}
             />
           </div>

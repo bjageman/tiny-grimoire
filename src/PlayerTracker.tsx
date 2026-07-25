@@ -4,7 +4,7 @@ import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
-import { parseScriptFile } from './utils/scriptUtils';
+import { useScriptUpload } from './hooks/useScriptUpload';
 
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
 import GamePhase from './components/shared/GamePhase';
@@ -508,30 +508,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
-  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    parseScriptFile(file)
-      .then(({ name, author, roles, unknownRoles }) => {
-        setCustomScriptRoles(roles);
-        setScriptName(name);
-        setScriptAuthor(author);
-        if (unknownRoles.length > 0) {
-          const list = unknownRoles.map(r => r.name).join(', ');
-          showAlert(`This script includes custom character(s) not recognized by the app: ${list}. They'll still be usable, but their team was inferred from the script file and they won't have official icons or ability text.`);
-        }
-      })
-      .catch(err => showAlert((err as Error).message));
-  };
-
-  const clearCustomScript = () => {
-    setCustomScriptRoles(null);
-    setScriptName("All Roles");
-    setScriptAuthor("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+    setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+  });
 
   const isLightModeActive = theme === 'light';
 

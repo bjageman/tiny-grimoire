@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { X, Trash2, NotebookPen } from 'lucide-react';
+import { X, Trash2, NotebookPen, Plus } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import CharacterToken from './CharacterToken';
 import type { Role } from '../../types';
+import { readCustomNotePrompts, saveCustomNotePrompts } from '../../utils/customNotePrompts';
 import officialRoles from '../../official_roles.json';
 
 const NOTE_PROMPTS = ['You Are', 'This Character Selected You', 'You Have This Ability', 'This Character Is In Play', 'This Character Is NOT In Play', 'Do You Want To Use This Ability?'] as const;
@@ -37,6 +38,9 @@ export default function CharacterDetailModal({
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
+  const [customPrompts, setCustomPrompts] = useState<string[]>(readCustomNotePrompts);
+  const [addingPrompt, setAddingPrompt] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState('');
   const noteRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLButtonElement>(null);
   const bannerTextRef = useRef<HTMLSpanElement>(null);
@@ -49,6 +53,22 @@ export default function CharacterDetailModal({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [noteOpen]);
+
+  const commitPrompt = () => {
+    const text = draftPrompt.trim();
+    if (!text) return;
+    const next = customPrompts.includes(text) ? customPrompts : [...customPrompts, text];
+    setCustomPrompts(next);
+    saveCustomNotePrompts(next);
+    setDraftPrompt('');
+    setAddingPrompt(false);
+  };
+
+  const removePrompt = (prompt: string) => {
+    const next = customPrompts.filter(p => p !== prompt);
+    setCustomPrompts(next);
+    saveCustomNotePrompts(next);
+  };
 
   useLayoutEffect(() => {
     if (!selectedNote) return;
@@ -145,7 +165,7 @@ export default function CharacterDetailModal({
               </button>
               {noteOpen && (
                 <div className={cn(
-                  "absolute left-0 top-full mt-1.5 z-20 w-52 rounded-lg border shadow-xl p-1.5 space-y-0.5",
+                  "absolute left-0 top-full mt-1.5 z-20 w-52 max-h-80 overflow-y-auto overscroll-contain rounded-lg border shadow-xl p-1.5 space-y-0.5",
                   isLightModeActive ? "bg-white border-gray-300" : "bg-gray-950 border-gray-700"
                 )}>
                   {NOTE_PROMPTS.map(prompt => (
@@ -161,6 +181,42 @@ export default function CharacterDetailModal({
                       {prompt}
                     </button>
                   ))}
+                  {customPrompts.map(prompt => (
+                    <div key={prompt} className="group flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedNote(prompt); setNoteOpen(false); }}
+                        className={cn(
+                          "flex-1 min-w-0 text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors hover:bg-gray-500/10 truncate",
+                          isLightModeActive ? "text-gray-700" : "text-gray-300"
+                        )}
+                      >
+                        {prompt}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removePrompt(prompt)}
+                        aria-label={`Delete prompt "${prompt}"`}
+                        title="Delete prompt"
+                        className={cn(
+                          "shrink-0 p-1 rounded-md transition-colors opacity-60 group-hover:opacity-100",
+                          isLightModeActive ? "text-red-650 hover:bg-red-50" : "text-red-400 hover:bg-red-950/40"
+                        )}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => { setDraftPrompt(''); setAddingPrompt(true); setNoteOpen(false); }}
+                    className={cn(
+                      "flex items-center gap-1.5 w-full text-left px-2.5 py-1.5 mt-1 rounded-md text-xs font-bold border-t transition-colors hover:bg-amber-500/10",
+                      isLightModeActive ? "text-amber-700 border-gray-200" : "text-amber-400 border-gray-800"
+                    )}
+                  >
+                    Add Prompt <Plus size={12} />
+                  </button>
                 </div>
               )}
             </div>
@@ -190,6 +246,62 @@ export default function CharacterDetailModal({
           t === 'traveler'  && "bg-clocktower-traveler shadow-clocktower-traveler/20",
         )}>Close Details</button>
       </div>
+      {addingPrompt && (
+        <div
+          className="absolute inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={(e) => { e.stopPropagation(); setAddingPrompt(false); }}
+        >
+          <div
+            className={cn(
+              "w-full max-w-xs rounded-xl shadow-2xl p-5 space-y-3 animate-scaleIn",
+              isLightModeActive ? "bg-white border border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-100"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <p className="text-sm font-display font-bold uppercase tracking-wider text-amber-600">Add Prompt</p>
+              <p className={cn("text-[11px] font-medium mt-0.5 leading-relaxed", isLightModeActive ? "text-gray-500" : "text-gray-450")}>
+                Saved on this device only, for every character
+              </p>
+            </div>
+            <input
+              autoFocus
+              value={draftPrompt}
+              onChange={(e) => setDraftPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitPrompt();
+                if (e.key === 'Escape') setAddingPrompt(false);
+              }}
+              maxLength={60}
+              placeholder="e.g. Choose A Player"
+              className={cn(
+                "w-full px-3 py-2 rounded-md text-sm font-semibold border outline-none focus:ring-2 focus:ring-amber-500/40",
+                isLightModeActive ? "bg-white border-gray-300 text-gray-800 placeholder-gray-400" : "bg-gray-950 border-gray-700 text-gray-100 placeholder-gray-600"
+              )}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setAddingPrompt(false)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-xs font-bold border transition-colors",
+                  isLightModeActive ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50" : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+                )}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={commitPrompt}
+                disabled={!draftPrompt.trim()}
+                className="flex-1 px-3 py-2 rounded-md text-xs font-bold text-white bg-amber-600 shadow-md transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

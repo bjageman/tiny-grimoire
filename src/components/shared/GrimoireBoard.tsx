@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { superellipseSeatAngles, superellipsePosition } from '../../utils/superellipse';
 import { createPortal } from 'react-dom';
 import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
@@ -312,66 +313,10 @@ export default function GrimoireBoard({
     return grimoireConfig.radiusY;
   }, [grimoireConfig.radiusY, boardAspect]);
 
-  const evenAngles = useMemo(() => {
-    const total = players.length;
-    if (total <= 1) return [0];
-
-    const rx = dynamicRadiusX;
-    const ry = dynamicRadiusY * boardAspect;
-
-    const n = 3.6;
-    const p = 2 / n;
-
-    const steps = 360;
-    const arcLengths = new Float32Array(steps + 1);
-    let totalLength = 0;
-    arcLengths[0] = 0;
-
-    for (let i = 1; i <= steps; i++) {
-      const theta1 = ((i - 1) * (360 / steps)) * (Math.PI / 180);
-      const theta2 = (i * (360 / steps)) * (Math.PI / 180);
-      const midTheta = (theta1 + theta2) / 2;
-      
-      const dt = 0.0001;
-      const tA = midTheta - dt / 2;
-      const tB = midTheta + dt / 2;
-      
-      const xA = rx * Math.sign(Math.cos(tA)) * Math.pow(Math.abs(Math.cos(tA)), p);
-      const yA = ry * Math.sign(Math.sin(tA)) * Math.pow(Math.abs(Math.sin(tA)), p);
-      
-      const xB = rx * Math.sign(Math.cos(tB)) * Math.pow(Math.abs(Math.cos(tB)), p);
-      const yB = ry * Math.sign(Math.sin(tB)) * Math.pow(Math.abs(Math.sin(tB)), p);
-      
-      const dx = (xB - xA) / dt;
-      const dy = (yB - yA) / dt;
-      const ds = Math.sqrt(dx * dx + dy * dy) * (2 * Math.PI / steps);
-      totalLength += ds;
-      arcLengths[i] = totalLength;
-    }
-
-    const startIdx = Math.round(steps / 4);
-    const startLength = arcLengths[startIdx];
-
-    const angles: number[] = [];
-    const targetStep = totalLength / total;
-
-    for (let i = 0; i < total; i++) {
-      const targetLength = (startLength + i * targetStep) % totalLength;
-      let idx = 0;
-      while (idx < steps && arcLengths[idx + 1] < targetLength) {
-        idx++;
-      }
-      const l1 = arcLengths[idx];
-      const l2 = arcLengths[idx + 1];
-      const fraction = (l2 - l1) > 0 ? (targetLength - l1) / (l2 - l1) : 0;
-      const t1 = (idx * (360 / steps)) * (Math.PI / 180);
-      const t2 = ((idx + 1) * (360 / steps)) * (Math.PI / 180);
-      const angle = t1 + fraction * (t2 - t1);
-      angles.push(angle);
-    }
-
-    return angles;
-  }, [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect]);
+  const evenAngles = useMemo(
+    () => superellipseSeatAngles(players.length, dynamicRadiusX, dynamicRadiusY, boardAspect),
+    [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect],
+  );
 
   const playerCount = players.length;
   const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
@@ -551,14 +496,7 @@ export default function GrimoireBoard({
           const seat = seatOf(playerIndex);
           const angle = evenAngles[seat] !== undefined ? evenAngles[seat] : 0;
 
-          const cosVal = Math.cos(angle);
-          const sinVal = Math.sin(angle);
-          
-          const n = 3.6;
-          const pExponent = 2 / n;
-
-          const leftPos = 50 + dynamicRadiusX * Math.sign(cosVal) * Math.pow(Math.abs(cosVal), pExponent);
-          const topPos = 50 + dynamicRadiusY * Math.sign(sinVal) * Math.pow(Math.abs(sinVal), pExponent);
+          const { left: leftPos, top: topPos } = superellipsePosition(angle, dynamicRadiusX, dynamicRadiusY);
 
           // Calculate dynamic font size and split name by space to prevent overflow
           const baseFontSizeVal = parseFloat(grimoireConfig.nameStyle.fontSize as string);

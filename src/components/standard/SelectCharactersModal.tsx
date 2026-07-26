@@ -5,7 +5,7 @@ import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { computeBalance } from '../../utils/computeBalance';
-import ToggleSwitch from '../shared/ToggleSwitch';
+import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
 interface Props {
   isOpen: boolean;

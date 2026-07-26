@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import ToggleSwitch from '../shared/ToggleSwitch';
+import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
-import ScriptCharactersModal from '../shared/ScriptCharactersModal';
+import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
-import ScriptHelpButton from '../shared/ScriptHelpButton';
+import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
-import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
-import FablesAndLorics from '../shared/FablesAndLorics';
+import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
+import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {

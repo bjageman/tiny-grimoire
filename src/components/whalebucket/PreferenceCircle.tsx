@@ -2,7 +2,7 @@ import React from 'react';
 import { Wifi } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
-import CharacterToken from '../shared/CharacterToken';
+import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 
 interface WhaleBucketPreferenceCircleProps {

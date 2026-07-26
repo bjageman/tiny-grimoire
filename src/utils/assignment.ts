@@ -518,11 +518,3 @@ function assignBaseCharacters(
   }
   return null;
 }
-
-export const getPreferenceLabel = (prefs: string[], defaultLabel: string) => {
-  if (!prefs || prefs.length === 0) return defaultLabel;
-  type RoleEntry = { id: string; name: string };
-  const allRoles = rolesData as RoleEntry[];
-  const names = prefs.map(id => allRoles.find(r => r.id === id)?.name || id);
-  return names.join(', ');
-};

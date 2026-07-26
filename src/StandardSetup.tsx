@@ -9,21 +9,21 @@ import { usePlayerRoster } from './hooks/usePlayerRoster';
 
 import { performStandardAssignment } from './utils/standardAssignment';
 import { getValidationSummary } from './utils/validationSummary';
-import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
-import GamePhase from './components/shared/GamePhase';
+import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
+import GamePhase from './components/shared/grimoire/GamePhase';
 import StandardSetupPhase from './components/standard/SetupPhase';
 import SetupPlayerEditModal from './components/standard/SetupPlayerEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
-import PageLayout from './components/shared/PageLayout';
-import DialogModal from './components/shared/DialogModal';
+import PageLayout from './components/shared/ui/PageLayout';
+import DialogModal from './components/shared/modals/DialogModal';
 import { useDialog } from './hooks/useDialog';
-import RoomCodeModal from './components/shared/RoomCodeModal';
-import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
-import ResetGameModal from './components/shared/ResetGameModal';
-import LoadingScreen from './components/shared/LoadingScreen';
+import RoomCodeModal from './components/shared/modals/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import ResetGameModal from './components/shared/modals/ResetGameModal';
+import LoadingScreen from './components/shared/ui/LoadingScreen';
 
 type Phase = 'setup' | 'game';
 

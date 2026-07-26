@@ -3,7 +3,7 @@ import rolesData from '../roles.json';
 import officialRoles from '../official_roles.json';
 
 /** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
-export function compareByScriptOrder(baseRoles: { id: string }[]) {
+function compareByScriptOrder(baseRoles: { id: string }[]) {
   return (a: { id: string }, b: { id: string }): number => {
     const idxA = baseRoles.findIndex(r => r.id === a.id);
     const idxB = baseRoles.findIndex(r => r.id === b.id);
@@ -45,12 +45,6 @@ export function withInPlayTravelers(baseRoles: Role[], players: Player[]): Role[
     });
   });
   return roles;
-}
-
-export function generateGameCode(): string {
-  return Array.from({ length: 4 }, () =>
-    String.fromCharCode(65 + Math.floor(Math.random() * 26))
-  ).join('');
 }
 
 const VALID_TEAMS = new Set(['townsfolk', 'outsider', 'minion', 'demon', 'traveler']);

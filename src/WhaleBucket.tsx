@@ -4,6 +4,7 @@ import rolesData from './official_roles.json';
 import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
+import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
@@ -490,22 +491,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  const updatePlayerName = (id: string, name: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
-  };
-
-  const updatePlayerNotes = (id: string, notes: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes } : p));
-  };
-
-  const updatePlayerPronouns = (id: string, pronouns: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, pronouns } : p));
-  };
-
-  const updatePlayerRoles = (id: string, roleIds: string[]) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, roleIds } : p));
-  };
-
   const togglePreference = (playerId: string, team: Role['team'], roleId: string) => {
     setPlayers(prev => prev.map(p => {
       if (p.id !== playerId) return p;
@@ -629,166 +614,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setPhase('draft');
   };
 
-  const updatePlayerRole = (id: string, roleId: string) => {
-    const player = players.find(p => p.id === id);
-    const oldRole = player?.roleId ? (rolesData as Role[]).find(r => r.id === player.roleId) : undefined;
-    const defaultEvil = oldRole ? (oldRole.team === 'minion' || oldRole.team === 'demon') : false;
-    const currentAlignment = player 
-      ? (player.isEvil !== undefined 
-          ? player.isEvil 
-          : player.isTheLunatic 
-            ? false 
-            : player.isTheMarionette 
-              ? true 
-              : defaultEvil) 
-      : undefined;
-
-    let newPlayers = players.map(p => {
-      if (p.id === id) {
-        const role = (rolesData as Role[]).find(r => r.id === roleId);
-        const isPref = role ? (p.preferences?.[role.team] || []).includes(roleId) : false;
-        return {
-          ...p,
-          roleId: roleId || undefined,
-          assignedFromPref: isPref,
-          isEvil: phase === 'game' ? currentAlignment : undefined,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    });
-
-    if (roleId === 'choirboy') {
-      const hasKing = newPlayers.some(p => p.roleId === 'king');
-      if (!hasKing) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'choirboy');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'king', assignedFromPref: false } : p);
-        }
-      }
-    } else if (roleId === 'huntsman') {
-      const hasDamsel = newPlayers.some(p => p.roleId === 'damsel');
-      if (!hasDamsel) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'huntsman');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'damsel', assignedFromPref: false } : p);
-        }
-      }
-    }
-
-    setPlayers(newPlayers);
-  };
-
-  const togglePlayerDead = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      const nextDead = !player.isDead;
-      addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextDead = !p.isDead;
-        return {
-          ...p,
-          isDead: nextDead,
-          hasDeadVote: nextDead ? true : undefined
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDeadVote = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      addLogEntry(player.hasDeadVote ? `${player.name}'s ghost vote used` : `${player.name}'s ghost vote restored`);
-    }
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
-  };
-
-  const togglePlayerEvil = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
-        const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-        const currentEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-        return { ...p, isEvil: !currentEvil };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDrunkOrPoisoned = (id: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
-  };
-
-  const togglePlayerTheDrunk = (id: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isTheDrunk: !p.isTheDrunk, isTheMarionette: false, isTheLilMonsta: false } : p));
-  };
-
-  const togglePlayerTheMarionette = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheMarionette;
-        return {
-          ...p,
-          isTheMarionette: nextVal,
-          isTheDrunk: false,
-          isTheLilMonsta: false,
-          isEvil: nextVal ? true : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLunatic = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLunatic;
-        return {
-          ...p,
-          isTheLunatic: nextVal,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLilMonsta: false,
-          isEvil: nextVal ? false : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLilMonsta = (id: string) => {
-    const isTurningOn = !players.find(x => x.id === id)?.isTheLilMonsta;
-    if (isTurningOn) {
-      setIsLilMonstaGame(true);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLilMonsta;
-        return {
-          ...p,
-          isTheLilMonsta: nextVal,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false
-        };
-      }
-      if (isTurningOn) {
-        return {
-          ...p,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    }));
-  };
+  const {
+    updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRoles, updatePlayerRole,
+    togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
+    togglePlayerTheDrunk, togglePlayerTheMarionette, togglePlayerTheLunatic, togglePlayerTheLilMonsta,
+  } = usePlayerRoster({
+    players, setPlayers, phase,
+    findRole: (roleId) => roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined,
+    onLog: addLogEntry,
+    onLilMonstaEnabled: () => setIsLilMonstaGame(true),
+    resolveAssignedFromPref: (pl, rid) => {
+      const role = (rolesData as Role[]).find(r => r.id === rid);
+      return role ? (pl.preferences?.[role.team] || []).includes(rid) : false;
+    },
+  });
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);

@@ -564,7 +564,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const {
-    updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRoles, updatePlayerRole,
+    updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRole,
     togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
     togglePlayerTheDrunk, togglePlayerTheMarionette, togglePlayerTheLunatic, togglePlayerTheLilMonsta,
   } = usePlayerRoster({
@@ -950,7 +950,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
-          onUpdateRoles={updatePlayerRoles}
           onUpdateNotes={updatePlayerNotes}
           onUpdatePronouns={updatePlayerPronouns}
           onToggleDead={togglePlayerDead}

@@ -633,7 +633,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                               src={`/icons/${role.id}.svg`}
                               alt={role.name}
                               className="w-3.5 h-3.5 object-contain"
-                              onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
                             />
                           </span>
                           <span className={cn(

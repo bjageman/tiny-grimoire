@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, Download, GripVertical, ImageDown, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
@@ -12,12 +12,14 @@ import officialRoles from '../../official_roles.json';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from './ScriptCharactersModal';
+import AddTravelerCard from './AddTravelerCard';
+import GameLogCard from './GameLogCard';
+import GrimoireLedger from './GrimoireLedger';
 import BaseDistributionCard from './BaseDistributionCard';
 import AutoResizeTextarea from './AutoResizeTextarea';
 import DialogModal from './DialogModal';
 import ToggleSwitch from './ToggleSwitch';
 import RecapImageExport from './RecapImageExport';
-import { DiscordIcon } from './DiscordIcon';
 import { buildDiscordPost } from '../../utils/discordRecap';
 import { copyText } from '../../utils/clipboard';
 import { useDialog } from '../../hooks/useDialog';
@@ -540,276 +542,53 @@ export default function GamePhase({
 
         {/* Add Traveler */}
         {!isSynced && (
-          <div className={cn(
-            'rounded-lg border p-3.5 space-y-3 transition-colors duration-300',
-            isLightModeActive
-              ? 'bg-white/50 border-gray-300 text-clocktower-night'
-              : 'bg-gray-900/40 border-gray-800/80'
-          )}>
-            <h4 className={cn(
-              'text-xs uppercase font-bold tracking-wider',
-              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-            )}>{travelerCardTitle}</h4>
-            <div className="flex flex-col gap-2">
-              <input
-                id="game-traveler-name-input"
-                type="text"
-                placeholder="Traveler name..."
-                value={newTravelerName}
-                onChange={(e) => setNewTravelerName(e.target.value)}
-                autoCapitalize="words"
-                className={cn(
-                  'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
-                  isLightModeActive
-                    ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-                    : 'bg-gray-955 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-                )}
-              />
-              <div className="flex gap-2">
-                <select
-                  id="game-traveler-role-select"
-                  value={newTravelerRoleId}
-                  onChange={(e) => setNewTravelerRoleId(e.target.value)}
-                  className={cn(
-                    'flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
-                    isLightModeActive
-                      ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-                      : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-                  )}
-                >
-                  {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
-                    <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  id="game-add-traveler-button"
-                  onClick={addTravelerGamePhase}
-                  disabled={players.length >= 20}
-                  className={cn(
-                    'px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 text-white shadow-sm',
-                    isLightModeActive
-                      ? 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
-                      : 'bg-clocktower-traveler hover:bg-purple-400 active:bg-purple-600'
-                  )}
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
+          <AddTravelerCard
+            isLightModeActive={isLightModeActive}
+            title={travelerCardTitle}
+            name={newTravelerName}
+            onNameChange={setNewTravelerName}
+            roleId={newTravelerRoleId}
+            onRoleIdChange={setNewTravelerRoleId}
+            disabled={players.length >= 20}
+            onAdd={addTravelerGamePhase}
+          />
         )}
 
         {/* Ledger */}
-        <div id="grimoire-ledger-container" className={cn(
-          'rounded-lg border p-3 space-y-1.5 transition-colors duration-300',
-          isLightModeActive
-            ? 'bg-white/50 border-gray-300 text-clocktower-night'
-            : 'bg-gray-900/40 border-gray-800/80'
-        )}>
-          <button
-            type="button"
-            onClick={() => setIsLedgerCollapsed(prev => !prev)}
-            aria-expanded={!isLedgerCollapsed}
-            className="w-full flex justify-between items-center mb-1 text-left"
-          >
-            <h4 className={cn(
-              'text-xs uppercase font-bold tracking-wider',
-              isLightModeActive ? 'text-gray-655' : 'text-gray-500'
-            )}>Grimoire Ledger Reference</h4>
-            <ChevronDown
-              size={14}
-              className={cn(
-                'md:hidden shrink-0 transition-transform duration-200',
-                isLightModeActive ? 'text-gray-655' : 'text-gray-500',
-                !isLedgerCollapsed && 'rotate-180'
-              )}
-            />
-          </button>
-          <div className={cn(
-            'gap-1.5 text-xs grid-cols-1',
-            isLedgerCollapsed ? 'hidden md:grid' : 'grid'
-          )}>
-            {players.map((p, index) => {
-              const rObj = grimoireRolesData.find(r => r.id === p.roleId);
-              return (
-                <div
-                  id={`ledger-player-${p.id}`}
-                  key={p.id}
-                  data-drag-index={index}
-                  draggable={!isSynced}
-                  onMouseDown={isSynced ? undefined : handleMouseDown}
-                  onDragStart={isSynced ? undefined : (e) => handleDragStart(e, index)}
-                  onDragOver={isSynced ? undefined : (e) => handleDragOver(e, index)}
-                  onDragLeave={isSynced ? undefined : handleDragLeave}
-                  onDrop={isSynced ? undefined : (e) => handleDrop(e, index)}
-                  onDragEnd={isSynced ? undefined : handleDragEnd}
-                  onClick={() => setSelectedPlayerId(p.id)}
-                  className={cn(
-                    'flex items-center gap-1.5 py-2.5 px-1.5 rounded border transition-all duration-200 min-w-0 hover:ring-1 hover:ring-gray-500/50 select-none cursor-pointer touch-auto',
-                    p.isDead && 'opacity-45',
-                    draggedIndex === index && 'opacity-20 border-2 border-dashed border-clocktower-blood bg-black/40 scale-[0.96]',
-                    dragOverIndex === index && draggedIndex !== index && 'border-t-4 border-t-clocktower-blood bg-clocktower-blood/10 shadow-[0_4px_12px_rgba(139,0,0,0.15)] translate-y-0.5',
-                    isLightModeActive
-                      ? 'bg-white/40 border-gray-200 hover:bg-white/70'
-                      : 'bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60'
-                  )}
-                >
-                  {!isSynced && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      onTouchStart={(e) => handleTouchStart(e, index)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                      className="text-gray-555 p-0.5 shrink-0 flex items-center transition-opacity duration-200 drag-handle opacity-60 hover:opacity-100 cursor-move touch-none"
-                    >
-                      <GripVertical size={10} />
-                    </div>
-                  )}
-                  <span className={cn('text-[9px] font-mono w-4 shrink-0', isLightModeActive ? 'text-gray-505' : 'text-gray-600')}>{index + 1}</span>
-                  <span className={cn(
-                    'font-medium truncate flex-1 min-w-0 flex items-center gap-1',
-                    p.isDead && 'line-through text-gray-500',
-                    isLightModeActive && !p.isDead ? 'text-clocktower-night' : 'text-gray-200'
-                  )}>
-                    <span className="truncate">{p.name}</span>
-                    {(() => {
-                      const defaultEvil = rObj ? (rObj.team === 'minion' || rObj.team === 'demon') : false;
-                      const isEvil = p.isEvil !== undefined
-                        ? p.isEvil
-                        : p.isTheLunatic
-                        ? false
-                        : p.isTheMarionette
-                        ? true
-                        : defaultEvil;
-                      const hasAlignmentShift = (p.isEvil !== undefined && p.isEvil !== defaultEvil)
-                        || p.isTheLunatic
-                        || p.isTheMarionette;
-                      return hasAlignmentShift ? (isEvil ? '👿' : '😇') : null;
-                    })()}
-                  </span>
-                  <div className="flex items-center gap-1.5 shrink-0 max-w-[55%] min-w-0 ml-auto justify-end flex-wrap">
-                    {(() => {
-                      const displayRoles = p.roleIds && p.roleIds.length > 0
-                        ? p.roleIds
-                        : (p.roleId
-                            ? [p.roleId]
-                            : p.isTheDrunk
-                              ? ['drunk']
-                              : p.isTheMarionette
-                                ? ['marionette']
-                                : p.isTheLunatic
-                                  ? ['lunatic']
-                                  : p.isTheLilMonsta
-                                    ? ['lilmonsta']
-                                    : []);
-                      if (displayRoles.length === 0) {
-                        return <span className="text-gray-500 font-semibold text-[10px]">—</span>;
-                      }
-                      return displayRoles.map((roleId) => {
-                        const rObj = grimoireRolesData.find(r => r.id === roleId);
-                        if (!rObj) return null;
-                        return (
-                          <span
-                            key={roleId}
-                            className={cn(
-                              'font-semibold text-[10px] flex items-center gap-1 shrink-0',
-                              rObj.team === 'townsfolk' && 'text-clocktower-townsfolk',
-                              rObj.team === 'outsider' && 'text-clocktower-outsider',
-                              rObj.team === 'minion' && 'text-clocktower-minion',
-                              rObj.team === 'demon' && 'text-clocktower-demon',
-                              rObj.team === 'traveler' && 'text-clocktower-traveler',
-                            )}
-                          >
-                            <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                              <img key={rObj.id} src={`/icons/${rObj.id}.svg`} alt={rObj.name} className="w-3.5 h-3.5 object-contain"
-                                onError={roleIconFallback(rObj, rObj.team === 'minion' || rObj.team === 'demon')} />
-                            </span>
-                            <span className="truncate">{rObj.name}</span>
-                          </span>
-                        );
-                      });
-                    })()}
-                    {p.isTheDrunk && <span className="text-[8px] bg-yellow-600 text-black px-0.5 rounded leading-none shrink-0">DK</span>}
-                    {p.isTheMarionette && <span className="text-[8px] bg-clocktower-minion text-white px-0.5 rounded leading-none shrink-0">MN</span>}
-                    {p.isTheLunatic && <span className="text-[8px] bg-clocktower-outsider text-white px-0.5 rounded leading-none shrink-0">LN</span>}
-                    {p.isTheLilMonsta && <span className="text-[8px] bg-clocktower-demon text-white px-0.5 rounded leading-none shrink-0">LM</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <GrimoireLedger
+          isLightModeActive={isLightModeActive}
+          isSynced={isSynced}
+          players={players}
+          roles={grimoireRolesData}
+          collapsed={isLedgerCollapsed}
+          onToggleCollapsed={() => setIsLedgerCollapsed(prev => !prev)}
+          onSelectPlayer={setSelectedPlayerId}
+          dnd={{
+            draggedIndex, dragOverIndex,
+            onMouseDown: handleMouseDown,
+            onDragStart: handleDragStart,
+            onDragOver: handleDragOver,
+            onDragLeave: handleDragLeave,
+            onDrop: handleDrop,
+            onDragEnd: handleDragEnd,
+            onTouchStart: handleTouchStart,
+            onTouchMove: handleTouchMove,
+            onTouchEnd: handleTouchEnd,
+          }}
+        />
 
         {/* Game Log */}
         {!isSynced && onDownloadLog && (
-          <div className={cn(
-            'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
-            isLightModeActive
-              ? 'bg-white/50 border-gray-300'
-              : 'bg-gray-900/40 border-gray-800/80'
-          )}>
-            <div className="flex items-center justify-between">
-              <h4 className={cn(
-                'text-xs uppercase font-bold tracking-wider',
-                isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-              )}>Game Log</h4>
-              {gameLog && gameLog.length > 0 && (() => {
-                const logBtn = cn(
-                  'inline-flex items-center gap-1.5 rounded text-white hover:opacity-90 transition-opacity text-xs font-bold disabled:opacity-50 disabled:cursor-wait',
-                  isMobile ? 'p-1.5' : 'px-2 py-0.5'
-                );
-                const iconSize = isMobile ? 14 : 12;
-                return (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setIsSavingImage(true)}
-                      disabled={isSavingImage}
-                      title="Save an image of the final grimoire"
-                      aria-label="Save an image of the final grimoire"
-                      className={cn(logBtn, 'bg-clocktower-gold text-clocktower-night')}
-                    >
-                      <ImageDown size={iconSize} />
-                      {!isMobile && (isSavingImage ? 'Saving…' : 'Image')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCopyPost}
-                      title="Copy the grimoire and log as a Discord post"
-                      aria-label="Copy the grimoire and log as a Discord post"
-                      className={cn(logBtn, 'bg-[#5865F2]')}
-                    >
-                      {postCopied ? <Check size={iconSize} /> : <DiscordIcon size={iconSize} />}
-                      {!isMobile && (postCopied ? 'Copied' : 'Copy Logs')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onDownloadLog}
-                      title="Download the game log as a text file"
-                      aria-label="Download the game log as a text file"
-                      className={cn(logBtn, 'bg-clocktower-blood')}
-                    >
-                      <Download size={iconSize} />
-                      {!isMobile && 'Logs'}
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
-            <div className={cn(
-              'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
-              isLightModeActive ? 'text-gray-700' : 'text-gray-400'
-            )}>
-              {gameLog && gameLog.length > 0
-                ? gameLog.map((entry, i) => (
-                    <p key={i} className="leading-relaxed whitespace-pre-wrap">{entry}</p>
-                  ))
-                : <p className={cn('italic', isLightModeActive ? 'text-gray-400' : 'text-gray-600')}>No entries yet.</p>
-              }
-            </div>
-          </div>
+          <GameLogCard
+            isLightModeActive={isLightModeActive}
+            isMobile={isMobile}
+            gameLog={gameLog}
+            isSavingImage={isSavingImage}
+            onSaveImage={() => setIsSavingImage(true)}
+            onCopyPost={handleCopyPost}
+            postCopied={postCopied}
+            onDownloadLog={onDownloadLog}
+          />
         )}
       </div>
 

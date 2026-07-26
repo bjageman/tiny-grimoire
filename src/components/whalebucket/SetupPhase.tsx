@@ -5,7 +5,7 @@ import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
-import BaseDistributionCard from '../shared/BaseDistributionCard';
+import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import rolesData from '../../official_roles.json';
 
 

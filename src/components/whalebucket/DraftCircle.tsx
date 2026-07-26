@@ -2,7 +2,7 @@ import { Star, Wifi } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
-import CharacterToken from '../shared/CharacterToken';
+import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 import rolesData from '../../official_roles.json';
 

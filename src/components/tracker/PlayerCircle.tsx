@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../types';
-import CharacterToken from '../shared/CharacterToken';
+import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 
 interface PlayerTrackerCircleProps {

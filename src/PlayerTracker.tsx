@@ -6,18 +6,18 @@ import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 
-import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
-import GamePhase from './components/shared/GamePhase';
+import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
+import GamePhase from './components/shared/grimoire/GamePhase';
 import PlayerTrackerSetupPhase from './components/tracker/SetupPhase';
 import PlayerTrackerNameEditModal from './components/tracker/NameEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
-import PageLayout from './components/shared/PageLayout';
-import DialogModal from './components/shared/DialogModal';
-import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
-import RoomCodeModal from './components/shared/RoomCodeModal';
-import LoadingScreen from './components/shared/LoadingScreen';
+import PageLayout from './components/shared/ui/PageLayout';
+import DialogModal from './components/shared/modals/DialogModal';
+import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import RoomCodeModal from './components/shared/modals/RoomCodeModal';
+import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';

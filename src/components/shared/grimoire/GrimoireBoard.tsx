@@ -1,0 +1,885 @@
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { superellipseSeatAngles, superellipsePosition } from '../../../utils/superellipse';
+import { createPortal } from 'react-dom';
+import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import type { Player, Role, PlacedReminder } from '../../../types';
+import { cn } from '../../../utils/cn';
+import { displayRoleIds } from '../../../utils/discordRecap';
+import {
+  inwardVector,
+  reminderArcOffset,
+  seatIsEvil,
+  seatTextShadow,
+  SEAT_NAME_GLOW,
+  SEAT_PRONOUN_GLOW,
+} from '../../../utils/playerSeat';
+import { roleIconFallback } from '../../../utils/roleIcon';
+import officialRoles from '../../../official_roles.json';
+import ReminderPickerModal from '../modals/ReminderPickerModal';
+import ReminderTokenModal from '../modals/ReminderTokenModal';
+import DayNightLabel from '../ui/DayNightLabel';
+import CharacterToken from '../tokens/CharacterToken';
+import VoteToken from '../tokens/VoteToken';
+import { useIsMobile } from '../../../hooks/useIsMobile';
+
+// Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
+const REMINDER_LABEL_ARC_CQW = 95;
+const REMINDER_LABEL_MAX_CQW = 46;
+interface ReminderLabelMetrics { fontSize: number; letterSpacing: number; }
+let reminderLabelMeasureCtx: CanvasRenderingContext2D | null = null;
+const reminderLabelMetricsCache = new Map<string, ReminderLabelMetrics>();
+
+// Extra letter-spacing (em) so short labels spread across the arc; tapers off as the word lengthens.
+function reminderLabelSpacingEm(len: number): number {
+  return len <= 2 ? 0.14 : len <= 4 ? 0.11 : len === 5 ? 0.06 : 0.03;
+}
+
+function reminderLabelMetrics(text: string, targetCqw: number): ReminderLabelMetrics {
+  if (!text) return { fontSize: REMINDER_LABEL_MAX_CQW, letterSpacing: 0 };
+  const cacheKey = `${targetCqw}:${text}`;
+  const cached = reminderLabelMetricsCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  const spacingEm = reminderLabelSpacingEm(text.length);
+  let fontSize = REMINDER_LABEL_MAX_CQW;
+  if (typeof document !== 'undefined') {
+    if (!reminderLabelMeasureCtx) reminderLabelMeasureCtx = document.createElement('canvas').getContext('2d');
+    if (reminderLabelMeasureCtx) {
+      // Measure against the same face the label renders in (Cinzel), so the fit stays accurate.
+      reminderLabelMeasureCtx.font = '900 100px "Cinzel", Georgia, serif';
+      const rawPerFont = reminderLabelMeasureCtx.measureText(text).width / 100;
+      // Solve for the font size that makes glyphs + inter-letter gaps fill the target length.
+      const gaps = spacingEm * Math.max(0, text.length - 1);
+      fontSize = Math.min(REMINDER_LABEL_MAX_CQW, targetCqw / Math.max(0.01, rawPerFont + gaps));
+    }
+  }
+  const metrics = { fontSize, letterSpacing: spacingEm * fontSize };
+  reminderLabelMetricsCache.set(cacheKey, metrics);
+  return metrics;
+}
+
+// Cinzel loads async: drop the cache once fonts settle so labels re-measure against the real font.
+if (typeof document !== 'undefined' && document.fonts?.ready) {
+  document.fonts.ready.then(() => reminderLabelMetricsCache.clear());
+}
+
+interface GrimoireBoardProps {
+  players: Player[];
+  timeOfDay: 'night' | 'day';
+  dayNumber: number;
+  toggleTimeOfDay?: () => void;
+  onSelectPlayer: (playerId: string) => void;
+  rolesData: Role[];
+  onResetDead?: () => void;
+  onResetTime?: () => void;
+  isSynced?: boolean;
+  isLightModeActive?: boolean;
+  reminderTokens?: PlacedReminder[];
+  onAddReminder?: (targetPlayerId: string, sourceCharId: string, text: string) => void;
+  onRemoveReminder?: (reminderId: string) => void;
+  onRemoveAllReminders?: () => void;
+  rotationOffset?: number;
+  onRotationChange?: (offset: number) => void;
+  remotePlayerIds?: Set<string>;
+  includeAllScriptReminders?: boolean;
+}
+
+export default function GrimoireBoard({
+  players,
+  timeOfDay,
+  dayNumber,
+  toggleTimeOfDay,
+  onSelectPlayer,
+  rolesData,
+  onResetDead,
+  onResetTime,
+  isSynced = false,
+  isLightModeActive = false,
+  reminderTokens = [],
+  onAddReminder,
+  onRemoveReminder,
+  onRemoveAllReminders,
+  rotationOffset: controlledRotation,
+  onRotationChange,
+  remotePlayerIds,
+  includeAllScriptReminders = false,
+}: GrimoireBoardProps) {
+  const [internalRotation, setInternalRotation] = useState(0);
+  // Ref accumulates rapid clicks before the parent re-render delivers the new prop
+  const rotationRef = useRef(controlledRotation ?? 0);
+  const rotationOffset = controlledRotation !== undefined ? controlledRotation : internalRotation;
+  // Keep ref in sync when the controlled prop is updated by the parent
+  useEffect(() => {
+    if (controlledRotation !== undefined) rotationRef.current = controlledRotation;
+  }, [controlledRotation]);
+  const handleRotate = (delta: number) => {
+    rotationRef.current += delta;
+    const next = rotationRef.current;
+    setInternalRotation(next);
+    onRotationChange?.(next);
+  };
+  const [hoveredOrder, setHoveredOrder] = useState<string[]>([]);
+  const [playerTopIndex, setPlayerTopIndex] = useState<Record<string, number>>({});
+  const [fannedPlayerId, setFannedPlayerId] = useState<string | null>(null);
+  const [boardAspect, setBoardAspect] = useState<number>(1.3);
+  const [boardWidth, setBoardWidth] = useState<number>(0);
+  const [seatsReady, setSeatsReady] = useState(false);
+  const [seatedCount, setSeatedCount] = useState(players.length);
+  const [pickerPlayerId, setPickerPlayerId] = useState<string | null>(null);
+
+  if (seatedCount !== players.length) {
+    setSeatedCount(players.length);
+    setSeatsReady(false);
+  }
+  const [selectedReminder, setSelectedReminder] = useState<PlacedReminder | null>(null);
+  const isMobile = useIsMobile();
+  const reminderTokenSizePct = isMobile ? 32 : 26;
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const boardElement = boardRef.current;
+    if (!boardElement) return;
+
+    const updateAspect = () => {
+      const rect = boardElement.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setBoardAspect(rect.height / rect.width);
+        setBoardWidth(rect.width);
+      }
+    };
+
+    updateAspect();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateAspect);
+      return () => {
+        window.removeEventListener('resize', updateAspect);
+      };
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateAspect();
+    });
+    observer.observe(boardElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (boardWidth <= 0 || seatsReady) return;
+    const frame = requestAnimationFrame(() => setSeatsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, [boardWidth, seatsReady]);
+
+  useEffect(() => {
+    if (pickerPlayerId !== null || selectedReminder !== null) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [pickerPlayerId, selectedReminder]);
+
+  const activeCharIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (includeAllScriptReminders) {
+      rolesData.forEach(r => ids.add(r.id));
+    } else {
+      players.forEach(p => {
+        if (p.roleId) ids.add(p.roleId);
+        p.roleIds?.forEach(id => ids.add(id));
+        if (p.isTheDrunk) ids.add('drunk');
+        if (p.isTheMarionette) ids.add('marionette');
+        if (p.isTheLunatic) ids.add('lunatic');
+        if (p.isTheLilMonsta) ids.add('lilmonsta');
+      });
+    }
+    return [...ids];
+  }, [players, rolesData, includeAllScriptReminders]);
+
+  // Living players who count toward the game's end conditions — travelers are excluded.
+  const finalCount = useMemo(() => players.filter(p => {
+    if (p.isDead) return false;
+    const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
+    return !ids.some(id => {
+      const r = rolesData.find(role => role.id === id) || (officialRoles as Role[]).find(role => role.id === id);
+      return r?.team === 'traveler';
+    });
+  }).length, [players, rolesData]);
+
+  const touchStartedFannedRef = useRef<boolean>(false);
+  const touchStartTimeRef = useRef<number>(0);
+
+  const grimoireConfig = useMemo(() => {
+    const count = players.length;
+    const isDesktop = boardAspect < 1.15;
+
+    // Desktop board fills its wider column; scale px token sizes by board width vs baseline, floored at 1x so mobile/landscape never shrink.
+    const baseline = count <= 6 ? 560 : 680;
+    const s = Math.max(1, boardWidth / baseline);
+    const px = (v: number) => `${+(v * s).toFixed(2)}px`;
+
+    if (count <= 6) {
+      return {
+        boardClass: "w-[88vw] h-[112vw] max-w-[560px] max-h-[700px] md:w-full md:max-w-[760px] md:h-[540px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[28px]",
+        radiusX: 38,
+        radiusY: 36,
+        btnStyle: isDesktop
+          ? { width: px(140), height: px(140) } as CSSProperties
+          : { width: '30cqw', height: '30cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.8cqw', height: '1.8cqw' } as CSSProperties,
+        nameStyle: isDesktop
+          ? { fontSize: px(23.5), maxWidth: px(130), marginTop: px(2.8) } as CSSProperties
+          : { fontSize: '4.8cqw', maxWidth: '28cqw', marginTop: '0.5cqw' } as CSSProperties,
+        roleStyle: isDesktop
+          ? { fontSize: px(18.5), maxWidth: px(130), marginTop: '0px' } as CSSProperties
+          : { fontSize: '3.8cqw', maxWidth: '28cqw', marginTop: '0cqw' } as CSSProperties,
+        charLimit: 16,
+        tooltipClass: "top-18",
+        centerBtnStyle: isDesktop
+          ? { width: px(140), height: px(140) } as CSSProperties
+          : { width: '30cqw', height: '30cqw' } as CSSProperties,
+        centerText1Style: isDesktop
+          ? { fontSize: px(23.5) } as CSSProperties
+          : { fontSize: '4.8cqw' } as CSSProperties,
+        centerText2Style: isDesktop
+          ? { fontSize: px(18.5), marginTop: px(1) } as CSSProperties
+          : { fontSize: '3.8cqw', marginTop: '0.2cqw' } as CSSProperties,
+      };
+    } else if (count <= 10) {
+      return {
+        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:max-w-[920px] md:h-[560px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[34px]",
+        radiusX: 40,
+        radiusY: 38,
+        btnStyle: isDesktop
+          ? { width: px(130), height: px(130) } as CSSProperties
+          : { width: '26cqw', height: '26cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.5cqw', height: '1.5cqw' } as CSSProperties,
+        nameStyle: isDesktop
+          ? { fontSize: px(22.3), maxWidth: px(118), marginTop: px(2.5) } as CSSProperties
+          : { fontSize: '4.3cqw', maxWidth: '24cqw', marginTop: '0.4cqw' } as CSSProperties,
+        roleStyle: isDesktop
+          ? { fontSize: px(17.3), maxWidth: px(118), marginTop: '0px' } as CSSProperties
+          : { fontSize: '3.4cqw', maxWidth: '24cqw', marginTop: '0cqw' } as CSSProperties,
+        charLimit: 14,
+        tooltipClass: "top-16",
+        centerBtnStyle: isDesktop
+          ? { width: px(130), height: px(130) } as CSSProperties
+          : { width: '26cqw', height: '26cqw' } as CSSProperties,
+        centerText1Style: isDesktop
+          ? { fontSize: px(22.3) } as CSSProperties
+          : { fontSize: '4.0cqw' } as CSSProperties,
+        centerText2Style: isDesktop
+          ? { fontSize: px(17.8), marginTop: px(1) } as CSSProperties
+          : { fontSize: '3.2cqw', marginTop: '0.2cqw' } as CSSProperties,
+      };
+    } else {
+      return {
+        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:max-w-[920px] md:h-[560px] max-md:landscape:w-full max-md:landscape:max-h-[500px] rounded-[40px]",
+        radiusX: 42,
+        radiusY: 40,
+        btnStyle: isDesktop
+          ? { width: px(112), height: px(112) } as CSSProperties
+          : { width: '21cqw', height: '21cqw' } as CSSProperties,
+        dotStyle: { top: '6%', width: '1.2cqw', height: '1.2cqw' } as CSSProperties,
+        nameStyle: isDesktop
+          ? { fontSize: px(20.4), maxWidth: px(102), marginTop: px(2.0) } as CSSProperties
+          : { fontSize: '3.7cqw', maxWidth: '19cqw', marginTop: '0.3cqw' } as CSSProperties,
+        roleStyle: isDesktop
+          ? { fontSize: px(15.6), maxWidth: px(102), marginTop: '0px' } as CSSProperties
+          : { fontSize: '2.8cqw', maxWidth: '19cqw', marginTop: '0cqw' } as CSSProperties,
+        charLimit: 12,
+        tooltipClass: "top-14",
+        centerBtnStyle: isDesktop
+          ? { width: px(115), height: px(115) } as CSSProperties
+          : { width: '21cqw', height: '21cqw' } as CSSProperties,
+        centerText1Style: isDesktop
+          ? { fontSize: px(21.0) } as CSSProperties
+          : { fontSize: '3.1cqw' } as CSSProperties,
+        centerText2Style: isDesktop
+          ? { fontSize: px(17.0), marginTop: px(1) } as CSSProperties
+          : { fontSize: '2.5cqw', marginTop: '0.2cqw' } as CSSProperties,
+      };
+    }
+  }, [players.length, boardAspect, boardWidth]);
+
+  const dynamicRadiusX = useMemo(() => {
+    return grimoireConfig.radiusX;
+  }, [grimoireConfig.radiusX]);
+
+  const dynamicRadiusY = useMemo(() => {
+    if (boardAspect < 1.15) {
+      return grimoireConfig.radiusY * 0.92; // Gentle vertical reduction to avoid overflowing top/bottom
+    }
+    return grimoireConfig.radiusY;
+  }, [grimoireConfig.radiusY, boardAspect]);
+
+  const evenAngles = useMemo(
+    () => superellipseSeatAngles(players.length, dynamicRadiusX, dynamicRadiusY, boardAspect),
+    [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect],
+  );
+
+  const playerCount = players.length;
+  const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
+  const seatOf = (playerIndex: number) =>
+    playerCount > 0 ? ((playerIndex - seatOffset) % playerCount + playerCount) % playerCount : 0;
+
+  return (
+    <>
+    <div className="w-full flex flex-col items-center">
+      {/* Row 1: buttons, in their own fixed-proportion grid so their width never depends on badge content */}
+      <div className="w-full px-4 mb-1.5 max-w-[450px] md:max-w-none grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3">
+        {onResetTime ? (
+          <button
+            id="grimoire-reset-time-button"
+            onClick={onResetTime}
+            className={cn(
+              "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
+              isLightModeActive
+                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
+            )}
+            title="Reset back to Night 1"
+          >
+            <RotateCcw className="w-3 h-3" /> Time
+          </button>
+        ) : <div />}
+
+        <div className="flex justify-center items-center gap-2">
+          {onRemoveAllReminders && reminderTokens.length > 0 && (
+            <button
+              id="grimoire-reset-reminders-button"
+              onClick={onRemoveAllReminders}
+              className={cn(
+                "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
+                isLightModeActive
+                  ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                  : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
+              )}
+            >
+              <RotateCcw className="w-3 h-3 shrink-0" /> <span className="text-[9px] md:text-[11px]">Reminders</span>
+            </button>
+          )}
+        </div>
+
+        {onResetDead ? (
+          <button
+            id="grimoire-reset-dead-button"
+            onClick={onResetDead}
+            className={cn(
+              "w-full inline-flex items-center justify-center gap-1 px-3.5 py-1.5 rounded-md text-[10px] md:text-xs font-bold tracking-wider uppercase transition-all shadow-sm border cursor-pointer select-none whitespace-nowrap",
+              isLightModeActive
+                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                : "bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-850 active:bg-gray-800"
+            )}
+            title="Mark everyone as alive"
+          >
+            <RotateCcw className="w-3 h-3" /> Dead
+          </button>
+        ) : <div />}
+      </div>
+
+      {/* Row 2: info badges (mobile only) — own flex row so label width fits its content, not the button row's columns. */}
+      <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
+        <div
+          id="grimoire-info-row"
+          onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
+          className={cn(
+            "group flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border whitespace-nowrap",
+            !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
+            timeOfDay === 'day'
+              ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}
+        >
+          <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
+          {!isSynced && toggleTimeOfDay && (
+            <ChevronRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+          )}
+        </div>
+
+        <div
+          id="grimoire-alive-badge-mobile"
+          onClick={onResetDead}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
+            onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
+            isLightModeActive
+              ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}
+        >
+          {players.filter(p => !p.isDead).length}/{players.length} Alive (Final {finalCount})
+        </div>
+      </div>
+
+      <div
+        id="grimoire-circle-board"
+        ref={boardRef}
+        className={cn(
+          "relative border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto",
+          isLightModeActive
+            ? "bg-[rgb(245_243_235)] border-[#d4d4d8] shadow-gray-200/50"
+            : "bg-[#141416] border-[#27272a] shadow-black/45",
+          grimoireConfig.boardClass
+        )}
+        style={{ containerType: 'size' }}
+      >
+        {/* Night/Day count — upper left, desktop only */}
+        <div
+          id="grimoire-time-badge"
+          onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
+          className={cn(
+            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
+            !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
+            timeOfDay === 'day'
+              ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}
+        >
+          <DayNightLabel timeOfDay={timeOfDay} dayNumber={dayNumber} />
+          {!isSynced && toggleTimeOfDay && (
+            <ChevronRight size={10} className="opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+          )}
+        </div>
+
+        {/* Alive + final counts — upper right, desktop only */}
+        <div
+          id="grimoire-alive-badge"
+          onClick={onResetDead}
+          className={cn(
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
+            onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
+            isLightModeActive
+              ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
+              : "bg-[#1f1f23]/80 border-[#27272a] text-[#a1a1aa]"
+          )}
+        >
+          <span>{players.filter(p => !p.isDead).length}/{players.length} Alive</span>
+          <span>Final {finalCount}</span>
+        </div>
+
+        {/* Rotate buttons — center of board */}
+        {players.length > 1 && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => handleRotate(1)}
+                className={cn(
+                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  isLightModeActive
+                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
+                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
+                )}
+                title="Rotate counter-clockwise"
+              >
+                <RotateCcw size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRotate(-1)}
+                className={cn(
+                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  isLightModeActive
+                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
+                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
+                )}
+                title="Rotate clockwise"
+              >
+                <RotateCw size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {players.map((p, playerIndex) => {
+          const seat = seatOf(playerIndex);
+          const angle = evenAngles[seat] !== undefined ? evenAngles[seat] : 0;
+
+          const { left: leftPos, top: topPos } = superellipsePosition(angle, dynamicRadiusX, dynamicRadiusY);
+
+          // Calculate dynamic font size and split name by space to prevent overflow
+          const baseFontSizeVal = parseFloat(grimoireConfig.nameStyle.fontSize as string);
+          const baseFontSizeUnit = (grimoireConfig.nameStyle.fontSize as string).replace(/[0-9.]/g, '');
+          const nameLength = p.name.length;
+          const longestWordLength = Math.max(...p.name.split(' ').map(w => w.length));
+
+          let scaleFactor = 1.0;
+          
+          // Shrink based on the longest word
+          if (longestWordLength > 12) scaleFactor = 0.55;
+          else if (longestWordLength > 10) scaleFactor = 0.65;
+          else if (longestWordLength > 8) scaleFactor = 0.75;
+          else if (longestWordLength > 6) scaleFactor = 0.86;
+          
+          // Shrink based on total length
+          if (nameLength > 18) scaleFactor = Math.min(scaleFactor, 0.55);
+          else if (nameLength > 14) scaleFactor = Math.min(scaleFactor, 0.65);
+          else if (nameLength > 10) scaleFactor = Math.min(scaleFactor, 0.78);
+          else if (nameLength > 8) scaleFactor = Math.min(scaleFactor, 0.9);
+
+          const dynamicFontSize = `${baseFontSizeVal * scaleFactor}${baseFontSizeUnit}`;
+          const dynamicPronounFontSize = `${baseFontSizeVal * scaleFactor * 0.75}${baseFontSizeUnit}`;
+
+          const orderIndex = hoveredOrder.indexOf(p.id);
+          const zIndex = orderIndex !== -1 ? 10 + orderIndex : 10;
+
+          const isFanned = fannedPlayerId === p.id;
+
+          const inward = inwardVector(leftPos, topPos);
+          const inwardDx = inward.x;
+          const inwardDy = inward.y;
+          const playerReminders = reminderTokens.filter(r => r.targetPlayerId === p.id);
+
+          return (
+            <div
+              key={p.id}
+              style={{
+                position: 'absolute',
+                left: `${leftPos}%`,
+                top: `${topPos}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: zIndex,
+                transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
+              }}
+              onMouseEnter={() => {
+                setFannedPlayerId(p.id);
+                setHoveredOrder((prev) => {
+                  const filtered = prev.filter((id) => id !== p.id);
+                  return [...filtered, p.id];
+                });
+              }}
+              onMouseLeave={() => {
+                setFannedPlayerId(null);
+              }}
+              onTouchStart={() => {
+                touchStartTimeRef.current = Date.now();
+                touchStartedFannedRef.current = (fannedPlayerId === p.id);
+                if (fannedPlayerId !== p.id) {
+                  setFannedPlayerId(p.id);
+                }
+              }}
+              className="hover:z-50 group"
+            >
+              {/* "+" add-reminder — at anchor when empty, shifted inward when reminders exist */}
+              {onAddReminder && playerReminders.length < 5 && (
+                <button
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% + ${(inwardDx * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
+                    top: `calc(50% + ${(inwardDy * (playerReminders.length > 0 ? 100 : 70)).toFixed(1)}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
+                    zIndex: 55,
+                    transition: seatsReady
+                      ? 'left 250ms ease-in-out, top 250ms ease-in-out, background-color 150ms'
+                      : 'none',
+                  }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPickerPlayerId(p.id);
+                  }}
+                  className="rounded-full bg-gray-400/70 text-white font-bold flex items-center justify-center border border-gray-500/50 shadow hover:bg-gray-500/80 active:bg-gray-600 transition-colors leading-none text-[10px]"
+                  title={`Add reminder to ${p.name}`}
+                >
+                  +
+                </button>
+              )}
+
+              {/* Placed reminder token circles — last at anchor, earlier ones arc around it */}
+              {playerReminders.map((reminder, ri) => {
+                const { left: reminderLeft, top: reminderTop } = reminderArcOffset(ri, playerReminders.length, inward);
+                const labelText = reminder.text.slice(0, 7);
+                const labelMetrics = reminderLabelMetrics(labelText, REMINDER_LABEL_ARC_CQW);
+                // Try the bundled local icon first; roleIconFallback swaps in a custom character's own image on 404.
+                const reminderRole = rolesData.find(r => r.id === reminder.sourceCharId);
+
+                return (
+                <div
+                  key={reminder.id}
+                  style={{
+                    position: 'absolute',
+                    left: `calc(50% + ${reminderLeft.toFixed(1)}%)`,
+                    top: `calc(50% + ${reminderTop.toFixed(1)}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    width: `${reminderTokenSizePct}%`,
+                    height: `${reminderTokenSizePct}%`,
+                    zIndex: 55,
+                    transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
+                  }}
+                >
+                <button
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReminder(reminder);
+                  }}
+                  className={cn(
+                    "w-full h-full rounded-full bg-gray-200 border-gray-400 overflow-hidden flex items-center justify-center shadow-sm hover:bg-gray-300 active:bg-gray-400 transition-all duration-150 hover:scale-125 hover:shadow-md",
+                    isMobile ? "border" : "border-2"
+                  )}
+                  title={reminder.text}
+                >
+                  <img
+                    src={`/icons/${reminder.sourceCharId}.svg`}
+                    alt={reminder.text}
+                    className="w-full h-full object-contain opacity-80"
+                    onError={roleIconFallback(reminderRole)}
+                  />
+                  {reminder.text && (
+                    <svg
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="xMidYMid meet"
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <path id={`rt-arc-${reminder.id}`} d="M6.3 56.2 A46 46 0 0 0 93.7 56.2" fill="none" />
+                      </defs>
+                      <text
+                        textAnchor="middle"
+                        style={{
+                          fontFamily: '"Cinzel", Georgia, serif',
+                          fontSize: `${labelMetrics.fontSize.toFixed(2)}px`,
+                          letterSpacing: `${labelMetrics.letterSpacing.toFixed(2)}px`,
+                          fontWeight: 900,
+                          fill: '#111827',
+                          paintOrder: 'stroke',
+                          stroke: 'rgba(255,255,255,0.92)',
+                          strokeWidth: `${(labelMetrics.fontSize * 0.13).toFixed(2)}px`,
+                          strokeLinejoin: 'round',
+                        }}
+                      >
+                        <textPath href={`#rt-arc-${reminder.id}`} startOffset="50%">
+                          {labelText}
+                        </textPath>
+                      </text>
+                    </svg>
+                  )}
+                </button>
+                </div>
+                );
+              })}
+
+              <div className="relative flex flex-col items-center">
+                {p.notes && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible group-hover:visible pointer-events-none z-[200] bg-gray-900/95 text-white text-[9px] font-medium rounded-lg px-2.5 py-1.5 shadow-xl max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap border border-white/10">
+                    {p.notes}
+                  </div>
+                )}
+                <button
+                  id={`grimoire-player-${p.id}`}
+                  onClick={(e) => {
+                    if (touchStartTimeRef.current > 0) {
+                      const duration = Date.now() - touchStartTimeRef.current;
+                      touchStartTimeRef.current = 0;
+                      if (duration > 200) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                      }
+                    }
+                    onSelectPlayer(p.id);
+                  }}
+                  style={grimoireConfig.btnStyle}
+                  className={cn(
+                    "rounded-full flex flex-col items-center justify-center shadow-md relative select-none",
+                    seatsReady && "transition-all duration-200",
+                    isFanned ? "group-hover:rotate-3 group-hover:shadow-lg" : "",
+                    p.isDead ? "scale-95" : "hover:bg-[#fafafa]"
+                  )}
+                >
+                  {/* Render fanned character tokens */}
+                  {(() => {
+                    const displayRoles = displayRoleIds(p);
+                    return displayRoles.map((roleId, idx) => {
+                      const roleObj = roleId
+                        ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
+                        : null;
+                      const isEvil = seatIsEvil(p, roleObj);
+
+                      let transformClass = "absolute inset-0 transition-all duration-300 ease-out hover:z-20";
+                      if (displayRoles.length > 1) {
+                        if (displayRoles.length === 2) {
+                          transformClass += idx === 0 
+                            ? ` -rotate-3 -translate-x-1 ${isFanned ? "group-hover:-translate-x-6 group-hover:-rotate-12" : ""}` 
+                            : ` rotate-3 translate-x-1 ${isFanned ? "group-hover:translate-x-6 group-hover:rotate-12" : ""}`;
+                        } else if (displayRoles.length === 3) {
+                          if (idx === 0) {
+                            transformClass += ` -rotate-6 -translate-x-2 translate-y-0.5 ${isFanned ? "group-hover:-translate-x-10 group-hover:translate-y-1.5 group-hover:-rotate-12" : ""}`;
+                          } else if (idx === 1) {
+                            transformClass += ` translate-y-[-1px] ${isFanned ? "group-hover:-translate-y-8 group-hover:scale-105" : ""}`;
+                          } else if (idx === 2) {
+                            transformClass += ` rotate-6 translate-x-2 translate-y-0.5 ${isFanned ? "group-hover:translate-x-10 group-hover:translate-y-1.5 group-hover:rotate-12" : ""}`;
+                          }
+                        }
+                      }
+
+                      const isTop = playerTopIndex[p.id] !== undefined
+                        ? playerTopIndex[p.id] === idx
+                        : idx === displayRoles.length - 1;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={transformClass}
+                          style={{ zIndex: isTop ? 10 : idx }}
+                          onMouseEnter={() => {
+                            setPlayerTopIndex((prev) => ({ ...prev, [p.id]: idx }));
+                          }}
+                          onClick={(e) => {
+                            if (touchStartedFannedRef.current) {
+                              e.stopPropagation();
+                            }
+                            setPlayerTopIndex((prev) => ({ ...prev, [p.id]: idx }));
+                            setFannedPlayerId(null);
+                            touchStartedFannedRef.current = false;
+                          }}
+                        >
+                          <CharacterToken
+                            role={roleObj}
+                            isEvil={isEvil}
+                            isDead={p.isDead}
+                            iconSizePct={80}
+                            blankRing
+                            idPrefix={`${p.id}-${idx}`}
+                            className="absolute inset-0"
+                          />
+                        </div>
+                      );
+                    });
+                  })()}
+
+                  {/* Player Name Overlay */}
+                  <span
+                    style={{
+                      ...grimoireConfig.nameStyle,
+                      fontSize: dynamicFontSize,
+                      textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW)
+                    }}
+                    className={cn(
+                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle",
+                      p.isDead ? "text-[#1a1a1a] opacity-75" : "text-[#1a1a1a] font-bold"
+                    )}
+                  >
+                    {remotePlayerIds?.has(p.id) && (
+                      <Wifi size={10} className="shrink-0" strokeWidth={3} />
+                    )}
+                    <span className="break-words whitespace-normal">{p.name}</span>
+                  </span>
+
+                  {p.pronouns && (
+                    <span
+                      style={{
+                        fontSize: dynamicPronounFontSize,
+                        textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW)
+                      }}
+                      className="text-[#555] font-medium leading-none pointer-events-none select-none z-20 relative"
+                    >
+                      {p.pronouns}
+                    </span>
+                  )}
+
+                  {p.isTheDrunk && (
+                    <span
+                      style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
+                      className="absolute bottom-0 bg-yellow-600 text-black font-black border-yellow-700 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
+                    >
+                      DRUNK
+                    </span>
+                  )}
+                  {p.isTheMarionette && (
+                    <span
+                      style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
+                      className="absolute bottom-0 bg-clocktower-minion text-white font-black border-clocktower-minion/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
+                    >
+                      MARIONETTE
+                    </span>
+                  )}
+                  {p.isTheLunatic && (
+                    <span
+                      style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
+                      className="absolute bottom-0 bg-clocktower-outsider text-white font-black border-clocktower-outsider/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
+                    >
+                      LUNATIC
+                    </span>
+                  )}
+                  {p.isTheLilMonsta && (
+                    <span
+                      style={{ fontSize: '1.7cqw', padding: '0.3cqw 0.8cqw', borderRadius: '0.4cqw', borderWidth: '0.12cqw' }}
+                      className="absolute bottom-0 bg-clocktower-demon text-white font-black border-clocktower-demon/40 shadow-sm leading-none translate-y-1/2 z-30 whitespace-nowrap"
+                    >
+                      LIL' MONSTA
+                    </span>
+                  )}
+                  {p.isDrunkOrPoisoned && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '14%',
+                        right: '14%',
+                        fontSize: '4.0cqw',
+                        lineHeight: 1,
+                        zIndex: 30,
+                      }}
+                      title="Drunk/Poisoned"
+                    >
+                      🤢
+                    </div>
+                  )}
+                  {p.isDead && p.hasDeadVote && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '10%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        lineHeight: 1,
+                        zIndex: 30,
+                      }}
+                    >
+                      <VoteToken size="8cqw" title="Vote Token Active" />
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+    </div>
+
+    {pickerPlayerId && createPortal(
+      <ReminderPickerModal
+        targetPlayerName={players.find(p => p.id === pickerPlayerId)?.name ?? ''}
+        activeRoleIds={activeCharIds}
+        rolesData={rolesData}
+        onSelect={(sourceCharId, text) => {
+          onAddReminder?.(pickerPlayerId, sourceCharId, text);
+          setPickerPlayerId(null);
+        }}
+        onClose={() => setPickerPlayerId(null)}
+        isLightModeActive={isLightModeActive}
+      />,
+      document.body
+    )}
+
+    {selectedReminder && createPortal(
+      <ReminderTokenModal
+        reminder={selectedReminder}
+        rolesData={rolesData}
+        onRemove={() => {
+          onRemoveReminder?.(selectedReminder.id);
+          setSelectedReminder(null);
+        }}
+        onClose={() => setSelectedReminder(null)}
+        isLightModeActive={isLightModeActive}
+      />,
+      document.body
+    )}
+    </>
+  );
+}

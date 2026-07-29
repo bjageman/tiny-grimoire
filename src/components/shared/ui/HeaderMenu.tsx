@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Sun, Moon, RotateCcw, StickyNote } from 'lucide-react';
+import { Menu, Sun, Moon, RotateCcw } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import ToggleSwitch from './ToggleSwitch';
 
@@ -103,10 +103,7 @@ export default function HeaderMenu({
                   : "text-gray-200 hover:bg-slate-800 hover:text-white"
               )}
             >
-              <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                <StickyNote size={16} className="shrink-0 text-amber-500" />
-                <span className="truncate">Always Show Notes</span>
-              </div>
+              <span className="truncate pr-2">Show Notes</span>
               <ToggleSwitch
                 id="always-show-notes-checkbox"
                 checked={!!alwaysShowNotes}

@@ -1209,7 +1209,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     });
 
     const nameInput = storyteller.container.querySelector('#detail-player-name-input') as HTMLInputElement;
-    const notesInput = storyteller.container.querySelector('input[placeholder="Notes..."]') as HTMLInputElement;
+    const notesInput = storyteller.container.querySelector('input[placeholder="Label"]') as HTMLInputElement;
     expect(nameInput).not.toBeNull();
     expect(notesInput).not.toBeNull();
 

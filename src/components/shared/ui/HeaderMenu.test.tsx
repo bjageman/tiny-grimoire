@@ -23,20 +23,18 @@ describe('HeaderMenu', () => {
     expect(screen.queryByRole('button', { name: /reset game/i })).not.toBeInTheDocument();
   });
 
-  it('swaps theme toggle label between Light and Dark and calls onToggleTheme when clicked', () => {
+  it('renders Theme: label and calls onToggleTheme when clicked', () => {
     const onToggleTheme = vi.fn();
-    const { rerender } = render(<HeaderMenu theme="dark" onToggleTheme={onToggleTheme} />);
+    render(<HeaderMenu theme="dark" onToggleTheme={onToggleTheme} />);
 
     fireEvent.click(screen.getByRole('button', { name: /menu/i }));
-    const themeButtonDark = screen.getByRole('button', { name: 'Light' });
-    expect(themeButtonDark).toBeInTheDocument();
+    expect(screen.getByText('Theme:')).toBeInTheDocument();
 
-    fireEvent.click(themeButtonDark);
+    const themeToggle = document.getElementById('theme-toggle-button');
+    expect(themeToggle).not.toBeNull();
+
+    fireEvent.click(themeToggle!);
     expect(onToggleTheme).toHaveBeenCalledTimes(1);
-
-    rerender(<HeaderMenu theme="light" onToggleTheme={onToggleTheme} />);
-    const themeButtonLight = screen.getByRole('button', { name: 'Dark' });
-    expect(themeButtonLight).toBeInTheDocument();
   });
 
   it('renders Always Show Notes toggle and calls onToggleAlwaysShowNotes when toggled', () => {

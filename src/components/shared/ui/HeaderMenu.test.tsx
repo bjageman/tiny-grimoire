@@ -47,7 +47,7 @@ describe('HeaderMenu', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /menu/i }));
-    const notesToggle = screen.getByText('Show Notes');
+    const notesToggle = screen.getByText('Show Labels');
     expect(notesToggle).toBeInTheDocument();
 
     const checkbox = document.getElementById('always-show-notes-checkbox') as HTMLInputElement;

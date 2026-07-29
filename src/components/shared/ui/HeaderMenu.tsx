@@ -105,7 +105,7 @@ export default function HeaderMenu({
                   : "text-gray-200 hover:bg-slate-800 hover:text-white"
               )}
             >
-              <span className="truncate pr-2">Show Notes</span>
+              <span className="truncate pr-2">Show Labels</span>
               <ToggleSwitch
                 id="always-show-notes-checkbox"
                 checked={!!alwaysShowNotes}

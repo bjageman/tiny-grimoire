@@ -322,7 +322,7 @@ describe('PlayerTracker', () => {
       .find(el => el.textContent?.includes('Bob'));
     fireEvent.click(bobRow!);
     fireEvent.click(screen.getByRole('button', { name: 'Alive' }));
-    fireEvent.change(screen.getByPlaceholderText('Notes...'), { target: { value: 'Secretly the Imp' } });
+    fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'Secretly the Imp' } });
 
     // Someone opening the share link requests the initial setup once
     act(() => {

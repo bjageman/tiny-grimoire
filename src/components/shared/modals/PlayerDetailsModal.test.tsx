@@ -71,11 +71,18 @@ describe('PlayerDetailsModal', () => {
     const onUpdateNotes = vi.fn();
     render(<PlayerDetailsModal {...defaultProps} onUpdateNotes={onUpdateNotes} />);
 
-    fireEvent.change(screen.getByPlaceholderText('Notes...'), { target: { value: 'Watch this one' } });
+    fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'Watch this one' } });
     expect(onUpdateNotes).not.toHaveBeenCalled();
 
     cleanup();
     expect(onUpdateNotes).toHaveBeenCalledWith('p1', 'Watch this one');
+  });
+
+  it('enforces maxLength limit and displays Label placeholder on notes input', () => {
+    render(<PlayerDetailsModal {...defaultProps} onUpdateNotes={vi.fn()} />);
+    const notesInput = screen.getByPlaceholderText('Label') as HTMLInputElement;
+    expect(notesInput).toBeInTheDocument();
+    expect(notesInput.maxLength).toBe(40);
   });
 
   it('pressing Enter in the name field blurs and closes the modal', () => {

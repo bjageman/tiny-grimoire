@@ -103,6 +103,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => {
     const loadedSelectedIds = readPersistedField<string[] | null>(STORAGE_KEY, 'selectedCharacterIds', null);
     if (loadedSelectedIds) {
@@ -477,8 +478,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
       rotationOffset,
+      alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -712,6 +714,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />
@@ -897,6 +901,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onSetCheckedItems={setCheckedItems}
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
+          alwaysShowNotes={alwaysShowNotes}
         />
       )}
 

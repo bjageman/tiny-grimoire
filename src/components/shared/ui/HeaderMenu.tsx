@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Menu, Sun, Moon, RotateCcw } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import ToggleSwitch from './ToggleSwitch';
 
 interface HeaderMenuProps {
   theme?: 'light' | 'dark';
@@ -8,6 +9,8 @@ interface HeaderMenuProps {
   onResetGame?: () => void;
   isLightModeActive?: boolean;
   isSecondary?: boolean;
+  alwaysShowNotes?: boolean;
+  onToggleAlwaysShowNotes?: (alwaysShow: boolean) => void;
 }
 
 export default function HeaderMenu({
@@ -16,6 +19,8 @@ export default function HeaderMenu({
   onResetGame,
   isLightModeActive: isLightProp,
   isSecondary = false,
+  alwaysShowNotes,
+  onToggleAlwaysShowNotes,
 }: HeaderMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -55,39 +60,62 @@ export default function HeaderMenu({
         <div
           id="header-menu-dropdown"
           className={cn(
-            "absolute right-0 top-full mt-2 w-48 rounded-lg shadow-xl border p-1.5 z-50 animate-fadeIn",
+            "absolute right-0 top-full mt-2 w-52 rounded-lg shadow-xl border p-1.5 z-50 animate-fadeIn space-y-0.5",
             isLightModeActive
               ? "bg-white border-clocktower-blood/20 text-gray-800"
               : "bg-gray-900 border-gray-800 text-gray-100"
           )}
         >
           {onToggleTheme && (
-            <button
-              id="theme-toggle-button"
-              onClick={() => {
-                onToggleTheme();
-              }}
+            <label
+              id="theme-toggle-label"
               className={cn(
                 "w-full flex items-center justify-between px-3 py-2 text-sm",
-                "font-semibold rounded-md transition-colors text-left",
+                "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
                 isLightModeActive
                   ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
                   : "text-gray-200 hover:bg-slate-800 hover:text-white"
               )}
-              title={isLightModeActive ? "Switch to Dark Mode" : "Switch to Light Mode"}
             >
-              <div className="flex items-center gap-2.5">
-                {isLightModeActive ? (
-                  <Moon size={16} className="shrink-0 text-indigo-400" />
-                ) : (
-                  <Sun size={16} className="shrink-0 text-amber-400" />
-                )}
-                <span>{isLightModeActive ? 'Dark' : 'Light'}</span>
-              </div>
-            </button>
+              <span className="truncate pr-2">Theme:</span>
+              <ToggleSwitch
+                id="theme-toggle-button"
+                checked={isLightModeActive}
+                onChange={() => onToggleTheme()}
+                isLightModeActive={isLightModeActive}
+                icon={
+                  isLightModeActive ? (
+                    <Sun size={11} className="text-amber-500 fill-amber-500" />
+                  ) : (
+                    <Moon size={11} className="text-indigo-600 fill-indigo-600" />
+                  )
+                }
+              />
+            </label>
           )}
 
-          {onToggleTheme && onResetGame && (
+          {onToggleAlwaysShowNotes && (
+            <label
+              id="always-show-notes-toggle"
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2 text-sm",
+                "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
+                isLightModeActive
+                  ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
+                  : "text-gray-200 hover:bg-slate-800 hover:text-white"
+              )}
+            >
+              <span className="truncate pr-2">Show Notes</span>
+              <ToggleSwitch
+                id="always-show-notes-checkbox"
+                checked={!!alwaysShowNotes}
+                onChange={(checked) => onToggleAlwaysShowNotes(checked)}
+                isLightModeActive={isLightModeActive}
+              />
+            </label>
+          )}
+
+          {((onToggleTheme || onToggleAlwaysShowNotes) && onResetGame) && (
             <div className={cn("my-1 h-px", isLightModeActive ? "bg-gray-200" : "bg-gray-800")} />
           )}
 

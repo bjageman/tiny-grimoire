@@ -315,7 +315,8 @@ export default function PlayerDetailsModal({
                   {onUpdateNotes && (
                     <input
                       type="text"
-                      placeholder="Notes..."
+                      placeholder="Label"
+                      maxLength={40}
                       value={editedNotes}
                       onFocus={(e) => { originalNotes.current = e.target.value; }}
                       onChange={(e) => setEditedNotes(e.target.value)}

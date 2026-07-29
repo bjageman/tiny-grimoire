@@ -205,9 +205,12 @@ describe('PlayerTracker', () => {
   it('resets the tracker and returns to setup when clicking the reset button', () => {
     window.location.hash = '#/tracker';
 
-    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    const { container } = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
-    const resetButton = document.getElementById('reset-game-button');
+    const menuButton = container.querySelector('#header-menu-button');
+    fireEvent.click(menuButton!);
+
+    const resetButton = container.querySelector('#reset-game-button');
     fireEvent.click(resetButton!);
 
     // Confirm modal should appear

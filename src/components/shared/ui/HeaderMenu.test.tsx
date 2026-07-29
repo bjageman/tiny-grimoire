@@ -1,0 +1,66 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import HeaderMenu from './HeaderMenu';
+
+describe('HeaderMenu', () => {
+  it('opens dropdown menu on trigger click and calls onResetGame on item click', () => {
+    const onResetGame = vi.fn();
+    render(<HeaderMenu onResetGame={onResetGame} />);
+
+    const menuButton = screen.getByRole('button', { name: /menu/i });
+    expect(menuButton).toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: /reset game/i })).not.toBeInTheDocument();
+
+    fireEvent.click(menuButton);
+
+    const resetButton = screen.getByRole('button', { name: /reset game/i });
+    expect(resetButton).toBeInTheDocument();
+
+    fireEvent.click(resetButton);
+    expect(onResetGame).toHaveBeenCalledTimes(1);
+
+    expect(screen.queryByRole('button', { name: /reset game/i })).not.toBeInTheDocument();
+  });
+
+  it('swaps theme toggle label between Light and Dark and calls onToggleTheme when clicked', () => {
+    const onToggleTheme = vi.fn();
+    const { rerender } = render(<HeaderMenu theme="dark" onToggleTheme={onToggleTheme} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    const themeButtonDark = screen.getByRole('button', { name: 'Light' });
+    expect(themeButtonDark).toBeInTheDocument();
+
+    fireEvent.click(themeButtonDark);
+    expect(onToggleTheme).toHaveBeenCalledTimes(1);
+
+    rerender(<HeaderMenu theme="light" onToggleTheme={onToggleTheme} />);
+    const themeButtonLight = screen.getByRole('button', { name: 'Dark' });
+    expect(themeButtonLight).toBeInTheDocument();
+  });
+
+  it('disables Reset Game button when isSecondary is true', () => {
+    const onResetGame = vi.fn();
+    render(<HeaderMenu onResetGame={onResetGame} isSecondary={true} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+
+    const resetButton = screen.getByRole('button', { name: /reset game/i });
+    expect(resetButton).toBeDisabled();
+  });
+
+  it('closes dropdown when clicking outside', () => {
+    render(
+      <div>
+        <div data-testid="outside">Outside</div>
+        <HeaderMenu onResetGame={vi.fn()} />
+      </div>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.getByRole('button', { name: /reset game/i })).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByRole('button', { name: /reset game/i })).not.toBeInTheDocument();
+  });
+});

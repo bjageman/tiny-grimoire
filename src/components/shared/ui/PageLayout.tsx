@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Sun, Moon, ArrowLeft, GitBranch, Coffee } from 'lucide-react';
+import { ArrowLeft, GitBranch, Coffee } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import HeaderMenu from './HeaderMenu';
 
 interface PageLayoutProps {
   theme: 'light' | 'dark';
@@ -116,15 +117,9 @@ export default function PageLayout({
           )}
 
           <div id="page-header-controls" className="absolute right-4 md:right-8 lg:right-12 flex items-center gap-1">
-            <button
-              id="theme-toggle-button"
-              onClick={toggleTheme}
-              className={cn("p-2 transition-colors", isLight ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            {extraControls}
+            {extraControls ?? (
+              <HeaderMenu theme={theme} onToggleTheme={toggleTheme} />
+            )}
           </div>
         </div>
 

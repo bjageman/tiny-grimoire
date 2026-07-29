@@ -90,6 +90,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
   const [enableReminders, setEnableReminders] = usePersistedField<boolean>(STORAGE_KEY, 'enableReminders', false);
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
 
@@ -376,8 +377,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       code: gameCode || undefined,
       enableReminders,
       reminderTokens,
+      alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -582,6 +584,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
           onResetGame={resetGame}
         />
       }
@@ -674,6 +678,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onNotesChange={setGameNotes}
           rotationOffset={rotationOffset}
           onRotationChange={setUserRotation}
+          alwaysShowNotes={alwaysShowNotes}
         />
       )}
 

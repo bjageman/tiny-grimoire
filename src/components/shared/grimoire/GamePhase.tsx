@@ -75,8 +75,8 @@ interface Props {
   onNotesChange?: (notes: string) => void;
   showReminderToggle?: boolean;
   onToggleReminders?: (enabled: boolean) => void;
-  /** Storyteller-only features in the script modal (Notes prompts, in-play filter). */
   isStoryteller?: boolean;
+  alwaysShowNotes?: boolean;
 }
 
 export default function GamePhase({
@@ -115,6 +115,7 @@ export default function GamePhase({
   showReminderToggle = false,
   onToggleReminders,
   isStoryteller = false,
+  alwaysShowNotes = false,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -239,6 +240,7 @@ export default function GamePhase({
             onRemoveAllReminders={enableReminders ? handleRemoveAllReminders : undefined}
             rotationOffset={rotationOffset}
             onRotationChange={onRotationChange}
+            alwaysShowNotes={alwaysShowNotes}
           />
         </div>
         {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}

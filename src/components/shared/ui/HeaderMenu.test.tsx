@@ -39,6 +39,27 @@ describe('HeaderMenu', () => {
     expect(themeButtonLight).toBeInTheDocument();
   });
 
+  it('renders Always Show Notes toggle and calls onToggleAlwaysShowNotes when toggled', () => {
+    const onToggleAlwaysShowNotes = vi.fn();
+    render(
+      <HeaderMenu
+        alwaysShowNotes={false}
+        onToggleAlwaysShowNotes={onToggleAlwaysShowNotes}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    const notesToggle = screen.getByText('Always Show Notes');
+    expect(notesToggle).toBeInTheDocument();
+
+    const checkbox = document.getElementById('always-show-notes-checkbox') as HTMLInputElement;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox.checked).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(onToggleAlwaysShowNotes).toHaveBeenCalledWith(true);
+  });
+
   it('disables Reset Game button when isSecondary is true', () => {
     const onResetGame = vi.fn();
     render(<HeaderMenu onResetGame={onResetGame} isSecondary={true} />);

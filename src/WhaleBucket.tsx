@@ -77,6 +77,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   });
   const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDraftPlayerId, setActiveDraftPlayerId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -413,8 +414,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       checkedItems,
       rotationOffset,
+      alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -802,6 +804,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />
@@ -965,6 +969,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onSetCheckedItems={setCheckedItems}
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
+          alwaysShowNotes={alwaysShowNotes}
         />
       )}
 

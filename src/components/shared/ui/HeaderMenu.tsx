@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Sun, Moon, RotateCcw } from 'lucide-react';
+import { Menu, Sun, Moon, RotateCcw, StickyNote } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import ToggleSwitch from './ToggleSwitch';
 
 interface HeaderMenuProps {
   theme?: 'light' | 'dark';
@@ -8,6 +9,8 @@ interface HeaderMenuProps {
   onResetGame?: () => void;
   isLightModeActive?: boolean;
   isSecondary?: boolean;
+  alwaysShowNotes?: boolean;
+  onToggleAlwaysShowNotes?: (alwaysShow: boolean) => void;
 }
 
 export default function HeaderMenu({
@@ -16,6 +19,8 @@ export default function HeaderMenu({
   onResetGame,
   isLightModeActive: isLightProp,
   isSecondary = false,
+  alwaysShowNotes,
+  onToggleAlwaysShowNotes,
 }: HeaderMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -55,7 +60,7 @@ export default function HeaderMenu({
         <div
           id="header-menu-dropdown"
           className={cn(
-            "absolute right-0 top-full mt-2 w-48 rounded-lg shadow-xl border p-1.5 z-50 animate-fadeIn",
+            "absolute right-0 top-full mt-2 w-52 rounded-lg shadow-xl border p-1.5 z-50 animate-fadeIn space-y-0.5",
             isLightModeActive
               ? "bg-white border-clocktower-blood/20 text-gray-800"
               : "bg-gray-900 border-gray-800 text-gray-100"
@@ -87,7 +92,31 @@ export default function HeaderMenu({
             </button>
           )}
 
-          {onToggleTheme && onResetGame && (
+          {onToggleAlwaysShowNotes && (
+            <label
+              id="always-show-notes-toggle"
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2 text-sm",
+                "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
+                isLightModeActive
+                  ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
+                  : "text-gray-200 hover:bg-slate-800 hover:text-white"
+              )}
+            >
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <StickyNote size={16} className="shrink-0 text-amber-500" />
+                <span className="truncate">Always Show Notes</span>
+              </div>
+              <ToggleSwitch
+                id="always-show-notes-checkbox"
+                checked={!!alwaysShowNotes}
+                onChange={(checked) => onToggleAlwaysShowNotes(checked)}
+                isLightModeActive={isLightModeActive}
+              />
+            </label>
+          )}
+
+          {((onToggleTheme || onToggleAlwaysShowNotes) && onResetGame) && (
             <div className={cn("my-1 h-px", isLightModeActive ? "bg-gray-200" : "bg-gray-800")} />
           )}
 

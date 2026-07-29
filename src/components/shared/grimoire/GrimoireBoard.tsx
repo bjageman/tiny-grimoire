@@ -82,6 +82,7 @@ interface GrimoireBoardProps {
   onRotationChange?: (offset: number) => void;
   remotePlayerIds?: Set<string>;
   includeAllScriptReminders?: boolean;
+  alwaysShowNotes?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -103,6 +104,7 @@ export default function GrimoireBoard({
   onRotationChange,
   remotePlayerIds,
   includeAllScriptReminders = false,
+  alwaysShowNotes = false,
 }: GrimoireBoardProps) {
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
@@ -665,7 +667,12 @@ export default function GrimoireBoard({
 
               <div className="relative flex flex-col items-center">
                 {p.notes && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 invisible group-hover:visible pointer-events-none z-[200] bg-gray-900/95 text-white text-[9px] font-medium rounded-lg px-2.5 py-1.5 shadow-xl max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap border border-white/10">
+                  <div className={cn(
+                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none z-[200]",
+                    "bg-gray-900/95 text-white text-[9px] font-medium rounded-lg px-2.5 py-1.5 shadow-xl",
+                    "max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap border border-white/10",
+                    alwaysShowNotes ? "visible" : "invisible group-hover:visible"
+                  )}>
                     {p.notes}
                   </div>
                 )}

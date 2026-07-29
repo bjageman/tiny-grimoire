@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
@@ -14,6 +13,7 @@ import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/ui/PageLayout';
+import HeaderMenu from './components/shared/ui/HeaderMenu';
 import DialogModal from './components/shared/modals/DialogModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
@@ -579,14 +579,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         )
       }
       extraControls={
-        <button
-          id="reset-game-button"
-          onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
-        >
-          <Undo2 size={20} />
-        </button>
+        <HeaderMenu
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onResetGame={resetGame}
+        />
       }
       contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
     >

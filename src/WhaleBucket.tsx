@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Undo2 } from 'lucide-react';
 import rolesData from './official_roles.json';
-import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
@@ -18,6 +16,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/ui/PageLayout';
+import HeaderMenu from './components/shared/ui/HeaderMenu';
 import DialogModal from './components/shared/modals/DialogModal';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
@@ -800,19 +799,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         </div>
       }
       extraControls={
-        <button
-          id="reset-game-button"
-          onClick={resetGame}
-          disabled={isSecondary}
-          className={cn(
-            "p-2 transition-colors",
-            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
-            isSecondary && "opacity-40 cursor-not-allowed"
-          )}
-          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
-        >
-          <Undo2 size={20} />
-        </button>
+        <HeaderMenu
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onResetGame={resetGame}
+          isSecondary={isSecondary}
+        />
       }
       headerExtra={
         isSecondary ? (

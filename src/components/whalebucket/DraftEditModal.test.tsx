@@ -79,8 +79,8 @@ describe('WhaleBucketDraftEditModal', () => {
       expect(btn).not.toBeDisabled();
     });
 
-    // Check if "The Drunk" toggle is enabled
-    const drunkButton = Array.from(container.querySelectorAll('button')).find(el => el.textContent?.includes('The Drunk'));
+    // Check if the Drunk toggle is enabled
+    const drunkButton = Array.from(container.querySelectorAll('button')).find(el => el.textContent?.includes('Drunk'));
     expect(drunkButton).toBeDefined();
     expect(drunkButton).not.toBeDisabled();
   });

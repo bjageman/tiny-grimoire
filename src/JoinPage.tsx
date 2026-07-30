@@ -17,7 +17,6 @@ import PreferencesScreen from './components/join/PreferencesScreen';
 import RevealedScreen from './components/join/RevealedScreen';
 import WaitingScreen from './components/join/WaitingScreen';
 import JoinForm from './components/join/JoinForm';
-import MyIdentityFields from './components/join/MyIdentityFields';
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -349,6 +348,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setState('waiting');
   };
 
+  const handleSelectPronoun = (next: string) => {
+    setPronouns(next);
+    localStorage.setItem('joined-pronouns', next);
+    sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined });
+  };
+
   // A rename re-announces through the player_join effect below, which already watches `name`.
   const handleChangeName = (next: string) => {
     setName(next);
@@ -459,7 +464,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             code={code}
             name={name}
             pronouns={pronouns}
-            onSelectPronoun={(next) => { setPronouns(next); localStorage.setItem('joined-pronouns', next); sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined }); }}
+            onSelectPronoun={handleSelectPronoun}
             onChangeName={handleChangeName}
             scriptName={scriptName}
             gameType={gameType}
@@ -471,7 +476,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
         {/* 5. REVEALED TOKEN SCREEN */}
         {state === 'revealed' && assignedRole && (
-          <RevealedScreen isLight={isLight} assignedRole={assignedRole} revealed={revealed} onOpenTracker={goToTracker} />
+          <RevealedScreen
+            isLight={isLight}
+            assignedRole={assignedRole}
+            revealed={revealed}
+            onOpenTracker={goToTracker}
+            name={name}
+            pronouns={pronouns}
+            onChangeName={handleChangeName}
+            onSelectPronoun={handleSelectPronoun}
+          />
         )}
 
         {/* 6. PLAYER SIMPLIFIED GAME TRACKER SCREEN */}
@@ -495,20 +509,6 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               >
                 <span>Show Token</span>
               </button>
-            </div>
-
-            {/* Your own name and pronouns stay editable for the whole game */}
-            <div className={cn(
-              "border rounded-lg p-4 shadow-sm",
-              isLight ? "bg-white border-gray-200" : "bg-gray-900/40 border-gray-800"
-            )}>
-              <MyIdentityFields
-                isLight={isLight}
-                name={name}
-                pronouns={pronouns}
-                onChangeName={handleChangeName}
-                onSelectPronoun={(next) => { setPronouns(next); localStorage.setItem('joined-pronouns', next); sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined }); }}
-              />
             </div>
 
             {/* Circular Grimoire Board (without role tokens) */}

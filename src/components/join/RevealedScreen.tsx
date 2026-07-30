@@ -1,5 +1,6 @@
 import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import MyIdentityFields from './MyIdentityFields';
 import { roleIconFallback } from '../../utils/roleIcon';
 import officialRoles from '../../official_roles.json';
 import type { Role } from '../../types';
@@ -9,10 +10,14 @@ interface RevealedScreenProps {
   assignedRole: Role;
   revealed: boolean;
   onOpenTracker: () => void;
+  name: string;
+  pronouns: string;
+  onChangeName: (next: string) => void;
+  onSelectPronoun: (next: string) => void;
 }
 
 // The joined player's flip-to-reveal character token, leading into the player tracker.
-export default function RevealedScreen({ isLight, assignedRole, revealed, onOpenTracker }: RevealedScreenProps) {
+export default function RevealedScreen({ isLight, assignedRole, revealed, onOpenTracker, name, pronouns, onChangeName, onSelectPronoun }: RevealedScreenProps) {
   return (
     <div className="space-y-6 text-center">
       <div
@@ -79,6 +84,20 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             {assignedRole.ability ?? (officialRoles as Array<{ id: string; ability?: string }>).find((r) => r.id === assignedRole.id)?.ability}
           </p>
         </div>
+      </div>
+
+      {/* Your own name and pronouns stay yours to change after the reveal */}
+      <div className={cn(
+        "border rounded-lg p-4 text-left shadow-sm",
+        isLight ? "bg-white border-gray-200" : "bg-gray-900/40 border-gray-800"
+      )}>
+        <MyIdentityFields
+          isLight={isLight}
+          name={name}
+          pronouns={pronouns}
+          onChangeName={onChangeName}
+          onSelectPronoun={onSelectPronoun}
+        />
       </div>
 
       <button

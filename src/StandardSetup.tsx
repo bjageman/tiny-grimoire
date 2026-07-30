@@ -285,6 +285,17 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       pronouns?: string;
       checkOnly?: boolean;
     };
+    if (payload.type === 'player_leave' && payload.id) {
+      // The seat stays; it just goes back under storyteller control once nobody is driving it.
+      setRemotePlayerIds(prev => {
+        if (!prev.has(payload.id)) return prev;
+        const next = new Set(prev);
+        next.delete(payload.id);
+        return next;
+      });
+      return;
+    }
+
     if (payload.type === 'player_join' && payload.name && payload.id) {
       const isExistingPlayer = players.some(
         p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
@@ -323,7 +334,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           if (exists) {
             return prev.map(p =>
               (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, id: payload.id, pronouns: payload.pronouns }
+                ? { ...p, id: payload.id, name: payload.name, pronouns: payload.pronouns }
                 : p
             );
           }
@@ -920,6 +931,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         <SetupPlayerEditModal
           activePlayerId={activePlayerId}
           players={players}
+          isRemotePlayer={remotePlayerIds.has(activePlayerId)}
           customScriptRoles={customScriptRoles}
           selectionRoles={selectionRoles}
           searchTerm={searchTerm}
@@ -955,6 +967,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onClose={closeDetailsModal}
           onPrevPlayer={() => prevPlayerId && setSelectedPlayerId(prevPlayerId)}
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
+          isRemotePlayer={remotePlayerIds.has(modalPlayer.id)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onUpdateNotes={updatePlayerNotes}

@@ -1,5 +1,6 @@
 import { QrCode, CheckCircle2, Scroll, RotateCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import MyIdentityFields from './MyIdentityFields';
 
 interface WaitingScreenProps {
   isLight: boolean;
@@ -7,6 +8,7 @@ interface WaitingScreenProps {
   name: string;
   pronouns: string;
   onSelectPronoun: (next: string) => void;
+  onChangeName: (next: string) => void;
   scriptName: string;
   gameType: 'standard' | 'whale-bucket';
   onShowQr: () => void;
@@ -15,7 +17,7 @@ interface WaitingScreenProps {
 }
 
 // The joined-and-waiting room: pronoun picker, script view, and leave, until the storyteller assigns a role.
-export default function WaitingScreen({ isLight, code, name, pronouns, onSelectPronoun, scriptName, gameType, onShowQr, onViewScript, onLeave }: WaitingScreenProps) {
+export default function WaitingScreen({ isLight, code, name, pronouns, onSelectPronoun, onChangeName, scriptName, gameType, onShowQr, onViewScript, onLeave }: WaitingScreenProps) {
   return (
     <div
       id="waiting-screen"
@@ -39,31 +41,15 @@ export default function WaitingScreen({ isLight, code, name, pronouns, onSelectP
       <div className="flex flex-col items-center space-y-2">
         <CheckCircle2 size={42} className="text-emerald-500 animate-pulse" />
         <h3 className="font-display text-base font-bold tracking-wider uppercase">Joined Room {code}</h3>
-        <p className="text-sm font-semibold text-gray-500">Registered as <span className="text-clocktower-blood">{name}</span></p>
       </div>
 
-      <div className="space-y-2">
-        <p className={cn("text-[10px] uppercase font-bold tracking-wider text-center", isLight ? "text-gray-400" : "text-gray-500")}>Pronouns (optional)</p>
-        <div className="flex justify-center gap-1.5">
-          {['He/Him', 'She/Her', 'They/Them', 'Ask Me'].map(p => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onSelectPronoun(pronouns === p ? '' : p)}
-              className={cn(
-                "px-2 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap",
-                pronouns === p
-                  ? "bg-clocktower-blood text-white border-clocktower-blood"
-                  : isLight
-                    ? "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
-                    : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      </div>
+      <MyIdentityFields
+        isLight={isLight}
+        name={name}
+        pronouns={pronouns}
+        onChangeName={onChangeName}
+        onSelectPronoun={onSelectPronoun}
+      />
 
       <button
         id="game-script-button"

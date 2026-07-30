@@ -58,6 +58,8 @@ interface PlayerDetailsModalProps {
   allowMultipleRoles?: boolean;
   onUpdateRoles?: (id: string, roleIds: string[]) => void;
   isSynced?: boolean;
+  /** True when this player joined from their own device, so their name and pronouns are theirs to set. */
+  isRemotePlayer?: boolean;
   onUpdateNotes?: (id: string, notes: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
   onLogEvent?: (msg: string) => void;
@@ -89,6 +91,7 @@ export default function PlayerDetailsModal({
   allowMultipleRoles = false,
   onUpdateRoles,
   isSynced = false,
+  isRemotePlayer = false,
   onUpdateNotes,
   onUpdatePronouns,
   onLogEvent,
@@ -147,6 +150,10 @@ export default function PlayerDetailsModal({
   }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
+  const isNameLocked = isSynced || isRemotePlayer;
+  const nameLockReason = isRemotePlayer
+    ? 'This player set their own name from their device.'
+    : 'Player details are synced from the Storyteller.';
   const { dialogProps, showAlert } = useDialog();
 
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
@@ -224,23 +231,29 @@ export default function PlayerDetailsModal({
         <div className="flex justify-between items-start w-full">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex-1 min-w-0">
-              <input
-                id="detail-player-name-input"
-                ref={modalNameInputRef}
-                type="text"
-                value={editedName}
-                disabled={isSynced}
-                onChange={(e) => setEditedName(e.target.value)}
-                onFocus={(e) => { originalName.current = e.target.value; e.target.select(); }}
-                onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalName.current) onLogEvent(`${originalName.current} renamed to ${e.target.value}`); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-                autoCapitalize="words"
-                className={cn(
-                  'font-bold text-xl bg-white rounded-md px-2.5 py-1 border border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200 text-clocktower-night',
-                  isSynced && 'cursor-default pointer-events-none hover:border-transparent'
-                )}
-                placeholder="Player Name"
-              />
+              {isNameLocked ? (
+                <p
+                  id="detail-player-name-static"
+                  title={nameLockReason}
+                  className="font-bold text-xl px-2.5 py-1 w-full text-white break-words"
+                >
+                  {p.name}
+                </p>
+              ) : (
+                <input
+                  id="detail-player-name-input"
+                  ref={modalNameInputRef}
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onFocus={(e) => { originalName.current = e.target.value; e.target.select(); }}
+                  onBlur={(e) => { if (onLogEvent && e.target.value.trim() && e.target.value !== originalName.current) onLogEvent(`${originalName.current} renamed to ${e.target.value}`); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+                  autoCapitalize="words"
+                  className="font-bold text-xl bg-white rounded-md px-2.5 py-1 border border-transparent focus:border-clocktower-blood focus:outline-none w-full transition-all duration-200 text-clocktower-night"
+                  placeholder="Player Name"
+                />
+              )}
               {isSynced ? (
                 p.pronouns && (
                   <p className={cn('text-sm font-medium mt-0 pb-0 -mb-5 pt-1 px-3', isLightModeActive ? 'text-gray-500' : 'text-gray-400')}>
@@ -257,6 +270,8 @@ export default function PlayerDetailsModal({
                       isLightModeActive={isLightModeActive}
                       open={pronounsOpen}
                       onOpenChange={setPronounsOpen}
+                      disabled={isRemotePlayer}
+                      disabledTitle={nameLockReason}
                     />
                   )}
                   {onUpdateNotes && (

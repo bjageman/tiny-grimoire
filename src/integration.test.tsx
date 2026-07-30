@@ -497,6 +497,58 @@ describe('Storyteller Reset Integration', () => {
     joinPage.unmount();
   });
 
+  it('applies a connected player\'s rename and locks their name in the storyteller modal until they leave', async () => {
+    localStorage.setItem('standard-botc-state', JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: '' }],
+      phase: 'setup',
+    }));
+    localStorage.setItem('standard-botc-game-code', 'RNME');
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = 'RNME';
+
+    await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+    const send = (msg: Record<string, unknown>) =>
+      activeSubscriptions
+        .filter(s => s.gameCode.toLowerCase() === gameCode.toLowerCase())
+        .forEach(s => s.onMessage(msg));
+
+    // Alice joins from her own device, then renames herself there.
+    await act(async () => {
+      send({ type: 'player_join', id: 'p1', name: 'Alice' });
+      await new Promise(r => setTimeout(r, 50));
+    });
+    await act(async () => {
+      send({ type: 'player_join', id: 'p1', name: 'Alicia', pronouns: 'They/Them' });
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    // The storyteller roster picks up the new name.
+    await waitFor(() => {
+      expect(within(storyteller.container).getByText('Alicia')).toBeInTheDocument();
+    });
+
+    // Opening her seat shows the name as text, with the pronoun badge locked.
+    fireEvent.click(storyteller.container.querySelector('#edit-player-button-p1')!);
+    expect(storyteller.container.querySelector('#edit-player-name-static')).toHaveTextContent('Alicia');
+    expect(storyteller.container.querySelector('#edit-player-name-input')).toBeNull();
+    expect(storyteller.container.querySelector('#setup-player-pronouns-select')).toBeDisabled();
+
+    // She leaves; the seat stays, and the storyteller can edit it again.
+    fireEvent.click(storyteller.container.querySelector('#close-player-edit-modal-button')!);
+    await act(async () => {
+      send({ type: 'player_leave', id: 'p1' });
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    fireEvent.click(storyteller.container.querySelector('#edit-player-button-p1')!);
+    expect(storyteller.container.querySelector('#edit-player-name-input')).not.toBeNull();
+    expect(storyteller.container.querySelector('#setup-player-pronouns-select')).not.toBeDisabled();
+
+    storyteller.unmount();
+  });
+
   it('sends a player who opened the game tracker (from a join) back to the join waiting room on game_reset', async () => {
     // A joined player who taps "Open Player Game Tracker" navigates to
     // #/tracker (the PlayerTracker component), leaving JoinPage entirely. On a

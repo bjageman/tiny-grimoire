@@ -208,6 +208,17 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       preferences?: PlayerPreferences;
       pronouns?: string;
     };
+    if (payload.type === 'player_leave' && payload.id) {
+      // The seat stays; it just goes back under storyteller control once nobody is driving it.
+      setRemotePlayerIds(prev => {
+        if (!prev.has(payload.id)) return prev;
+        const next = new Set(prev);
+        next.delete(payload.id);
+        return next;
+      });
+      return;
+    }
+
     if (payload.type === 'player_join' && payload.name && payload.id) {
       const isExistingPlayer = players.some(
         p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
@@ -247,6 +258,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                 return {
                   ...p,
                   id: payload.id,
+                  name: payload.name,
                   preferences: payload.preferences || p.preferences,
                   pronouns: payload.pronouns,
                 };
@@ -987,6 +999,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {activePreferencePlayerId && (
         <WhaleBucketPlayerPreferenceModal
           activePlayerId={activePreferencePlayerId}
+          isRemotePlayer={remotePlayerIds.has(activePreferencePlayerId)}
           players={players}
           setPlayers={setPlayers}
           allowTravelers={allowTravelers}
@@ -1006,6 +1019,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       {activeDraftPlayerId && (
         <WhaleBucketDraftEditModal
           activeDraftPlayerId={activeDraftPlayerId}
+          isRemotePlayer={remotePlayerIds.has(activeDraftPlayerId)}
           players={players}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -1033,6 +1047,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onClose={closeDetailsModal}
           onPrevPlayer={() => prevPlayerId && setSelectedPlayerId(prevPlayerId)}
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
+          isRemotePlayer={remotePlayerIds.has(modalPlayer.id)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
           onUpdateNotes={updatePlayerNotes}

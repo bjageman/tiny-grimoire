@@ -22,10 +22,14 @@ interface WhaleBucketPlayerPreferenceModalProps {
   togglePreference: (playerId: string, team: Role['team'], roleId: string) => void;
   autoFillPlayerPreferences: (playerId: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
+  /** True when this player joined from their own device, so their name and pronouns are theirs to set. */
+  isRemotePlayer?: boolean;
   isSecondary?: boolean;
   onClose: () => void;
 }
 
+
+const REMOTE_PLAYER_TITLE = 'This player set their own name and pronouns from their device.';
 
 const TEAM_LABELS: Record<Role['team'], string> = {
   townsfolk: 'Townsfolk',
@@ -55,6 +59,7 @@ export default function WhaleBucketPlayerPreferenceModal({
   togglePreference,
   autoFillPlayerPreferences,
   onUpdatePronouns,
+  isRemotePlayer = false,
   isSecondary,
   onClose,
 }: WhaleBucketPlayerPreferenceModalProps) {
@@ -249,20 +254,32 @@ export default function WhaleBucketPlayerPreferenceModal({
               isLightModeActive={isLightModeActive}
               open={pronounsOpen}
               onOpenChange={setPronounsOpen}
+              disabled={isRemotePlayer}
+              disabledTitle={REMOTE_PLAYER_TITLE}
             />
           )}
-          <input
-            id="edit-preference-player-name-input"
-            type="text"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-855 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-          />
+          {isRemotePlayer ? (
+            <p
+              id="edit-preference-player-name-static"
+              title={REMOTE_PLAYER_TITLE}
+              className="flex-1 min-w-0 px-1 py-2 text-white text-sm font-semibold break-words"
+            >
+              {player.name}
+            </p>
+          ) : (
+            <input
+              id="edit-preference-player-name-input"
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+              autoFocus={!isMobile}
+              autoCapitalize="words"
+              placeholder="Player name"
+              className="flex-1 min-w-0 bg-gray-955 border border-gray-855 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+            />
+          )}
           <button
             id="auto-fill-preferences-button"
             type="button"

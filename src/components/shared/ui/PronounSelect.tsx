@@ -18,11 +18,17 @@ interface PronounSelectProps {
   isLightModeActive: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  disabled?: boolean;
+  disabledTitle?: string;
 }
 
 // Round pronoun badge that opens a dropdown; open state is owned by the parent modal so Escape can close this first.
-export default function PronounSelect({ id, pronouns, onChange, isLightModeActive, open, onOpenChange }: PronounSelectProps) {
+export default function PronounSelect({ id, pronouns, onChange, isLightModeActive, open, onOpenChange, disabled = false, disabledTitle }: PronounSelectProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (disabled && open) onOpenChange(false);
+  }, [disabled, open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,18 +46,21 @@ export default function PronounSelect({ id, pronouns, onChange, isLightModeActiv
       <button
         id={id}
         type="button"
+        disabled={disabled}
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
         aria-label="Pronouns"
-        title={pronouns || 'Pronouns'}
+        title={disabled ? (disabledTitle ?? 'Pronouns') : (pronouns || 'Pronouns')}
         className={cn(
-          'flex items-center justify-center w-9 h-9 rounded-full text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-95 ring-2 ring-white/30',
-          open ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
+          'flex items-center justify-center w-9 h-9 rounded-full text-white shadow-md transition-all duration-200 ring-2 ring-white/30',
+          disabled
+            ? 'bg-amber-500/40 opacity-40 cursor-not-allowed'
+            : cn('hover:opacity-90 active:scale-95', open ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600')
         )}
       >
         <PronounIcon size={18} />
       </button>
-      {open && (
+      {open && !disabled && (
         <div className={cn(
           'absolute left-0 top-full mt-1.5 z-20 w-40 rounded-lg border shadow-xl p-1.5 space-y-0.5',
           isLightModeActive ? 'bg-white border-gray-300' : 'bg-gray-950 border-gray-700'

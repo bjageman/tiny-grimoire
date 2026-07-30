@@ -49,6 +49,34 @@ describe('WhaleBucketPlayerPreferenceModal', () => {
     expect(screen.getByText('Washerwoman')).toBeInTheDocument();
   });
 
+  it('locks name and pronouns for a player who joined from their own device', () => {
+    const onUpdatePronouns = vi.fn();
+    render(
+      <WhaleBucketPlayerPreferenceModal
+        {...defaultProps}
+        onUpdatePronouns={onUpdatePronouns}
+        isRemotePlayer={true}
+      />
+    );
+
+    // The name reads as text, not an editable field
+    expect(screen.queryByDisplayValue('Player One')).toBeNull();
+    expect(document.getElementById('edit-preference-player-name-static')).toHaveTextContent('Player One');
+
+    const pronouns = document.getElementById('preference-player-pronouns-select') as HTMLButtonElement;
+    expect(pronouns).toBeDisabled();
+    fireEvent.click(pronouns);
+    expect(screen.queryByText('They/Them')).toBeNull();
+    expect(onUpdatePronouns).not.toHaveBeenCalled();
+  });
+
+  it('keeps name and pronouns editable for a locally added player', () => {
+    render(<WhaleBucketPlayerPreferenceModal {...defaultProps} onUpdatePronouns={vi.fn()} />);
+
+    expect(screen.getByDisplayValue('Player One')).toBeInTheDocument();
+    expect(document.getElementById('preference-player-pronouns-select')).not.toBeDisabled();
+  });
+
   it('shows the traveler row when allowTravelers is true', () => {
     render(<WhaleBucketPlayerPreferenceModal {...defaultProps} allowTravelers={true} />);
     expect(screen.getByText('Traveler')).toBeInTheDocument();

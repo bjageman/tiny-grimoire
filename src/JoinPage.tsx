@@ -17,6 +17,7 @@ import PreferencesScreen from './components/join/PreferencesScreen';
 import RevealedScreen from './components/join/RevealedScreen';
 import WaitingScreen from './components/join/WaitingScreen';
 import JoinForm from './components/join/JoinForm';
+import MyIdentityFields from './components/join/MyIdentityFields';
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -348,7 +349,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setState('waiting');
   };
 
+  // A rename re-announces through the player_join effect below, which already watches `name`.
+  const handleChangeName = (next: string) => {
+    setName(next);
+    localStorage.setItem('botc-joined-name', next);
+    sessionStorage.setItem('joined-name', next);
+  };
+
   const handleLeaveGame = () => {
+    // Tell the storyteller this seat is no longer being driven from a player's device.
+    sendMessage({ type: 'player_leave', id: playerId });
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
     setCode('');
@@ -450,6 +460,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             name={name}
             pronouns={pronouns}
             onSelectPronoun={(next) => { setPronouns(next); localStorage.setItem('joined-pronouns', next); sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined }); }}
+            onChangeName={handleChangeName}
             scriptName={scriptName}
             gameType={gameType}
             onShowQr={() => setShowRoomCodeModal(true)}
@@ -484,6 +495,20 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               >
                 <span>Show Token</span>
               </button>
+            </div>
+
+            {/* Your own name and pronouns stay editable for the whole game */}
+            <div className={cn(
+              "border rounded-lg p-4 shadow-sm",
+              isLight ? "bg-white border-gray-200" : "bg-gray-900/40 border-gray-800"
+            )}>
+              <MyIdentityFields
+                isLight={isLight}
+                name={name}
+                pronouns={pronouns}
+                onChangeName={handleChangeName}
+                onSelectPronoun={(next) => { setPronouns(next); localStorage.setItem('joined-pronouns', next); sendMessage({ type: 'player_join', name, id: playerId, pronouns: next || undefined }); }}
+              />
             </div>
 
             {/* Circular Grimoire Board (without role tokens) */}

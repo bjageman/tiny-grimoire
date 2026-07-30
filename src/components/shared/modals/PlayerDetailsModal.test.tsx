@@ -74,6 +74,22 @@ describe('PlayerDetailsModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the name as text and locks pronouns for a player who joined from their own device', () => {
+    const onUpdatePronouns = vi.fn();
+    render(
+      <PlayerDetailsModal {...defaultProps} isRemotePlayer={true} onUpdatePronouns={onUpdatePronouns} />
+    );
+
+    expect(screen.queryByDisplayValue('Alice')).toBeNull();
+    expect(document.getElementById('detail-player-name-static')).toHaveTextContent('Alice');
+
+    const pronouns = screen.getByLabelText('Pronouns');
+    expect(pronouns).toBeDisabled();
+    fireEvent.click(pronouns);
+    expect(screen.queryByText('They/Them')).toBeNull();
+    expect(onUpdatePronouns).not.toHaveBeenCalled();
+  });
+
   it('buffers name edits locally and flushes via onUpdateName on unmount', () => {
     render(<PlayerDetailsModal {...defaultProps} />);
     fireEvent.change(screen.getByDisplayValue('Alice'), { target: { value: 'Alicia' } });

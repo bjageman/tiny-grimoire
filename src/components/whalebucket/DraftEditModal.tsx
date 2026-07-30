@@ -21,6 +21,8 @@ interface WhaleBucketDraftEditModalProps {
   togglePlayerTheLunatic: (id: string) => void;
   togglePlayerTheLilMonsta: (id: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
+  /** True when this player joined from their own device, so their name and pronouns are theirs to set. */
+  isRemotePlayer?: boolean;
   isLightModeActive: boolean;
   onClose: () => void;
 }
@@ -37,6 +39,7 @@ export default function WhaleBucketDraftEditModal({
   togglePlayerTheLunatic,
   togglePlayerTheLilMonsta,
   onUpdatePronouns,
+  isRemotePlayer = false,
   isLightModeActive,
   onClose,
 }: WhaleBucketDraftEditModalProps) {
@@ -189,6 +192,8 @@ export default function WhaleBucketDraftEditModal({
               isLightModeActive={isLightModeActive}
               open={pronounsOpen}
               onOpenChange={setPronounsOpen}
+              disabled={isRemotePlayer}
+              disabledTitle="This player set their own pronouns from their device."
             />
           </div>
         )}

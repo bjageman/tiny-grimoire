@@ -26,12 +26,16 @@ interface SetupPlayerEditModalProps {
   togglePlayerTheLunatic: (id: string) => void;
   togglePlayerTheLilMonsta: (id: string) => void;
   onUpdatePronouns?: (id: string, pronouns: string) => void;
+  /** True when this player joined from their own device, so their name and pronouns are theirs to set. */
+  isRemotePlayer?: boolean;
   selectedCharacterIds?: Set<string>;
   bagOnly?: boolean;
   setBagOnly?: (value: boolean) => void;
   isSecondary?: boolean;
   onClose: () => void;
 }
+
+const REMOTE_PLAYER_TITLE = 'This player set their own name and pronouns from their device.';
 
 const TEAM_ORDER: Record<string, number> = {
   townsfolk: 1,
@@ -57,6 +61,7 @@ export default function SetupPlayerEditModal({
   togglePlayerTheLunatic,
   togglePlayerTheLilMonsta,
   onUpdatePronouns,
+  isRemotePlayer = false,
   selectedCharacterIds,
   bagOnly,
   setBagOnly,
@@ -173,20 +178,32 @@ export default function SetupPlayerEditModal({
               isLightModeActive={isLightModeActive}
               open={pronounsOpen}
               onOpenChange={setPronounsOpen}
+              disabled={isRemotePlayer}
+              disabledTitle={REMOTE_PLAYER_TITLE}
             />
           )}
-          <input
-            id="edit-player-name-input"
-            type="text"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-          />
+          {isRemotePlayer ? (
+            <p
+              id="edit-player-name-static"
+              title={REMOTE_PLAYER_TITLE}
+              className="flex-1 min-w-0 px-1 py-2 text-white text-sm font-semibold break-words"
+            >
+              {player.name}
+            </p>
+          ) : (
+            <input
+              id="edit-player-name-input"
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+              autoFocus={!isMobile}
+              autoCapitalize="words"
+              placeholder="Player name"
+              className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+            />
+          )}
         </div>
 
         {(canFilterByBag || canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (

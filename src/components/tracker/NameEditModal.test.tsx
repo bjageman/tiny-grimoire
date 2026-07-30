@@ -28,6 +28,37 @@ describe('PlayerTrackerNameEditModal', () => {
     expect(screen.getByDisplayValue('Alice')).toBeInTheDocument();
   });
 
+  it('does not grab focus on mobile when the modal opens', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+
+    render(<PlayerTrackerNameEditModal {...defaultProps} />);
+    const input = screen.getByDisplayValue('Alice') as HTMLInputElement;
+
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('selects the whole name once the field is tapped on mobile', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+
+    render(<PlayerTrackerNameEditModal {...defaultProps} />);
+    const input = screen.getByDisplayValue('Alice') as HTMLInputElement;
+
+    input.focus();
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe('Alice'.length);
+  });
+
+  it('selects the name on desktop, where type-to-replace is the point', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (X11; Linux x86_64)');
+
+    render(<PlayerTrackerNameEditModal {...defaultProps} />);
+    const input = screen.getByDisplayValue('Alice') as HTMLInputElement;
+
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe('Alice'.length);
+  });
+
   it('buffers name edits locally and flushes via updatePlayerName on unmount', () => {
     render(<PlayerTrackerNameEditModal {...defaultProps} />);
     fireEvent.change(screen.getByDisplayValue('Alice'), { target: { value: 'Alicia' } });

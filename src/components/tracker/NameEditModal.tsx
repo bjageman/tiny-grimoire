@@ -99,7 +99,7 @@ export default function PlayerTrackerNameEditModal({
             onChange={(e) => setEditedName(e.target.value)}
             onFocus={(e) => e.target.select()}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus
+            autoFocus={!isMobile}
             autoCapitalize="words"
             placeholder="Player name"
             className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"

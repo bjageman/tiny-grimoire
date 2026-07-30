@@ -16,7 +16,6 @@ import DemonBluffs from './DemonBluffs';
 import BaseDistributionCard from './BaseDistributionCard';
 import AutoResizeTextarea from '../ui/AutoResizeTextarea';
 import DialogModal from '../modals/DialogModal';
-import ToggleSwitch from '../ui/ToggleSwitch';
 import RecapImageExport from '../recap/RecapImageExport';
 import { buildDiscordPost } from '../../../utils/discordRecap';
 import { copyText } from '../../../utils/clipboard';
@@ -73,10 +72,9 @@ interface Props {
   onRotationChange?: (offset: number) => void;
   notes?: string;
   onNotesChange?: (notes: string) => void;
-  showReminderToggle?: boolean;
-  onToggleReminders?: (enabled: boolean) => void;
   isStoryteller?: boolean;
   alwaysShowNotes?: boolean;
+  fullNightOrder?: boolean;
 }
 
 export default function GamePhase({
@@ -112,10 +110,9 @@ export default function GamePhase({
   onRotationChange,
   notes,
   onNotesChange,
-  showReminderToggle = false,
-  onToggleReminders,
   isStoryteller = false,
   alwaysShowNotes = false,
+  fullNightOrder = false,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -253,7 +250,8 @@ export default function GamePhase({
             onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
             checkedItems={checkedItems}
             onSetCheckedItems={onSetCheckedItems}
-            scriptRoles={customScriptRoles ?? undefined}
+            scriptRoles={customScriptRoles || (rolesData as Role[])}
+            fullNightOrder={fullNightOrder}
           />
         )}
         {onNotesChange && (
@@ -265,20 +263,6 @@ export default function GamePhase({
               placeholder="Write anything here. Deductions, suspicions, reminders..."
               isLightModeActive={isLightModeActive}
             />
-            {showReminderToggle && onToggleReminders && (
-              <label className={cn(
-                "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
-                isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
-              )}>
-                <ToggleSwitch
-                  id="toggle-reminders-checkbox-desktop"
-                  checked={enableReminders}
-                  onChange={onToggleReminders}
-                  isLightModeActive={isLightModeActive}
-                />
-                <span>Turn on Reminder Tokens</span>
-              </label>
-            )}
           </div>
         )}
       </div>
@@ -456,20 +440,6 @@ export default function GamePhase({
           placeholder="Write anything here. Deductions, suspicions, reminders..."
           isLightModeActive={isLightModeActive}
         />
-        {showReminderToggle && onToggleReminders && (
-          <label className={cn(
-            "flex items-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors pt-2",
-            isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
-          )}>
-            <ToggleSwitch
-              id="toggle-reminders-checkbox-mobile"
-              checked={enableReminders}
-              onChange={onToggleReminders}
-              isLightModeActive={isLightModeActive}
-            />
-            <span>Turn on Reminder Tokens</span>
-          </label>
-        )}
       </div>
     )}
     </>

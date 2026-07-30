@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { Search, X, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
@@ -108,18 +109,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   useScrollLock(isOpen);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (settingsOpen) setSettingsOpen(false);
-        else if (selectedRole) setSelectedRole(null);
-        else { onClose(); setSearchTerm(''); }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, selectedRole, settingsOpen, onClose]);
+  // The nested character details modal handles its own Escape, so only the settings popover is layered here.
+  useEscapeKey(() => {
+    if (settingsOpen) setSettingsOpen(false);
+    else { onClose(); setSearchTerm(''); }
+  }, isOpen);
 
   useEffect(() => {
     if (!settingsOpen) return;

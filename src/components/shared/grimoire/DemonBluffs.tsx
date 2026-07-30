@@ -4,6 +4,7 @@ import { Search, X } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import rolesData from '../../../roles.json';
 import officialRoles from '../../../official_roles.json';
@@ -43,6 +44,9 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
   const [showAll, setShowAll] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEscapeKey(() => setPickerSlot(null), pickerSlot !== null);
+  useEscapeKey(() => setOverlayOpen(false), overlayOpen);
 
   // Good roles not assigned to any player — candidates for demon bluffs.
   const assignedRoleIds = useMemo(() => new Set(

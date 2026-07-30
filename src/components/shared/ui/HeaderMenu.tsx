@@ -1,31 +1,77 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Menu, Sun, Moon, RotateCcw } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import ToggleSwitch from './ToggleSwitch';
 
 interface HeaderMenuProps {
-  theme?: 'light' | 'dark';
+  theme: 'light' | 'dark';
   onToggleTheme?: () => void;
   onResetGame?: () => void;
-  isLightModeActive?: boolean;
   isSecondary?: boolean;
   alwaysShowNotes?: boolean;
   onToggleAlwaysShowNotes?: (alwaysShow: boolean) => void;
+  fullNightOrder?: boolean;
+  onToggleFullNightOrder?: (fullOrder: boolean) => void;
+  allReminders?: boolean;
+  onToggleAllReminders?: (allReminders: boolean) => void;
+  showReminders?: boolean;
+  onToggleShowReminders?: (showReminders: boolean) => void;
+}
+
+interface MenuToggleProps {
+  id: string;
+  toggleId: string;
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  isLightModeActive: boolean;
+  icon?: ReactNode;
+}
+
+// One labelled row in the dropdown wrapping a ToggleSwitch, so clicking anywhere on the row toggles.
+function MenuToggle({ id, toggleId, label, checked, onChange, isLightModeActive, icon }: MenuToggleProps) {
+  return (
+    <label
+      id={id}
+      className={cn(
+        "w-full flex items-center justify-between px-3 py-2 text-sm",
+        "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
+        isLightModeActive
+          ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
+          : "text-gray-200 hover:bg-slate-800 hover:text-white"
+      )}
+    >
+      <span className="truncate pr-2">{label}</span>
+      <ToggleSwitch
+        id={toggleId}
+        checked={checked}
+        onChange={onChange}
+        isLightModeActive={isLightModeActive}
+        icon={icon}
+      />
+    </label>
+  );
 }
 
 export default function HeaderMenu({
   theme,
   onToggleTheme,
   onResetGame,
-  isLightModeActive: isLightProp,
   isSecondary = false,
   alwaysShowNotes,
   onToggleAlwaysShowNotes,
+  fullNightOrder,
+  onToggleFullNightOrder,
+  allReminders,
+  onToggleAllReminders,
+  showReminders,
+  onToggleShowReminders,
 }: HeaderMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isLightModeActive = theme ? theme === 'light' : !!isLightProp;
+  const isLightModeActive = theme === 'light';
+  const hasToggles = !!(onToggleTheme || onToggleAlwaysShowNotes || onToggleFullNightOrder || onToggleAllReminders || onToggleShowReminders);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,9 +79,14 @@ export default function HeaderMenu({
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -52,6 +103,9 @@ export default function HeaderMenu({
         )}
         title="Menu"
         aria-label="Menu"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-controls="header-menu-dropdown"
       >
         <Menu size={20} />
       </button>
@@ -67,55 +121,68 @@ export default function HeaderMenu({
           )}
         >
           {onToggleTheme && (
-            <label
+            <MenuToggle
               id="theme-toggle-label"
-              className={cn(
-                "w-full flex items-center justify-between px-3 py-2 text-sm",
-                "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
-                isLightModeActive
-                  ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
-                  : "text-gray-200 hover:bg-slate-800 hover:text-white"
-              )}
-            >
-              <span className="truncate pr-2">Theme:</span>
-              <ToggleSwitch
-                id="theme-toggle-button"
-                checked={isLightModeActive}
-                onChange={() => onToggleTheme()}
-                isLightModeActive={isLightModeActive}
-                icon={
-                  isLightModeActive ? (
-                    <Sun size={11} className="text-amber-500 fill-amber-500" />
-                  ) : (
-                    <Moon size={11} className="text-indigo-600 fill-indigo-600" />
-                  )
-                }
-              />
-            </label>
+              toggleId="theme-toggle-button"
+              label="Theme:"
+              checked={isLightModeActive}
+              onChange={() => onToggleTheme()}
+              isLightModeActive={isLightModeActive}
+              icon={
+                isLightModeActive ? (
+                  <Sun size={11} className="text-amber-500 fill-amber-500" />
+                ) : (
+                  <Moon size={11} className="text-indigo-600 fill-indigo-600" />
+                )
+              }
+            />
           )}
 
           {onToggleAlwaysShowNotes && (
-            <label
+            <MenuToggle
               id="always-show-notes-toggle"
-              className={cn(
-                "w-full flex items-center justify-between px-3 py-2 text-sm",
-                "font-semibold rounded-md transition-colors select-none cursor-pointer text-left",
-                isLightModeActive
-                  ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
-                  : "text-gray-200 hover:bg-slate-800 hover:text-white"
-              )}
-            >
-              <span className="truncate pr-2">Show Notes</span>
-              <ToggleSwitch
-                id="always-show-notes-checkbox"
-                checked={!!alwaysShowNotes}
-                onChange={(checked) => onToggleAlwaysShowNotes(checked)}
-                isLightModeActive={isLightModeActive}
-              />
-            </label>
+              toggleId="always-show-notes-checkbox"
+              label="Show Labels"
+              checked={!!alwaysShowNotes}
+              onChange={onToggleAlwaysShowNotes}
+              isLightModeActive={isLightModeActive}
+            />
           )}
 
-          {((onToggleTheme || onToggleAlwaysShowNotes) && onResetGame) && (
+          {onToggleFullNightOrder && (
+            <MenuToggle
+              id="full-night-order-toggle"
+              toggleId="full-night-order-checkbox"
+              label="Full Night Order"
+              checked={!!fullNightOrder}
+              onChange={onToggleFullNightOrder}
+              isLightModeActive={isLightModeActive}
+            />
+          )}
+
+          {onToggleShowReminders && (
+            <MenuToggle
+              id="show-reminders-toggle"
+              toggleId="show-reminders-checkbox"
+              label="Show Reminders"
+              checked={!!showReminders}
+              onChange={onToggleShowReminders}
+              isLightModeActive={isLightModeActive}
+            />
+          )}
+
+          {onToggleAllReminders && (
+            <MenuToggle
+              id="all-reminders-toggle"
+              toggleId="all-reminders-checkbox"
+              label="All Reminders"
+              checked={!!allReminders}
+              onChange={onToggleAllReminders}
+              isLightModeActive={isLightModeActive}
+            />
+          )}
+
+          {hasToggles && onResetGame && (
             <div className={cn("my-1 h-px", isLightModeActive ? "bg-gray-200" : "bg-gray-800")} />
           )}
 

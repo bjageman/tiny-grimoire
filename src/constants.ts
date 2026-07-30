@@ -37,3 +37,6 @@ export function getDistribution(count: number): RoleDistribution {
     traveler: 0,
   };
 }
+
+// Player labels render as a small tooltip over the token, so cap the length both on input and on display.
+export const PLAYER_LABEL_MAX_LENGTH = 40;

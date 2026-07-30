@@ -78,6 +78,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
+  const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
+  const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDraftPlayerId, setActiveDraftPlayerId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -415,8 +417,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       checkedItems,
       rotationOffset,
       alwaysShowNotes,
+      fullNightOrder,
+      allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -800,12 +804,16 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           )}
         </div>
       }
-      extraControls={
+      headerControls={
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
           alwaysShowNotes={alwaysShowNotes}
           onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          onToggleFullNightOrder={setFullNightOrder}
+          allReminders={allReminders}
+          onToggleAllReminders={setAllReminders}
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />
@@ -970,6 +978,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
           alwaysShowNotes={alwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          includeAllScriptReminders={allReminders}
         />
       )}
 

@@ -15,6 +15,7 @@ import {
   SEAT_PRONOUN_GLOW,
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
+import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
 import officialRoles from '../../../official_roles.json';
 import ReminderPickerModal from '../modals/ReminderPickerModal';
 import ReminderTokenModal from '../modals/ReminderTokenModal';
@@ -327,7 +328,8 @@ export default function GrimoireBoard({
 
   return (
     <>
-    <div className="w-full flex flex-col items-center">
+    {/* isolate keeps the board's internal z-indexes (seats, the label layer) from competing with portalled modals. */}
+    <div className="w-full flex flex-col items-center isolate">
       {/* Row 1: buttons, in their own fixed-proportion grid so their width never depends on badge content */}
       <div className="w-full px-4 mb-1.5 max-w-[450px] md:max-w-none grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3">
         {onResetTime ? (
@@ -666,16 +668,6 @@ export default function GrimoireBoard({
               })}
 
               <div className="relative flex flex-col items-center">
-                {p.notes && (
-                  <div className={cn(
-                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none z-[200]",
-                    "bg-gray-900/95 text-white text-[9px] font-medium rounded-lg px-2.5 py-1.5 shadow-xl",
-                    "max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap border border-white/10",
-                    alwaysShowNotes ? "visible" : "invisible group-hover:visible"
-                  )}>
-                    {p.notes}
-                  </div>
-                )}
                 <button
                   id={`grimoire-player-${p.id}`}
                   onClick={(e) => {
@@ -855,6 +847,45 @@ export default function GrimoireBoard({
             </div>
           );
         })}
+
+        {/* Labels live in their own layer: each seat sets an inline z-index, so a label nested in one can never rise above another seat. */}
+        {players.some(p => p.notes) && (
+          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 300 }}>
+            {players.map((p, playerIndex) => {
+              if (!p.notes) return null;
+              const angle = evenAngles[seatOf(playerIndex)] ?? 0;
+              const { left: leftPos, top: topPos } = superellipsePosition(angle, dynamicRadiusX, dynamicRadiusY);
+
+              return (
+                <div
+                  key={`label-${p.id}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${leftPos}%`,
+                    top: `${topPos}%`,
+                    transform: 'translate(-50%, -50%)',
+                    transition: seatsReady ? 'left 250ms ease-in-out, top 250ms ease-in-out' : 'none',
+                  }}
+                >
+                  <div className="relative flex flex-col items-center">
+                    <div className={cn(
+                      "absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
+                      "text-[10px] font-semibold rounded-lg px-2.5 py-1.5 shadow-xl border",
+                      "max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap",
+                      "bg-white text-gray-900",
+                      isLightModeActive ? "border-gray-300 shadow-gray-400/50" : "border-gray-700 shadow-black/60",
+                      alwaysShowNotes || fannedPlayerId === p.id ? "visible" : "invisible"
+                    )}>
+                      {p.notes.slice(0, PLAYER_LABEL_MAX_LENGTH)}
+                    </div>
+                    {/* Matches the seat button's box so the label anchors exactly where it used to. */}
+                    <div style={grimoireConfig.btnStyle} aria-hidden />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
     </div>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import type { Role } from '../../../types';
@@ -29,6 +30,7 @@ export default function ReminderPickerModal({
   isLightModeActive,
 }: ReminderPickerModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const [search, setSearch] = useState('');
 
   const options: ReminderOption[] = useMemo(() => activeRoleIds.flatMap((charId) => {

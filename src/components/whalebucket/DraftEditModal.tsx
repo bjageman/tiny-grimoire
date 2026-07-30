@@ -1,5 +1,6 @@
 import { Search } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
@@ -39,6 +40,7 @@ export default function WhaleBucketDraftEditModal({
   onClose,
 }: WhaleBucketDraftEditModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const isMobile = useIsMobile();
 
   const index = players.findIndex(p => p.id === activeDraftPlayerId);

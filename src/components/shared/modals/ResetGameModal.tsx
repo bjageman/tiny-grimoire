@@ -1,4 +1,5 @@
 import { cn } from '../../../utils/cn';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 
 interface ResetGameModalProps {
   remotePlayerCount: number;
@@ -15,6 +16,8 @@ export default function ResetGameModal({
   onCancel,
   isLightModeActive = false,
 }: ResetGameModalProps) {
+  useEscapeKey(onCancel);
+
   return (
     <div
       className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"

@@ -104,6 +104,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
+  const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
+  const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => {
     const loadedSelectedIds = readPersistedField<string[] | null>(STORAGE_KEY, 'selectedCharacterIds', null);
     if (loadedSelectedIds) {
@@ -479,8 +481,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       selectedCharacterIds: [...selectedCharacterIds],
       rotationOffset,
       alwaysShowNotes,
+      fullNightOrder,
+      allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset, alwaysShowNotes]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -710,12 +714,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           )}
         </div>
       }
-      extraControls={
+      headerControls={
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
           alwaysShowNotes={alwaysShowNotes}
           onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          onToggleFullNightOrder={setFullNightOrder}
+          allReminders={allReminders}
+          onToggleAllReminders={setAllReminders}
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />
@@ -902,6 +910,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
           alwaysShowNotes={alwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          includeAllScriptReminders={allReminders}
         />
       )}
 

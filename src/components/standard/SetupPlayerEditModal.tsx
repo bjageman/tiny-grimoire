@@ -1,4 +1,5 @@
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { Search, Trash2 } from 'lucide-react';
@@ -63,6 +64,7 @@ export default function SetupPlayerEditModal({
   isSecondary,
 }: SetupPlayerEditModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const isMobile = useIsMobile();
 
   const player = players.find(p => p.id === activePlayerId);

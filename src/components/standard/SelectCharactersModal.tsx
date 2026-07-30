@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { X, Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { computeBalance } from '../../utils/computeBalance';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
@@ -30,12 +31,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
 
   useScrollLock(isOpen);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+  useEscapeKey(onClose, isOpen);
 
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
     return localStorage.getItem('botc-sort-alphabetically') === 'true';

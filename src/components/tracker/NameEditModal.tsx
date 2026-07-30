@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
@@ -23,6 +24,7 @@ export default function PlayerTrackerNameEditModal({
   onClose,
 }: PlayerTrackerNameEditModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const isMobile = useIsMobile();
 
   const player = players.find(p => p.id === activePlayerId);

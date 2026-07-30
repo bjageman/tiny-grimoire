@@ -1,11 +1,13 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
 import { ChevronLeft, ChevronRight, X, Search, VenusAndMars, Venus, Mars, NonBinary, MessageCircleQuestionMark } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
+import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
 import rolesData from '../../../roles.json';
 import officialRoles from '../../../official_roles.json';
 import DialogModal from './DialogModal';
@@ -108,6 +110,12 @@ export default function PlayerDetailsModal({
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [pronounsOpen, setPronounsOpen] = useState(false);
   const pronounsRef = useRef<HTMLDivElement>(null);
+
+  // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
+  useEscapeKey(() => {
+    if (pronounsOpen) setPronounsOpen(false);
+    else onClose();
+  });
 
   useEffect(() => {
     if (!pronounsOpen) return;
@@ -316,7 +324,7 @@ export default function PlayerDetailsModal({
                     <input
                       type="text"
                       placeholder="Label"
-                      maxLength={40}
+                      maxLength={PLAYER_LABEL_MAX_LENGTH}
                       value={editedNotes}
                       onFocus={(e) => { originalNotes.current = e.target.value; }}
                       onChange={(e) => setEditedNotes(e.target.value)}

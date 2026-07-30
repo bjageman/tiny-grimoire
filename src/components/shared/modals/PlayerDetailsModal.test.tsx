@@ -250,14 +250,15 @@ describe('PlayerDetailsModal', () => {
         isSearchingRole={true}
         allRoles={testRoles}
         filteredModalRoles={testRoles}
+        onUpdatePronouns={vi.fn()}
       />
     );
 
     // Cancel button should not be present
     expect(container.querySelector('#detail-cancel-role-search-button')).toBeNull();
 
-    // Pronouns dropdown should not be present
-    expect(container.querySelector('#detail-player-pronouns-select')).toBeNull();
+    // Pronouns dropdown should be present in tracker mode too
+    expect(container.querySelector('#detail-player-pronouns-select')).not.toBeNull();
 
     // Sort toggle checkbox should be present
     const toggle = container.querySelector('#tracker-sort-alphabetically-checkbox');

@@ -249,7 +249,7 @@ export default function PlayerDetailsModal({
                 )
               ) : (
                 <div className="flex items-center gap-2 mt-1.5 -mb-2">
-                  {!allowMultipleRoles && onUpdatePronouns && (
+                  {onUpdatePronouns && (
                     <PronounSelect
                       id="detail-player-pronouns-select"
                       pronouns={p.pronouns}

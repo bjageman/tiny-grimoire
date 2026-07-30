@@ -238,7 +238,7 @@ describe('PlayerDetailsModal', () => {
     expect(screen.queryByText('Set Pronouns')).toBeNull();
   });
 
-  it('tracker details modal replaces search cancel button with sort toggle and sorts roles when clicked', () => {
+  it('tracker details modal replaces search cancel button with a settings dropdown and sorts roles from it', () => {
     const testRoles: Role[] = [
       { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
@@ -260,7 +260,13 @@ describe('PlayerDetailsModal', () => {
     // Pronouns dropdown should be present in tracker mode too
     expect(container.querySelector('#detail-player-pronouns-select')).not.toBeNull();
 
-    // Sort toggle checkbox should be present
+    // Settings dropdown should be present instead of an inline sort toggle
+    const settingsButton = container.querySelector('#detail-search-settings-button');
+    expect(settingsButton).not.toBeNull();
+    expect(container.querySelector('#tracker-sort-alphabetically-checkbox')).toBeNull();
+
+    // Open the settings dropdown to reveal the sort toggle
+    fireEvent.click(settingsButton!);
     const toggle = container.querySelector('#tracker-sort-alphabetically-checkbox');
     expect(toggle).not.toBeNull();
 
@@ -276,5 +282,30 @@ describe('PlayerDetailsModal', () => {
     roleLabels = container.querySelectorAll('button[id^="detail-role-option-"]');
     expect(roleLabels[0].textContent).toContain('Chef');
     expect(roleLabels[1].textContent).toContain('Washerwoman');
+  });
+
+  it('tracker settings dropdown toggle reveals off-script travelers in the role search', () => {
+    const testRoles: Role[] = [
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+    ];
+    const { container } = render(
+      <PlayerDetailsModal
+        {...defaultProps}
+        allowMultipleRoles={true}
+        isSearchingRole={true}
+        allRoles={testRoles}
+        filteredModalRoles={testRoles}
+        onUpdatePronouns={vi.fn()}
+      />
+    );
+
+    // Beggar (a traveler not on this script) should not appear by default
+    expect(container.querySelector('#detail-role-option-beggar')).toBeNull();
+
+    fireEvent.click(container.querySelector('#detail-search-settings-button')!);
+    fireEvent.click(container.querySelector('#tracker-show-all-travelers-checkbox')!);
+
+    expect(container.querySelector('#detail-role-option-beggar')).not.toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
+import { withInPlayTravelers } from './utils/scriptUtils';
 
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import GamePhase from './components/shared/grimoire/GamePhase';
@@ -69,6 +70,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
     return roles;
   }, [currentScriptRoles]);
+
+  // Script roles plus any traveler a player is already assigned (e.g. from a synced Storyteller game)
+  // so the details-modal picker never hides a currently-equipped character behind the "all travelers" toggle.
+  const detailsModalRoles = useMemo(
+    () => withInPlayTravelers(currentScriptRoles, players),
+    [currentScriptRoles, players]
+  );
 
   const [gameCode, setGameCode] = useState<string | null>(() =>
     readPersistedField<string | null>(STORAGE_KEY, 'code', null) || sessionStorage.getItem('joined-code') || null
@@ -518,7 +526,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   // Details Modal helpers
   const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
-    usePlayerDetailsNav(players, selectedPlayerId, selectionRoles, modalRoleSearch, true);
+    usePlayerDetailsNav(players, selectedPlayerId, detailsModalRoles, modalRoleSearch, true);
 
   return (
     <>
@@ -690,7 +698,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           players={players}
           roleObj={modalRoleObj}
           filteredModalRoles={filteredModalRoles}
-          allRoles={selectionRoles}
+          allRoles={detailsModalRoles}
           isSearchingRole={isSearchingRole}
           modalRoleSearch={modalRoleSearch}
           isLightModeActive={isLightModeActive}

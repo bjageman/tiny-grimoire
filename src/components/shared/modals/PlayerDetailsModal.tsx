@@ -1,9 +1,9 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
@@ -16,6 +16,8 @@ import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import CharacterToken from '../tokens/CharacterToken';
 import { useDialog } from '../../../hooks/useDialog';
+
+const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
 
 interface Player {
   id: string;
@@ -102,15 +104,32 @@ export default function PlayerDetailsModal({
   const isMobile = useIsMobile();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [pronounsOpen, setPronounsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
-  // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
+  // Close the settings/pronoun dropdowns first, so Escape doesn't discard the whole modal out from under them.
   useEscapeKey(() => {
-    if (pronounsOpen) setPronounsOpen(false);
+    if (settingsOpen) setSettingsOpen(false);
+    else if (pronounsOpen) setPronounsOpen(false);
     else onClose();
   });
 
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
     return localStorage.getItem('botc-sort-alphabetically') === 'true';
+  });
+  const [showAllTravelers, setShowAllTravelers] = useState(() => {
+    return localStorage.getItem('botc-script-show-all-travelers') === 'true';
   });
 
   const handleToggleSort = (val: boolean) => {
@@ -118,8 +137,23 @@ export default function PlayerDetailsModal({
     localStorage.setItem('botc-sort-alphabetically', String(val));
   };
 
+  const handleToggleAllTravelers = (val: boolean) => {
+    setShowAllTravelers(val);
+    localStorage.setItem('botc-script-show-all-travelers', String(val));
+  };
+
+  const rolesForList = useMemo(() => {
+    if (!allowMultipleRoles || !showAllTravelers) return filteredModalRoles;
+    const term = modalRoleSearch.toLowerCase();
+    const extraTravelers = allTravelers.filter(t =>
+      !filteredModalRoles.some(r => r.id === t.id) &&
+      (t.name.toLowerCase().includes(term) || t.team.toLowerCase().includes(term))
+    );
+    return [...filteredModalRoles, ...extraTravelers];
+  }, [filteredModalRoles, allowMultipleRoles, showAllTravelers, modalRoleSearch]);
+
   const displayRolesList = useMemo(() => {
-    return [...filteredModalRoles].sort((a, b) => {
+    return [...rolesForList].sort((a, b) => {
       // 1. Currently assigned role(s) float to the top
       const isCurrentA = allowMultipleRoles ? (p.roleIds ?? []).includes(a.id) : a.id === p.roleId;
       const isCurrentB = allowMultipleRoles ? (p.roleIds ?? []).includes(b.id) : b.id === p.roleId;
@@ -144,7 +178,7 @@ export default function PlayerDetailsModal({
         return a.name.localeCompare(b.name);
       }
     });
-  }, [filteredModalRoles, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
+  }, [rolesForList, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();
@@ -431,17 +465,56 @@ export default function PlayerDetailsModal({
                   />
                 </div>
                 {allowMultipleRoles ? (
-                  <label className="flex flex-col sm:flex-row-reverse items-center gap-1 sm:gap-2 select-none cursor-pointer shrink-0">
-                    <span className={cn("text-[10px] font-semibold leading-none", isLightModeActive ? "text-gray-600" : "text-gray-400")}>
-                      Sort
-                    </span>
-                    <ToggleSwitch
-                      id="tracker-sort-alphabetically-checkbox"
-                      checked={sortAlphabetically}
-                      onChange={handleToggleSort}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
+                  <div className="relative shrink-0" ref={settingsRef}>
+                    <button
+                      id="detail-search-settings-button"
+                      type="button"
+                      onClick={() => setSettingsOpen(o => !o)}
+                      aria-label="Search settings"
+                      aria-expanded={settingsOpen}
+                      className={cn(
+                        'p-2 rounded-lg border transition-colors',
+                        settingsOpen
+                          ? 'border-clocktower-blood text-clocktower-blood'
+                          : isLightModeActive
+                            ? 'border-gray-300 text-gray-600 hover:text-gray-900 hover:border-gray-400'
+                            : 'border-gray-700 text-gray-400 hover:text-gray-100 hover:border-gray-600'
+                      )}
+                    >
+                      <Settings size={16} />
+                    </button>
+                    {settingsOpen && (
+                      <div
+                        className={cn(
+                          'absolute right-0 top-full mt-2 z-10 w-44 rounded-lg border shadow-xl p-2 space-y-1',
+                          isLightModeActive ? 'bg-[#fdfaf2] border-amber-900/15' : 'bg-gray-900 border-gray-800'
+                        )}
+                      >
+                        <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                          <span className={cn('text-xs font-semibold', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
+                            Sort A–Z
+                          </span>
+                          <ToggleSwitch
+                            id="tracker-sort-alphabetically-checkbox"
+                            checked={sortAlphabetically}
+                            onChange={handleToggleSort}
+                            isLightModeActive={isLightModeActive}
+                          />
+                        </label>
+                        <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                          <span className={cn('text-xs font-semibold', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
+                            Travelers
+                          </span>
+                          <ToggleSwitch
+                            id="tracker-show-all-travelers-checkbox"
+                            checked={showAllTravelers}
+                            onChange={handleToggleAllTravelers}
+                            isLightModeActive={isLightModeActive}
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <button
                     id="detail-cancel-role-search-button"

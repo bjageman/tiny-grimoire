@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import rolesData from '../../official_roles.json';
+import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketPlayerPreferenceModalProps {
   activePlayerId: string;
@@ -25,7 +26,6 @@ interface WhaleBucketPlayerPreferenceModalProps {
   onClose: () => void;
 }
 
-const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
 
 const TEAM_LABELS: Record<Role['team'], string> = {
   townsfolk: 'Townsfolk',
@@ -59,11 +59,17 @@ export default function WhaleBucketPlayerPreferenceModal({
   onClose,
 }: WhaleBucketPlayerPreferenceModalProps) {
   useScrollLock();
-  useEscapeKey(onClose);
   const isMobile = useIsMobile();
 
   const [pickingTeam, setPickingTeam] = useState<Role['team'] | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pronounsOpen, setPronounsOpen] = useState(false);
+
+  // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
+  useEscapeKey(() => {
+    if (pronounsOpen) setPronounsOpen(false);
+    else onClose();
+  });
 
   const player = players.find(p => p.id === activePlayerId);
 
@@ -208,50 +214,55 @@ export default function WhaleBucketPlayerPreferenceModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center">
-          <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
-            Edit Player
-          </h3>
-          <button id="close-preference-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              id="remove-preference-player-button"
+              type="button"
+              disabled={!!isSecondary}
+              onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
+              className={cn(
+                "shrink-0 p-1.5 rounded border border-gray-800 transition-colors",
+                isSecondary
+                  ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
+                  : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+              )}
+              title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
+            >
+              <Trash2 size={16} />
+            </button>
+            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
+              Edit Player
+            </h3>
+          </div>
+          <button id="close-preference-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
             Close
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          {(() => {
-            const isSecondaryDevice = !!isSecondary;
-            return (
-              <>
-                <button
-                  id="remove-preference-player-button"
-                  type="button"
-                  disabled={isSecondaryDevice}
-                  onClick={() => { if (!isSecondaryDevice) { removePlayer(player.id); onClose(); } }}
-                  className={cn(
-                    "shrink-0 p-2 rounded border border-gray-800 transition-colors",
-                    isSecondaryDevice 
-                      ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40" 
-                      : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
-                  )}
-                  title={isSecondaryDevice ? "This action is disabled on secondary devices." : "Remove player"}
-                >
-                  <Trash2 size={16} />
-                </button>
-                <input
-                  id="edit-preference-player-name-input"
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-                  autoFocus={!isMobile}
-                  autoCapitalize="words"
-                  placeholder="Player name"
-                  className="flex-1 min-w-0 bg-gray-955 border border-gray-855 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
-                />
-              </>
-            );
-          })()}
+          {onUpdatePronouns && (
+            <PronounSelect
+              id="preference-player-pronouns-select"
+              pronouns={player.pronouns}
+              onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
+              isLightModeActive={isLightModeActive}
+              open={pronounsOpen}
+              onOpenChange={setPronounsOpen}
+            />
+          )}
+          <input
+            id="edit-preference-player-name-input"
+            type="text"
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
+            autoFocus={!isMobile}
+            autoCapitalize="words"
+            placeholder="Player name"
+            className="flex-1 min-w-0 bg-gray-955 border border-gray-855 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+          />
           <button
             id="auto-fill-preferences-button"
             type="button"
@@ -262,27 +273,6 @@ export default function WhaleBucketPlayerPreferenceModal({
             <Shuffle size={16} />
           </button>
         </div>
-
-        {onUpdatePronouns && (
-          <select
-            id="setup-player-pronouns-select"
-            value={player.pronouns || ''}
-            onChange={(e) => onUpdatePronouns(player.id, e.target.value)}
-            className={cn(
-              'rounded px-2 py-1.5 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer self-start',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-gray-600'
-                : 'bg-gray-955 border-gray-800 text-gray-400'
-            )}
-          >
-            <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
-            {PRONOUN_OPTIONS.map(option => (
-              <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                {option}
-              </option>
-            ))}
-          </select>
-        )}
 
         <div className="overflow-y-auto overscroll-contain flex-1 space-y-2">
           {visibleTeams.map(team => {

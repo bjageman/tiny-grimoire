@@ -1,13 +1,14 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search, VenusAndMars, Venus, Mars, NonBinary, MessageCircleQuestionMark } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
+import PronounSelect from '../ui/PronounSelect';
 import rolesData from '../../../roles.json';
 import officialRoles from '../../../official_roles.json';
 import DialogModal from './DialogModal';
@@ -64,14 +65,6 @@ interface PlayerDetailsModalProps {
   allRoles?: Role[];
 }
 
-const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
-const PRONOUN_ICON: Record<string, typeof VenusAndMars> = {
-  'He/Him': Mars,
-  'She/Her': Venus,
-  'They/Them': NonBinary,
-  'Ask Me': MessageCircleQuestionMark,
-};
-
 export default function PlayerDetailsModal({
   player: p,
   players,
@@ -109,7 +102,6 @@ export default function PlayerDetailsModal({
   const isMobile = useIsMobile();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [pronounsOpen, setPronounsOpen] = useState(false);
-  const pronounsRef = useRef<HTMLDivElement>(null);
 
   // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
   useEscapeKey(() => {
@@ -117,14 +109,6 @@ export default function PlayerDetailsModal({
     else onClose();
   });
 
-  useEffect(() => {
-    if (!pronounsOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (pronounsRef.current && !pronounsRef.current.contains(e.target as Node)) setPronounsOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [pronounsOpen]);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
     return localStorage.getItem('botc-sort-alphabetically') === 'true';
   });
@@ -265,60 +249,15 @@ export default function PlayerDetailsModal({
                 )
               ) : (
                 <div className="flex items-center gap-2 mt-1.5 -mb-2">
-                  {!allowMultipleRoles && onUpdatePronouns && (
-                    <div className="relative shrink-0 z-30" ref={pronounsRef}>
-                      <button
-                        id="detail-player-pronouns-select"
-                        type="button"
-                        onClick={() => setPronounsOpen(o => !o)}
-                        aria-expanded={pronounsOpen}
-                        aria-label="Pronouns"
-                        title={p.pronouns || 'Pronouns'}
-                        className={cn(
-                          'flex items-center justify-center w-9 h-9 rounded-full text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-95 ring-2 ring-white/30',
-                          pronounsOpen ? 'bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
-                        )}
-                      >
-                        {(() => {
-                          const PronounIcon = (p.pronouns && PRONOUN_ICON[p.pronouns]) || VenusAndMars;
-                          return <PronounIcon size={18} />;
-                        })()}
-                      </button>
-                      {pronounsOpen && (
-                        <div className={cn(
-                          'absolute left-0 top-full mt-1.5 z-20 w-40 rounded-lg border shadow-xl p-1.5 space-y-0.5',
-                          isLightModeActive ? 'bg-white border-gray-300' : 'bg-gray-950 border-gray-700'
-                        )}>
-                          {PRONOUN_OPTIONS.map(option => (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => { onUpdatePronouns(p.id, option); setPronounsOpen(false); }}
-                              className={cn(
-                                'block w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors hover:bg-gray-500/10',
-                                p.pronouns === option
-                                  ? 'text-clocktower-blood'
-                                  : isLightModeActive ? 'text-gray-700' : 'text-gray-300'
-                              )}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                          {p.pronouns && (
-                            <button
-                              type="button"
-                              onClick={() => { onUpdatePronouns(p.id, ''); setPronounsOpen(false); }}
-                              className={cn(
-                                'block w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors hover:bg-gray-500/10 border-t mt-0.5 pt-1.5',
-                                isLightModeActive ? 'text-gray-500 border-gray-200' : 'text-gray-400 border-gray-800'
-                              )}
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                  {onUpdatePronouns && (
+                    <PronounSelect
+                      id="detail-player-pronouns-select"
+                      pronouns={p.pronouns}
+                      onChange={(pronouns) => onUpdatePronouns(p.id, pronouns)}
+                      isLightModeActive={isLightModeActive}
+                      open={pronounsOpen}
+                      onOpenChange={setPronounsOpen}
+                    />
                   )}
                   {onUpdateNotes && (
                     <input

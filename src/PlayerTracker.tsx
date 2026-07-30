@@ -634,6 +634,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           updatePlayerName={updatePlayerName}
           removePlayer={removePlayer}
+          onUpdatePronouns={updatePlayerPronouns}
           onClose={() => setActiveTrackerPlayerId(null)}
         />
       )}

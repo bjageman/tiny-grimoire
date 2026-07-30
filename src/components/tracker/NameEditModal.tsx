@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -5,6 +6,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../types';
+import PronounSelect from '../shared/ui/PronounSelect';
 
 interface PlayerTrackerNameEditModalProps {
   activePlayerId: string;
@@ -12,6 +14,7 @@ interface PlayerTrackerNameEditModalProps {
   isLightModeActive: boolean;
   updatePlayerName: (id: string, name: string) => void;
   removePlayer: (id: string) => void;
+  onUpdatePronouns?: (id: string, pronouns: string) => void;
   onClose: () => void;
 }
 
@@ -21,11 +24,18 @@ export default function PlayerTrackerNameEditModal({
   isLightModeActive,
   updatePlayerName,
   removePlayer,
+  onUpdatePronouns,
   onClose,
 }: PlayerTrackerNameEditModalProps) {
   useScrollLock();
-  useEscapeKey(onClose);
   const isMobile = useIsMobile();
+  const [pronounsOpen, setPronounsOpen] = useState(false);
+
+  // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
+  useEscapeKey(() => {
+    if (pronounsOpen) setPronounsOpen(false);
+    else onClose();
+  });
 
   const player = players.find(p => p.id === activePlayerId);
 
@@ -51,28 +61,37 @@ export default function PlayerTrackerNameEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center">
-          <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
-            Edit Player
-          </h3>
-          <div className="flex items-center gap-3">
-            
-            <button id="close-tracker-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
-              Close
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
               id="remove-tracker-player-button"
               type="button"
               onClick={() => { removePlayer(player.id); onClose(); }}
-              className="shrink-0 p-2 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
+              className="shrink-0 p-1.5 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
               title="Remove player"
             >
               <Trash2 size={16} />
             </button>
+            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
+              Edit Player
+            </h3>
+          </div>
+          <button id="close-tracker-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
+            Close
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {onUpdatePronouns && (
+            <PronounSelect
+              id="tracker-player-pronouns-select"
+              pronouns={player.pronouns}
+              onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
+              isLightModeActive={isLightModeActive}
+              open={pronounsOpen}
+              onOpenChange={setPronounsOpen}
+            />
+          )}
           <input
             id="edit-tracker-player-name-input"
             type="text"

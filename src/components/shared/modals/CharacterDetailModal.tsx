@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Trash2, NotebookPen, Plus } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import CharacterToken from '../tokens/CharacterToken';
 import type { Role } from '../../../types';
 import { readCustomNotePrompts, saveCustomNotePrompts } from '../../../utils/customNotePrompts';
@@ -44,6 +45,13 @@ export default function CharacterDetailModal({
   const noteRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLButtonElement>(null);
   const bannerTextRef = useRef<HTMLSpanElement>(null);
+
+  // Unwind the prompt editor and the note popover before dismissing the modal itself.
+  useEscapeKey(() => {
+    if (addingPrompt) setAddingPrompt(false);
+    else if (noteOpen) setNoteOpen(false);
+    else onClose();
+  });
 
   useEffect(() => {
     if (!noteOpen) return;
@@ -270,7 +278,6 @@ export default function CharacterDetailModal({
               onChange={(e) => setDraftPrompt(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') commitPrompt();
-                if (e.key === 'Escape') setAddingPrompt(false);
               }}
               maxLength={60}
               placeholder="e.g. Choose A Player"

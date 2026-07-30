@@ -315,4 +315,82 @@ describe('NightOrderWidget', () => {
     );
     expect(screen.queryByText('Daydreamer', { selector: '.font-serif' })).toBeNull();
   });
+
+  describe('fullNightOrder', () => {
+    // Poisoner and Fortune Teller both wake on night 1 but nobody here is playing them.
+    const scriptRoles: Role[] = [
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
+    ];
+    const players: Player[] = [
+      { id: 'p1', name: 'Charlie', roleId: 'washerwoman', isDead: false },
+    ];
+
+    it('lists script characters that are not in play, marked Not in play', () => {
+      render(
+        <NightOrderWidget
+          players={players}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+          scriptRoles={scriptRoles}
+          fullNightOrder
+        />
+      );
+
+      expect(screen.getByText('Poisoner', { selector: '.font-serif' })).toBeInTheDocument();
+      expect(screen.getByText('Fortune Teller', { selector: '.font-serif' })).toBeInTheDocument();
+      expect(screen.getByText('Washerwoman', { selector: '.font-serif' })).toBeInTheDocument();
+      expect(screen.getAllByText('Not in play')).toHaveLength(2);
+      // The in-play character still shows its player, and needs no badge.
+      expect(screen.getByText('Charlie')).toBeInTheDocument();
+    });
+
+    it('omits characters outside the script even when on', () => {
+      render(
+        <NightOrderWidget
+          players={players}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+          scriptRoles={scriptRoles}
+          fullNightOrder
+        />
+      );
+      expect(screen.queryByText('Imp', { selector: '.font-serif' })).toBeNull();
+    });
+
+    it('keeps the in-play-only list when off', () => {
+      render(
+        <NightOrderWidget
+          players={players}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+          scriptRoles={scriptRoles}
+        />
+      );
+      expect(screen.queryByText('Poisoner', { selector: '.font-serif' })).toBeNull();
+      expect(screen.getByText('Washerwoman', { selector: '.font-serif' })).toBeInTheDocument();
+    });
+
+    it('includes out-of-play homebrew characters in night order', () => {
+      const homebrew: Role[] = [
+        { id: 'sculptor', name: 'Sculptor', team: 'townsfolk', firstNight: 3, firstNightReminder: 'The Sculptor wakes.' },
+      ];
+      render(
+        <NightOrderWidget
+          players={[]}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+          scriptRoles={homebrew}
+          fullNightOrder
+        />
+      );
+      expect(screen.getByText('Sculptor', { selector: '.font-serif' })).toBeInTheDocument();
+      expect(screen.getByText('The Sculptor wakes.')).toBeInTheDocument();
+    });
+  });
 });

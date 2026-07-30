@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Shuffle, Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
@@ -58,6 +59,7 @@ export default function WhaleBucketPlayerPreferenceModal({
   onClose,
 }: WhaleBucketPlayerPreferenceModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const isMobile = useIsMobile();
 
   const [pickingTeam, setPickingTeam] = useState<Role['team'] | null>(null);

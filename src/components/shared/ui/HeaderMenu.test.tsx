@@ -5,7 +5,7 @@ import HeaderMenu from './HeaderMenu';
 describe('HeaderMenu', () => {
   it('opens dropdown menu on trigger click and calls onResetGame on item click', () => {
     const onResetGame = vi.fn();
-    render(<HeaderMenu onResetGame={onResetGame} />);
+    render(<HeaderMenu theme="dark" onResetGame={onResetGame} />);
 
     const menuButton = screen.getByRole('button', { name: /menu/i });
     expect(menuButton).toBeInTheDocument();
@@ -41,6 +41,7 @@ describe('HeaderMenu', () => {
     const onToggleAlwaysShowNotes = vi.fn();
     render(
       <HeaderMenu
+        theme="dark"
         alwaysShowNotes={false}
         onToggleAlwaysShowNotes={onToggleAlwaysShowNotes}
       />
@@ -58,9 +59,90 @@ describe('HeaderMenu', () => {
     expect(onToggleAlwaysShowNotes).toHaveBeenCalledWith(true);
   });
 
+  it('renders Full Night Order toggle and calls onToggleFullNightOrder when toggled', () => {
+    const onToggleFullNightOrder = vi.fn();
+    render(
+      <HeaderMenu
+        theme="dark"
+        fullNightOrder={false}
+        onToggleFullNightOrder={onToggleFullNightOrder}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.getByText('Full Night Order')).toBeInTheDocument();
+
+    const checkbox = document.getElementById('full-night-order-checkbox') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(onToggleFullNightOrder).toHaveBeenCalledWith(true);
+  });
+
+  it('renders All Reminders toggle and calls onToggleAllReminders when toggled', () => {
+    const onToggleAllReminders = vi.fn();
+    render(
+      <HeaderMenu
+        theme="dark"
+        allReminders={false}
+        onToggleAllReminders={onToggleAllReminders}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.getByText('All Reminders')).toBeInTheDocument();
+
+    const checkbox = document.getElementById('all-reminders-checkbox') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(onToggleAllReminders).toHaveBeenCalledWith(true);
+  });
+
+  it('renders Show Reminders toggle and calls onToggleShowReminders when toggled', () => {
+    const onToggleShowReminders = vi.fn();
+    render(
+      <HeaderMenu
+        theme="dark"
+        showReminders={false}
+        onToggleShowReminders={onToggleShowReminders}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.getByText('Show Reminders')).toBeInTheDocument();
+
+    const checkbox = document.getElementById('show-reminders-checkbox') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(onToggleShowReminders).toHaveBeenCalledWith(true);
+  });
+
+  it('omits toggles whose handlers are not supplied', () => {
+    render(<HeaderMenu theme="dark" onResetGame={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.queryByText('Full Night Order')).not.toBeInTheDocument();
+    expect(screen.queryByText('All Reminders')).not.toBeInTheDocument();
+    expect(screen.queryByText('Show Reminders')).not.toBeInTheDocument();
+    expect(screen.queryByText('Show Labels')).not.toBeInTheDocument();
+    expect(screen.queryByText('Theme:')).not.toBeInTheDocument();
+  });
+
+  it('closes dropdown when Escape is pressed', () => {
+    render(<HeaderMenu theme="dark" onResetGame={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    expect(screen.getByRole('button', { name: /reset game/i })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: /reset game/i })).not.toBeInTheDocument();
+  });
+
   it('disables Reset Game button when isSecondary is true', () => {
     const onResetGame = vi.fn();
-    render(<HeaderMenu onResetGame={onResetGame} isSecondary={true} />);
+    render(<HeaderMenu theme="dark" onResetGame={onResetGame} isSecondary={true} />);
 
     fireEvent.click(screen.getByRole('button', { name: /menu/i }));
 
@@ -72,7 +154,7 @@ describe('HeaderMenu', () => {
     render(
       <div>
         <div data-testid="outside">Outside</div>
-        <HeaderMenu onResetGame={vi.fn()} />
+        <HeaderMenu theme="dark" onResetGame={vi.fn()} />
       </div>
     );
 

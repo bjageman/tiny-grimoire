@@ -15,8 +15,10 @@ interface NightOrderWidgetProps {
   onToggleTimeOfDay?: () => void;
   checkedItems?: Record<string, boolean>;
   onSetCheckedItems?: Dispatch<SetStateAction<Record<string, boolean>>>;
-  /** Active script roles, used to append custom/homebrew characters that carry their own night order. */
+  /** The effective script. Scopes the full night order and supplies custom/homebrew night numbers. */
   scriptRoles?: Role[];
+  /** List every character in the script in night order, not just the ones in play. */
+  fullNightOrder?: boolean;
 }
 
 interface NightOrderItem {
@@ -39,6 +41,7 @@ export default function NightOrderWidget({
   checkedItems: propCheckedItems,
   onSetCheckedItems,
   scriptRoles,
+  fullNightOrder = false,
 }: NightOrderWidgetProps) {
   const [activeTab, setActiveTab] = useState<'first' | 'other'>(
     dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other'
@@ -164,44 +167,72 @@ export default function NightOrderWidget({
       const extra = players.filter(p => p.isTheMarionette && p.roleId !== 'marionette');
       matchedPlayers = [...matchedPlayers, ...extra];
     }
-    if (matchedPlayers.length > 0) {
-      const roleDetails = officialRoles.find(r => r.id === id);
-      const reminder = activeTab === 'first' 
-        ? roleDetails?.firstNightReminder 
-        : roleDetails?.otherNightReminder;
+    // Out of play characters only appear in the full night order, and only if the script contains them.
+    const isInScript = scriptRoles ? scriptRoles.some(r => r.id === id) : true;
+    if (matchedPlayers.length === 0 && !(fullNightOrder && isInScript)) return;
 
-      matchedPlayers.forEach(player => {
-        items.push({
-          type: 'character',
-          id: `${id}-${player.id}`,
-          roleId: id,
-          name: roleDetails?.name || player.roleId || id,
-          description: reminder || roleDetails?.ability || 'Wake player and resolve ability.',
-          team: (roleDetails?.team as 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler') || 'townsfolk',
-          player,
-        });
+    const roleDetails = officialRoles.find(r => r.id === id);
+    const reminder = activeTab === 'first'
+      ? roleDetails?.firstNightReminder
+      : roleDetails?.otherNightReminder;
+    const description = reminder || roleDetails?.ability || 'Wake player and resolve ability.';
+    const team = (roleDetails?.team as 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveler') || 'townsfolk';
+
+    if (matchedPlayers.length === 0) {
+      items.push({
+        type: 'character',
+        id,
+        roleId: id,
+        name: roleDetails?.name || id,
+        description,
+        team,
       });
+      return;
     }
+
+    matchedPlayers.forEach(player => {
+      items.push({
+        type: 'character',
+        id: `${id}-${player.id}`,
+        roleId: id,
+        name: roleDetails?.name || player.roleId || id,
+        description,
+        team,
+        player,
+      });
+    });
   });
 
-  // Append in-play custom characters (not in nightsheet.json) after the official order, sorted by their own night number.
+  // Append custom characters (not in nightsheet.json) after the official order, sorted by their own night number.
   if (scriptRoles && scriptRoles.length > 0) {
-    const customActors: { role: Role; player: Player; order: number }[] = [];
+    const customActors: { role: Role; player?: Player; order: number }[] = [];
+    const actingRoleIds = new Set<string>();
     players.forEach(player => {
       if (!player.roleId || nightList.includes(player.roleId)) return;
       const role = scriptRoles.find(r => r.id === player.roleId);
       if (!role) return;
       const order = activeTab === 'first' ? role.firstNight : role.otherNight;
       if (order === undefined) return;
+      actingRoleIds.add(role.id);
       customActors.push({ role, player, order });
     });
+
+    if (fullNightOrder) {
+      scriptRoles.forEach(role => {
+        if (nightList.includes(role.id) || actingRoleIds.has(role.id)) return;
+        const order = activeTab === 'first' ? role.firstNight : role.otherNight;
+        if (order === undefined) return;
+        customActors.push({ role, order });
+      });
+    }
+
     customActors.sort((a, b) => a.order - b.order);
 
     const customItems: NightOrderItem[] = customActors.map(({ role, player }) => {
       const reminder = activeTab === 'first' ? role.firstNightReminder : role.otherNightReminder;
       return {
         type: 'character',
-        id: `${role.id}-${player.id}`,
+        id: player ? `${role.id}-${player.id}` : role.id,
         roleId: role.id,
         name: role.name,
         description: reminder || role.ability || 'Wake player and resolve ability.',
@@ -255,7 +286,9 @@ export default function NightOrderWidget({
             Night Order Guide
           </h3>
           <p className="text-[11px] text-gray-500 font-medium">
-            Currently active characters in wake-up sequence
+            {fullNightOrder
+              ? 'Every character in the script, in wake-up sequence'
+              : 'Currently active characters in wake-up sequence'}
           </p>
         </div>
 
@@ -319,6 +352,7 @@ export default function NightOrderWidget({
           items.map((item) => {
             const isChecked = checkedItems[item.id] || false;
             const isDead = item.player?.isDead;
+            const isOutOfPlay = item.type === 'character' && !item.player;
 
             return (
               <div
@@ -361,6 +395,12 @@ export default function NightOrderWidget({
                       </span>
 
                       {/* Status Badges */}
+                      {isOutOfPlay && (
+                        <span className="text-[9px] bg-gray-600/20 text-gray-400 border border-gray-600/30 px-1 rounded font-bold uppercase tracking-wide">
+                          Not in play
+                        </span>
+                      )}
+
                       {isDead && (
                         <span className="text-[9px] bg-gray-600/20 text-gray-400 border border-gray-600/30 px-1 rounded font-bold uppercase tracking-wide">
                           Dead

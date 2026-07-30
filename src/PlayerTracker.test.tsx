@@ -270,7 +270,7 @@ describe('PlayerTracker', () => {
     });
   });
 
-  it('allows toggling reminder tokens on and off via checkbox below notes', () => {
+  it('allows toggling reminder tokens on and off via the header menu', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
@@ -285,8 +285,10 @@ describe('PlayerTracker', () => {
     const startButton = screen.getByText('Start Game');
     fireEvent.click(startButton);
 
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+
     // Verify checkbox is rendered and defaults to unchecked
-    const checkbox = screen.getAllByLabelText('Turn on Reminder Tokens')[0] as HTMLInputElement;
+    const checkbox = document.getElementById('show-reminders-checkbox') as HTMLInputElement;
     expect(checkbox).toBeInTheDocument();
     expect(checkbox.checked).toBe(false);
 

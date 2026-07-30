@@ -308,4 +308,84 @@ describe('GamePhase - Reset Reminders confirmation', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(ledgerList.className).toContain('hidden');
   });
+
+  describe('all reminders', () => {
+    // Alice and Bob are in play; the Butler is on the script but assigned to nobody.
+    const inPlay: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Bob', roleId: 'poisoner', isDead: false },
+    ];
+
+    const reminderProps = {
+      ...defaultProps,
+      players: inPlay,
+      reminderTokens: [],
+      onSetReminderTokens: vi.fn(),
+    };
+
+    const openPicker = () => {
+      fireEvent.click(screen.getByTitle('Add reminder to Alice'));
+      return within(document.getElementById('reminder-picker-modal')!);
+    };
+
+    it('offers only in-play characters by default', () => {
+      render(<GamePhase {...reminderProps} />);
+      const picker = openPicker();
+
+      // The Washerwoman contributes two reminders, so its name appears once per option.
+      expect(picker.getAllByText('Washerwoman').length).toBeGreaterThan(0);
+      expect(picker.getByText('Poisoner')).toBeInTheDocument();
+      expect(picker.queryByText('Butler')).toBeNull();
+    });
+
+    it('offers every character on the script when enabled', () => {
+      render(<GamePhase {...reminderProps} includeAllScriptReminders />);
+      const picker = openPicker();
+
+      // Still lists the in-play ones, plus characters nobody is assigned.
+      expect(picker.getByText('Poisoner')).toBeInTheDocument();
+      expect(picker.getByText('Butler')).toBeInTheDocument();
+      expect(picker.getByText('Monk')).toBeInTheDocument();
+    });
+  });
+
+  describe('player labels', () => {
+    const labelled: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false, notes: 'Confirmed good' },
+      { id: '2', name: 'Bob', roleId: 'poisoner', isDead: false },
+    ];
+
+    const labelEl = () => screen.getByText('Confirmed good');
+
+    it('renders in a layer stacked above every seat', () => {
+      render(<GamePhase {...defaultProps} players={labelled} alwaysShowNotes />);
+
+      // Seats set their own inline z-index, so the label layer must sit outside them to stay on top.
+      const layer = labelEl().closest('[style*="z-index"]') as HTMLElement;
+      const layerZ = Number(layer.style.zIndex);
+      const seatZs = Array.from(document.querySelectorAll<HTMLElement>('#grimoire-player-1, #grimoire-player-2'))
+        .map(seat => Number(seat.closest<HTMLElement>('[style*="z-index"]')!.style.zIndex));
+
+      expect(seatZs.length).toBe(2);
+      seatZs.forEach(z => expect(layerZ).toBeGreaterThan(z));
+    });
+
+    it('is visible when alwaysShowNotes is on and hidden when off', () => {
+      const { unmount } = render(<GamePhase {...defaultProps} players={labelled} alwaysShowNotes />);
+      expect(labelEl().className).toContain('visible');
+      expect(labelEl().className).not.toContain('invisible');
+      unmount();
+
+      render(<GamePhase {...defaultProps} players={labelled} />);
+      expect(labelEl().className).toContain('invisible');
+    });
+
+    it('caps the rendered label length', () => {
+      const long = 'x'.repeat(80);
+      render(<GamePhase {...defaultProps} players={[{ ...labelled[0], notes: long }]} alwaysShowNotes />);
+
+      expect(screen.getByText('x'.repeat(40))).toBeInTheDocument();
+      expect(screen.queryByText(long)).toBeNull();
+    });
+  });
 });

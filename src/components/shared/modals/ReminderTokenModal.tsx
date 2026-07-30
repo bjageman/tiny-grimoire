@@ -1,4 +1,5 @@
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import type { PlacedReminder, Role } from '../../../types';
@@ -19,6 +20,7 @@ export default function ReminderTokenModal({
   isLightModeActive,
 }: ReminderTokenModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const role = rolesData.find((r) => r.id === reminder.sourceCharId);
 
   return (

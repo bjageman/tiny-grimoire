@@ -49,6 +49,31 @@ describe('PlayerDetailsModal', () => {
     expect(screen.getByDisplayValue('Alice')).toBeInTheDocument();
   });
 
+  it('closes on Escape', () => {
+    const onClose = vi.fn();
+    render(<PlayerDetailsModal {...defaultProps} onClose={onClose} />);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Escape dismisses the pronoun dropdown before the modal', () => {
+    const onClose = vi.fn();
+    render(
+      <PlayerDetailsModal {...defaultProps} onClose={onClose} onUpdatePronouns={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByLabelText('Pronouns'));
+    expect(screen.getByText('They/Them')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByText('They/Them')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('buffers name edits locally and flushes via onUpdateName on unmount', () => {
     render(<PlayerDetailsModal {...defaultProps} />);
     fireEvent.change(screen.getByDisplayValue('Alice'), { target: { value: 'Alicia' } });

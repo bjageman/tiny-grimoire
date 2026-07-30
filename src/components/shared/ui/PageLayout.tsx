@@ -10,7 +10,7 @@ interface PageLayoutProps {
   titleContent?: ReactNode;    // replaces the h1 when provided (e.g. title + room code badge)
   backHref?: string;           // renders an <a> back button
   onBack?: () => void;         // renders a <button> back button (use one or the other)
-  extraControls?: ReactNode;   // rendered to the right of the theme toggle
+  headerControls?: ReactNode;  // replaces the default HeaderMenu; supply your own menu if used
   headerExtra?: ReactNode;     // extra row below the main header row (e.g. room code on mobile)
   contentClassName?: string;   // defaults to "flex-1 flex flex-col pt-8 px-4 pb-4"
   children: ReactNode;
@@ -23,7 +23,7 @@ export default function PageLayout({
   titleContent,
   backHref,
   onBack,
-  extraControls,
+  headerControls,
   headerExtra,
   contentClassName,
   children,
@@ -117,7 +117,7 @@ export default function PageLayout({
           )}
 
           <div id="page-header-controls" className="absolute right-4 md:right-8 lg:right-12 flex items-center gap-1">
-            {extraControls ?? (
+            {headerControls ?? (
               <HeaderMenu theme={theme} onToggleTheme={toggleTheme} />
             )}
           </div>

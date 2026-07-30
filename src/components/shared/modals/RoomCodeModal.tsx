@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { createPortal } from 'react-dom';
 import QRCode from 'react-qr-code';
 import { cn } from '../../../utils/cn';
@@ -15,6 +16,7 @@ interface RoomCodeModalProps {
 
 export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeActive, syncOnly = false, shareOnly = false }: RoomCodeModalProps) {
   useScrollLock();
+  useEscapeKey(onClose);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 

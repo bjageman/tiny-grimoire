@@ -580,12 +580,14 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      extraControls={
+      headerControls={
         <HeaderMenu
           theme={theme}
           onToggleTheme={toggleTheme}
           alwaysShowNotes={alwaysShowNotes}
           onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          showReminders={enableReminders}
+          onToggleShowReminders={setEnableReminders}
           onResetGame={resetGame}
         />
       }
@@ -672,8 +674,6 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           includeAllScriptReminders={true}
           reminderTokens={reminderTokens}
           onSetReminderTokens={setReminderTokens}
-          showReminderToggle={true}
-          onToggleReminders={setEnableReminders}
           notes={gameNotes}
           onNotesChange={setGameNotes}
           rotationOffset={rotationOffset}

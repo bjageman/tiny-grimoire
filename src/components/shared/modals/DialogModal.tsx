@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
 
 interface DialogModalProps {
@@ -28,15 +29,16 @@ export default function DialogModal({
 }: DialogModalProps) {
   useScrollLock(isOpen);
 
+  useEscapeKey(onCancel, isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
       if (e.key === 'Enter') onConfirm();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onConfirm, onCancel]);
+  }, [isOpen, onConfirm]);
 
   if (!isOpen) return null;
 

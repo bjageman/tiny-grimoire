@@ -23,6 +23,8 @@ describe('SelectCharactersModal', () => {
     onAssign: vi.fn(),
     selectedIds: new Set<string>(),
     setSelectedIds: vi.fn(),
+    villageIdiotCount: 1,
+    setVillageIdiotCount: vi.fn(),
   };
 
   it('renders correctly and displays list of roles grouped by team', () => {
@@ -64,5 +66,46 @@ describe('SelectCharactersModal', () => {
     names = getTownsfolkNames();
     expect(names[0]).toBe('Washerwoman');
     expect(names[1]).toBe('Chef');
+  });
+
+  describe('Village Idiot count control', () => {
+    const withVillageIdiot: Role[] = [
+      ...roles,
+      { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },
+    ];
+
+    it('only offers the count once the Village Idiot is in the bag', () => {
+      const { rerender } = render(
+        <SelectCharactersModal {...defaultProps} roles={withVillageIdiot} />
+      );
+      expect(document.getElementById('village-idiot-count-2')).toBeNull();
+
+      rerender(
+        <SelectCharactersModal
+          {...defaultProps}
+          roles={withVillageIdiot}
+          selectedIds={new Set(['villageidiot'])}
+        />
+      );
+      expect(document.getElementById('village-idiot-count-2')).not.toBeNull();
+    });
+
+    it('reports the picked count without toggling the role off', () => {
+      const setVillageIdiotCount = vi.fn();
+      const setSelectedIds = vi.fn();
+      render(
+        <SelectCharactersModal
+          {...defaultProps}
+          roles={withVillageIdiot}
+          selectedIds={new Set(['villageidiot'])}
+          setVillageIdiotCount={setVillageIdiotCount}
+          setSelectedIds={setSelectedIds}
+        />
+      );
+
+      fireEvent.click(document.getElementById('village-idiot-count-3')!);
+      expect(setVillageIdiotCount).toHaveBeenCalledWith(3);
+      expect(setSelectedIds).not.toHaveBeenCalled();
+    });
   });
 });

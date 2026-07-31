@@ -659,5 +659,35 @@ describe('validationSummary utility', () => {
       }
     });
   });
+
+  it('accepts up to three Village Idiots but still flags other duplicates', () => {
+    const roles: Role[] = [
+      { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'villageidiot', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'villageidiot', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'villageidiot', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'empath', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'butler', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players, roles);
+    expect(summary).not.toBeNull();
+    expect(summary!.failures.some(f => f.includes('Village Idiot'))).toBe(false);
+    expect(summary!.modifications.some(m => m.includes('Village Idiot'))).toBe(true);
+
+    const withDuplicateChef = players.map(p => p.id === '5' ? { ...p, roleId: 'chef' } : p);
+    const dupeSummary = getValidationSummary(withDuplicateChef, roles);
+    expect(dupeSummary!.failures.some(f => f.includes('Chef'))).toBe(true);
+  });
 });
 

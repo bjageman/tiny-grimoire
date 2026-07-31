@@ -101,6 +101,27 @@ export function applyChoirboyKing(tfs: Role[], selectedTownsfolk: Role[], exclud
   return [...selectedTownsfolk.filter(t => t.id !== remove.id), kingRole];
 }
 
+export const VILLAGE_IDIOT_MAX = 3;
+
+export function applyVillageIdiotCount(selectedTownsfolk: Role[], count: number, exclude: string[]): Role[] {
+  const villageIdiot = selectedTownsfolk.find(t => t.id === 'villageidiot');
+  if (!villageIdiot || count <= 1) return selectedTownsfolk;
+
+  const excluded = new Set(['villageidiot', ...exclude]);
+  const result = [...selectedTownsfolk];
+  const extras = Math.min(count, VILLAGE_IDIOT_MAX) - 1;
+
+  for (let i = 0; i < extras; i++) {
+    const swappable = result.filter(t => !excluded.has(t.id));
+    if (swappable.length === 0) break;
+    const remove = swappable[Math.floor(Math.random() * swappable.length)];
+    const removeIdx = result.findIndex(t => t.id === remove.id);
+    result.splice(removeIdx, 1, villageIdiot);
+  }
+
+  return result;
+}
+
 export function applyHuntsmanDamsel(
   outs: Role[],
   selectedTownsfolk: Role[],

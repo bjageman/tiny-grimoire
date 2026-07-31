@@ -22,6 +22,8 @@ interface StandardSetupPhaseProps {
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;
   setSelectedCharacterIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  villageIdiotCount: number;
+  setVillageIdiotCount: (count: number) => void;
   newPlayerName: string;
   setNewPlayerName: (name: string) => void;
   addPlayer: () => void;
@@ -69,6 +71,8 @@ export default function StandardSetupPhase({
   scriptAuthor,
   selectedCharacterIds,
   setSelectedCharacterIds,
+  villageIdiotCount,
+  setVillageIdiotCount,
   newPlayerName,
   setNewPlayerName,
   addPlayer,
@@ -441,6 +445,8 @@ export default function StandardSetupPhase({
       onAssign={randomlyAssignWithRoles}
       selectedIds={selectedCharacterIds}
       setSelectedIds={setSelectedCharacterIds}
+      villageIdiotCount={villageIdiotCount}
+      setVillageIdiotCount={setVillageIdiotCount}
     />
     </>
   );

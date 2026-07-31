@@ -115,6 +115,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     return new Set(scriptRoles.map(r => r.id));
   });
   const [bagOnly, setBagOnly] = useState(false);
+  const [villageIdiotCount, setVillageIdiotCount] = usePersistedField<number>(STORAGE_KEY, 'villageIdiotCount', 1);
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = useState(0);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
@@ -479,12 +480,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
+      villageIdiotCount,
       rotationOffset,
       alwaysShowNotes,
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -593,7 +595,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [currentScriptRoles]);
 
   const randomlyAssignRoles = () => {
-    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles, sentinelOutsiderDelta);
+    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount);
     if (!assignedPlayers) {
       const N = players.length;
       showAlert(N < 5
@@ -613,7 +615,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount)!;
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
@@ -807,6 +809,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          villageIdiotCount={villageIdiotCount}
+          setVillageIdiotCount={setVillageIdiotCount}
           isLightModeActive={isLightModeActive}
           allAssigned={allAssigned}
           remotePlayerCount={remotePlayerIds.size}

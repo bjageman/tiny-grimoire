@@ -17,6 +17,8 @@ interface Props {
   onAssign: (selectedRoles: Role[]) => void;
   selectedIds: Set<string>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  villageIdiotCount: number;
+  setVillageIdiotCount: (count: number) => void;
 }
 
 const TEAMS = [
@@ -26,7 +28,7 @@ const TEAMS = [
   { key: 'demon',     label: '🔴 Demons',    color: 'text-clocktower-demon',     border: 'border-clocktower-demon/20'     },
 ] as const;
 
-export default function SelectCharactersModal({ isOpen, onClose, roles, playerCount, isLightModeActive, onAssign, selectedIds, setSelectedIds }: Props) {
+export default function SelectCharactersModal({ isOpen, onClose, roles, playerCount, isLightModeActive, onAssign, selectedIds, setSelectedIds, villageIdiotCount, setVillageIdiotCount }: Props) {
   const assignableRoles = useMemo(() => roles.filter(r => r.team !== 'traveler'), [roles]);
 
   useScrollLock(isOpen);
@@ -232,6 +234,29 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                           <span className={cn("font-semibold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>
                             {role.name}
                           </span>
+                          {role.id === 'villageidiot' && checked && (
+                            <span className="ml-auto flex shrink-0 rounded overflow-hidden border border-gray-500/40">
+                              {[1, 2, 3].map(n => (
+                                <button
+                                  key={n}
+                                  type="button"
+                                  id={`village-idiot-count-${n}`}
+                                  onClick={(e) => { e.preventDefault(); setVillageIdiotCount(n); }}
+                                  title={`Put ${n} Village Idiot${n === 1 ? '' : 's'} in the bag`}
+                                  className={cn(
+                                    "px-1.5 py-0.5 text-[10px] font-bold transition-colors",
+                                    villageIdiotCount === n
+                                      ? "bg-clocktower-blood text-white"
+                                      : isLightModeActive
+                                        ? "bg-white text-gray-500 hover:bg-gray-100"
+                                        : "bg-gray-900 text-gray-400 hover:bg-gray-800"
+                                  )}
+                                >
+                                  {n}
+                                </button>
+                              ))}
+                            </span>
+                          )}
                         </label>
                       );
                     })}

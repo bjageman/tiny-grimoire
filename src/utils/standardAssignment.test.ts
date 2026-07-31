@@ -443,6 +443,79 @@ describe('performStandardAssignment', () => {
     }
   });
 
+  describe('Village Idiot count', () => {
+    const villageIdiotScript: Role[] = [
+      { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'fortuneteller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
+      { id: 'ravenkeeper', name: 'Ravenkeeper', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    const players: Player[] = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i + 1),
+      name: `Player ${i + 1}`,
+      isDead: false,
+    }));
+
+    const countVillageIdiots = (result: Player[]) =>
+      result.filter(p => p.roleId === 'villageidiot').length;
+
+    it('never deals more than one at the default count', () => {
+      for (let i = 0; i < 40; i++) {
+        const result = performStandardAssignment(players, villageIdiotScript, []);
+        expect(result).not.toBeNull();
+        expect(countVillageIdiots(result!)).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('deals the requested count whenever the Village Idiot is drawn', () => {
+      for (const count of [2, 3]) {
+        let sawVillageIdiot = false;
+        for (let i = 0; i < 40; i++) {
+          const result = performStandardAssignment(players, villageIdiotScript, [], undefined, 0, count);
+          expect(result).not.toBeNull();
+          const dealt = countVillageIdiots(result!);
+          if (dealt > 0) {
+            sawVillageIdiot = true;
+            expect(dealt).toBe(count);
+          }
+        }
+        expect(sawVillageIdiot).toBe(true);
+      }
+    });
+
+    it('keeps the seat total and the Townsfolk total unchanged', () => {
+      for (let i = 0; i < 30; i++) {
+        const single = performStandardAssignment(players, villageIdiotScript, [], undefined, 0, 1)!;
+        const triple = performStandardAssignment(players, villageIdiotScript, [], undefined, 0, 3)!;
+        expect(triple).toHaveLength(single.length);
+
+        const townsfolkCount = (result: Player[]) => result.filter(p => {
+          const role = villageIdiotScript.find(r => r.id === p.roleId);
+          return role?.team === 'townsfolk';
+        }).length;
+        expect(townsfolkCount(triple)).toBe(townsfolkCount(single));
+      }
+    });
+
+    it('leaves scripts without the Village Idiot alone', () => {
+      for (let i = 0; i < 20; i++) {
+        const result = performStandardAssignment(players, mockScriptRoles, [], undefined, 0, 3);
+        expect(result).not.toBeNull();
+        expect(countVillageIdiots(result!)).toBe(0);
+      }
+    });
+  });
+
   describe('masquerade roles (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
     const tfNames = ['washerwoman', 'librarian', 'investigator', 'chef', 'empath', 'fortuneteller', 'undertaker', 'monk', 'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor'];
     const baseTownsfolk = tfNames.map(id => ({ id, name: id, team: 'townsfolk' as const }));

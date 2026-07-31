@@ -1,6 +1,7 @@
 import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import rolesData from '../official_roles.json';
+import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 
 export function assignCharacters(
   players: Player[],
@@ -124,10 +125,17 @@ function assignBaseCharacters(
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
-  const selectRoleForPlayer = (player: Player, team: Role['team'], usedRoleIds: Set<string>): { role: Role; fromPref: boolean } => {
+  const selectRoleForPlayer = (
+    player: Player,
+    team: Role['team'],
+    usedRoleIds: Set<string>,
+    villageIdiotSlots?: { remaining: number }
+  ): { role: Role; fromPref: boolean } => {
     const prefs = player.preferences?.[team] || [];
+    // Village Idiot is the one role a second player may still be given, and only if they asked for it.
+    const canRepeatVillageIdiot = !!villageIdiotSlots && villageIdiotSlots.remaining > 0;
     const availablePrefs = prefs.filter(id =>
-      !usedRoleIds.has(id) &&
+      (!usedRoleIds.has(id) || (id === 'villageidiot' && canRepeatVillageIdiot)) &&
       id !== 'legion' &&
       id !== 'atheist' &&
       id !== 'drunk' &&
@@ -137,7 +145,10 @@ function assignBaseCharacters(
     if (availablePrefs.length > 0) {
       const id = randomChoice(availablePrefs);
       const role = allRoles.find(r => r.id === id);
-      if (role) return { role, fromPref: true };
+      if (role) {
+        if (id === 'villageidiot' && usedRoleIds.has(id) && villageIdiotSlots) villageIdiotSlots.remaining--;
+        return { role, fromPref: true };
+      }
     }
     
     const teamRoles = allRoles.filter(r =>
@@ -347,9 +358,10 @@ function assignBaseCharacters(
     });
     
     const tempUsedRoleIds = new Set(usedRoleIds);
+    const villageIdiotSlots = { remaining: VILLAGE_IDIOT_MAX - 1 };
     const goodAssignments: AssignmentResult[] = [];
     for (const temp of tempAssignment) {
-      const { role, fromPref } = selectRoleForPlayer(temp.player, temp.team, tempUsedRoleIds);
+      const { role, fromPref } = selectRoleForPlayer(temp.player, temp.team, tempUsedRoleIds, villageIdiotSlots);
       tempUsedRoleIds.add(role.id);
       goodAssignments.push({ player: { ...temp.player, isEvil: undefined }, role, fromPref });
     }
@@ -507,7 +519,9 @@ function assignBaseCharacters(
       }
       let duplicateCheck = true;
       for (const id in roleCounts) {
-        if (roleCounts[id] > 1 && id !== 'legion') {
+        if (id === 'legion') continue;
+        if (id === 'villageidiot' && roleCounts[id] <= VILLAGE_IDIOT_MAX) continue;
+        if (roleCounts[id] > 1) {
           duplicateCheck = false;
         }
       }

@@ -23,7 +23,7 @@ export function usePlayerDetailsNav(
   const modalRoleObj = modalPlayer
     ? roles.find(r => r.id === (
         modalPlayer.isTheDrunk
-          ? 'drunk'
+          ? (modalPlayer.roleId || 'drunk')
           : modalPlayer.isTheMarionette
             ? (modalPlayer.roleId || 'marionette')
             : modalPlayer.isTheLunatic

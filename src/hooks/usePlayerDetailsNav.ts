@@ -20,10 +20,12 @@ export function usePlayerDetailsNav(
 ): PlayerDetailsNav {
   const modalPlayer = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) ?? null : null;
 
+  // Follow the character token the player is holding; the Drunk/Marionette/Lunatic role is only the
+  // fallback for a tagged seat with no character yet, so the ability text matches the token on screen.
   const modalRoleObj = modalPlayer
     ? roles.find(r => r.id === (
         modalPlayer.isTheDrunk
-          ? 'drunk'
+          ? (modalPlayer.roleId || 'drunk')
           : modalPlayer.isTheMarionette
             ? (modalPlayer.roleId || 'marionette')
             : modalPlayer.isTheLunatic

@@ -9,6 +9,7 @@ import {
   splitTravelers,
   applyChoirboyKing,
   applyHuntsmanDamsel,
+  applyVillageIdiotCount,
   assignSimpleRolesToPlayers,
   placeRolesAroundCircle,
 } from './standardAssignmentHelpers';
@@ -18,7 +19,8 @@ export function performStandardAssignment(
   currentScriptRoles: Role[],
   selectionRoles: Role[],
   fallbackScriptRoles?: Role[],
-  sentinelOutsiderDelta: number = 0
+  sentinelOutsiderDelta: number = 0,
+  villageIdiotCount: number = 1
 ): Player[] | null {
   const N = players.length;
   if (N < 5) return null;
@@ -68,6 +70,7 @@ export function performStandardAssignment(
 
     selectedTownsfolk = applyChoirboyKing(tfs, selectedTownsfolk, ['atheist']);
     ({ tfs: selectedTownsfolk, outs: selectedOutsiders } = applyHuntsmanDamsel(outs, selectedTownsfolk, selectedOutsiders, ['atheist']));
+    selectedTownsfolk = applyVillageIdiotCount(selectedTownsfolk, villageIdiotCount, ['atheist', 'choirboy', 'king', 'huntsman']);
 
     const finalRolesList = shuffle([...selectedOutsiders, ...selectedTownsfolk]);
     fillToCount(finalRolesList, baseCount, [tfs, fallbackTfs, masterTfs], tfs[0], outs[0]);
@@ -217,6 +220,9 @@ export function performStandardAssignment(
 
   // 4. Choirboy & King adjustment
   selectedTownsfolk = applyChoirboyKing(tfs, selectedTownsfolk, ['huntsman', 'balloonist']);
+
+  // 5. Village Idiot: 1-3 copies, each extra consuming another Townsfolk slot.
+  selectedTownsfolk = applyVillageIdiotCount(selectedTownsfolk, villageIdiotCount, ['choirboy', 'king', 'huntsman', 'balloonist']);
 
   const finalRolesList = shuffle([
     ...selectedDemons,

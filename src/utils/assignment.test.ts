@@ -305,4 +305,74 @@ describe('assignCharacters', () => {
       }
     }
   });
+
+  describe('Village Idiot preferences', () => {
+    const script: Role[] = [
+      { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'ravenkeeper', name: 'Ravenkeeper', team: 'townsfolk' },
+      { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+
+    const prefs = (townsfolk: string[]) => ({ townsfolk, outsider: [], minion: [], demon: [], traveler: [] });
+
+    const villageIdiotLovers: Player[] = [
+      { id: '1', name: 'Alice', isDead: false, preferences: prefs(['villageidiot']) },
+      { id: '2', name: 'Bob', isDead: false, preferences: prefs(['villageidiot']) },
+      { id: '3', name: 'Cara', isDead: false, preferences: prefs(['villageidiot']) },
+      { id: '4', name: 'Dave', isDead: false, preferences: prefs(['chef']) },
+      { id: '5', name: 'Eve', isDead: false, preferences: prefs(['empath']) },
+      { id: '6', name: 'Frank', isDead: false, preferences: prefs(['undertaker']) },
+    ];
+
+    it('lets several players who all asked for the Village Idiot get it', () => {
+      let sawMultiple = false;
+      for (let i = 0; i < 60; i++) {
+        const result = assignCharacters(villageIdiotLovers, script);
+        expect(result).not.toBeNull();
+        const dealt = result!.filter(r => r.role.id === 'villageidiot');
+        expect(dealt.length).toBeLessThanOrEqual(3);
+        if (dealt.length > 1) {
+          sawMultiple = true;
+          for (const a of dealt) {
+            expect(a.player.preferences?.townsfolk).toContain('villageidiot');
+          }
+        }
+      }
+      expect(sawMultiple).toBe(true);
+    });
+
+    it('never gives a second copy to someone who did not ask for it', () => {
+      const onlyOneAsks: Player[] = [
+        { id: '1', name: 'Alice', isDead: false, preferences: prefs(['villageidiot']) },
+        { id: '2', name: 'Bob', isDead: false, preferences: prefs([]) },
+        { id: '3', name: 'Cara', isDead: false, preferences: prefs([]) },
+        { id: '4', name: 'Dave', isDead: false, preferences: prefs([]) },
+        { id: '5', name: 'Eve', isDead: false, preferences: prefs([]) },
+        { id: '6', name: 'Frank', isDead: false, preferences: prefs([]) },
+      ];
+
+      for (let i = 0; i < 60; i++) {
+        const result = assignCharacters(onlyOneAsks, script);
+        expect(result).not.toBeNull();
+        expect(result!.filter(r => r.role.id === 'villageidiot').length).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('still rejects duplicates of any other role', () => {
+      for (let i = 0; i < 40; i++) {
+        const result = assignCharacters(villageIdiotLovers, script);
+        expect(result).not.toBeNull();
+        const counts: Record<string, number> = {};
+        for (const a of result!) counts[a.role.id] = (counts[a.role.id] || 0) + 1;
+        for (const [id, count] of Object.entries(counts)) {
+          if (id !== 'villageidiot' && id !== 'legion') expect(count).toBe(1);
+        }
+      }
+    });
+  });
 });

@@ -62,6 +62,63 @@ describe('NightOrderWidget', () => {
     expect(screen.queryByText('Marionette', { selector: '.font-serif' })).toBeNull();
   });
 
+  describe('Savant', () => {
+    const savantPlayers: Player[] = [
+      { id: 'p1', name: 'Alice', roleId: 'savant', isDead: false },
+      { id: 'p2', name: 'Bob', roleId: 'washerwoman', isDead: false },
+    ];
+
+    const orderedNames = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('span.font-serif')).map(el => el.textContent);
+
+    it('sits immediately before Dawn on both nights when in play', () => {
+      for (const tab of ['first', 'other'] as const) {
+        const { container, unmount } = render(
+          <NightOrderWidget
+            players={savantPlayers}
+            timeOfDay="night"
+            dayNumber={tab === 'first' ? 1 : 2}
+            isLightModeActive={false}
+          />
+        );
+
+        const names = orderedNames(container);
+        const savantIdx = names.indexOf('Savant');
+        const dawnIdx = names.indexOf('Dawn');
+        expect(savantIdx).toBeGreaterThanOrEqual(0);
+        expect(dawnIdx).toBe(savantIdx + 1);
+        unmount();
+      }
+    });
+
+    it('prompts the storyteller to prepare the two statements instead of quoting the ability', () => {
+      render(
+        <NightOrderWidget
+          players={savantPlayers}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+        />
+      );
+
+      expect(screen.getByText(/Decide 2 things to tell the Savant/)).toBeInTheDocument();
+      expect(screen.queryByText(/you may visit the Storyteller/)).toBeNull();
+    });
+
+    it('stays out of the list when no Savant is in play', () => {
+      const { container } = render(
+        <NightOrderWidget
+          players={mockPlayers}
+          timeOfDay="night"
+          dayNumber={1}
+          isLightModeActive={false}
+        />
+      );
+
+      expect(orderedNames(container)).not.toContain('Savant');
+    });
+  });
+
   it('allows checking and resetting checkboxes', () => {
     const handleSetCheckedItems = vi.fn();
     

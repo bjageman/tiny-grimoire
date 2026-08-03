@@ -118,6 +118,19 @@ export default function NightOrderWidget({
       return;
     }
     if (id === 'dawn') {
+      // The Savant acts by day, so it has no place in the official night order; this is the Storyteller's cue to prepare.
+      const savantPlayers = playersByRole.get('savant') || [];
+      const savantInScript = scriptRoles ? scriptRoles.some(r => r.id === 'savant') : true;
+      if (savantPlayers.length > 0 || (fullNightOrder && savantInScript)) {
+        const savantPrompt = 'Decide 2 things to tell the Savant if they visit tomorrow. 1 true and 1 false.';
+        if (savantPlayers.length === 0) {
+          items.push({ type: 'character', id: 'savant', roleId: 'savant', name: 'Savant', description: savantPrompt, team: 'townsfolk' });
+        } else {
+          savantPlayers.forEach(player => {
+            items.push({ type: 'character', id: `savant-${player.id}`, roleId: 'savant', name: 'Savant', description: savantPrompt, team: 'townsfolk', player });
+          });
+        }
+      }
       items.push({
         type: 'info',
         id: 'dawn',

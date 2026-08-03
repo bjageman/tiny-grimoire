@@ -122,7 +122,10 @@ export default function NightOrderWidget({
       const savantPlayers = playersByRole.get('savant') || [];
       const savantInScript = scriptRoles ? scriptRoles.some(r => r.id === 'savant') : true;
       if (savantPlayers.length > 0 || (fullNightOrder && savantInScript)) {
-        const savantPrompt = 'Decide 2 things to tell the Savant if they visit tomorrow. 1 true and 1 false.';
+        const savantRole = officialRoles.find(r => r.id === 'savant');
+        const savantPrompt = (activeTab === 'first' ? savantRole?.firstNightReminder : savantRole?.otherNightReminder)
+          || savantRole?.ability
+          || 'Prepare the Savant\'s information for tomorrow.';
         if (savantPlayers.length === 0) {
           items.push({ type: 'character', id: 'savant', roleId: 'savant', name: 'Savant', description: savantPrompt, team: 'townsfolk' });
         } else {

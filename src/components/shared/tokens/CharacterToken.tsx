@@ -55,7 +55,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
       {/* Background layer: ring + dashed guide circle, behind the icon */}
       <svg
         viewBox="0 0 200 200"
-        opacity={isDead ? 0.6 : 1}
+        opacity={isDead ? 0.75 : 1}
         className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none"
       >
         <defs>
@@ -80,7 +80,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
               key={role.id}
               src={`/icons/${role.id}.svg`}
               alt={role.name}
-              className={cn('w-full h-full object-contain', solidIcon ? '' : (isDead ? 'grayscale opacity-15' : 'opacity-35'))}
+              className={cn('w-full h-full object-contain', !solidIcon && 'opacity-35', isDead && 'grayscale')}
               onError={roleIconFallback(role, evil)}
             />
           </div>
@@ -90,7 +90,6 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
       {role && (
         <svg
           viewBox="0 0 200 200"
-          opacity={isDead ? 0.6 : 1}
           className="w-full h-full absolute inset-0 z-20 select-none pointer-events-none"
         >
           <text

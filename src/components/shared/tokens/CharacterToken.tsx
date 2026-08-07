@@ -1,6 +1,7 @@
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { deadSeatStyle } from '../../../utils/playerSeat';
+import SkullIcon from './SkullIcon';
 import type { Role } from '../../../types';
 
 interface CharacterTokenProps {
@@ -79,13 +80,20 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
       {role && (
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none select-none">
           <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
-            <img
-              key={role.id}
-              src={`/icons/${role.id}.svg`}
-              alt={role.name}
-              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : 'opacity-35'), isDead && 'grayscale')}
-              onError={roleIconFallback(role, evil)}
-            />
+            {isDead ? (
+              <SkullIcon
+                title={role.name}
+                className={cn('w-3/5 h-3/5', !solidIcon && dead.iconOpacity)}
+              />
+            ) : (
+              <img
+                key={role.id}
+                src={`/icons/${role.id}.svg`}
+                alt={role.name}
+                className={cn('w-full h-full object-contain', !solidIcon && 'opacity-35')}
+                onError={roleIconFallback(role, evil)}
+              />
+            )}
           </div>
         </div>
       )}

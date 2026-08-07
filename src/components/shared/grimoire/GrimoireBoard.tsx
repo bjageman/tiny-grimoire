@@ -868,14 +868,20 @@ export default function GrimoireBoard({
                   }}
                 >
                   <div className="relative flex flex-col items-center">
-                    <div className={cn(
-                      "absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
-                      "text-[10px] font-semibold rounded-lg px-2.5 py-1.5 shadow-xl border",
-                      "max-w-[140px] text-center leading-relaxed break-words whitespace-pre-wrap",
-                      "bg-white text-gray-900",
-                      isLightModeActive ? "border-gray-300 shadow-gray-400/50" : "border-gray-700 shadow-black/60",
-                      alwaysShowNotes || fannedPlayerId === p.id ? "visible" : "invisible"
-                    )}>
+                    <div
+                      style={{
+                        textShadow: isLightModeActive
+                          ? '0 1px 2px rgba(255,255,255,0.9), 0 -1px 2px rgba(255,255,255,0.9), 1px 0 2px rgba(255,255,255,0.9), -1px 0 2px rgba(255,255,255,0.9)'
+                          : '0 1px 2px rgba(0,0,0,0.9), 0 -1px 2px rgba(0,0,0,0.9), 1px 0 2px rgba(0,0,0,0.9), -1px 0 2px rgba(0,0,0,0.9)',
+                      }}
+                      className={cn(
+                        "absolute bottom-full left-1/2 -translate-x-1/2 mb-0.5",
+                        "text-[10px] font-bold px-1",
+                        "max-w-[140px] text-center leading-tight break-words whitespace-pre-wrap",
+                        isLightModeActive ? "text-gray-900" : "text-white",
+                        alwaysShowNotes || fannedPlayerId === p.id ? "visible" : "invisible"
+                      )}
+                    >
                       {p.notes.slice(0, PLAYER_LABEL_MAX_LENGTH)}
                     </div>
                     {/* Matches the seat button's box so the label anchors exactly where it used to. */}

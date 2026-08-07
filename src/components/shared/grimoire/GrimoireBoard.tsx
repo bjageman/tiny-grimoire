@@ -741,6 +741,7 @@ export default function GrimoireBoard({
                             role={roleObj}
                             isEvil={isEvil}
                             isDead={p.isDead}
+                            isLightModeActive={isLightModeActive}
                             iconSizePct={80}
                             blankRing
                             idPrefix={`${p.id}-${idx}`}
@@ -756,9 +757,12 @@ export default function GrimoireBoard({
                     style={{
                       ...grimoireConfig.nameStyle,
                       fontSize: dynamicFontSize,
-                      textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW)
+                      textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW, isLightModeActive)
                     }}
-                    className="font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle text-[#1a1a1a]"
+                    className={cn(
+                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle text-[#1a1a1a]",
+                      p.isDead && isLightModeActive && "opacity-75"
+                    )}
                   >
                     {remotePlayerIds?.has(p.id) && (
                       <Wifi size={10} className="shrink-0" strokeWidth={3} />
@@ -770,7 +774,7 @@ export default function GrimoireBoard({
                     <span
                       style={{
                         fontSize: dynamicPronounFontSize,
-                        textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW)
+                        textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW, isLightModeActive)
                       }}
                       className="text-[#555] font-medium leading-none pointer-events-none select-none z-20 relative"
                     >

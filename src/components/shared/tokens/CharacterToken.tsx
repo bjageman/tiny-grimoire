@@ -66,7 +66,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
           cx="100"
           cy="100"
           r="90"
-          fill={isDead ? '#e4e4e7' : '#ffffff'}
+          fill={isDead ? '#f4f4f5' : '#ffffff'}
           stroke={neutralRing ? '#d4d4d8' : (evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk)}
           strokeWidth={6}
         />

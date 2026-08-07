@@ -759,10 +759,7 @@ export default function GrimoireBoard({
                       fontSize: dynamicFontSize,
                       textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW, isLightModeActive)
                     }}
-                    className={cn(
-                      "font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle text-[#1a1a1a]",
-                      p.isDead && isLightModeActive && "opacity-75"
-                    )}
+                    className="font-bold font-sans tracking-tighter text-center leading-[1.05] z-20 relative pointer-events-none select-none max-w-[82%] inline-flex items-center justify-center gap-1 align-middle text-[#1a1a1a]"
                   >
                     {remotePlayerIds?.has(p.id) && (
                       <Wifi size={10} className="shrink-0" strokeWidth={3} />

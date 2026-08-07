@@ -7,7 +7,6 @@ import {
   reminderArcOffset,
   seatIsEvil,
   seatTextShadow,
-  deadSeatStyle,
   SEAT_NAME_GLOW,
   SEAT_PRONOUN_GLOW,
   SEAT_NAME_COLOR,
@@ -234,7 +233,6 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                     lineHeight: 1.05,
                     letterSpacing: '-0.02em',
                     color: SEAT_NAME_COLOR,
-                    opacity: p.isDead ? deadSeatStyle(isLightModeActive).nameOpacity : 1,
                     textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW, isLightModeActive),
                     wordBreak: 'break-word',
                   }}
@@ -251,7 +249,6 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                       fontWeight: 500,
                       lineHeight: 1,
                       color: SEAT_PRONOUN_COLOR,
-                      opacity: p.isDead ? deadSeatStyle(isLightModeActive).nameOpacity : 1,
                       textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW, isLightModeActive),
                     }}
                   >

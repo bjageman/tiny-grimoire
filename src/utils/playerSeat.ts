@@ -61,8 +61,8 @@ export const SEAT_PRONOUN_COLOR = '#555';
 // Light mode keeps the original faded corpse; dark mode reads better as a pale, full-strength token.
 export function deadSeatStyle(isLightModeActive: boolean | undefined) {
   return isLightModeActive
-    ? { faceOpacity: 0.6, faceFill: '#e4e4e7', iconOpacity: 'opacity-15', textOpacity: 0.6, nameOpacity: 0.75 }
-    : { faceOpacity: 0.75, faceFill: '#f4f4f5', iconOpacity: 'opacity-35', textOpacity: 1, nameOpacity: 1 };
+    ? { faceOpacity: 0.6, faceFill: '#e4e4e7', iconOpacity: 'opacity-15', textOpacity: 0.6 }
+    : { faceOpacity: 0.75, faceFill: '#f4f4f5', iconOpacity: 'opacity-35', textOpacity: 1 };
 }
 
 export function seatTextShadow(isDead: boolean | undefined, glow: SeatGlow, isLightModeActive?: boolean): string {

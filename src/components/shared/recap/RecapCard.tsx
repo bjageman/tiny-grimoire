@@ -11,11 +11,9 @@ import {
   SEAT_PRONOUN_GLOW,
   SEAT_NAME_COLOR,
   SEAT_PRONOUN_COLOR,
-  SEAT_DEAD_OPACITY,
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import CharacterToken from '../tokens/CharacterToken';
-import VoteToken from '../tokens/VoteToken';
 import officialRoles from '../../../official_roles.json';
 
 const BOARD_WIDTH = 900;
@@ -215,6 +213,7 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                       role={role}
                       isEvil={seatIsEvil(p, role)}
                       isDead={p.isDead}
+                      isLightModeActive={isLightModeActive}
                       iconSizePct={80}
                       blankRing
                       idPrefix={`recap-${p.id}-${idx}`}
@@ -234,8 +233,7 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                     lineHeight: 1.05,
                     letterSpacing: '-0.02em',
                     color: SEAT_NAME_COLOR,
-                    opacity: p.isDead ? SEAT_DEAD_OPACITY : 1,
-                    textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW),
+                    textShadow: seatTextShadow(p.isDead, SEAT_NAME_GLOW, isLightModeActive),
                     wordBreak: 'break-word',
                   }}
                 >
@@ -251,20 +249,11 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                       fontWeight: 500,
                       lineHeight: 1,
                       color: SEAT_PRONOUN_COLOR,
-                      opacity: p.isDead ? SEAT_DEAD_OPACITY : 1,
-                      textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW),
+                      textShadow: seatTextShadow(p.isDead, SEAT_PRONOUN_GLOW, isLightModeActive),
                     }}
                   >
                     {p.pronouns}
                   </span>
-                )}
-
-                {p.isDead && p.hasDeadVote && (
-                  <div
-                    style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', lineHeight: 1, zIndex: 30 }}
-                  >
-                    <VoteToken size="8cqw" title="Vote Token Active" />
-                  </div>
                 )}
               </div>
             </div>

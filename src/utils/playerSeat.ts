@@ -57,7 +57,6 @@ export const SEAT_PRONOUN_GLOW: SeatGlow = {
 };
 export const SEAT_NAME_COLOR = '#1a1a1a';
 export const SEAT_PRONOUN_COLOR = '#555';
-export const SEAT_DEAD_OPACITY = 0.75;
 
 export function seatTextShadow(isDead: boolean | undefined, glow: SeatGlow): string {
   return isDead ? glow.dead : glow.alive;

@@ -14,7 +14,6 @@ import {
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import CharacterToken from '../tokens/CharacterToken';
-import VoteToken from '../tokens/VoteToken';
 import officialRoles from '../../../official_roles.json';
 
 const BOARD_WIDTH = 900;
@@ -254,14 +253,6 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                   >
                     {p.pronouns}
                   </span>
-                )}
-
-                {p.isDead && p.hasDeadVote && (
-                  <div
-                    style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', lineHeight: 1, zIndex: 30 }}
-                  >
-                    <VoteToken size="8cqw" title="Vote Token Active" />
-                  </div>
                 )}
               </div>
             </div>

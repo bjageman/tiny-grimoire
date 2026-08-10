@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../types';
-import CharacterToken from '../shared/CharacterToken';
+import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 
 interface PlayerTrackerCircleProps {
@@ -174,6 +174,18 @@ export default function PlayerTrackerCircle({
                 >
                   {p.name}
                 </span>
+
+                {p.pronouns && (
+                  <span
+                    style={{
+                      fontSize: `${parseFloat(getDynamicFontSize(p.name)) * 0.75}${getDynamicFontSize(p.name).replace(/[0-9.]/g, '')}`,
+                      textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 -1px 2px rgba(0,0,0,0.9), 1px 0 2px rgba(0,0,0,0.9), -1px 0 2px rgba(0,0,0,0.9)',
+                    }}
+                    className="text-white/80 font-medium leading-none select-none z-20 relative"
+                  >
+                    {p.pronouns}
+                  </span>
+                )}
               </button>
             </div>
           );

@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react';
-import { WhaleIcon } from './components/shared/WhaleIcon';
+import { WhaleIcon } from './components/shared/tokens/WhaleIcon';
 import { cn } from './utils/cn';
-import PageLayout from './components/shared/PageLayout';
+import PageLayout from './components/shared/ui/PageLayout';
 
 interface HostPageProps {
   theme: 'light' | 'dark';

@@ -1,28 +1,28 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
-import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
-import { TEAM_ORDER } from './types';
-import { parseScriptFile } from './utils/scriptUtils';
+import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
+import { useScriptUpload } from './hooks/useScriptUpload';
+import { usePlayerRoster } from './hooks/usePlayerRoster';
 
 import { performStandardAssignment } from './utils/standardAssignment';
 import { getValidationSummary } from './utils/validationSummary';
-import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
-import GamePhase from './components/shared/GamePhase';
+import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
+import GamePhase from './components/shared/grimoire/GamePhase';
 import StandardSetupPhase from './components/standard/SetupPhase';
 import SetupPlayerEditModal from './components/standard/SetupPlayerEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
-import PageLayout from './components/shared/PageLayout';
-import DialogModal from './components/shared/DialogModal';
+import PageLayout from './components/shared/ui/PageLayout';
+import HeaderMenu from './components/shared/ui/HeaderMenu';
+import DialogModal from './components/shared/modals/DialogModal';
 import { useDialog } from './hooks/useDialog';
-import RoomCodeModal from './components/shared/RoomCodeModal';
-import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
-import ResetGameModal from './components/shared/ResetGameModal';
-import LoadingScreen from './components/shared/LoadingScreen';
+import RoomCodeModal from './components/shared/modals/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import ResetGameModal from './components/shared/modals/ResetGameModal';
+import LoadingScreen from './components/shared/ui/LoadingScreen';
 
 type Phase = 'setup' | 'game';
 
@@ -103,6 +103,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
+  const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
+  const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<Set<string>>(() => {
     const loadedSelectedIds = readPersistedField<string[] | null>(STORAGE_KEY, 'selectedCharacterIds', null);
     if (loadedSelectedIds) {
@@ -112,6 +115,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     return new Set(scriptRoles.map(r => r.id));
   });
   const [bagOnly, setBagOnly] = useState(false);
+  const [villageIdiotCount, setVillageIdiotCount] = usePersistedField<number>(STORAGE_KEY, 'villageIdiotCount', 1);
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = useState(0);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
@@ -476,9 +480,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
+      villageIdiotCount,
       rotationOffset,
+      alwaysShowNotes,
+      fullNightOrder,
+      allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, rotationOffset]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -562,236 +570,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  const updatePlayerName = (id: string, name: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
-  };
+  const {
+    updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRole,
+    togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
+    togglePlayerTheDrunk, togglePlayerTheMarionette, togglePlayerTheLunatic, togglePlayerTheLilMonsta,
+  } = usePlayerRoster({
+    players, setPlayers, findRole, phase,
+    onLog: addLogEntry,
+    onLilMonstaEnabled: () => setIsLilMonstaGame(true),
+  });
 
-  const updatePlayerNotes = (id: string, notes: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes } : p));
-  };
-
-  const updatePlayerPronouns = (id: string, pronouns: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, pronouns } : p));
-  };
-
-  const updatePlayerRoles = (id: string, roleIds: string[]) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, roleIds } : p));
-  };
-
-  const updatePlayerRole = (id: string, roleId: string) => {
-    const player = players.find(p => p.id === id);
-    const oldRole = player?.roleId ? findRole(player.roleId) : undefined;
-    const defaultEvil = oldRole ? (oldRole.team === 'minion' || oldRole.team === 'demon') : false;
-    const currentAlignment = player 
-      ? (player.isEvil !== undefined 
-          ? player.isEvil 
-          : player.isTheLunatic 
-            ? false 
-            : player.isTheMarionette 
-              ? true 
-              : defaultEvil) 
-      : undefined;
-
-    if (phase === 'game') {
-      if (player && player.roleId !== (roleId || undefined)) {
-        const newRole = findRole(roleId);
-        if (oldRole && newRole) {
-          addLogEntry(`${player.name} changed from ${oldRole.name} to ${newRole.name}`);
-        } else if (newRole) {
-          addLogEntry(`${player.name} assigned ${newRole.name}`);
-        }
-      }
-    }
-    let newPlayers = players.map(p => {
-      if (p.id === id) {
-        return {
-          ...p,
-          roleId: roleId || undefined,
-          isEvil: phase === 'game' ? currentAlignment : undefined,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    });
-
-    if (roleId === 'choirboy') {
-      const hasKing = newPlayers.some(p => p.roleId === 'king');
-      if (!hasKing) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'choirboy');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'king' } : p);
-        }
-      }
-    } else if (roleId === 'huntsman') {
-      const hasDamsel = newPlayers.some(p => p.roleId === 'damsel');
-      if (!hasDamsel) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'huntsman');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'damsel' } : p);
-        }
-      }
-    }
-
-    setPlayers(newPlayers);
-  };
-
-  const togglePlayerDead = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      const nextDead = !player.isDead;
-      addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextDead = !p.isDead;
-        return {
-          ...p,
-          isDead: nextDead,
-          hasDeadVote: nextDead ? true : undefined
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDeadVote = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      addLogEntry(player.hasDeadVote ? `${player.name}'s ghost vote used` : `${player.name}'s ghost vote restored`);
-    }
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
-  };
-
-  const togglePlayerEvil = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      const roleObj = findRole(player.roleId);
-      const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-      const currentEvil = player.isEvil !== undefined ? player.isEvil : defaultEvil;
-      addLogEntry(`${player.name} marked as ${!currentEvil ? 'Evil' : 'Good'}`);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const roleObj = findRole(p.roleId);
-        const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-        const currentEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-        return { ...p, isEvil: !currentEvil };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDrunkOrPoisoned = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      addLogEntry(`${player.name} ${!player.isDrunkOrPoisoned ? 'marked as Drunk/Poisoned' : 'cleared of Drunk/Poisoned'}`);
-    }
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
-  };
-
-  const togglePlayerTheDrunk = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheDrunk;
-        return {
-          ...p,
-          isTheDrunk: nextVal,
-          isTheMarionette: nextVal ? false : p.isTheMarionette,
-          isTheLilMonsta: nextVal ? false : p.isTheLilMonsta,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheMarionette = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheMarionette;
-        return {
-          ...p,
-          isTheMarionette: nextVal,
-          isTheDrunk: nextVal ? false : p.isTheDrunk,
-          isTheLilMonsta: nextVal ? false : p.isTheLilMonsta,
-          isEvil: nextVal ? true : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLunatic = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLunatic;
-        return {
-          ...p,
-          isTheLunatic: nextVal,
-          isTheDrunk: nextVal ? false : p.isTheDrunk,
-          isTheMarionette: nextVal ? false : p.isTheMarionette,
-          isTheLilMonsta: nextVal ? false : p.isTheLilMonsta,
-          isEvil: nextVal ? false : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLilMonsta = (id: string) => {
-    const isTurningOn = !players.find(x => x.id === id)?.isTheLilMonsta;
-    if (isTurningOn) {
-      setIsLilMonstaGame(true);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLilMonsta;
-        return {
-          ...p,
-          isTheLilMonsta: nextVal,
-          isTheDrunk: nextVal ? false : p.isTheDrunk,
-          isTheMarionette: nextVal ? false : p.isTheMarionette,
-          isTheLunatic: nextVal ? false : p.isTheLunatic,
-        };
-      }
-      if (isTurningOn) {
-        return {
-          ...p,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    parseScriptFile(file)
-      .then(({ name, author, roles, unknownRoles }) => {
-        setCustomScriptRoles(roles);
-        setScriptName(name);
-        setScriptAuthor(author);
-        if (unknownRoles.length > 0) {
-          const list = unknownRoles.map(r => r.name).join(', ');
-          showAlert(`This script includes custom character(s) not recognized by the app: ${list}. They'll still be usable, but their team was inferred from the script file and they won't have official icons or ability text.`);
-        }
-      })
-      .catch(err => showAlert((err as Error).message));
-  };
-
-  const clearCustomScript = () => {
-    setCustomScriptRoles(null);
-    setScriptName("All Roles");
-    setScriptAuthor("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
 
@@ -807,7 +595,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [currentScriptRoles]);
 
   const randomlyAssignRoles = () => {
-    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles, sentinelOutsiderDelta);
+    const assignedPlayers = performStandardAssignment(players, currentScriptRoles, selectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount);
     if (!assignedPlayers) {
       const N = players.length;
       showAlert(N < 5
@@ -827,7 +615,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount)!;
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
@@ -861,6 +649,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
+  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+    setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+  });
+
   const confirmDisconnect = useCallback(() => {
     showConfirm(
       "Disconnect secondary device? This will stop syncing with the primary grimoire.",
@@ -871,36 +663,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [showConfirm]);
 
   // Modal logic details
-  const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? (() => {
-    const actualRoleId = modalPlayer.isTheDrunk
-      ? 'drunk'
-      : modalPlayer.isTheMarionette
-        ? (modalPlayer.roleId || 'marionette')
-        : modalPlayer.isTheLunatic
-          ? (modalPlayer.roleId || 'lunatic')
-          : modalPlayer.roleId;
-    return selectionRoles.find(r => r.id === actualRoleId);
-  })() : undefined;
-  const filteredModalRoles = selectionRoles
-    .filter(r =>
-      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
-      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
-    )
-    .sort((a, b) => {
-      const isCurrentA = a.id === modalPlayer?.roleId;
-      const isCurrentB = b.id === modalPlayer?.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-  const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
-  const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
-  const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
+  const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
+    usePlayerDetailsNav(players, selectedPlayerId, selectionRoles, modalRoleSearch);
 
   return (
     <>
@@ -952,20 +716,19 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           )}
         </div>
       }
-      extraControls={
-        <button
-          id="reset-game-button"
-          onClick={resetGame}
-          disabled={isSecondary}
-          className={cn(
-            "p-2 transition-colors",
-            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
-            isSecondary && "opacity-40 cursor-not-allowed"
-          )}
-          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
-        >
-          <Undo2 size={20} />
-        </button>
+      headerControls={
+        <HeaderMenu
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          onToggleFullNightOrder={setFullNightOrder}
+          allReminders={allReminders}
+          onToggleAllReminders={setAllReminders}
+          onResetGame={resetGame}
+          isSecondary={isSecondary}
+        />
       }
       headerExtra={
         isSecondary ? (
@@ -1046,6 +809,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          villageIdiotCount={villageIdiotCount}
+          setVillageIdiotCount={setVillageIdiotCount}
           isLightModeActive={isLightModeActive}
           allAssigned={allAssigned}
           remotePlayerCount={remotePlayerIds.size}
@@ -1148,6 +913,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onSetCheckedItems={setCheckedItems}
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
+          alwaysShowNotes={alwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          includeAllScriptReminders={allReminders}
         />
       )}
 
@@ -1193,7 +961,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
-          onUpdateRoles={updatePlayerRoles}
           onUpdateNotes={updatePlayerNotes}
           onUpdatePronouns={updatePlayerPronouns}
           onToggleDead={togglePlayerDead}

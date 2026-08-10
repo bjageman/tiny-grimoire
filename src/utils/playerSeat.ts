@@ -41,14 +41,31 @@ export function seatIsEvil(player: Player, role: Role | null | undefined): boole
   return role ? role.team === 'minion' || role.team === 'demon' : false;
 }
 
-// White halo that lifts seat text off the token face; dropped when dead so it doesn't glow.
-export const SEAT_NAME_GLOW = '0 1.5px 3px rgba(255,255,255,1), 0 0 5px rgba(255,255,255,1), 0 0 8px rgba(255,255,255,0.9)';
-export const SEAT_PRONOUN_GLOW = '0 1px 2px rgba(255,255,255,1), 0 0 4px rgba(255,255,255,0.9)';
+// Halo that lifts seat text off the token face: white on a living token, grey on a dead one's paler face.
+export interface SeatGlow {
+  alive: string;
+  dead: string;
+}
+
+export const SEAT_NAME_GLOW: SeatGlow = {
+  alive: '0 1.5px 3px rgba(255,255,255,1), 0 0 5px rgba(255,255,255,1), 0 0 8px rgba(255,255,255,0.9)',
+  dead: '0 1.5px 3px rgba(228,228,231,1), 0 0 5px rgba(228,228,231,1), 0 0 8px rgba(228,228,231,0.9)',
+};
+export const SEAT_PRONOUN_GLOW: SeatGlow = {
+  alive: '0 1px 2px rgba(255,255,255,1), 0 0 4px rgba(255,255,255,0.9)',
+  dead: '0 1px 2px rgba(228,228,231,1), 0 0 4px rgba(228,228,231,0.9)',
+};
 export const SEAT_NAME_COLOR = '#1a1a1a';
 export const SEAT_PRONOUN_COLOR = '#555';
-export const SEAT_DEAD_OPACITY = 0.75;
 
-/** Text shadow for a seat's name/pronouns — no halo once the player is dead. */
-export function seatTextShadow(isDead: boolean | undefined, glow: string): string {
-  return isDead ? 'none' : glow;
+// Light mode keeps the original faded corpse; dark mode reads better as a pale, full-strength token.
+export function deadSeatStyle(isLightModeActive: boolean | undefined) {
+  return isLightModeActive
+    ? { faceOpacity: 0.6, faceFill: '#e4e4e7', iconOpacity: 'opacity-15', textOpacity: 0.6 }
+    : { faceOpacity: 0.75, faceFill: '#f4f4f5', iconOpacity: 'opacity-35', textOpacity: 1 };
+}
+
+export function seatTextShadow(isDead: boolean | undefined, glow: SeatGlow, isLightModeActive?: boolean): string {
+  if (!isDead) return glow.alive;
+  return isLightModeActive ? 'none' : glow.dead;
 }

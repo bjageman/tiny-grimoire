@@ -3,8 +3,8 @@ import { Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
-import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
-import ToggleSwitch from '../shared/ToggleSwitch';
+import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
+import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
 import type { ValidationSummary } from '../../utils/validationSummary';
 

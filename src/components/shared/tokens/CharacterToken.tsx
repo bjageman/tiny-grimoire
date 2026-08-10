@@ -1,0 +1,115 @@
+import { cn } from '../../../utils/cn';
+import { roleIconFallback } from '../../../utils/roleIcon';
+import { deadSeatStyle } from '../../../utils/playerSeat';
+import type { Role } from '../../../types';
+
+interface CharacterTokenProps {
+  role?: Role | null;
+  isEvil?: boolean;
+  size?: number;
+  idPrefix: string;
+  className?: string;
+  /** Icon size as a percentage of the token, default 85 */
+  iconSizePct?: number;
+  /** Dims/grayscales the token to reflect a dead player */
+  isDead?: boolean;
+  isLightModeActive?: boolean;
+  /** When there's no role, still draw the colored ring (no text/icon) instead of the dashed "?" placeholder */
+  blankRing?: boolean;
+  /** Use a neutral gray ring instead of the alignment-coloured (blue/red) one. */
+  neutralRing?: boolean;
+  /** Show the icon at full opacity (a selectable token) rather than the faded grimoire watermark. */
+  solidIcon?: boolean;
+}
+
+const TEAM_COLOR: Record<Role['team'], string> = {
+  townsfolk: '#2563eb',
+  outsider: '#10b981',
+  minion: '#ef4444',
+  demon: '#7f1d1d',
+  traveler: '#a855f7',
+};
+
+const teamFill = (team: Role['team']) => TEAM_COLOR[team] ?? '#6b7280';
+
+export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, isLightModeActive = false, blankRing = false, neutralRing = false, solidIcon = false }: CharacterTokenProps) {
+  const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
+
+  if (!role && !blankRing) {
+    return (
+      <div
+        className={cn(
+          'rounded-full border-2 border-dashed border-gray-800 bg-gray-955/40 flex items-center justify-center text-3xl font-light text-gray-600 shrink-0',
+          size === undefined && 'w-full h-full',
+          className
+        )}
+        style={sizeStyle}
+      >
+        ?
+      </div>
+    );
+  }
+
+  const evil = isEvil ?? (role ? (role.team === 'minion' || role.team === 'demon') : false);
+  const dead = deadSeatStyle(isLightModeActive);
+
+  return (
+    <div className={cn('relative shrink-0', size === undefined && 'w-full h-full', className)} style={sizeStyle}>
+      {/* Background layer: ring + dashed guide circle, behind the icon */}
+      <svg
+        viewBox="0 0 200 200"
+        opacity={isDead ? dead.faceOpacity : 1}
+        className="w-full h-full absolute inset-0 z-0 select-none pointer-events-none"
+      >
+        <defs>
+          <path id={`token-top-${idPrefix}`} d="M 32,100 A 68,68 0 0,1 168,100" fill="none" />
+          <path id={`token-bottom-${idPrefix}`} d="M 168,100 A 68,68 0 0,1 32,100" fill="none" />
+        </defs>
+        <circle
+          cx="100"
+          cy="100"
+          r="90"
+          fill={isDead ? dead.faceFill : '#ffffff'}
+          stroke={neutralRing ? '#d4d4d8' : (evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk)}
+          strokeWidth={6}
+        />
+        <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
+      </svg>
+      {/* Icon layer: clipped to the token circle so any image, whatever its shape, stays inside the ring */}
+      {role && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none select-none">
+          <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
+            <img
+              key={role.id}
+              src={`/icons/${role.id}.svg`}
+              alt={role.name}
+              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : 'opacity-35'), isDead && 'grayscale')}
+              onError={roleIconFallback(role, evil)}
+            />
+          </div>
+        </div>
+      )}
+      {/* Text layer: curved name/team labels, always drawn on top of the icon */}
+      {role && (
+        <svg
+          viewBox="0 0 200 200"
+          opacity={isDead ? dead.textOpacity : 1}
+          className="w-full h-full absolute inset-0 z-20 select-none pointer-events-none"
+        >
+          <text
+            fill={teamFill(role.team)}
+            style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.025em', textTransform: 'uppercase' }}
+          >
+            <textPath href={`#token-top-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.name}</textPath>
+          </text>
+          <text
+            fill={teamFill(role.team)}
+            style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+          >
+            <textPath href={`#token-bottom-${idPrefix}`} startOffset="50%" textAnchor="middle">{role.team}</textPath>
+          </text>
+        </svg>
+      )}
+    </div>
+  );
+}

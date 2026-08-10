@@ -1,6 +1,7 @@
 import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
 import rolesData from '../official_roles.json';
+import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 
 const OFFICIAL_ROLE_IDS = new Set((rolesData as Role[]).map(r => r.id));
 
@@ -326,10 +327,13 @@ export function getValidationSummary(
     roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
   }
   for (const [roleId, count] of Object.entries(roleIdFreq)) {
-    if (count > 1 && roleId !== 'legion') {
-      const role = allRoles.find(r => r.id === roleId);
-      failures.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
+    if (count <= 1 || roleId === 'legion') continue;
+    if (roleId === 'villageidiot' && count <= VILLAGE_IDIOT_MAX) {
+      modifications.push(`${count} Village Idiots in play.`);
+      continue;
     }
+    const role = allRoles.find(r => r.id === roleId);
+    failures.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
   }
 
   // Marionette check: each Marionette must neighbor at least one Demon

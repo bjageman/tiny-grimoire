@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import ToggleSwitch from '../shared/ToggleSwitch';
+import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
-import ScriptCharactersModal from '../shared/ScriptCharactersModal';
+import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 import SelectCharactersModal from './SelectCharactersModal';
-import ScriptHelpButton from '../shared/ScriptHelpButton';
+import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
-import GrimoireBalanceVerification from '../shared/GrimoireBalanceVerification';
-import FablesAndLorics from '../shared/FablesAndLorics';
+import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
+import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
@@ -22,6 +22,8 @@ interface StandardSetupPhaseProps {
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;
   setSelectedCharacterIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  villageIdiotCount: number;
+  setVillageIdiotCount: (count: number) => void;
   newPlayerName: string;
   setNewPlayerName: (name: string) => void;
   addPlayer: () => void;
@@ -69,6 +71,8 @@ export default function StandardSetupPhase({
   scriptAuthor,
   selectedCharacterIds,
   setSelectedCharacterIds,
+  villageIdiotCount,
+  setVillageIdiotCount,
   newPlayerName,
   setNewPlayerName,
   addPlayer,
@@ -441,6 +445,8 @@ export default function StandardSetupPhase({
       onAssign={randomlyAssignWithRoles}
       selectedIds={selectedCharacterIds}
       setSelectedIds={setSelectedCharacterIds}
+      villageIdiotCount={villageIdiotCount}
+      setVillageIdiotCount={setVillageIdiotCount}
     />
     </>
   );

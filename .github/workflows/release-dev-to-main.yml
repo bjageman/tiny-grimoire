@@ -1,0 +1,58 @@
+name: Release dev → main
+
+on:
+  schedule:
+    # 00:00 UTC Wednesday = Tuesday 8pm EDT / 7pm EST
+    - cron: '0 0 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for unreleased commits
+        id: diff
+        run: |
+          count=$(git rev-list --count origin/main..origin/dev)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ]; then
+            echo "main is already up to date with dev; nothing to release." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Open or reuse the release PR
+        if: steps.diff.outputs.count != '0'
+        id: pr
+        env:
+          # A PAT is required: PRs opened with GITHUB_TOKEN do not trigger the
+          # pull_request workflows that main's ruleset requires, so auto-merge stalls.
+          GH_TOKEN: ${{ secrets.DEV_TO_MAIN_SECRET || secrets.GITHUB_TOKEN }}
+          HAS_PAT: ${{ secrets.DEV_TO_MAIN_SECRET != '' }}
+        run: |
+          if [ "$HAS_PAT" != "true" ]; then
+            echo "::warning::DEV_TO_MAIN_SECRET is not set; required checks may never run on the PR."
+          fi
+          url=$(gh pr list --base main --head dev --state open --json url --jq '.[0].url')
+          if [ -z "$url" ]; then
+            url=$(gh pr create \
+              --base main \
+              --head dev \
+              --title "Release: dev → main" \
+              --body "Automated weekly release. Merges \`dev\` into \`main\`, which deploys to production.")
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Release PR: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enable auto-merge
+        if: steps.diff.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.DEV_TO_MAIN_SECRET || secrets.GITHUB_TOKEN }}
+        run: gh pr merge "${{ steps.pr.outputs.url }}" --auto --merge

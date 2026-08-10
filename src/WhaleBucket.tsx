@@ -1,27 +1,27 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Undo2 } from 'lucide-react';
 import rolesData from './official_roles.json';
-import { cn } from './utils/cn';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
-import { TEAM_ORDER } from './types';
+import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
+import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
 import { getValidationSummary } from './utils/validationSummary';
-import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
+import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
 import WhaleBucketDraftPhase from './components/whalebucket/DraftPhase';
-import GamePhase from './components/shared/GamePhase';
+import GamePhase from './components/shared/grimoire/GamePhase';
 import WhaleBucketPlayerPreferenceModal from './components/whalebucket/PlayerPreferenceModal';
 import WhaleBucketDraftEditModal from './components/whalebucket/DraftEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
-import PageLayout from './components/shared/PageLayout';
-import DialogModal from './components/shared/DialogModal';
-import RoomCodeModal from './components/shared/RoomCodeModal';
-import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
-import ResetGameModal from './components/shared/ResetGameModal';
-import LoadingScreen from './components/shared/LoadingScreen';
+import PageLayout from './components/shared/ui/PageLayout';
+import HeaderMenu from './components/shared/ui/HeaderMenu';
+import DialogModal from './components/shared/modals/DialogModal';
+import RoomCodeModal from './components/shared/modals/RoomCodeModal';
+import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import ResetGameModal from './components/shared/modals/ResetGameModal';
+import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { useDialog } from './hooks/useDialog';
 
 export type Player = Omit<BasePlayer, 'preferences'> & {
@@ -77,6 +77,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   });
   const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
+  const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
+  const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeDraftPlayerId, setActiveDraftPlayerId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -413,8 +416,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       checkedItems,
       rotationOffset,
+      alwaysShowNotes,
+      fullNightOrder,
+      allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -488,22 +494,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     } else {
       performRemoval();
     }
-  };
-
-  const updatePlayerName = (id: string, name: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, name } : p));
-  };
-
-  const updatePlayerNotes = (id: string, notes: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes } : p));
-  };
-
-  const updatePlayerPronouns = (id: string, pronouns: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, pronouns } : p));
-  };
-
-  const updatePlayerRoles = (id: string, roleIds: string[]) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, roleIds } : p));
   };
 
   const togglePreference = (playerId: string, team: Role['team'], roleId: string) => {
@@ -629,166 +619,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setPhase('draft');
   };
 
-  const updatePlayerRole = (id: string, roleId: string) => {
-    const player = players.find(p => p.id === id);
-    const oldRole = player?.roleId ? (rolesData as Role[]).find(r => r.id === player.roleId) : undefined;
-    const defaultEvil = oldRole ? (oldRole.team === 'minion' || oldRole.team === 'demon') : false;
-    const currentAlignment = player 
-      ? (player.isEvil !== undefined 
-          ? player.isEvil 
-          : player.isTheLunatic 
-            ? false 
-            : player.isTheMarionette 
-              ? true 
-              : defaultEvil) 
-      : undefined;
-
-    let newPlayers = players.map(p => {
-      if (p.id === id) {
-        const role = (rolesData as Role[]).find(r => r.id === roleId);
-        const isPref = role ? (p.preferences?.[role.team] || []).includes(roleId) : false;
-        return {
-          ...p,
-          roleId: roleId || undefined,
-          assignedFromPref: isPref,
-          isEvil: phase === 'game' ? currentAlignment : undefined,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    });
-
-    if (roleId === 'choirboy') {
-      const hasKing = newPlayers.some(p => p.roleId === 'king');
-      if (!hasKing) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'choirboy');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'king', assignedFromPref: false } : p);
-        }
-      }
-    } else if (roleId === 'huntsman') {
-      const hasDamsel = newPlayers.some(p => p.roleId === 'damsel');
-      if (!hasDamsel) {
-        const candidate = newPlayers.find(p => p.id !== id && !p.roleId) ||
-                          newPlayers.find(p => p.id !== id && p.roleId !== 'huntsman');
-        if (candidate) {
-          newPlayers = newPlayers.map(p => p.id === candidate.id ? { ...p, roleId: 'damsel', assignedFromPref: false } : p);
-        }
-      }
-    }
-
-    setPlayers(newPlayers);
-  };
-
-  const togglePlayerDead = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      const nextDead = !player.isDead;
-      addLogEntry(nextDead ? `${player.name} died` : `${player.name} returned to life`);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextDead = !p.isDead;
-        return {
-          ...p,
-          isDead: nextDead,
-          hasDeadVote: nextDead ? true : undefined
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDeadVote = (id: string) => {
-    const player = players.find(p => p.id === id);
-    if (player) {
-      addLogEntry(player.hasDeadVote ? `${player.name}'s ghost vote used` : `${player.name}'s ghost vote restored`);
-    }
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, hasDeadVote: !p.hasDeadVote } : p));
-  };
-
-  const togglePlayerEvil = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
-        const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
-        const currentEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-        return { ...p, isEvil: !currentEvil };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerDrunkOrPoisoned = (id: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
-  };
-
-  const togglePlayerTheDrunk = (id: string) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isTheDrunk: !p.isTheDrunk, isTheMarionette: false, isTheLilMonsta: false } : p));
-  };
-
-  const togglePlayerTheMarionette = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheMarionette;
-        return {
-          ...p,
-          isTheMarionette: nextVal,
-          isTheDrunk: false,
-          isTheLilMonsta: false,
-          isEvil: nextVal ? true : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLunatic = (id: string) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLunatic;
-        return {
-          ...p,
-          isTheLunatic: nextVal,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLilMonsta: false,
-          isEvil: nextVal ? false : undefined,
-        };
-      }
-      return p;
-    }));
-  };
-
-  const togglePlayerTheLilMonsta = (id: string) => {
-    const isTurningOn = !players.find(x => x.id === id)?.isTheLilMonsta;
-    if (isTurningOn) {
-      setIsLilMonstaGame(true);
-    }
-    setPlayers(prev => prev.map(p => {
-      if (p.id === id) {
-        const nextVal = !p.isTheLilMonsta;
-        return {
-          ...p,
-          isTheLilMonsta: nextVal,
-          isTheDrunk: false,
-          isTheMarionette: false,
-          isTheLunatic: false
-        };
-      }
-      if (isTurningOn) {
-        return {
-          ...p,
-          isTheLilMonsta: false,
-        };
-      }
-      return p;
-    }));
-  };
+  const {
+    updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRole,
+    togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
+    togglePlayerTheDrunk, togglePlayerTheMarionette, togglePlayerTheLunatic, togglePlayerTheLilMonsta,
+  } = usePlayerRoster({
+    players, setPlayers, phase,
+    findRole: (roleId) => roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined,
+    onLog: addLogEntry,
+    onLilMonstaEnabled: () => setIsLilMonstaGame(true),
+    resolveAssignedFromPref: (pl, rid) => {
+      const role = (rolesData as Role[]).find(r => r.id === rid);
+      return role ? (pl.preferences?.[role.team] || []).includes(rid) : false;
+    },
+  });
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -908,36 +752,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [showConfirm]);
 
   // Details Modal variables
-  const modalPlayer = selectedPlayerId ? players.find(x => x.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? (() => {
-    const actualRoleId = modalPlayer.isTheDrunk
-      ? 'drunk'
-      : modalPlayer.isTheMarionette
-        ? (modalPlayer.roleId || 'marionette')
-        : modalPlayer.isTheLunatic
-          ? (modalPlayer.roleId || 'lunatic')
-          : modalPlayer.roleId;
-    return (rolesData as Role[]).find(r => r.id === actualRoleId);
-  })() : undefined;
-  const filteredModalRoles = (rolesData as Role[])
-    .filter(r =>
-      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
-      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
-    )
-    .sort((a, b) => {
-      const isCurrentA = a.id === modalPlayer?.roleId;
-      const isCurrentB = b.id === modalPlayer?.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-  const currentIndex = selectedPlayerId ? players.findIndex(x => x.id === selectedPlayerId) : -1;
-  const prevPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
-  const nextPlayerId = selectedPlayerId && currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
+  const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
+    usePlayerDetailsNav(players, selectedPlayerId, rolesData as Role[], modalRoleSearch);
 
   return (
     <>
@@ -988,20 +804,19 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           )}
         </div>
       }
-      extraControls={
-        <button
-          id="reset-game-button"
-          onClick={resetGame}
-          disabled={isSecondary}
-          className={cn(
-            "p-2 transition-colors",
-            isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white",
-            isSecondary && "opacity-40 cursor-not-allowed"
-          )}
-          title={isSecondary ? "This action is disabled on secondary devices to prevent sync issues." : "Reset game"}
-        >
-          <Undo2 size={20} />
-        </button>
+      headerControls={
+        <HeaderMenu
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          onToggleFullNightOrder={setFullNightOrder}
+          allReminders={allReminders}
+          onToggleAllReminders={setAllReminders}
+          onResetGame={resetGame}
+          isSecondary={isSecondary}
+        />
       }
       headerExtra={
         isSecondary ? (
@@ -1162,6 +977,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onSetCheckedItems={setCheckedItems}
           rotationOffset={rotationOffset}
           onRotationChange={setRotationOffset}
+          alwaysShowNotes={alwaysShowNotes}
+          fullNightOrder={fullNightOrder}
+          includeAllScriptReminders={allReminders}
         />
       )}
 
@@ -1217,7 +1035,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onNextPlayer={() => nextPlayerId && setSelectedPlayerId(nextPlayerId)}
           onUpdateName={updatePlayerName}
           onUpdateRole={updatePlayerRole}
-          onUpdateRoles={updatePlayerRoles}
           onUpdateNotes={updatePlayerNotes}
           onUpdatePronouns={updatePlayerPronouns}
           onToggleDead={togglePlayerDead}

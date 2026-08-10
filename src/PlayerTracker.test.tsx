@@ -205,9 +205,12 @@ describe('PlayerTracker', () => {
   it('resets the tracker and returns to setup when clicking the reset button', () => {
     window.location.hash = '#/tracker';
 
-    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    const { container } = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
-    const resetButton = document.getElementById('reset-game-button');
+    const menuButton = container.querySelector('#header-menu-button');
+    fireEvent.click(menuButton!);
+
+    const resetButton = container.querySelector('#reset-game-button');
     fireEvent.click(resetButton!);
 
     // Confirm modal should appear
@@ -267,7 +270,7 @@ describe('PlayerTracker', () => {
     });
   });
 
-  it('allows toggling reminder tokens on and off via checkbox below notes', () => {
+  it('allows toggling reminder tokens on and off via the header menu', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
@@ -282,8 +285,10 @@ describe('PlayerTracker', () => {
     const startButton = screen.getByText('Start Game');
     fireEvent.click(startButton);
 
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+
     // Verify checkbox is rendered and defaults to unchecked
-    const checkbox = screen.getAllByLabelText('Turn on Reminder Tokens')[0] as HTMLInputElement;
+    const checkbox = document.getElementById('show-reminders-checkbox') as HTMLInputElement;
     expect(checkbox).toBeInTheDocument();
     expect(checkbox.checked).toBe(false);
 
@@ -319,7 +324,7 @@ describe('PlayerTracker', () => {
       .find(el => el.textContent?.includes('Bob'));
     fireEvent.click(bobRow!);
     fireEvent.click(screen.getByRole('button', { name: 'Alive' }));
-    fireEvent.change(screen.getByPlaceholderText('Notes...'), { target: { value: 'Secretly the Imp' } });
+    fireEvent.change(screen.getByPlaceholderText('Label'), { target: { value: 'Secretly the Imp' } });
 
     // Someone opening the share link requests the initial setup once
     act(() => {

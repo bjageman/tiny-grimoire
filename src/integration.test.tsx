@@ -89,7 +89,11 @@ describe('Storyteller Reset Integration', () => {
       tracker.getByText(/seating arrangement and player list are synced/i)
     ).toBeInTheDocument();
 
-    // 4. Trigger reset game on the Storyteller page — click reset then confirm the modal
+    // 4. Trigger reset game on the Storyteller page — open header menu, click reset then confirm the modal
+    const menuButton = storytellerContainer.querySelector('#header-menu-button');
+    expect(menuButton).not.toBeNull();
+    fireEvent.click(menuButton!);
+
     const resetButton = storytellerContainer.querySelector('#reset-game-button');
     expect(resetButton).not.toBeNull();
 
@@ -140,7 +144,11 @@ describe('Storyteller Reset Integration', () => {
     // JoinPage should be in the waiting room / waiting state
     expect(joinPage.getByText(new RegExp(`Joined Room ${gameCode}`, 'i'))).toBeInTheDocument();
 
-    // 4. Trigger reset on Storyteller setup page — click reset then confirm the modal
+    // 4. Trigger reset on Storyteller setup page — open header menu, click reset then confirm the modal
+    const menuButton = storytellerContainer.querySelector('#header-menu-button');
+    expect(menuButton).not.toBeNull();
+    fireEvent.click(menuButton!);
+
     const resetButton = storytellerContainer.querySelector('#reset-game-button');
     expect(resetButton).not.toBeNull();
 
@@ -201,6 +209,7 @@ describe('Storyteller Reset Integration', () => {
     // Alice should be revealed as her character
     expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
 
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
     fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
 
     expect(storyteller.container.querySelector('#reset-game-modal')).not.toBeNull();
@@ -373,6 +382,7 @@ describe('Storyteller Reset Integration', () => {
     const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
     expect(joinPage.queryAllByText('Washerwoman').length).toBeGreaterThan(0);
 
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
     fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
     await act(async () => {
       fireEvent.click(within(storyteller.container).getByText('Keep Players'));
@@ -618,6 +628,7 @@ describe('Storyteller Reset Integration', () => {
   it('Disconnect from the reset modal fully ends the session', async () => {
     const { storyteller, joinPage } = await renderGameWithRevealedPlayer();
 
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
     fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
     await act(async () => {
       fireEvent.click(within(storyteller.container).getByText('Disconnect'));
@@ -1198,7 +1209,7 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     });
 
     const nameInput = storyteller.container.querySelector('#detail-player-name-input') as HTMLInputElement;
-    const notesInput = storyteller.container.querySelector('input[placeholder="Notes..."]') as HTMLInputElement;
+    const notesInput = storyteller.container.querySelector('input[placeholder="Label"]') as HTMLInputElement;
     expect(nameInput).not.toBeNull();
     expect(notesInput).not.toBeNull();
 

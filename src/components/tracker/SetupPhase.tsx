@@ -5,8 +5,8 @@ import type { Player, Role } from '../../types';
 import rolesData from '../../roles.json';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
-import ScriptHelpButton from '../shared/ScriptHelpButton';
-import ScriptCharactersModal from '../shared/ScriptCharactersModal';
+import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
+import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];

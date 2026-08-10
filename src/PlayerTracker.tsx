@@ -1,23 +1,24 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Undo2 } from 'lucide-react';
 import rolesData from './roles.json';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
-import { TEAM_ORDER } from './types';
-import { parseScriptFile } from './utils/scriptUtils';
+import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
+import { useScriptUpload } from './hooks/useScriptUpload';
+import { withInPlayTravelers } from './utils/scriptUtils';
 
-import PlayerDetailsModal from './components/shared/PlayerDetailsModal';
-import GamePhase from './components/shared/GamePhase';
+import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
+import GamePhase from './components/shared/grimoire/GamePhase';
 import PlayerTrackerSetupPhase from './components/tracker/SetupPhase';
 import PlayerTrackerNameEditModal from './components/tracker/NameEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
 import { useGameSocket } from './hooks/useGameSocket';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
-import PageLayout from './components/shared/PageLayout';
-import DialogModal from './components/shared/DialogModal';
-import HeaderCodeBadge from './components/shared/HeaderCodeBadge';
-import RoomCodeModal from './components/shared/RoomCodeModal';
-import LoadingScreen from './components/shared/LoadingScreen';
+import PageLayout from './components/shared/ui/PageLayout';
+import HeaderMenu from './components/shared/ui/HeaderMenu';
+import DialogModal from './components/shared/modals/DialogModal';
+import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import RoomCodeModal from './components/shared/modals/RoomCodeModal';
+import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { useDialog } from './hooks/useDialog';
 
 type Phase = 'setup' | 'game';
@@ -70,6 +71,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     return roles;
   }, [currentScriptRoles]);
 
+  // Script roles plus any traveler a player is already assigned (e.g. from a synced Storyteller game)
+  // so the details-modal picker never hides a currently-equipped character behind the "all travelers" toggle.
+  const detailsModalRoles = useMemo(
+    () => withInPlayTravelers(currentScriptRoles, players),
+    [currentScriptRoles, players]
+  );
+
   const [gameCode, setGameCode] = useState<string | null>(() =>
     readPersistedField<string | null>(STORAGE_KEY, 'code', null) || sessionStorage.getItem('joined-code') || null
   );
@@ -90,6 +98,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
   const [enableReminders, setEnableReminders] = usePersistedField<boolean>(STORAGE_KEY, 'enableReminders', false);
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
+  const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
 
@@ -376,8 +385,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       code: gameCode || undefined,
       enableReminders,
       reminderTokens,
+      alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -508,63 +518,15 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
-  const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    parseScriptFile(file)
-      .then(({ name, author, roles, unknownRoles }) => {
-        setCustomScriptRoles(roles);
-        setScriptName(name);
-        setScriptAuthor(author);
-        if (unknownRoles.length > 0) {
-          const list = unknownRoles.map(r => r.name).join(', ');
-          showAlert(`This script includes custom character(s) not recognized by the app: ${list}. They'll still be usable, but their team was inferred from the script file and they won't have official icons or ability text.`);
-        }
-      })
-      .catch(err => showAlert((err as Error).message));
-  };
-
-  const clearCustomScript = () => {
-    setCustomScriptRoles(null);
-    setScriptName("All Roles");
-    setScriptAuthor("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+    setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+  });
 
   const isLightModeActive = theme === 'light';
 
   // Details Modal helpers
-  const modalPlayer = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
-  const modalRoleObj = modalPlayer ? (selectionRoles.find(r => r.id === modalPlayer.roleId) || undefined) : undefined;
-  const currentIndex = selectedPlayerId ? players.findIndex(p => p.id === selectedPlayerId) : -1;
-  const prevPlayerId = currentIndex !== -1 ? players[(currentIndex - 1 + players.length) % players.length].id : null;
-  const nextPlayerId = currentIndex !== -1 ? players[(currentIndex + 1) % players.length].id : null;
-
-  const filteredModalRoles = selectionRoles
-    .filter(r =>
-      r.name.toLowerCase().includes(modalRoleSearch.toLowerCase()) ||
-      r.team.toLowerCase().includes(modalRoleSearch.toLowerCase())
-    )
-    .sort((a, b) => {
-      const isCurrentA = a.id === modalPlayer?.roleId;
-      const isCurrentB = b.id === modalPlayer?.roleId;
-      if (isCurrentA && !isCurrentB) return -1;
-      if (!isCurrentA && isCurrentB) return 1;
-
-      const orderA = TEAM_ORDER[a.team] ?? 99;
-      const orderB = TEAM_ORDER[b.team] ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-
-      // Sort by order in script JSON
-      const indexA = selectionRoles.findIndex((r) => r.id === a.id);
-      const indexB = selectionRoles.findIndex((r) => r.id === b.id);
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-      return a.name.localeCompare(b.name);
-    });
+  const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
+    usePlayerDetailsNav(players, selectedPlayerId, detailsModalRoles, modalRoleSearch, true);
 
   return (
     <>
@@ -626,15 +588,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      extraControls={
-        <button
-          id="reset-game-button"
-          onClick={resetGame}
-          className={cn("p-2 transition-colors", isLightModeActive ? "text-gray-600 hover:text-gray-900" : "text-gray-500 hover:text-white")}
-          title="Reset game"
-        >
-          <Undo2 size={20} />
-        </button>
+      headerControls={
+        <HeaderMenu
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          alwaysShowNotes={alwaysShowNotes}
+          onToggleAlwaysShowNotes={setAlwaysShowNotes}
+          showReminders={enableReminders}
+          onToggleShowReminders={setEnableReminders}
+          onResetGame={resetGame}
+        />
       }
       contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
     >
@@ -679,6 +642,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           updatePlayerName={updatePlayerName}
           removePlayer={removePlayer}
+          onUpdatePronouns={updatePlayerPronouns}
           onClose={() => setActiveTrackerPlayerId(null)}
         />
       )}
@@ -719,12 +683,11 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           includeAllScriptReminders={true}
           reminderTokens={reminderTokens}
           onSetReminderTokens={setReminderTokens}
-          showReminderToggle={true}
-          onToggleReminders={setEnableReminders}
           notes={gameNotes}
           onNotesChange={setGameNotes}
           rotationOffset={rotationOffset}
           onRotationChange={setUserRotation}
+          alwaysShowNotes={alwaysShowNotes}
         />
       )}
 
@@ -735,7 +698,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           players={players}
           roleObj={modalRoleObj}
           filteredModalRoles={filteredModalRoles}
-          allRoles={selectionRoles}
+          allRoles={detailsModalRoles}
           isSearchingRole={isSearchingRole}
           modalRoleSearch={modalRoleSearch}
           isLightModeActive={isLightModeActive}

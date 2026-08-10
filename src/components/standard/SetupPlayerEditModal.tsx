@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { Search, Trash2 } from 'lucide-react';
@@ -6,6 +8,7 @@ import rolesData from '../../roles.json';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
+import PronounSelect from '../shared/ui/PronounSelect';
 
 interface SetupPlayerEditModalProps {
   activePlayerId: string;
@@ -38,8 +41,6 @@ const TEAM_ORDER: Record<string, number> = {
   traveler: 5,
 };
 
-const PRONOUN_OPTIONS = ['He/Him', 'She/Her', 'They/Them', 'Ask Me'];
-
 export default function SetupPlayerEditModal({
   activePlayerId,
   players,
@@ -64,6 +65,13 @@ export default function SetupPlayerEditModal({
 }: SetupPlayerEditModalProps) {
   useScrollLock();
   const isMobile = useIsMobile();
+  const [pronounsOpen, setPronounsOpen] = useState(false);
+
+  // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
+  useEscapeKey(() => {
+    if (pronounsOpen) setPronounsOpen(false);
+    else onClose();
+  });
 
   const player = players.find(p => p.id === activePlayerId);
   const index = players.findIndex(p => p.id === activePlayerId);
@@ -157,6 +165,16 @@ export default function SetupPlayerEditModal({
         </div>
 
         <div className="flex items-center gap-2">
+          {onUpdatePronouns && (
+            <PronounSelect
+              id="setup-player-pronouns-select"
+              pronouns={player.pronouns}
+              onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
+              isLightModeActive={isLightModeActive}
+              open={pronounsOpen}
+              onOpenChange={setPronounsOpen}
+            />
+          )}
           <input
             id="edit-player-name-input"
             type="text"
@@ -169,26 +187,6 @@ export default function SetupPlayerEditModal({
             placeholder="Player name"
             className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
           />
-          {onUpdatePronouns && (
-            <select
-              id="setup-player-pronouns-select"
-              value={player.pronouns || ''}
-              onChange={(e) => onUpdatePronouns(player.id, e.target.value)}
-              className={cn(
-                'shrink-0 w-24 rounded pl-2 pr-1 py-2 text-xs font-medium border focus:outline-none focus:border-clocktower-blood transition-colors cursor-pointer',
-                isLightModeActive
-                  ? 'bg-white border-gray-300 text-gray-600'
-                  : 'bg-gray-955 border-gray-800 text-gray-400'
-              )}
-            >
-              <option value="" className={isLightModeActive ? 'bg-white text-gray-600' : 'bg-gray-955 text-gray-400'}>Pronouns</option>
-              {PRONOUN_OPTIONS.map(option => (
-                <option key={option} value={option} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
 
         {(canFilterByBag || canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
@@ -233,7 +231,7 @@ export default function SetupPlayerEditModal({
                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                   />
                 </span>
-                The Drunk
+                Drunk
               </button>
             )}
             {canBeMarionette && (
@@ -257,7 +255,7 @@ export default function SetupPlayerEditModal({
                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                   />
                 </span>
-                The Marionette
+                Marionette
               </button>
             )}
             {canBeLunatic && (
@@ -281,7 +279,7 @@ export default function SetupPlayerEditModal({
                     onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
                   />
                 </span>
-                The Lunatic
+                Lunatic
               </button>
             )}
             {canBeLilMonsta && (

@@ -2,12 +2,14 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
-import { Search, X, Settings } from 'lucide-react';
+import { Search, X, Settings, Link2 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { inPlayRoleIds } from '../../../utils/scriptUtils';
+import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
+import ScriptJinxesModal from './ScriptJinxesModal';
 import officialRoles from '../../../official_roles.json';
 import rolesData from '../../../roles.json';
 import type { Player, Role } from '../../../types';
@@ -68,6 +70,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return localStorage.getItem('botc-script-in-play-only') === 'true';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [jinxesOpen, setJinxesOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleBoxRef = useRef<HTMLDivElement>(null);
@@ -192,6 +195,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   }, [filteredRoles, sortAlphabetically]);
 
   const isEmpty = filteredRoles.length === 0;
+
+  // Counted off the script itself, so searching or filtering the list never changes the jinx tally.
+  const jinxCount = useMemo(() => scriptJinxes(roles).length, [roles]);
 
   const handleClose = () => { onClose(); setSearchTerm(''); };
 
@@ -412,8 +418,35 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
               <div className="text-center py-8 text-sm text-gray-500 italic">No matching characters found.</div>
             )}
           </div>
+
+          {jinxCount > 0 && (
+            <button
+              id="script-jinxes-button"
+              type="button"
+              onClick={() => setJinxesOpen(true)}
+              className={cn(
+                "flex items-center justify-center gap-2 w-full mt-4 py-2.5 rounded-xl text-xs font-bold border transition-colors shrink-0",
+                isLightModeActive
+                  ? "bg-white/80 border-gray-300 text-gray-700 hover:bg-white hover:border-gray-400"
+                  : "bg-gray-955/65 border-gray-700 text-gray-300 hover:bg-gray-850/80 hover:border-gray-600"
+              )}
+            >
+              <Link2 size={14} /> Jinxes <span className="text-[10px] text-gray-500 font-normal font-mono">({jinxCount})</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Jinx list modal — closing it drops back to the script list underneath */}
+      {jinxesOpen && (
+        <ScriptJinxesModal
+          onClose={() => setJinxesOpen(false)}
+          roles={roles}
+          isLightModeActive={isLightModeActive}
+          isStoryteller={isStoryteller}
+          inPlayIds={inPlayIds}
+        />
+      )}
 
       {/* Role detail modal */}
       {selectedRole && (

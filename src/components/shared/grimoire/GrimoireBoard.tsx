@@ -16,7 +16,7 @@ import {
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
-import officialRoles from '../../../official_roles.json';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
 import ReminderPickerModal from '../modals/ReminderPickerModal';
 import ReminderTokenModal from '../modals/ReminderTokenModal';
 import DayNightLabel from '../ui/DayNightLabel';

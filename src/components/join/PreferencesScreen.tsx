@@ -3,7 +3,7 @@ import { Plus, Search, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { roleIconFallback } from '../../utils/roleIcon';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
 import type { Role } from '../../types';
 
 type PrefTeam = 'townsfolk' | 'outsider' | 'minion' | 'demon';

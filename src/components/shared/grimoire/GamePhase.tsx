@@ -4,8 +4,8 @@ import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUti
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
 import type { Player, Role, PlacedReminder } from '../../../types';
-import rolesData from '../../../roles.json';
-import officialRoles from '../../../official_roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from '../modals/ScriptCharactersModal';

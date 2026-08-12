@@ -1,6 +1,8 @@
+import { parseScriptJson } from './scriptUtils';
 import type { Role } from '../types';
-import rolesData from '../roles.json';
-import officialRoles from '../official_roles.json';
+import troubleBrewing from '../scripts/trouble-brewing.json';
+import badMoonRising from '../scripts/bad-moon-rising.json';
+import sectsAndViolets from '../scripts/sects-and-violets.json';
 
 export interface PresetScript {
   id: string;
@@ -9,22 +11,14 @@ export interface PresetScript {
   roles: Role[];
 }
 
-const EDITIONS = [
-  { id: 'tb', name: 'Trouble Brewing' },
-  { id: 'bmr', name: 'Bad Moon Rising' },
-  { id: 'snv', name: 'Sects & Violets' },
-] as const;
+// Built-in scripts are ordinary script files, parsed through the same path as an upload.
+const BUNDLED = [
+  { id: 'tb', file: troubleBrewing },
+  { id: 'bmr', file: badMoonRising },
+  { id: 'snv', file: sectsAndViolets },
+];
 
-const byId = new Map((rolesData as Role[]).map(r => [r.id, r]));
-
-/** The three official base scripts, resolved from the edition tags on the official role list. */
-export const PRESET_SCRIPTS: PresetScript[] = EDITIONS.map(({ id, name }) => ({
-  id,
-  name,
-  author: 'The Pandemonium Institute',
-  // official_roles.json already lists each edition in script order (townsfolk → outsider → minion → demon → traveler).
-  roles: (officialRoles as { id: string; edition: string }[])
-    .filter(r => r.edition === id)
-    .map(r => byId.get(r.id))
-    .filter((r): r is Role => r !== undefined),
-}));
+export const PRESET_SCRIPTS: PresetScript[] = BUNDLED.map(({ id, file }) => {
+  const { name, author, roles } = parseScriptJson(file, id);
+  return { id, name, author, roles };
+});

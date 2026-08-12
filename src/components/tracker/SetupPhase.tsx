@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';

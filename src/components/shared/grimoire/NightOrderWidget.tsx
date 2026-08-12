@@ -5,7 +5,7 @@ import { cn } from '../../../utils/cn';
 import DayNightLabel from '../ui/DayNightLabel';
 import type { Player, Role } from '../../../types';
 import nightSheet from '../../../nightsheet.json';
-import officialRoles from '../../../official_roles.json';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
 
 interface NightOrderWidgetProps {
   players: Player[];

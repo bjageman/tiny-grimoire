@@ -7,7 +7,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { TEAM_ORDER } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
 import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketDraftEditModalProps {

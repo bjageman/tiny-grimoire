@@ -1,6 +1,6 @@
 import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
-import rolesData from '../official_roles.json';
+import { ALL_ROLES as rolesData } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 
 export function assignCharacters(

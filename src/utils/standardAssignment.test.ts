@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
-import officialRoles from '../official_roles.json';
-import allRolesJson from '../roles.json';
+import { ALL_ROLES as officialRoles } from './roleData';
+import { PLAYABLE_ROLES as allRolesJson } from './roleData';
 
 describe('performStandardAssignment', () => {
   const mockScriptRoles: Role[] = [

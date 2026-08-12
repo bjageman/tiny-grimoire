@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import rolesData from './roles.json';
+import { PLAYABLE_ROLES as rolesData } from './utils/roleData';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';

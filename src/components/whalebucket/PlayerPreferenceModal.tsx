@@ -7,7 +7,7 @@ import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
-import rolesData from '../../official_roles.json';
+import { ALL_ROLES as rolesData } from '../../utils/roleData';
 import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketPlayerPreferenceModalProps {

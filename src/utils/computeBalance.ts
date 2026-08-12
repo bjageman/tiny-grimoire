@@ -1,5 +1,5 @@
 import { getDistribution } from '../constants';
-import officialRolesData from '../official_roles.json';
+import { ALL_ROLES as officialRolesData } from './roleData';
 import type { Role } from '../types';
 
 const OFFICIAL_ROLE_IDS = new Set((officialRolesData as { id: string }[]).map(r => r.id));

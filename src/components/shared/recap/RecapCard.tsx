@@ -14,7 +14,7 @@ import {
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import CharacterToken from '../tokens/CharacterToken';
-import officialRoles from '../../../official_roles.json';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
 
 const BOARD_WIDTH = 900;
 const BOARD_HEIGHT = 680;

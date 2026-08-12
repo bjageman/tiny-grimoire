@@ -1,5 +1,5 @@
 import type { Player, Role } from '../types';
-import masterRoles from '../official_roles.json';
+import { ALL_ROLES as masterRoles } from './roleData';
 
 export const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 

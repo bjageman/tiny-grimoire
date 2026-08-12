@@ -1,5 +1,5 @@
 import { cn } from '../../../utils/cn';
-import rolesData from '../../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
 import type { Role } from '../../../types';
 
 interface AddTravelerCardProps {

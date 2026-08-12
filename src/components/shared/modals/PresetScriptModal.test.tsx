@@ -23,9 +23,11 @@ describe('PresetScriptModal', () => {
     expect(preset.roles.some((r: { id: string }) => r.id === 'imp')).toBe(true);
   });
 
-  it('shows nothing but the script name on each option', () => {
+  it('labels each option with its script name and author', () => {
     render(<PresetScriptModal {...props} />);
-    expect(document.getElementById('preset-script-tb-button')).toHaveTextContent(/^Trouble Brewing$/);
+    const tb = document.getElementById('preset-script-tb-button')!;
+    expect(tb).toHaveTextContent('Trouble Brewing');
+    expect(tb).toHaveTextContent('by The Pandemonium Institute');
   });
 
   it('cancels without selecting', () => {

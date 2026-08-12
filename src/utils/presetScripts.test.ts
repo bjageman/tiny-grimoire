@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PRESET_SCRIPTS, type PresetScript } from './presetScripts';
-import rolesData from '../roles.json';
+import { PLAYABLE_ROLES as rolesData } from './roleData';
 import type { Role } from '../types';
 
 function teamCounts(preset: PresetScript): Record<Role['team'], number> {

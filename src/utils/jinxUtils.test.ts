@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { scriptJinxes } from './jinxUtils';
 import jinxData from '../jinxes.json';
-import rolesData from '../roles.json';
+import { PLAYABLE_ROLES as rolesData } from './roleData';
 import type { Role } from '../types';
 
 const all = rolesData as Role[];

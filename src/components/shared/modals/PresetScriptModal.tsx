@@ -36,13 +36,14 @@ export default function PresetScriptModal({ onSelect, onCancel, isLightModeActiv
               type="button"
               onClick={() => onSelect(preset)}
               className={cn(
-                'w-full py-2.5 px-3 rounded-md text-center border font-bold text-sm transition-colors',
+                'w-full py-2.5 px-3 rounded-md text-center border transition-colors',
                 isLightModeActive
                   ? 'bg-gray-50 border-gray-300 text-gray-900 hover:border-clocktower-blood/50 hover:bg-gray-100'
                   : 'bg-gray-955 border-gray-800 text-white hover:border-clocktower-blood hover:bg-gray-900'
               )}
             >
-              {preset.name}
+              <span className="block font-bold text-sm">{preset.name}</span>
+              <span className="block text-[10px] text-gray-500 font-medium mt-0.5">by {preset.author}</span>
             </button>
           ))}
           <button

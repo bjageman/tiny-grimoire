@@ -4,7 +4,7 @@ import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
-import rolesData from '../../official_roles.json';
+import { ALL_ROLES as rolesData } from '../../utils/roleData';
 
 interface WhaleBucketDraftCircleProps {
   players: Player[];

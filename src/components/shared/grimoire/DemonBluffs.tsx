@@ -6,8 +6,8 @@ import { roleIconFallback } from '../../../utils/roleIcon';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import ToggleSwitch from '../ui/ToggleSwitch';
-import rolesData from '../../../roles.json';
-import officialRoles from '../../../official_roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
 import type { Player, Role } from '../../../types';
 
 interface DemonBluffsProps {

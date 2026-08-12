@@ -3,7 +3,7 @@ import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 import PresetScriptModal from '../shared/modals/PresetScriptModal';

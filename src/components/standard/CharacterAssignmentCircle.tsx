@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Wifi, RotateCcw, RotateCw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
 import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 

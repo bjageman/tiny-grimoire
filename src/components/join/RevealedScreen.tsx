@@ -1,7 +1,7 @@
 import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
-import officialRoles from '../../official_roles.json';
+import { ALL_ROLES as officialRoles } from '../../utils/roleData';
 import type { Role } from '../../types';
 
 interface RevealedScreenProps {

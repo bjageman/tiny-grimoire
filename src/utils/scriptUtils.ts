@@ -1,6 +1,6 @@
 import type { Player, Role } from '../types';
-import rolesData from '../roles.json';
-import officialRoles from '../official_roles.json';
+import { PLAYABLE_ROLES as rolesData } from './roleData';
+import { ALL_ROLES as officialRoles } from './roleData';
 
 /** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
 function compareByScriptOrder(baseRoles: { id: string }[]) {
@@ -69,121 +69,133 @@ function toOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-export function parseScriptFile(file: File): Promise<{ name: string; author: string; roles: Role[]; unknownRoles: { id: string; name: string }[] }> {
+export interface ParsedScript {
+  name: string;
+  author: string;
+  roles: Role[];
+  unknownRoles: { id: string; name: string }[];
+}
+
+/** Turn the contents of a script JSON into roles. Shared by uploads and the built-in preset scripts. */
+export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedScript {
   const allRoles = rolesData as Role[];
   const official = officialRoles as { id: string; name: string; team: string }[];
 
+  if (!Array.isArray(parsed)) {
+    throw new Error('Invalid script format. Expected a JSON array of roles.');
+  }
+
+  const metaObj = parsed.find(
+    (item: unknown): item is { id: string; name?: string; author?: string } =>
+      !!item && typeof item === 'object' && 'id' in item &&
+      (item as { id: unknown }).id === '_meta'
+  ) as { id: string; name?: string; author?: string } | undefined;
+  const name = metaObj?.name || fallbackName;
+  const author = metaObj?.author || '';
+
+  const unknownRoles: { id: string; name: string }[] = [];
+
+  const parsedRoles = parsed
+    .map((item: unknown) => {
+      if (typeof item === 'string') {
+        return { id: item.replace(/_/g, '') };
+      }
+      if (item && typeof item === 'object' && 'id' in item &&
+          typeof (item as { id: unknown }).id === 'string') {
+        return {
+          ...(item as Record<string, unknown>),
+          id: (item as { id: string }).id.replace(/_/g, ''),
+        } as { id: string };
+      }
+      return null;
+    })
+    .filter((item: { id: string } | null): item is { id: string } => {
+      if (!item || item.id === '_meta' || item.id === 'meta') return false;
+      const officialMatch = official.find(
+        r => r.id.toLowerCase() === item.id.toLowerCase()
+      );
+      if (officialMatch && (officialMatch.team === 'fabled' || officialMatch.team === 'loric')) {
+        return false;
+      }
+      const itemObj = item as Record<string, unknown>;
+      if (typeof itemObj.team === 'string' &&
+          (itemObj.team.toLowerCase() === 'fabled' || itemObj.team.toLowerCase() === 'loric')) {
+        return false;
+      }
+      return true;
+    })
+    .map((item: { id: string }) => {
+      const matched = allRoles.find(
+        r => r.id.toLowerCase() === item.id.toLowerCase()
+      );
+      if (matched) return matched;
+
+      // Custom character not in our list — synthesize from the script JSON's own fields instead of forcing Townsfolk (which corrupted evil-team distribution).
+      const itemObj = item as Record<string, unknown>;
+      const rawTeam = typeof itemObj.team === 'string' ? itemObj.team.toLowerCase() : '';
+      const normalizedTeam = rawTeam === 'traveller' ? 'traveler' : rawTeam;
+      const team = (VALID_TEAMS.has(normalizedTeam) ? normalizedTeam : 'townsfolk') as Role['team'];
+
+      const displayName = typeof itemObj.name === 'string' && itemObj.name.trim()
+        ? itemObj.name
+        : item.id
+            .split('_')
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+      const ability = typeof itemObj.ability === 'string' && itemObj.ability.trim()
+        ? itemObj.ability
+        : undefined;
+      const rawImage = itemObj.image;
+      const image = typeof rawImage === 'string' && rawImage.trim()
+        ? [rawImage.trim()]
+        : Array.isArray(rawImage) && rawImage.length > 0 && rawImage.every(u => typeof u === 'string')
+          ? rawImage as string[]
+          : undefined;
+
+      // Carry the character's own reminders and night order straight from the script JSON.
+      const reminders = toStringArray(itemObj.reminders);
+      const remindersGlobal = toStringArray(itemObj.remindersGlobal);
+      const firstNight = toNightOrder(itemObj.firstNight);
+      const firstNightReminder = toOptionalString(itemObj.firstNightReminder);
+      const otherNight = toNightOrder(itemObj.otherNight);
+      const otherNightReminder = toOptionalString(itemObj.otherNightReminder);
+
+      unknownRoles.push({ id: item.id, name: displayName });
+
+      return {
+        id: item.id.toLowerCase(),
+        name: displayName,
+        team,
+        ...(ability && { ability }),
+        ...(image && { image }),
+        ...(reminders && { reminders }),
+        ...(remindersGlobal && { remindersGlobal }),
+        ...(firstNight !== undefined && { firstNight }),
+        ...(firstNightReminder && { firstNightReminder }),
+        ...(otherNight !== undefined && { otherNight }),
+        ...(otherNightReminder && { otherNightReminder }),
+      };
+    });
+
+  if (parsedRoles.length === 0) {
+    throw new Error('No valid roles found in the uploaded script.');
+  }
+
+  return { name, author, roles: parsedRoles, unknownRoles };
+}
+
+export function parseScriptFile(file: File): Promise<ParsedScript> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (!Array.isArray(parsed)) {
-          reject(new Error('Invalid script format. Expected a JSON array of roles.'));
-          return;
-        }
-
-        const metaObj = parsed.find(
-          (item: unknown): item is { id: string; name?: string; author?: string } =>
-            !!item && typeof item === 'object' && 'id' in item &&
-            (item as { id: unknown }).id === '_meta'
-        ) as { id: string; name?: string; author?: string } | undefined;
-        const name = metaObj?.name || file.name.replace('.json', '');
-        const author = metaObj?.author || '';
-
-        const unknownRoles: { id: string; name: string }[] = [];
-
-        const parsedRoles = parsed
-          .map((item: unknown) => {
-            if (typeof item === 'string') {
-              return { id: item.replace(/_/g, '') };
-            }
-            if (item && typeof item === 'object' && 'id' in item &&
-                typeof (item as { id: unknown }).id === 'string') {
-              return {
-                ...(item as Record<string, unknown>),
-                id: (item as { id: string }).id.replace(/_/g, ''),
-              } as { id: string };
-            }
-            return null;
-          })
-          .filter((item: { id: string } | null): item is { id: string } => {
-            if (!item || item.id === '_meta' || item.id === 'meta') return false;
-            const officialMatch = official.find(
-              r => r.id.toLowerCase() === item.id.toLowerCase()
-            );
-            if (officialMatch && (officialMatch.team === 'fabled' || officialMatch.team === 'loric')) {
-              return false;
-            }
-            const itemObj = item as Record<string, unknown>;
-            if (typeof itemObj.team === 'string' &&
-                (itemObj.team.toLowerCase() === 'fabled' || itemObj.team.toLowerCase() === 'loric')) {
-              return false;
-            }
-            return true;
-          })
-          .map((item: { id: string }) => {
-            const matched = allRoles.find(
-              r => r.id.toLowerCase() === item.id.toLowerCase()
-            );
-            if (matched) return matched;
-
-            // Custom character not in our list — synthesize from the script JSON's own fields instead of forcing Townsfolk (which corrupted evil-team distribution).
-            const itemObj = item as Record<string, unknown>;
-            const rawTeam = typeof itemObj.team === 'string' ? itemObj.team.toLowerCase() : '';
-            const normalizedTeam = rawTeam === 'traveller' ? 'traveler' : rawTeam;
-            const team = (VALID_TEAMS.has(normalizedTeam) ? normalizedTeam : 'townsfolk') as Role['team'];
-
-            const displayName = typeof itemObj.name === 'string' && itemObj.name.trim()
-              ? itemObj.name
-              : item.id
-                  .split('_')
-                  .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' ');
-
-            const ability = typeof itemObj.ability === 'string' && itemObj.ability.trim()
-              ? itemObj.ability
-              : undefined;
-            const rawImage = itemObj.image;
-            const image = typeof rawImage === 'string' && rawImage.trim()
-              ? [rawImage.trim()]
-              : Array.isArray(rawImage) && rawImage.length > 0 && rawImage.every(u => typeof u === 'string')
-                ? rawImage as string[]
-                : undefined;
-
-            // Carry the character's own reminders and night order straight from the script JSON.
-            const reminders = toStringArray(itemObj.reminders);
-            const remindersGlobal = toStringArray(itemObj.remindersGlobal);
-            const firstNight = toNightOrder(itemObj.firstNight);
-            const firstNightReminder = toOptionalString(itemObj.firstNightReminder);
-            const otherNight = toNightOrder(itemObj.otherNight);
-            const otherNightReminder = toOptionalString(itemObj.otherNightReminder);
-
-            unknownRoles.push({ id: item.id, name: displayName });
-
-            return {
-              id: item.id.toLowerCase(),
-              name: displayName,
-              team,
-              ...(ability && { ability }),
-              ...(image && { image }),
-              ...(reminders && { reminders }),
-              ...(remindersGlobal && { remindersGlobal }),
-              ...(firstNight !== undefined && { firstNight }),
-              ...(firstNightReminder && { firstNightReminder }),
-              ...(otherNight !== undefined && { otherNight }),
-              ...(otherNightReminder && { otherNightReminder }),
-            };
-          });
-
-        if (parsedRoles.length === 0) {
-          reject(new Error('No valid roles found in the uploaded script.'));
-          return;
-        }
-
-        resolve({ name, author, roles: parsedRoles, unknownRoles });
-      } catch {
-        reject(new Error('Failed to parse JSON script file.'));
+        resolve(parseScriptJson(JSON.parse(event.target?.result as string), file.name.replace('.json', '')));
+      } catch (err) {
+        const message = (err as Error).message;
+        reject(new Error(message.startsWith('Invalid script format') || message.startsWith('No valid roles')
+          ? message
+          : 'Failed to parse JSON script file.'));
       }
     };
     reader.readAsText(file);

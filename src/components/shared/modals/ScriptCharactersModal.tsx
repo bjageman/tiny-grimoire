@@ -9,8 +9,8 @@ import { inPlayRoleIds } from '../../../utils/scriptUtils';
 import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
-import officialRoles from '../../../official_roles.json';
-import rolesData from '../../../roles.json';
+import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
+import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
 import type { Player, Role } from '../../../types';
 
 const officialAbility = new Map(

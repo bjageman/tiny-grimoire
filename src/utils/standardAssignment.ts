@@ -1,6 +1,6 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
-import masterRoles from '../official_roles.json';
+import { ALL_ROLES as masterRoles } from './roleData';
 import {
   shuffle,
   fillToCount,

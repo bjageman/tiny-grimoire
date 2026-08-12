@@ -25,8 +25,3 @@ export function scriptJinxes(roles: Role[]): ScriptJinx[] {
   });
   return found.sort((x, y) => x.rank - y.rank).map(f => f.jinx);
 }
-
-/** Narrows jinxes to those where both characters are in play. */
-export function filterJinxesInPlay(jinxes: ScriptJinx[], inPlayIds: Set<string>): ScriptJinx[] {
-  return jinxes.filter(j => inPlayIds.has(j.roles[0].id) && inPlayIds.has(j.roles[1].id));
-}

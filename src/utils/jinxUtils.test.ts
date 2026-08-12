@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scriptJinxes, filterJinxesInPlay } from './jinxUtils';
+import { scriptJinxes } from './jinxUtils';
 import jinxData from '../jinxes.json';
 import rolesData from '../roles.json';
 import type { Role } from '../types';
@@ -54,18 +54,5 @@ describe('scriptJinxes', () => {
     const jinxes = scriptJinxes([role('leviathan'), role('mayor'), role('monk'), role('king')]);
     const pairs = jinxes.map(j => j.roles.map(r => r.id).sort().join('-')).sort();
     expect(pairs).toEqual(['king-leviathan', 'leviathan-mayor', 'leviathan-monk']);
-  });
-});
-
-describe('filterJinxesInPlay', () => {
-  const jinxes = scriptJinxes([role('leviathan'), role('mayor'), role('monk')]);
-
-  it('keeps only jinxes where both characters are in play', () => {
-    const kept = filterJinxesInPlay(jinxes, new Set(['leviathan', 'mayor']));
-    expect(kept.map(j => j.roles.map(r => r.id).sort().join('-'))).toEqual(['leviathan-mayor']);
-  });
-
-  it('drops everything when nothing is in play', () => {
-    expect(filterJinxesInPlay(jinxes, new Set())).toEqual([]);
   });
 });

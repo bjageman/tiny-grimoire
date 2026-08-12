@@ -9,7 +9,6 @@ import { inPlayRoleIds } from '../../../utils/scriptUtils';
 import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
-import ScriptJinxesModal from './ScriptJinxesModal';
 import officialRoles from '../../../official_roles.json';
 import rolesData from '../../../roles.json';
 import type { Player, Role } from '../../../types';
@@ -69,8 +68,10 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const [inPlayOnly, setInPlayOnly] = useState(() => {
     return localStorage.getItem('botc-script-in-play-only') === 'true';
   });
+  const [listJinxes, setListJinxes] = useState(() => {
+    return localStorage.getItem('botc-script-list-jinxes') === 'true';
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [jinxesOpen, setJinxesOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleBoxRef = useRef<HTMLDivElement>(null);
@@ -108,6 +109,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const handleToggleDoubleColumn = (val: boolean) => {
     setDoubleColumn(val);
     localStorage.setItem('botc-script-double-column', String(val));
+  };
+
+  const handleToggleListJinxes = (val: boolean) => {
+    setListJinxes(val);
+    localStorage.setItem('botc-script-list-jinxes', String(val));
   };
 
   useScrollLock(isOpen);
@@ -196,8 +202,14 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   const isEmpty = filteredRoles.length === 0;
 
-  // Counted off the script itself, so searching or filtering the list never changes the jinx tally.
-  const jinxCount = useMemo(() => scriptJinxes(roles).length, [roles]);
+  // Built off effectiveRoles so the traveler and in-play toggles carry over; search matches either side of a pair.
+  const jinxes = useMemo(() => {
+    if (!listJinxes) return [];
+    const found = scriptJinxes(effectiveRoles);
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return found;
+    return found.filter(j => j.roles.some(r => r.name.toLowerCase().includes(term)));
+  }, [listJinxes, effectiveRoles, searchTerm]);
 
   const handleClose = () => { onClose(); setSearchTerm(''); };
 
@@ -205,6 +217,13 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     "grid gap-2",
     showDetail ? "grid-cols-1" : "grid-cols-2",
     doubleColumn ? "sm:grid-cols-2" : "sm:grid-cols-1"
+  );
+
+  const renderRoleIcon = (role: Role, alt: string) => (
+    <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
+      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className="w-[92%] h-[92%] object-contain"
+        onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
+    </span>
   );
 
   const renderRoleCard = (role: Role) => {
@@ -221,10 +240,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
             : `bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 ${hover}`
         )}
       >
-        <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-          <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-[92%] h-[92%] object-contain"
-            onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
-        </span>
+        {renderRoleIcon(role, role.name)}
         <span className={cn("min-w-0 flex-1 leading-snug", bigFont ? "text-[13px]" : "text-[11px]", !showDetail && "truncate")}>
           <span className={cn("font-bold", bigFont ? "text-sm" : "text-xs", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
           {showDetail && abilityFor(role) && (
@@ -377,6 +393,17 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                       isLightModeActive={isLightModeActive}
                     />
                   </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      List Jinxes
+                    </span>
+                    <ToggleSwitch
+                      id="script-list-jinxes-checkbox"
+                      checked={listJinxes}
+                      onChange={handleToggleListJinxes}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
                   <label className="hidden sm:flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
                       2 Columns
@@ -414,39 +441,42 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}
+            {jinxes.length > 0 && (
+              <div id="script-jinxes-section" className="space-y-2">
+                <h4 className={cn(
+                  "text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5",
+                  isLightModeActive ? "text-clocktower-blood border-clocktower-blood/15" : "text-clocktower-gold border-clocktower-gold/15"
+                )}>
+                  🔗 Jinxes <span className="text-[10px] text-gray-500 font-normal font-mono">({jinxes.length})</span>
+                </h4>
+                <ul className="space-y-2">
+                  {jinxes.map(({ roles: [first, second], reason }) => (
+                    <li
+                      key={`${first.id}-${second.id}`}
+                      className={cn(
+                        "px-3 py-2 rounded-lg border",
+                        isLightModeActive ? "bg-white/80 border-gray-200/60" : "bg-gray-955/65 border-gray-850/45"
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        {renderRoleIcon(first, '')}
+                        <span className={cn("font-bold", bigFont ? "text-sm" : "text-xs", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{first.name}</span>
+                        <Link2 size={12} className="text-gray-500 shrink-0" />
+                        {renderRoleIcon(second, '')}
+                        <span className={cn("font-bold", bigFont ? "text-sm" : "text-xs", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{second.name}</span>
+                      </div>
+                      <p className={cn("mt-1 leading-snug select-text", bigFont ? "text-[13px]" : "text-[11px]", isLightModeActive ? "text-gray-600" : "text-gray-400")}>{reason}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {isEmpty && (
               <div className="text-center py-8 text-sm text-gray-500 italic">No matching characters found.</div>
             )}
           </div>
-
-          {jinxCount > 0 && (
-            <button
-              id="script-jinxes-button"
-              type="button"
-              onClick={() => setJinxesOpen(true)}
-              className={cn(
-                "flex items-center justify-center gap-2 w-full mt-4 py-2.5 rounded-xl text-xs font-bold border transition-colors shrink-0",
-                isLightModeActive
-                  ? "bg-white/80 border-gray-300 text-gray-700 hover:bg-white hover:border-gray-400"
-                  : "bg-gray-955/65 border-gray-700 text-gray-300 hover:bg-gray-850/80 hover:border-gray-600"
-              )}
-            >
-              <Link2 size={14} /> Jinxes <span className="text-[10px] text-gray-500 font-normal font-mono">({jinxCount})</span>
-            </button>
-          )}
         </div>
       </div>
-
-      {/* Jinx list modal — closing it drops back to the script list underneath */}
-      {jinxesOpen && (
-        <ScriptJinxesModal
-          onClose={() => setJinxesOpen(false)}
-          roles={roles}
-          isLightModeActive={isLightModeActive}
-          isStoryteller={isStoryteller}
-          inPlayIds={inPlayIds}
-        />
-      )}
 
       {/* Role detail modal */}
       {selectedRole && (

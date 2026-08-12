@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useGameSocket } from './hooks/useGameSocket';
 import { useIsMobile } from './hooks/useIsMobile';
-import { ALL_ROLES as rolesData } from './utils/roleData';
+import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
@@ -104,7 +104,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   }, [players, name, userRotation]);
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || (ALL_ROLES as Role[]);
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
@@ -242,10 +242,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         const me = payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
         if (me) {
           if (me.roleId) {
-            const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (rolesData as Role[]);
+            const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (ALL_ROLES as Role[]);
             // Fall back to the full official role list: travelers under a custom script aren't in effectiveRoles, so without this the token never reveals.
             const rObj = effectiveRoles.find(r => r.id === me.roleId)
-              ?? (rolesData as Role[]).find(r => r.id === me.roleId);
+              ?? (ALL_ROLES as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
               setAssignedRole(rObj);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {

@@ -6,7 +6,7 @@ import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
-import { ALL_ROLES as rolesData } from '../../utils/roleData';
+import { ALL_ROLES } from '../../utils/roleData';
 
 
 
@@ -74,7 +74,7 @@ export default function WhaleBucketSetupPhase({
   const [excludeSearchTerm, setExcludeSearchTerm] = useState('');
   const [isExcludeFocused, setIsExcludeFocused] = useState(false);
 
-  const excludeSuggestions = (rolesData as Role[]).filter(r =>
+  const excludeSuggestions = (ALL_ROLES as Role[]).filter(r =>
     !excludedRoleIds.includes(r.id) &&
     (excludeSearchTerm
       ? (r.name.toLowerCase().includes(excludeSearchTerm.toLowerCase()) ||
@@ -257,7 +257,7 @@ export default function WhaleBucketSetupPhase({
           {excludedRoleIds.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {excludedRoleIds.map(id => {
-                const r = (rolesData as Role[]).find(x => x.id === id);
+                const r = (ALL_ROLES as Role[]).find(x => x.id === id);
                 if (!r) return null;
                 return (
                   <span

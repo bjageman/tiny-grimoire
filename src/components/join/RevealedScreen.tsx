@@ -1,7 +1,7 @@
 import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
-import { ALL_ROLES as officialRoles } from '../../utils/roleData';
+import { ALL_ROLES } from '../../utils/roleData';
 import type { Role } from '../../types';
 
 interface RevealedScreenProps {
@@ -76,7 +76,7 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
           </h3>
 
           <p className="text-xs text-gray-400 mt-3 max-w-[90%] leading-relaxed">
-            {assignedRole.ability ?? (officialRoles as Array<{ id: string; ability?: string }>).find((r) => r.id === assignedRole.id)?.ability}
+            {assignedRole.ability ?? (ALL_ROLES as Array<{ id: string; ability?: string }>).find((r) => r.id === assignedRole.id)?.ability}
           </p>
         </div>
       </div>

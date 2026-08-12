@@ -1,9 +1,9 @@
 import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
-import { ALL_ROLES as rolesData } from './roleData';
+import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 
-const OFFICIAL_ROLE_IDS = new Set((rolesData as Role[]).map(r => r.id));
+const OFFICIAL_ROLE_IDS = new Set((ALL_ROLES as Role[]).map(r => r.id));
 
 export interface ValidationSummary {
   base: { townsfolk: number; outsider: number; minion: number; demon: number; traveler: number };
@@ -25,7 +25,7 @@ export interface ValidationSummary {
 
 export function getValidationSummary(
   players: Player[],
-  allRoles: Role[] = rolesData as Role[],
+  allRoles: Role[] = ALL_ROLES as Role[],
   selectedCharacterIds?: Set<string>,
   sentinelOutsiderDelta: number = 0
 ): ValidationSummary | null {
@@ -33,7 +33,7 @@ export function getValidationSummary(
 
   const findRole = (roleId?: string) => {
     if (!roleId) return undefined;
-    const rawRole = allRoles.find(r => r.id === roleId) || (rolesData as Role[]).find(r => r.id === roleId);
+    const rawRole = allRoles.find(r => r.id === roleId) || (ALL_ROLES as Role[]).find(r => r.id === roleId);
     if (!rawRole) return undefined;
     if ((rawRole.team as string) === 'traveller') {
       return { ...rawRole, team: 'traveler' as const };

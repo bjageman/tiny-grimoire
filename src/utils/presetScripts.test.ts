@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PRESET_SCRIPTS, type PresetScript } from './presetScripts';
-import { PLAYABLE_ROLES as rolesData } from './roleData';
+import { PLAYABLE_ROLES } from './roleData';
 import type { Role } from '../types';
 
 function teamCounts(preset: PresetScript): Record<Role['team'], number> {
@@ -15,7 +15,7 @@ describe('PRESET_SCRIPTS', () => {
   });
 
   it('resolves every character against the app role list', () => {
-    const known = new Set((rolesData as Role[]).map(r => r.id));
+    const known = new Set(PLAYABLE_ROLES.map(r => r.id));
     PRESET_SCRIPTS.forEach(p => {
       const unknown = p.roles.filter(r => !known.has(r.id)).map(r => r.id);
       expect({ script: p.name, unknown }).toEqual({ script: p.name, unknown: [] });

@@ -1,6 +1,5 @@
 import type { Player, Role } from '../types';
-import { PLAYABLE_ROLES as rolesData } from './roleData';
-import { ALL_ROLES as officialRoles } from './roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
 
 /** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
 function compareByScriptOrder(baseRoles: { id: string }[]) {
@@ -34,7 +33,7 @@ export function inPlayRoleIds(players: Player[]): Set<string> {
 
 /** Returns baseRoles plus any traveler a seated player is assigned that the script itself omits, resolving unknown traveler definitions from the official role list so imported scripts (which rarely list travelers) still show them. */
 export function withInPlayTravelers(baseRoles: Role[], players: Player[]): Role[] {
-  const all = rolesData as Role[];
+  const all = PLAYABLE_ROLES;
   const roles = [...baseRoles];
   players.forEach(p => {
     const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
@@ -78,8 +77,8 @@ export interface ParsedScript {
 
 /** Turn the contents of a script JSON into roles. Shared by uploads and the built-in preset scripts. */
 export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedScript {
-  const allRoles = rolesData as Role[];
-  const official = officialRoles as { id: string; name: string; team: string }[];
+  const allRoles = PLAYABLE_ROLES;
+  const official = ALL_ROLES as { id: string; name: string; team: string }[];
 
   if (!Array.isArray(parsed)) {
     throw new Error('Invalid script format. Expected a JSON array of roles.');

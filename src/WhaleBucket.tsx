@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ALL_ROLES as rolesData } from './utils/roleData';
+import { ALL_ROLES } from './utils/roleData';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
@@ -105,7 +105,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [setGameLog]);
 
   const handleStartGame = useCallback(() => {
-    const roleMap = new Map((rolesData as Role[]).map(r => [r.id, r]));
+    const roleMap = new Map((ALL_ROLES as Role[]).map(r => [r.id, r]));
     const teamLabels: Record<string, string> = { townsfolk: 'TF', outsider: 'Out', minion: 'Min', demon: 'Dmn' };
 
     players.forEach(p => {
@@ -512,7 +512,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const autoFillPreferences = (playerId?: string) => {
-    const allRoles = rolesData as Role[];
+    const allRoles = ALL_ROLES as Role[];
     setPlayers(prev => prev.map(p => {
       if (playerId !== undefined && p.id !== playerId) return p;
       const prefs = p.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
@@ -555,7 +555,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, rolesData as Role[], allowTravelers);
+    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers);
     if (!result) {
       showAlert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;
@@ -580,24 +580,24 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       if (assigned && assigned.role.id === 'lunatic') {
         isTheLunatic = true;
         const assignedDemonIds = result.filter(r => r.role.team === 'demon').map(r => r.role.id);
-        const candidates = (rolesData as Role[]).filter(r => 
+        const candidates = (ALL_ROLES as Role[]).filter(r => 
           r.team === 'demon' && 
           !excludedRoleIds.includes(r.id) && 
           !assignedDemonIds.includes(r.id)
         );
-        const fallbackCandidates = (rolesData as Role[]).filter(r => r.team === 'demon' && !excludedRoleIds.includes(r.id));
+        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r => r.team === 'demon' && !excludedRoleIds.includes(r.id));
         const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'imp' }]);
         const chosenDemon = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
         roleId = chosenDemon.id;
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
         const assignedMinionIds = result.filter(r => r.role.team === 'minion').map(r => r.role.id);
-        const candidates = (rolesData as Role[]).filter(r => 
+        const candidates = (ALL_ROLES as Role[]).filter(r => 
           r.team === 'minion' && 
           !excludedRoleIds.includes(r.id) && 
           !assignedMinionIds.includes(r.id)
         );
-        const fallbackCandidates = (rolesData as Role[]).filter(r => r.team === 'minion' && !excludedRoleIds.includes(r.id));
+        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r => r.team === 'minion' && !excludedRoleIds.includes(r.id));
         const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'poisoner' }]);
         const chosenMinion = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
         roleId = chosenMinion.id;
@@ -625,11 +625,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     togglePlayerTheDrunk, togglePlayerTheMarionette, togglePlayerTheLunatic, togglePlayerTheLilMonsta,
   } = usePlayerRoster({
     players, setPlayers, phase,
-    findRole: (roleId) => roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined,
+    findRole: (roleId) => roleId ? (ALL_ROLES as Role[]).find(r => r.id === roleId) : undefined,
     onLog: addLogEntry,
     onLilMonstaEnabled: () => setIsLilMonstaGame(true),
     resolveAssignedFromPref: (pl, rid) => {
-      const role = (rolesData as Role[]).find(r => r.id === rid);
+      const role = (ALL_ROLES as Role[]).find(r => r.id === rid);
       return role ? (pl.preferences?.[role.team] || []).includes(rid) : false;
     },
   });
@@ -753,7 +753,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Details Modal variables
   const { modalPlayer, modalRoleObj, filteredModalRoles, prevPlayerId, nextPlayerId } =
-    usePlayerDetailsNav(players, selectedPlayerId, rolesData as Role[], modalRoleSearch);
+    usePlayerDetailsNav(players, selectedPlayerId, ALL_ROLES as Role[], modalRoleSearch);
 
   return (
     <>
@@ -936,7 +936,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             setDemonBluffs(bluffs);
             const filled = bluffs.filter(Boolean);
             if (filled.length === 3) {
-              const names = filled.map(id => (rolesData as Role[]).find(r => r.id === id)?.name ?? id);
+              const names = filled.map(id => (ALL_ROLES as Role[]).find(r => r.id === id)?.name ?? id);
               addLogEntry(`Demon bluffs set: ${names.join(', ')}`);
             }
           }}

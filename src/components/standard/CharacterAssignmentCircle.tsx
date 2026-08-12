@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Wifi, RotateCcw, RotateCw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
 
@@ -90,7 +90,7 @@ export default function CharacterAssignmentCircle({
           const pos = positions[seatIndex] ?? { left: 50, top: 50 };
           let roleObj = selectionRoles?.find(r => r.id === p.roleId);
           if (!roleObj) {
-            roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+            roleObj = PLAYABLE_ROLES.find(r => r.id === p.roleId);
           }
           const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
           const isEvil = p.isTheLunatic ? false : p.isTheMarionette ? true : defaultEvil;

@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
-import { ALL_ROLES as officialRoles } from './roleData';
-import { PLAYABLE_ROLES as allRolesJson } from './roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
 
 describe('performStandardAssignment', () => {
   const mockScriptRoles: Role[] = [
@@ -61,7 +60,7 @@ describe('performStandardAssignment', () => {
       // Verify the Marionette has been assigned a fake Townsfolk or Outsider role (thinks they
       // are good). The fake identity is drawn from the full official role list (not just this
       // script's roles) so it never collides with a real assigned character, so look it up there.
-      const fakeRole = (officialRoles as Role[]).find(r => r.id === marionettePlayer.roleId);
+      const fakeRole = (ALL_ROLES as Role[]).find(r => r.id === marionettePlayer.roleId);
       expect(fakeRole).toBeDefined();
       expect(['townsfolk', 'outsider']).toContain(fakeRole?.team);
       expect(marionettePlayer.isEvil).toBe(true);
@@ -100,7 +99,7 @@ describe('performStandardAssignment', () => {
     expect(drunkPlayer.isTheDrunk).toBe(true);
     // Drunk player must think they are a Townsfolk — the fake identity is drawn from the full
     // official role list (not just this script's roles), so look it up there.
-    const fakeRole = (officialRoles as Role[]).find(r => r.id === drunkPlayer.roleId);
+    const fakeRole = (ALL_ROLES as Role[]).find(r => r.id === drunkPlayer.roleId);
     expect(fakeRole?.team).toBe('townsfolk');
   });
 
@@ -135,7 +134,7 @@ describe('performStandardAssignment', () => {
     expect(lunaticPlayer.isTheLunatic).toBe(true);
     // Lunatic player must think they are a Demon — the fake identity is drawn from the full
     // official role list (not just this script's roles), so look it up there.
-    const fakeRole = (officialRoles as Role[]).find(r => r.id === lunaticPlayer.roleId);
+    const fakeRole = (ALL_ROLES as Role[]).find(r => r.id === lunaticPlayer.roleId);
     expect(fakeRole?.team).toBe('demon');
   });
 
@@ -742,7 +741,7 @@ describe('performStandardAssignment', () => {
   });
 
   describe('Outsider count on an all-roles script', () => {
-    const allRoles = allRolesJson as Role[];
+    const allRoles = PLAYABLE_ROLES;
     const teamOf = (id: string) => allRoles.find(r => r.id === id)?.team;
 
     // Every character that may legitimately move the Outsider count or the bag composition.

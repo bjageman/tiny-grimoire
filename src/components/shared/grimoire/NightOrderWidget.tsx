@@ -5,7 +5,7 @@ import { cn } from '../../../utils/cn';
 import DayNightLabel from '../ui/DayNightLabel';
 import type { Player, Role } from '../../../types';
 import nightSheet from '../../../nightsheet.json';
-import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
+import { ALL_ROLES } from '../../../utils/roleData';
 
 interface NightOrderWidgetProps {
   players: Player[];
@@ -122,7 +122,7 @@ export default function NightOrderWidget({
       const savantPlayers = playersByRole.get('savant') || [];
       const savantInScript = scriptRoles ? scriptRoles.some(r => r.id === 'savant') : true;
       if (savantPlayers.length > 0 || (fullNightOrder && savantInScript)) {
-        const savantRole = officialRoles.find(r => r.id === 'savant');
+        const savantRole = ALL_ROLES.find(r => r.id === 'savant');
         const savantPrompt = (activeTab === 'first' ? savantRole?.firstNightReminder : savantRole?.otherNightReminder)
           || savantRole?.ability
           || 'Prepare the Savant\'s information for tomorrow.';
@@ -187,7 +187,7 @@ export default function NightOrderWidget({
     const isInScript = scriptRoles ? scriptRoles.some(r => r.id === id) : true;
     if (matchedPlayers.length === 0 && !(fullNightOrder && isInScript)) return;
 
-    const roleDetails = officialRoles.find(r => r.id === id);
+    const roleDetails = ALL_ROLES.find(r => r.id === id);
     const reminder = activeTab === 'first'
       ? roleDetails?.firstNightReminder
       : roleDetails?.otherNightReminder;

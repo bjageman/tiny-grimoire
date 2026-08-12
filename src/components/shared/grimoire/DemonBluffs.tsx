@@ -6,8 +6,7 @@ import { roleIconFallback } from '../../../utils/roleIcon';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import ToggleSwitch from '../ui/ToggleSwitch';
-import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
-import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import type { Player, Role } from '../../../types';
 
 interface DemonBluffsProps {
@@ -20,7 +19,7 @@ interface DemonBluffsProps {
 }
 
 const officialRoleAbility = (role: Pick<Role, 'id' | 'ability'>) =>
-  role.ability ?? (officialRoles as (Role & { ability?: string })[]).find(r => r.id === role.id)?.ability;
+  role.ability ?? (ALL_ROLES as (Role & { ability?: string })[]).find(r => r.id === role.id)?.ability;
 
 const TEAM_LABEL: Record<Role['team'], string> = {
   townsfolk: 'Townsfolk', outsider: 'Outsider', minion: 'Minion', demon: 'Demon', traveler: 'Traveler',
@@ -54,7 +53,7 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
   ), [players]);
 
   const candidates = useMemo(() => {
-    const base = customScriptRoles || (rolesData as Role[]);
+    const base = customScriptRoles || PLAYABLE_ROLES;
     const goodRoles = base.filter(r => r.team === 'townsfolk' || r.team === 'outsider');
     const pool = showAll ? goodRoles : goodRoles.filter(r => !assignedRoleIds.has(r.id));
     return [...pool].sort((a, b) => a.name.localeCompare(b.name));

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { PLAYABLE_ROLES as rolesData } from './utils/roleData';
+import { PLAYABLE_ROLES } from './utils/roleData';
 import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
@@ -111,7 +111,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (loadedSelectedIds) {
       return new Set(loadedSelectedIds);
     }
-    const scriptRoles = readPersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null) || (rolesData as Role[]);
+    const scriptRoles = readPersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null) || PLAYABLE_ROLES;
     return new Set(scriptRoles.map(r => r.id));
   });
   const [bagOnly, setBagOnly] = useState(false);
@@ -258,8 +258,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const findRole = (roleId?: string) => {
     if (!roleId) return undefined;
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
-    return baseRoles.find(r => r.id === roleId) || (rolesData as Role[]).find(r => r.id === roleId);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
+    return baseRoles.find(r => r.id === roleId) || PLAYABLE_ROLES.find(r => r.id === roleId);
   };
 
   // Drag and drop states
@@ -457,7 +457,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const showLoading = isSecondary && !hasReceivedSync;
 
   // Synchronize selectedCharacterIds with customScriptRoles
-  const rolesForSync = customScriptRoles || (rolesData as Role[]);
+  const rolesForSync = customScriptRoles || PLAYABLE_ROLES;
   const [prevScriptRoles, setPrevScriptRoles] = useState<Role[]>(rolesForSync);
   if (prevScriptRoles !== rolesForSync) {
     setPrevScriptRoles(rolesForSync);
@@ -538,7 +538,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     };
     setPlayers([newPlayer, ...players]);
     setNewTravelerName('');
-    const travelerRole = (rolesData as Role[]).find(r => r.id === newTravelerRoleId);
+    const travelerRole = PLAYABLE_ROLES.find(r => r.id === newTravelerRoleId);
     addLogEntry(`${newTravelerName.trim()} joined as ${travelerRole?.name ?? newTravelerRoleId} (Traveler)`);
   };
 
@@ -581,11 +581,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   });
 
 
-  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
+  const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
 
   const selectionRoles = useMemo(() => {
     const roles = [...currentScriptRoles];
-    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
     for (const traveler of allTravelers) {
       if (!roles.some(r => r.id === traveler.id)) {
         roles.push(traveler);
@@ -608,7 +608,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const randomlyAssignWithRoles = (selectedRoles: Role[]) => {
-    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
     const customSelectionRoles = [...selectedRoles];
     for (const traveler of allTravelers) {
       if (!customSelectionRoles.some(r => r.id === traveler.id)) {
@@ -804,7 +804,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           randomlyAssignWithRoles={randomlyAssignWithRoles}
           clearAllRoles={clearAllRoles}
           resetGame={resetGame}
-          scriptRoles={customScriptRoles || (rolesData as Role[])}
+          scriptRoles={customScriptRoles || PLAYABLE_ROLES}
           setActivePlayerId={setActivePlayerId}
           setSearchTerm={setSearchTerm}
           validationSummary={validationSummary}

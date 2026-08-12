@@ -4,8 +4,7 @@ import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUti
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
 import type { Player, Role, PlacedReminder } from '../../../types';
-import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
-import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
 import ScriptCharactersModal from '../modals/ScriptCharactersModal';
@@ -129,14 +128,14 @@ export default function GamePhase({
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     setReminderTokens(prev => [...prev, { id, sourceCharId, text, targetPlayerId }]);
     const targetName = players.find(p => p.id === targetPlayerId)?.name ?? targetPlayerId;
-    const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
+    const charName = (customScriptRoles || PLAYABLE_ROLES).find(r => r.id === sourceCharId)?.name ?? sourceCharId;
     onLogEvent?.(`Reminder "${text} (${charName})" placed on ${targetName}`);
   };
   const handleRemoveReminder = (reminderId: string) => {
     const token = reminderTokens.find(r => r.id === reminderId);
     if (token) {
       const targetName = players.find(p => p.id === token.targetPlayerId)?.name ?? token.targetPlayerId;
-      const charName = (customScriptRoles || (rolesData as Role[])).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
+      const charName = (customScriptRoles || PLAYABLE_ROLES).find(r => r.id === token.sourceCharId)?.name ?? token.sourceCharId;
       onLogEvent?.(`Reminder "${token.text} (${charName})" removed from ${targetName}`);
     }
     setReminderTokens(prev => prev.filter(r => r.id !== reminderId));
@@ -151,11 +150,11 @@ export default function GamePhase({
   };
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
-  const grimoireRolesData = selectionRoles ?? (officialRoles as Role[]);
+  const grimoireRolesData = selectionRoles ?? (ALL_ROLES as Role[]);
 
   const isMobile = useIsMobile();
 
@@ -250,7 +249,7 @@ export default function GamePhase({
             onToggleTimeOfDay={!isSynced ? toggleTimeOfDay : undefined}
             checkedItems={checkedItems}
             onSetCheckedItems={onSetCheckedItems}
-            scriptRoles={customScriptRoles || (rolesData as Role[])}
+            scriptRoles={customScriptRoles || PLAYABLE_ROLES}
             fullNightOrder={fullNightOrder}
           />
         )}
@@ -277,7 +276,7 @@ export default function GamePhase({
         {players.length >= 5 && (() => {
           const travelerCountInPlay = players.filter(p => {
             if (!p.roleId) return false;
-            const r = (customScriptRoles || (rolesData as Role[])).find(role => role.id === p.roleId);
+            const r = (customScriptRoles || PLAYABLE_ROLES).find(role => role.id === p.roleId);
             return r?.team === 'traveler';
           }).length;
           const baseCount = players.length - travelerCountInPlay;

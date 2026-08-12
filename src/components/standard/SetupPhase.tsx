@@ -3,7 +3,7 @@ import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
-import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 import PresetScriptModal from '../shared/modals/PresetScriptModal';
@@ -121,14 +121,14 @@ export default function StandardSetupPhase({
   const [overrideFailures, setOverrideFailures] = useState(false);
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
   const basePlayerCount = useMemo(() => {
     return players.filter(p => {
       if (!p.roleId) return true;
-      const r = scriptRoles.find(role => role.id === p.roleId) || (rolesData as Role[]).find(role => role.id === p.roleId);
+      const r = scriptRoles.find(role => role.id === p.roleId) || PLAYABLE_ROLES.find(role => role.id === p.roleId);
       return r?.team !== 'traveler';
     }).length;
   }, [players, scriptRoles]);

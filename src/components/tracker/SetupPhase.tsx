@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import { PLAYABLE_ROLES as rolesData } from '../../utils/roleData';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
@@ -75,7 +75,7 @@ export default function PlayerTrackerSetupPhase({
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 

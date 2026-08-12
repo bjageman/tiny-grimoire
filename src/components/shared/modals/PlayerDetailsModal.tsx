@@ -9,15 +9,14 @@ import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
 import PronounSelect from '../ui/PronounSelect';
-import { PLAYABLE_ROLES as rolesData } from '../../../utils/roleData';
-import { ALL_ROLES as officialRoles } from '../../../utils/roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import DialogModal from './DialogModal';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import CharacterToken from '../tokens/CharacterToken';
 import { useDialog } from '../../../hooks/useDialog';
 
-const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
 
 interface Player {
   id: string;
@@ -185,11 +184,11 @@ export default function PlayerDetailsModal({
 
   const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
   const isEvil = p.isEvil !== undefined ? p.isEvil : defaultEvil;
-  const officialRole = roleObj ? officialRoles.find(r => r.id === roleObj.id) : undefined;
+  const officialRole = roleObj ? ALL_ROLES.find(r => r.id === roleObj.id) : undefined;
   const roleAbility = roleObj?.ability ?? officialRole?.ability;
 
   const resolveRole = (roleId: string) =>
-    allRoles.find(r => r.id === roleId) ?? (rolesData as Role[]).find(r => r.id === roleId);
+    allRoles.find(r => r.id === roleId) ?? PLAYABLE_ROLES.find(r => r.id === roleId);
 
   const navBtnClass = cn(
     'absolute top-1/2 -translate-y-1/2 p-2.5 rounded-full border transition-all duration-200 z-10 shadow-lg hover:scale-110',

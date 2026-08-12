@@ -1,6 +1,5 @@
 import { cn } from '../../../utils/cn';
-import rolesData from '../../../roles.json';
-import type { Role } from '../../../types';
+import { PLAYABLE_ROLES } from '../../../utils/roleData';
 
 interface AddTravelerCardProps {
   isLightModeActive: boolean;
@@ -53,7 +52,7 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
                 : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
             )}
           >
-            {(rolesData as Role[]).filter(r => r.team === 'traveler').map(r => (
+            {PLAYABLE_ROLES.filter(r => r.team === 'traveler').map(r => (
               <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
                 {r.name}
               </option>

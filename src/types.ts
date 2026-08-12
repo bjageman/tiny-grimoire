@@ -18,7 +18,18 @@ export interface Role {
   otherNight?: number;
   /** Storyteller text read for this character on other nights (custom/homebrew scripts). */
   otherNightReminder?: string;
+  /** Set when the character changes setup (e.g. the Baron's extra Outsiders). */
+  setup?: boolean;
+  /** Upstream selection hints (e.g. bag-duplicate for the Village Idiot). Carried but not yet read. */
+  special?: { type: string; name: string }[];
 }
+
+/** A Fabled or Loric: a real character in the data, but never dealt to a player. */
+export interface LoreRole extends Omit<Role, 'team'> {
+  team: 'fabled' | 'loric';
+}
+
+export type AnyRole = Role | LoreRole;
 
 export interface PlayerPreferences {
   townsfolk: string[];

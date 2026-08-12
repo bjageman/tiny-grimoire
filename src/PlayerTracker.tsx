@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import rolesData from './roles.json';
+import { PLAYABLE_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import type { Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
@@ -59,10 +59,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentScriptRoles = customScriptRoles || (rolesData as Role[]);
+  const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
   const selectionRoles = useMemo(() => {
     const roles = [...currentScriptRoles];
-    const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+    const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
     for (const traveler of allTravelers) {
       if (!roles.some(r => r.id === traveler.id)) {
         roles.push(traveler);
@@ -518,7 +518,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
-  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+  const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
@@ -615,6 +615,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           setActiveTrackerPlayerId={setActiveTrackerPlayerId}
           fileInputRef={fileInputRef}
           handleScriptUpload={handleScriptUpload}
+          selectPresetScript={selectPresetScript}
           clearCustomScript={clearCustomScript}
           setPhase={setPhase}
           draggedIndex={draggedIndex}

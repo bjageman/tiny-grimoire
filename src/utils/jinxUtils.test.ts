@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { scriptJinxes } from './jinxUtils';
 import jinxData from '../jinxes.json';
-import rolesData from '../roles.json';
+import { PLAYABLE_ROLES } from './roleData';
 import type { Role } from '../types';
 
-const all = rolesData as Role[];
+const all = PLAYABLE_ROLES;
 const role = (id: string): Role => {
   const found = all.find(r => r.id === id);
   if (!found) throw new Error(`unknown role ${id}`);

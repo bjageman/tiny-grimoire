@@ -1,6 +1,6 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
-import masterRoles from '../official_roles.json';
+import { ALL_ROLES } from './roleData';
 import {
   shuffle,
   fillToCount,
@@ -45,10 +45,10 @@ export function performStandardAssignment(
   const fallbackMins = fallbackPool.filter(r => r.team === 'minion');
   const fallbackDems = fallbackPool.filter(r => r.team === 'demon');
 
-  const masterTfs = (masterRoles as Role[]).filter(r => r.team === 'townsfolk');
-  const masterOuts = (masterRoles as Role[]).filter(r => r.team === 'outsider');
-  const masterMins = (masterRoles as Role[]).filter(r => r.team === 'minion');
-  const masterDems = (masterRoles as Role[]).filter(r => r.team === 'demon');
+  const masterTfs = (ALL_ROLES as Role[]).filter(r => r.team === 'townsfolk');
+  const masterOuts = (ALL_ROLES as Role[]).filter(r => r.team === 'outsider');
+  const masterMins = (ALL_ROLES as Role[]).filter(r => r.team === 'minion');
+  const masterDems = (ALL_ROLES as Role[]).filter(r => r.team === 'demon');
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');

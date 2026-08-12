@@ -9,17 +9,12 @@ import { inPlayRoleIds } from '../../../utils/scriptUtils';
 import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
-import officialRoles from '../../../official_roles.json';
-import rolesData from '../../../roles.json';
+import { ABILITY_BY_ID, PLAYABLE_ROLES } from '../../../utils/roleData';
 import type { Player, Role } from '../../../types';
 
-const officialAbility = new Map(
-  (officialRoles as Array<{ id: string; ability?: string }>).map(r => [r.id, r.ability])
-);
+const abilityFor = (role: Role) => role.ability ?? ABILITY_BY_ID.get(role.id) ?? '';
 
-const abilityFor = (role: Role) => role.ability ?? officialAbility.get(role.id) ?? '';
-
-const allTravelers = (rolesData as Role[]).filter(r => r.team === 'traveler');
+const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
 
 interface Props {
   isOpen: boolean;

@@ -16,7 +16,7 @@ import {
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
-import officialRoles from '../../../official_roles.json';
+import { ALL_ROLES } from '../../../utils/roleData';
 import ReminderPickerModal from '../modals/ReminderPickerModal';
 import ReminderTokenModal from '../modals/ReminderTokenModal';
 import DayNightLabel from '../ui/DayNightLabel';
@@ -204,7 +204,7 @@ export default function GrimoireBoard({
     if (p.isDead) return false;
     const ids = p.roleIds && p.roleIds.length > 0 ? p.roleIds : (p.roleId ? [p.roleId] : []);
     return !ids.some(id => {
-      const r = rolesData.find(role => role.id === id) || (officialRoles as Role[]).find(role => role.id === id);
+      const r = rolesData.find(role => role.id === id) || (ALL_ROLES as Role[]).find(role => role.id === id);
       return r?.team === 'traveler';
     });
   }).length, [players, rolesData]);
@@ -695,7 +695,7 @@ export default function GrimoireBoard({
                     const displayRoles = displayRoleIds(p);
                     return displayRoles.map((roleId, idx) => {
                       const roleObj = roleId
-                        ? (rolesData.find((r) => r.id === roleId) || (officialRoles as Role[]).find((r) => r.id === roleId))
+                        ? (rolesData.find((r) => r.id === roleId) || (ALL_ROLES as Role[]).find((r) => r.id === roleId))
                         : null;
                       const isEvil = seatIsEvil(p, roleObj);
 

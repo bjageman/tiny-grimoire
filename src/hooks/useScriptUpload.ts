@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { parseScriptFile } from '../utils/scriptUtils';
+import type { PresetScript } from '../utils/presetScripts';
 import type { Role } from '../types';
 
 interface UseScriptUploadArgs {
@@ -29,6 +30,16 @@ export function useScriptUpload({ setCustomScriptRoles, setScriptName, setScript
       .catch(err => showAlert((err as Error).message));
   };
 
+  // Load a built-in base script. Clears any file selection so re-uploading the same file still fires a change event.
+  const selectPresetScript = (preset: PresetScript) => {
+    setCustomScriptRoles(preset.roles);
+    setScriptName(preset.name);
+    setScriptAuthor(preset.author);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptName('All Roles');
@@ -38,5 +49,5 @@ export function useScriptUpload({ setCustomScriptRoles, setScriptName, setScript
     }
   };
 
-  return { handleScriptUpload, clearCustomScript };
+  return { handleScriptUpload, selectPresetScript, clearCustomScript };
 }

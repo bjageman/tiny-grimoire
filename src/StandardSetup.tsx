@@ -649,7 +649,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
-  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+  const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
@@ -798,6 +798,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           addPlayer={addPlayer}
           fileInputRef={fileInputRef}
           handleScriptUpload={handleScriptUpload}
+          selectPresetScript={selectPresetScript}
           clearCustomScript={clearCustomScript}
           randomlyAssignRoles={randomlyAssignRoles}
           randomlyAssignWithRoles={randomlyAssignWithRoles}

@@ -518,7 +518,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, isDrunkOrPoisoned: !p.isDrunkOrPoisoned } : p));
   };
 
-  const { handleScriptUpload, clearCustomScript } = useScriptUpload({
+  const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
@@ -615,6 +615,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           setActiveTrackerPlayerId={setActiveTrackerPlayerId}
           fileInputRef={fileInputRef}
           handleScriptUpload={handleScriptUpload}
+          selectPresetScript={selectPresetScript}
           clearCustomScript={clearCustomScript}
           setPhase={setPhase}
           draggedIndex={draggedIndex}

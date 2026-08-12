@@ -236,7 +236,7 @@ export default function StandardSetupPhase({
                 : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
             )}
           >
-            View Script
+            {customScriptRoles ? 'View Script' : 'View All Roles'}
           </button>
           <button
             id="select-characters-button"

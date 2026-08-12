@@ -181,7 +181,7 @@ export default function PlayerTrackerSetupPhase({
                 : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
             )}
           >
-            View Script
+            {customScriptRoles ? 'View Script' : 'View All Roles'}
           </button>
           <p className="text-[11px] text-gray-550 leading-relaxed">
             {isSynced 

@@ -23,12 +23,9 @@ describe('PresetScriptModal', () => {
     expect(preset.roles.some((r: { id: string }) => r.id === 'imp')).toBe(true);
   });
 
-  it('singularizes the count for a one-demon script', () => {
+  it('shows nothing but the script name on each option', () => {
     render(<PresetScriptModal {...props} />);
-    const tb = document.getElementById('preset-script-tb-button')!;
-    expect(tb).toHaveTextContent('1 Demon');
-    expect(tb).not.toHaveTextContent('1 Demons');
-    expect(document.getElementById('preset-script-bmr-button')!).toHaveTextContent('4 Demons');
+    expect(document.getElementById('preset-script-tb-button')).toHaveTextContent(/^Trouble Brewing$/);
   });
 
   it('cancels without selecting', () => {

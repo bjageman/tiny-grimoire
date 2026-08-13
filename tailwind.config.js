@@ -21,6 +21,7 @@ export default {
           minion: 'rgb(var(--clocktower-minion) / <alpha-value>)',
           demon: 'rgb(var(--clocktower-demon) / <alpha-value>)',
           traveler: 'rgb(var(--clocktower-traveler) / <alpha-value>)',
+          arcane: 'rgb(var(--clocktower-arcane) / <alpha-value>)',
           gold: 'rgb(var(--clocktower-gold) / <alpha-value>)',
           goldDim: 'rgb(var(--clocktower-gold-dim) / <alpha-value>)',
         },

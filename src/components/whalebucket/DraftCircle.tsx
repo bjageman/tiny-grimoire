@@ -4,7 +4,7 @@ import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import CharacterToken from '../shared/tokens/CharacterToken';
 import { useGrimoireLayout } from '../../hooks/useGrimoireLayout';
-import rolesData from '../../official_roles.json';
+import { ALL_ROLES } from '../../utils/roleData';
 
 interface WhaleBucketDraftCircleProps {
   players: Player[];
@@ -36,7 +36,7 @@ export default function WhaleBucketDraftCircle({
       >
         {players.map((p, index) => {
           const pos = positions[index] ?? { left: 50, top: 50 };
-          const roleObj = (rolesData as Role[]).find(r => r.id === p.roleId);
+          const roleObj = (ALL_ROLES as Role[]).find(r => r.id === p.roleId);
           const defaultEvil = roleObj ? (roleObj.team === 'minion' || roleObj.team === 'demon') : false;
           const isEvil = p.isTheLunatic ? false : p.isTheMarionette ? true : defaultEvil;
 

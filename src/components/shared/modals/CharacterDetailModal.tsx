@@ -5,7 +5,7 @@ import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import CharacterToken from '../tokens/CharacterToken';
 import type { Role } from '../../../types';
 import { readCustomNotePrompts, saveCustomNotePrompts } from '../../../utils/customNotePrompts';
-import officialRoles from '../../../official_roles.json';
+import { ABILITY_BY_ID } from '../../../utils/roleData';
 
 const NOTE_PROMPTS = ['You Are', 'This Character Selected You', 'You Have This Ability', 'This Character Is In Play', 'This Character Is NOT In Play', 'Do You Want To Use This Ability?'] as const;
 
@@ -33,7 +33,7 @@ export default function CharacterDetailModal({
   animate = false,
 }: CharacterDetailModalProps) {
   const abilityText = role.ability
-    ?? (officialRoles as Array<{ id: string; ability?: string }>).find(r => r.id === role.id)?.ability
+    ?? ABILITY_BY_ID.get(role.id)
     ?? "Ability description not found.";
   const t = role.team;
 

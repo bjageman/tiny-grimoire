@@ -2,11 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
+import PresetScriptModal from '../shared/modals/PresetScriptModal';
+import type { PresetScript } from '../../utils/presetScripts';
 
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];
@@ -19,6 +21,7 @@ interface PlayerTrackerSetupPhaseProps {
   setActiveTrackerPlayerId: (id: string | null) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleScriptUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  selectPresetScript: (preset: PresetScript) => void;
   clearCustomScript: () => void;
   setPhase: (phase: 'setup' | 'game') => void;
   draggedIndex: number | null;
@@ -49,6 +52,7 @@ export default function PlayerTrackerSetupPhase({
   setActiveTrackerPlayerId,
   fileInputRef,
   handleScriptUpload,
+  selectPresetScript,
   clearCustomScript,
   setPhase,
   draggedIndex,
@@ -68,9 +72,10 @@ export default function PlayerTrackerSetupPhase({
   resetGame,
 }: PlayerTrackerSetupPhaseProps) {
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
@@ -135,7 +140,7 @@ export default function PlayerTrackerSetupPhase({
                 <ScriptHelpButton isLightModeActive={isLightModeActive} />
               </div>
 
-              {customScriptRoles && (
+              {customScriptRoles ? (
                 <button
                   type="button"
                   onClick={clearCustomScript}
@@ -147,6 +152,20 @@ export default function PlayerTrackerSetupPhase({
                   )}
                 >
                   Clear Script
+                </button>
+              ) : (
+                <button
+                  id="preset-script-button"
+                  type="button"
+                  onClick={() => setIsPresetModalOpen(true)}
+                  className={cn(
+                    "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
+                    isLightModeActive
+                      ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
+                      : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                  )}
+                >
+                  Select a Preset Script
                 </button>
               )}
             </>
@@ -162,7 +181,7 @@ export default function PlayerTrackerSetupPhase({
                 : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
             )}
           >
-            View Script
+            {customScriptRoles ? 'View Script' : 'View All Roles'}
           </button>
           <p className="text-[11px] text-gray-550 leading-relaxed">
             {isSynced 
@@ -281,6 +300,13 @@ export default function PlayerTrackerSetupPhase({
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />
+    {isPresetModalOpen && (
+      <PresetScriptModal
+        onSelect={(preset) => { selectPresetScript(preset); setIsPresetModalOpen(false); }}
+        onCancel={() => setIsPresetModalOpen(false)}
+        isLightModeActive={isLightModeActive}
+      />
+    )}
     </>
   );
 }

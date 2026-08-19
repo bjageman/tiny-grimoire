@@ -3,8 +3,7 @@ import { Plus, Search, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { roleIconFallback } from '../../utils/roleIcon';
-import rolesData from '../../roles.json';
-import type { Role } from '../../types';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 
 type PrefTeam = 'townsfolk' | 'outsider' | 'minion' | 'demon';
 type Prefs = Record<PrefTeam, string[]>;
@@ -39,7 +38,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
         <div className="space-y-3.5">
           {(['townsfolk', 'outsider', 'minion', 'demon'] as const).map((team) => {
             const selectedRoleId = prefs[team][0];
-            const selectedRole = selectedRoleId ? (rolesData as Role[]).find(r => r.id === selectedRoleId) : null;
+            const selectedRole = selectedRoleId ? PLAYABLE_ROLES.find(r => r.id === selectedRoleId) : null;
             return (
               <div key={team} className="space-y-1.5">
                 <label className={cn(
@@ -157,7 +156,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
               "overflow-y-auto overscroll-contain flex-1 border rounded bg-gray-955/20 divide-y pr-1",
               isLight ? "border-gray-200 divide-gray-150" : "border-gray-855 divide-gray-800/60"
             )}>
-              {(rolesData as Role[])
+              {PLAYABLE_ROLES
                 .filter(r => r.team === activePrefSelect.team && !excludedRoleIds.includes(r.id) && r.name.toLowerCase().includes(prefSearchTerm.toLowerCase()))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(role => {
@@ -222,7 +221,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
               <button
                 type="button"
                 onClick={() => {
-                  const available = (rolesData as Role[]).filter(r => r.team === activePrefSelect.team);
+                  const available = PLAYABLE_ROLES.filter(r => r.team === activePrefSelect.team);
                   if (available.length > 0) {
                     const randIdx = Math.floor(Math.random() * available.length);
                     setPrefs(prev => ({ ...prev, [activePrefSelect.team]: [available[randIdx].id] }));

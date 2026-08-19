@@ -78,11 +78,14 @@ describe('parseScriptFile', () => {
     expect(custom?.image).toEqual(['https://example.com/hawker-good.png', 'https://example.com/hawker-evil.png']);
   });
 
-  it('does not attach ability/image fields for a known official role', async () => {
-    const file = makeFile(['washerwoman']);
+  it('keeps the canonical entry for a known official role, ignoring script-supplied overrides', async () => {
+    const file = makeFile([
+      { id: 'washerwoman', name: 'Not The Washerwoman', ability: 'Bogus ability', image: ['https://example.com/x.png'] },
+    ]);
     const { roles } = await parseScriptFile(file);
     const washerwoman = roles.find(r => r.id === 'washerwoman');
-    expect(washerwoman?.ability).toBeUndefined();
+    expect(washerwoman?.name).toBe('Washerwoman');
+    expect(washerwoman?.ability).toContain('Townsfolk');
     expect(washerwoman?.image).toBeUndefined();
   });
 
@@ -158,11 +161,13 @@ describe('parseScriptFile', () => {
     expect(custom?.reminders).toBeUndefined();
   });
 
-  it('does not attach reminder/night fields to a known official role', async () => {
+  it('resolves a known official role to the merged entry, official reminders and all', async () => {
     const file = makeFile(['washerwoman']);
     const { roles } = await parseScriptFile(file);
     const ww = roles.find(r => r.id === 'washerwoman');
-    expect(ww?.reminders).toBeUndefined();
+    expect(ww?.reminders).toEqual(['Townsfolk', 'Wrong']);
+    expect(ww?.ability).toContain('Townsfolk');
+    // Night order still comes from nightsheet.json, never from the role entry.
     expect(ww?.firstNight).toBeUndefined();
   });
 });

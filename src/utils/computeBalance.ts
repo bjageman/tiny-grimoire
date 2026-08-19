@@ -1,8 +1,8 @@
 import { getDistribution } from '../constants';
-import officialRolesData from '../official_roles.json';
+import { ALL_ROLES } from './roleData';
 import type { Role } from '../types';
 
-const OFFICIAL_ROLE_IDS = new Set((officialRolesData as { id: string }[]).map(r => r.id));
+const OFFICIAL_ROLE_IDS = new Set((ALL_ROLES as { id: string }[]).map(r => r.id));
 
 export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const basePlayerCount = Math.min(15, playerCount);

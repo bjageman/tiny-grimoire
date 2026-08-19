@@ -1,6 +1,6 @@
 import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
-import rolesData from '../official_roles.json';
+import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 
 export function assignCharacters(
@@ -40,7 +40,7 @@ export function assignCharacters(
 
   // 2. Assign traveler roles
   const travelerRoles = allRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller');
-  const masterTravelers = (rolesData as Role[])
+  const masterTravelers = (ALL_ROLES as Role[])
     .filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
     .map(r => ({ ...r, team: (r.team as string) === 'traveller' ? 'traveler' : r.team }));
   const availableTravelers = travelerRoles.length > 0 ? travelerRoles : masterTravelers;

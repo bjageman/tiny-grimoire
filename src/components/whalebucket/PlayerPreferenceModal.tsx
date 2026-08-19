@@ -7,7 +7,7 @@ import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
-import rolesData from '../../official_roles.json';
+import { ALL_ROLES } from '../../utils/roleData';
 import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketPlayerPreferenceModalProps {
@@ -82,7 +82,7 @@ export default function WhaleBucketPlayerPreferenceModal({
     : ['townsfolk', 'outsider', 'minion', 'demon'];
 
   if (pickingTeam) {
-    const filteredRoles = (rolesData as Role[])
+    const filteredRoles = (ALL_ROLES as Role[])
       .filter(r =>
         r.team === pickingTeam &&
         !excludedRoleIds.includes(r.id) &&
@@ -182,7 +182,7 @@ export default function WhaleBucketPlayerPreferenceModal({
             </button>
             <button
               onClick={() => {
-                const available = (rolesData as Role[]).filter(r => r.team === pickingTeam && !excludedRoleIds.includes(r.id));
+                const available = (ALL_ROLES as Role[]).filter(r => r.team === pickingTeam && !excludedRoleIds.includes(r.id));
                 if (available.length > 0) {
                   const r = available[Math.floor(Math.random() * available.length)];
                   setPlayers(prev => prev.map(x => x.id === player.id ? {
@@ -277,7 +277,7 @@ export default function WhaleBucketPlayerPreferenceModal({
         <div className="overflow-y-auto overscroll-contain flex-1 space-y-2">
           {visibleTeams.map(team => {
             const roleId = player.preferences?.[team]?.[0];
-            const roleObj = roleId ? (rolesData as Role[]).find(r => r.id === roleId) : undefined;
+            const roleObj = roleId ? (ALL_ROLES as Role[]).find(r => r.id === roleId) : undefined;
             return (
               <button
                 key={team}

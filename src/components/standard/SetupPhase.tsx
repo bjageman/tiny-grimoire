@@ -3,9 +3,11 @@ import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
-import rolesData from '../../roles.json';
+import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
+import PresetScriptModal from '../shared/modals/PresetScriptModal';
+import type { PresetScript } from '../../utils/presetScripts';
 import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
@@ -29,6 +31,7 @@ interface StandardSetupPhaseProps {
   addPlayer: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleScriptUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  selectPresetScript: (preset: PresetScript) => void;
   clearCustomScript: () => void;
   randomlyAssignRoles: () => void;
   randomlyAssignWithRoles: (roles: Role[]) => void;
@@ -78,6 +81,7 @@ export default function StandardSetupPhase({
   addPlayer,
   fileInputRef,
   handleScriptUpload,
+  selectPresetScript,
   clearCustomScript,
   randomlyAssignRoles,
   randomlyAssignWithRoles,
@@ -112,18 +116,19 @@ export default function StandardSetupPhase({
 }: StandardSetupPhaseProps) {
   const [showGrimoireWarning, setShowGrimoireWarning] = useState(false);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [isSelectCharactersModalOpen, setIsSelectCharactersModalOpen] = useState(false);
   const [overrideFailures, setOverrideFailures] = useState(false);
 
   const sortedRoles = useMemo(() => {
-    const baseRoles = customScriptRoles || (rolesData as Role[]);
+    const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
   const basePlayerCount = useMemo(() => {
     return players.filter(p => {
       if (!p.roleId) return true;
-      const r = scriptRoles.find(role => role.id === p.roleId) || (rolesData as Role[]).find(role => role.id === p.roleId);
+      const r = scriptRoles.find(role => role.id === p.roleId) || PLAYABLE_ROLES.find(role => role.id === p.roleId);
       return r?.team !== 'traveler';
     }).length;
   }, [players, scriptRoles]);
@@ -192,7 +197,7 @@ export default function StandardSetupPhase({
             </button>
             <ScriptHelpButton isLightModeActive={isLightModeActive} />
           </div>
-          {customScriptRoles && (
+          {customScriptRoles ? (
             <button
               type="button"
               onClick={clearCustomScript}
@@ -204,6 +209,20 @@ export default function StandardSetupPhase({
               )}
             >
               Clear Script
+            </button>
+          ) : (
+            <button
+              id="preset-script-button"
+              type="button"
+              onClick={() => setIsPresetModalOpen(true)}
+              className={cn(
+                "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
+                isLightModeActive
+                  ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
+                  : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+              )}
+            >
+              Select a Preset Script
             </button>
           )}
           <button
@@ -217,7 +236,7 @@ export default function StandardSetupPhase({
                 : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
             )}
           >
-            View Script
+            {customScriptRoles ? 'View Script' : 'View All Roles'}
           </button>
           <button
             id="select-characters-button"
@@ -436,6 +455,13 @@ export default function StandardSetupPhase({
       isStoryteller
       players={players}
     />
+    {isPresetModalOpen && (
+      <PresetScriptModal
+        onSelect={(preset) => { selectPresetScript(preset); setIsPresetModalOpen(false); }}
+        onCancel={() => setIsPresetModalOpen(false)}
+        isLightModeActive={isLightModeActive}
+      />
+    )}
     <SelectCharactersModal
       isOpen={isSelectCharactersModalOpen}
       onClose={() => setIsSelectCharactersModalOpen(false)}

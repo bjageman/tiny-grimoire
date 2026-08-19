@@ -14,7 +14,7 @@ import {
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import CharacterToken from '../tokens/CharacterToken';
-import officialRoles from '../../../official_roles.json';
+import { ALL_ROLES } from '../../../utils/roleData';
 
 const BOARD_WIDTH = 900;
 const BOARD_HEIGHT = 680;
@@ -205,7 +205,7 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
               >
                 {displayRoleIds(p).map((roleId, idx) => {
                   const role = roleId
-                    ? rolesData.find(r => r.id === roleId) ?? (officialRoles as Role[]).find(r => r.id === roleId)
+                    ? rolesData.find(r => r.id === roleId) ?? (ALL_ROLES as Role[]).find(r => r.id === roleId)
                     : null;
                   return (
                     <CharacterToken

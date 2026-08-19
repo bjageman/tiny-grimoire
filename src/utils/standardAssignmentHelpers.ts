@@ -1,5 +1,5 @@
 import type { Player, Role } from '../types';
-import masterRoles from '../official_roles.json';
+import { ALL_ROLES } from './roleData';
 
 export const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
@@ -61,7 +61,7 @@ export function getMasqueradeFakeRole(
 
 export function isTravelerRole(roleId: string | undefined, selectionRoles: Role[]): boolean {
   if (!roleId) return false;
-  const role = selectionRoles.find(r => r.id === roleId) || (masterRoles as Role[]).find(r => r.id === roleId);
+  const role = selectionRoles.find(r => r.id === roleId) || (ALL_ROLES as Role[]).find(r => r.id === roleId);
   return role?.team === 'traveler' || (role?.team as string) === 'traveller';
 }
 

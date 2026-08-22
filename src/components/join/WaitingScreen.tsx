@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { QrCode, CheckCircle2, Scroll, RotateCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { PRONOUN_MAX_LENGTH } from '../../constants';
+
+const FIXED_PRONOUNS = ['He/Him', 'She/Her', 'They/Them'];
 
 interface WaitingScreenProps {
   isLight: boolean;
@@ -16,6 +20,18 @@ interface WaitingScreenProps {
 
 // The joined-and-waiting room: pronoun picker, script view, and leave, until the storyteller assigns a role.
 export default function WaitingScreen({ isLight, code, name, pronouns, onSelectPronoun, scriptName, gameType, onShowQr, onViewScript, onLeave }: WaitingScreenProps) {
+  const isCustomPronoun = !!pronouns && !FIXED_PRONOUNS.includes(pronouns);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customDraft, setCustomDraft] = useState('');
+
+  const openCustom = () => { setCustomDraft(isCustomPronoun ? pronouns : ''); setCustomOpen(true); };
+  const commitCustom = () => {
+    const text = customDraft.trim();
+    if (!text) return;
+    onSelectPronoun(text);
+    setCustomOpen(false);
+  };
+
   return (
     <div
       id="waiting-screen"
@@ -44,25 +60,67 @@ export default function WaitingScreen({ isLight, code, name, pronouns, onSelectP
 
       <div className="space-y-2">
         <p className={cn("text-[10px] uppercase font-bold tracking-wider text-center", isLight ? "text-gray-400" : "text-gray-500")}>Pronouns (optional)</p>
-        <div className="flex justify-center gap-1.5">
-          {['He/Him', 'She/Her', 'They/Them', 'Ask Me'].map(p => (
+        {customOpen ? (
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex justify-center gap-1.5">
+              <input
+                autoFocus
+                value={customDraft}
+                onChange={(e) => setCustomDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') commitCustom(); }}
+                maxLength={PRONOUN_MAX_LENGTH}
+                placeholder="e.g. Xe/Xem"
+                className={cn(
+                  "w-28 px-2.5 py-1.5 rounded-full text-xs font-semibold border text-center outline-none focus:ring-2 focus:ring-clocktower-blood/40",
+                  isLight ? "bg-white border-gray-300 text-gray-800 placeholder-gray-400" : "bg-gray-900 border-gray-700 text-gray-100 placeholder-gray-600"
+                )}
+              />
+              <button
+                type="button"
+                onClick={commitCustom}
+                disabled={!customDraft.trim()}
+                className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-clocktower-blood transition-all hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Set
+              </button>
+            </div>
+            <button type="button" onClick={() => setCustomOpen(false)} className="text-[10px] underline text-gray-500 hover:text-gray-400 font-semibold">Cancel</button>
+          </div>
+        ) : (
+          <div className="flex justify-center gap-1.5 flex-wrap">
+            {FIXED_PRONOUNS.map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onSelectPronoun(pronouns === p ? '' : p)}
+                className={cn(
+                  "px-2 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap",
+                  pronouns === p
+                    ? "bg-clocktower-blood text-white border-clocktower-blood"
+                    : isLight
+                      ? "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
+                      : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
+                )}
+              >
+                {p}
+              </button>
+            ))}
             <button
-              key={p}
               type="button"
-              onClick={() => onSelectPronoun(pronouns === p ? '' : p)}
+              onClick={openCustom}
               className={cn(
-                "px-2 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap",
-                pronouns === p
+                "px-2 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap max-w-[110px] truncate",
+                isCustomPronoun
                   ? "bg-clocktower-blood text-white border-clocktower-blood"
                   : isLight
                     ? "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
                     : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500"
               )}
             >
-              {p}
+              {isCustomPronoun ? pronouns : 'Custom'}
             </button>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <button

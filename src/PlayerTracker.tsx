@@ -214,7 +214,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  useGameSocket(gameCode || '', handleIncomingMessage);
+  const { sendMessage: sendGameMessage } = useGameSocket(gameCode || '', handleIncomingMessage);
+
+  // Best-effort: lets the Storyteller drop this player's connected icon when they deliberately disconnect.
+  const notifyStorytellerLeft = () => {
+    const myPlayerId = sessionStorage.getItem('botc-player-id');
+    if (myPlayerId) sendGameMessage({ type: 'player_leave', id: myPlayerId });
+  };
 
   // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -294,6 +300,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const clearSyncSession = () => {
+    notifyStorytellerLeft();
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -324,6 +331,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
   const resetGame = () => {
     showConfirm('Are you sure you want to reset the tracker? This clears all players and settings.', () => {
+      if (isSynced) notifyStorytellerLeft();
       setPlayers([]);
       setPhase('setup');
       setTimeOfDay('night');

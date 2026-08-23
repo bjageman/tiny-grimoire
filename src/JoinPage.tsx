@@ -349,6 +349,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   };
 
   const handleLeaveGame = () => {
+    sendMessage({ type: 'player_leave', id: playerId });
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
     setCode('');

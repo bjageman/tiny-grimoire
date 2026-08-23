@@ -323,6 +323,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           dayNumber
         });
       }
+    } else if (payload.type === 'player_leave' && payload.id) {
+      setRemotePlayerIds(prev => {
+        if (!prev.has(payload.id)) return prev;
+        const next = new Set(prev);
+        next.delete(payload.id);
+        return next;
+      });
     }
   };
 

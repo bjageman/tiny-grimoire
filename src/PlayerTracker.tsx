@@ -25,6 +25,9 @@ type Phase = 'setup' | 'game';
 
 const STORAGE_KEY = 'player-tracker-botc-game';
 
+// Silent-disconnect fallback: lets the Storyteller drop our connected icon if we vanish without a deliberate leave.
+const HEARTBEAT_INTERVAL_MS = 20_000;
+
 function parseShareCodeFromHash(): string | null {
   const hash = window.location.hash;
   const queryStr = hash.includes('?') ? hash.split('?')[1] : window.location.search;
@@ -221,6 +224,17 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     const myPlayerId = sessionStorage.getItem('botc-player-id');
     if (myPlayerId) sendGameMessage({ type: 'player_leave', id: myPlayerId });
   };
+
+  // Heartbeat: a periodic ping while synced, so the Storyteller can tell a silent disconnect
+  // (network drop, backgrounded/killed app) apart from a still-connected player.
+  useEffect(() => {
+    if (!isSynced) return;
+    const interval = setInterval(() => {
+      const myPlayerId = sessionStorage.getItem('botc-player-id');
+      if (myPlayerId) sendGameMessage({ type: 'player_heartbeat', id: myPlayerId });
+    }, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isSynced, sendGameMessage]);
 
   // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);

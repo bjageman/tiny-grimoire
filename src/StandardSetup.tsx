@@ -33,6 +33,10 @@ const generateId = (): string =>
     ? crypto.randomUUID()
     : Date.now().toString(36) + Math.random().toString(36).substring(2);
 
+// Silent-disconnect fallback: a connected player pings on this cadence; miss enough of them and we drop their icon.
+const HEARTBEAT_TIMEOUT_MS = 60_000;
+const STALE_CHECK_INTERVAL_MS = 10_000;
+
 interface SetupProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -64,6 +68,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   });
 
   const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
+  // Last heartbeat/join time per connected player id; a ref since it updates far more often than remotePlayerIds should re-render for.
+  const lastSeenRef = useRef<Map<string, number>>(new Map());
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
@@ -181,6 +187,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    lastSeenRef.current.clear();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -318,6 +325,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       }
 
       if (!payload.checkOnly) {
+        lastSeenRef.current.set(payload.id, Date.now());
         setRemotePlayerIds(prev => new Set([...prev, payload.id]));
         setPlayers(prev => {
           const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
@@ -373,12 +381,17 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         });
       }
     } else if (payload.type === 'player_leave' && payload.id) {
+      lastSeenRef.current.delete(payload.id);
       setRemotePlayerIds(prev => {
         if (!prev.has(payload.id)) return prev;
         const next = new Set(prev);
         next.delete(payload.id);
         return next;
       });
+    } else if (payload.type === 'player_heartbeat' && payload.id) {
+      if (remotePlayerIds.has(payload.id)) {
+        lastSeenRef.current.set(payload.id, Date.now());
+      }
     }
   };
 
@@ -387,6 +400,25 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   useEffect(() => {
     sendMessageRef.current = sendMessage;
   }, [sendMessage]);
+
+  // Fallback for silent disconnects (network drop, backgrounded/killed app): drop a player's
+  // connected icon if we haven't heard a heartbeat from them in a while.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const staleIds = [...remotePlayerIds].filter(id => {
+        const lastSeen = lastSeenRef.current.get(id);
+        return lastSeen === undefined || Date.now() - lastSeen > HEARTBEAT_TIMEOUT_MS;
+      });
+      if (staleIds.length === 0) return;
+      staleIds.forEach(id => lastSeenRef.current.delete(id));
+      setRemotePlayerIds(prev => {
+        const next = new Set(prev);
+        staleIds.forEach(id => next.delete(id));
+        return next;
+      });
+    }, STALE_CHECK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [remotePlayerIds]);
 
   // Sync game state to players when in game phase
   useEffect(() => {
@@ -556,6 +588,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const performRemoval = () => {
       setPlayers(players.filter(p => p.id !== id));
       if (remotePlayerIds.has(id)) {
+        lastSeenRef.current.delete(id);
         setRemotePlayerIds(prev => {
           const next = new Set(prev);
           next.delete(id);

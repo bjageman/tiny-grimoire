@@ -18,6 +18,9 @@ import RevealedScreen from './components/join/RevealedScreen';
 import WaitingScreen from './components/join/WaitingScreen';
 import JoinForm from './components/join/JoinForm';
 
+// Silent-disconnect fallback: lets the Storyteller drop our connected icon if we vanish without a deliberate leave.
+const HEARTBEAT_INTERVAL_MS = 20_000;
+
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
     const savedCode = sessionStorage.getItem('joined-code');
@@ -288,6 +291,17 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
     }
   }, [isConnected, code, name, state, playerId, pronouns, sendMessage]);
+
+  // Heartbeat: a periodic ping while present, so the Storyteller can tell a silent disconnect
+  // (network drop, backgrounded/killed app) apart from a still-connected player.
+  useEffect(() => {
+    if (!code) return;
+    if (!(state === 'waiting' || state === 'revealed' || state === 'tracker')) return;
+    const interval = setInterval(() => {
+      sendMessage({ type: 'player_heartbeat', id: playerId });
+    }, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [code, state, playerId, sendMessage]);
 
   const handleJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();

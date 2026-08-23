@@ -46,19 +46,15 @@ export default function WaitingScreen({ isLight, code, name, pronouns, onSelectP
         <p className="text-sm font-semibold text-gray-500">Registered as <span className="text-clocktower-blood">{name}</span></p>
       </div>
 
-      <div className="space-y-2">
-        <p className={cn("text-[10px] uppercase font-bold tracking-wider text-center", isLight ? "text-gray-400" : "text-gray-500")}>Pronouns (optional)</p>
-        <div className="flex justify-center">
-          <PronounSelect
-            id="waiting-screen-pronouns-select"
-            pronouns={pronouns}
-            onChange={onSelectPronoun}
-            isLightModeActive={isLight}
-            open={pronounsOpen}
-            onOpenChange={setPronounsOpen}
-          />
-        </div>
-      </div>
+      <PronounSelect
+        id="waiting-screen-pronouns-select"
+        pronouns={pronouns}
+        onChange={onSelectPronoun}
+        isLightModeActive={isLight}
+        open={pronounsOpen}
+        onOpenChange={setPronounsOpen}
+        triggerLabel="Select Pronouns (optional)"
+      />
 
       <button
         id="game-script-button"

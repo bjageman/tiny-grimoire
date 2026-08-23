@@ -42,4 +42,4 @@ export function getDistribution(count: number): RoleDistribution {
 export const PLAYER_LABEL_MAX_LENGTH = 40;
 
 // Custom pronoun entries render as compact pills/badges, so keep them short.
-export const PRONOUN_MAX_LENGTH = 20;
+export const PRONOUN_MAX_LENGTH = 12;

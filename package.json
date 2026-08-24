@@ -21,7 +21,7 @@
     "antigravity-usage": "^0.2.9",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
-    "lucide-react": "^1.29.0",
+    "lucide-react": "^1.33.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-qr-code": "^2.2.0",

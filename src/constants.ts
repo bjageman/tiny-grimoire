@@ -40,3 +40,6 @@ export function getDistribution(count: number): RoleDistribution {
 
 // Player labels render as a small tooltip over the token, so cap the length both on input and on display.
 export const PLAYER_LABEL_MAX_LENGTH = 40;
+
+// Custom pronoun entries render as compact pills/badges, so keep them short.
+export const PRONOUN_MAX_LENGTH = 12;

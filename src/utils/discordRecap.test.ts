@@ -8,6 +8,7 @@ const roles: Role[] = [
   { id: 'poisoner', name: 'Poisoner', team: 'minion' },
   { id: 'imp', name: 'Imp', team: 'demon' },
   { id: 'drunk', name: 'Drunk', team: 'outsider' },
+  { id: 'beggar', name: 'Beggar', team: 'traveler' },
 ];
 
 const player = (over: Partial<Player> & { id: string; name: string }): Player => ({
@@ -80,6 +81,8 @@ describe('buildDiscordPost', () => {
     ['poisoner', true, '🟥'],
     ['imp', false, '🔷'],
     ['imp', true, '♦️'],
+    ['beggar', false, '📘'],
+    ['beggar', true, '📕'],
   ])('keeps %s character type independent of evil alignment %s', (roleId, isEvil, marker) => {
     const { text } = buildDiscordPost({
       ...base,

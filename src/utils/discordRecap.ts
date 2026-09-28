@@ -8,7 +8,7 @@ const TEAM_MARKERS: Record<Role['team'], { good: string; evil: string }> = {
   outsider: { good: '🔵', evil: '🔴' },
   minion: { good: '🟦', evil: '🟥' },
   demon: { good: '🔷', evil: '♦️' },
-  traveler: { good: '🔵', evil: '🔴' },
+  traveler: { good: '📘', evil: '📕' },
 };
 
 export interface RecapOptions {

@@ -7,6 +7,7 @@ const roles: Role[] = [
   { id: 'butler', name: 'Butler', team: 'outsider' },
   { id: 'poisoner', name: 'Poisoner', team: 'minion' },
   { id: 'imp', name: 'Imp', team: 'demon' },
+  { id: 'nodashii', name: 'No Dashii', team: 'demon' },
   { id: 'drunk', name: 'Drunk', team: 'outsider' },
   { id: 'beggar', name: 'Beggar', team: 'traveler' },
 ];
@@ -105,10 +106,10 @@ describe('buildDiscordPost', () => {
   });
 
   it.each([
-    { roleId: 'washerwoman', isTheMarionette: true, marker: '❤️' },
-    { roleId: 'imp', isTheLunatic: true, marker: '🔷' },
-    { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '💙' },
-    { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '♦️' },
+    { roleId: 'washerwoman', isTheMarionette: true, marker: '🟥' },
+    { roleId: 'imp', isTheLunatic: true, marker: '🔵' },
+    { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '🟦' },
+    { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '🔴' },
   ])('uses effective alignment for disguised characters: %j', ({ marker, ...over }) => {
     const { text } = buildDiscordPost({
       ...base,
@@ -116,6 +117,18 @@ describe('buildDiscordPost', () => {
       gameLog: [],
     });
     expect(text.split('\n').find(line => line.includes('Alice'))).toMatch(new RegExp(`^${marker} `));
+  });
+
+  it.each([
+    { roleId: 'washerwoman', isTheMarionette: true, description: 'Marionette (Washerwoman)' },
+    { roleId: 'nodashii', isTheLunatic: true, description: 'Lunatic (No Dashii)' },
+  ])('puts the true character before the perceived role: %j', ({ description, ...over }) => {
+    const { text } = buildDiscordPost({
+      ...base,
+      players: [player({ id: 'p1', name: 'Alice', ...over })],
+      gameLog: [],
+    });
+    expect(text.split('\n').find(line => line.includes('Alice'))).toContain(`— ${description}`);
   });
 
   it('names the character a player only thinks they are', () => {

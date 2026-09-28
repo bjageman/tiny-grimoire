@@ -51,16 +51,20 @@ function finalRoster(players: Player[], rolesData: Role[]): string[] {
   return players.map(p => {
     const roles = resolveRoles(p, rolesData);
     const primaryRole = roles[0];
+    const markerTeam = p.isTheMarionette ? 'minion' : p.isTheLunatic ? 'outsider' : primaryRole?.team;
     const alignment = seatIsEvil(p, primaryRole) ? 'evil' : 'good';
-    const emoji = primaryRole ? TEAM_MARKERS[primaryRole.team][alignment] : '⚪';
-    const roleNames = roles.length > 0 ? roles.map(r => r.name).join(' / ') : 'No role';
+    const emoji = markerTeam ? TEAM_MARKERS[markerTeam][alignment] : '⚪';
+    const perceivedRoleNames = roles.length > 0 ? roles.map(r => r.name).join(' / ') : 'No role';
+    const roleNames = p.isTheMarionette
+      ? perceivedRoleNames === 'Marionette' ? 'Marionette' : `Marionette (${perceivedRoleNames})`
+      : p.isTheLunatic
+        ? perceivedRoleNames === 'Lunatic' ? 'Lunatic' : `Lunatic (${perceivedRoleNames})`
+        : perceivedRoleNames;
     const tags: string[] = [];
     if (p.isTheDrunk) tags.push('Drunk');
-    if (p.isTheMarionette) tags.push('Marionette');
-    if (p.isTheLunatic) tags.push('Lunatic');
     if (p.isTheLilMonsta) tags.push("Lil' Monsta");
     const suffix = tags.length > 0 ? ` _(${tags.join(', ')})_` : '';
-    const isDemon = roles.some(r => r.team === 'demon');
+    const isDemon = markerTeam === 'demon';
     const name = isDemon ? `***${p.name}***` : `**${p.name}**`;
     const role = isDemon ? `_${roleNames}_` : roleNames;
     const body = p.isDead ? `~~${name} — ${role}~~` : `${name} — ${role}`;

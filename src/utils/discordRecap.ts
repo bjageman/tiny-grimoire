@@ -2,6 +2,7 @@ import type { Player, Role } from '../types';
 import { seatIsEvil } from './playerSeat';
 
 export const DISCORD_MESSAGE_LIMIT = 2000;
+const MARKER_LEGEND = '**Legend (good/evil):** 💙/❤️ Townsfolk · 🔵/🔴 Outsider · 🟦/🟥 Minion · 🔷/♦️ Demon · 📘/📕 Traveler';
 
 const TEAM_MARKERS: Record<Role['team'], { good: string; evil: string }> = {
   townsfolk: { good: '💙', evil: '❤️' },
@@ -82,6 +83,8 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
     '',
     '**Final Grimoire**',
     ...finalRoster(players, rolesData),
+    '',
+    MARKER_LEGEND,
   ].join('\n');
 
   return clamp(head);

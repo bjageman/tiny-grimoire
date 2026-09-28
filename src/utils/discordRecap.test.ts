@@ -72,6 +72,13 @@ describe('buildDiscordPost', () => {
     expect(text).not.toContain('~~**Alice**~~');
   });
 
+  it('ends with a single-line marker legend', () => {
+    const { text } = buildDiscordPost({ ...base, gameLog: [] });
+    expect(text.split('\n').at(-1)).toBe(
+      '**Legend (good/evil):** 💙/❤️ Townsfolk · 🔵/🔴 Outsider · 🟦/🟥 Minion · 🔷/♦️ Demon · 📘/📕 Traveler'
+    );
+  });
+
   it.each([
     ['washerwoman', false, '💙'],
     ['washerwoman', true, '❤️'],
@@ -89,7 +96,7 @@ describe('buildDiscordPost', () => {
       players: [player({ id: 'p1', name: 'Alice', roleId, isEvil })],
       gameLog: [],
     });
-    expect(text.split('\n').at(-1)).toMatch(new RegExp(`^${marker} `));
+    expect(text.split('\n').find(line => line.includes('Alice'))).toMatch(new RegExp(`^${marker} `));
   });
 
   it('defaults Minions to evil squares', () => {
@@ -108,7 +115,7 @@ describe('buildDiscordPost', () => {
       players: [player({ id: 'p1', name: 'Alice', ...over })],
       gameLog: [],
     });
-    expect(text.split('\n').at(-1)).toMatch(new RegExp(`^${marker} `));
+    expect(text.split('\n').find(line => line.includes('Alice'))).toMatch(new RegExp(`^${marker} `));
   });
 
   it('names the character a player only thinks they are', () => {

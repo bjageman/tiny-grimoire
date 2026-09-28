@@ -1,13 +1,14 @@
 import type { Player, Role } from '../types';
+import { seatIsEvil } from './playerSeat';
 
 export const DISCORD_MESSAGE_LIMIT = 2000;
 
-const TEAM_EMOJI: Record<Role['team'], string> = {
-  townsfolk: '🔵',
-  outsider: '🔷',
-  minion: '🔴',
-  demon: '🟥',
-  traveler: '🟣',
+const TEAM_MARKERS: Record<Role['team'], { good: string; evil: string }> = {
+  townsfolk: { good: '🔵', evil: '🔴' },
+  outsider: { good: '🔵 ▲', evil: '🔴 ▲' },
+  minion: { good: '🟦', evil: '🟥' },
+  demon: { good: '🔵 ◆', evil: '🔴 ◆' },
+  traveler: { good: '🔵', evil: '🔴' },
 };
 
 export interface RecapOptions {
@@ -48,7 +49,9 @@ function resolveRoles(player: Player, rolesData: Role[]): Role[] {
 function finalRoster(players: Player[], rolesData: Role[]): string[] {
   return players.map(p => {
     const roles = resolveRoles(p, rolesData);
-    const emoji = roles.length > 0 ? TEAM_EMOJI[roles[0].team] ?? '⚪' : '⚪';
+    const primaryRole = roles[0];
+    const alignment = seatIsEvil(p, primaryRole) ? 'evil' : 'good';
+    const emoji = primaryRole ? TEAM_MARKERS[primaryRole.team][alignment] : '⚪';
     const roleNames = roles.length > 0 ? roles.map(r => r.name).join(' / ') : 'No role';
     const tags: string[] = [];
     if (p.isTheDrunk) tags.push('Drunk');

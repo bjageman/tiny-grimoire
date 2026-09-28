@@ -53,6 +53,7 @@ export default function NightOrderWidget({
   const setCheckedItems = onSetCheckedItems !== undefined ? onSetCheckedItems : setLocalCheckedItems;
 
   const isFirstMount = useRef(true);
+  const [shouldScrollToHeader, setShouldScrollToHeader] = useState(false);
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
@@ -60,6 +61,15 @@ export default function NightOrderWidget({
     }
     setActiveTab(dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other');
   }, [dayNumber, timeOfDay]);
+
+  useEffect(() => {
+    if (!shouldScrollToHeader) return;
+    const timeout = setTimeout(() => {
+      document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setShouldScrollToHeader(false);
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [shouldScrollToHeader]);
 
   // Clear checks manually
   const handleReset = () => {
@@ -72,9 +82,7 @@ export default function NightOrderWidget({
     if (advancesPhase && item.advancesTo === 'day') {
       setCheckedItems({});
       onToggleTimeOfDay!();
-      setTimeout(() => {
-        document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      setShouldScrollToHeader(true);
       return;
     }
 

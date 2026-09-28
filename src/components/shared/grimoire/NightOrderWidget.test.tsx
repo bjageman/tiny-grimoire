@@ -213,6 +213,36 @@ describe('NightOrderWidget', () => {
     vi.useRealTimers();
   });
 
+  it('cancels the pending Dawn scroll when unmounted', () => {
+    vi.useFakeTimers();
+    const scrollIntoView = vi.fn();
+    const board = document.createElement('div');
+    board.id = 'page-header-divider';
+    board.scrollIntoView = scrollIntoView;
+    document.body.appendChild(board);
+
+    const { unmount } = render(
+      <NightOrderWidget
+        players={mockPlayers}
+        timeOfDay="night"
+        dayNumber={1}
+        isLightModeActive={false}
+        checkedItems={{}}
+        onSetCheckedItems={vi.fn()}
+        onToggleTimeOfDay={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Dawn', { selector: '.font-serif' }).closest('div')!);
+    unmount();
+    act(() => vi.runAllTimers());
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    board.remove();
+    vi.useRealTimers();
+  });
+
   it('advances to the next night when Dusk is checked during the day', () => {
     const handleToggleTimeOfDay = vi.fn();
 

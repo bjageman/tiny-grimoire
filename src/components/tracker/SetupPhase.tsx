@@ -282,6 +282,7 @@ export default function PlayerTrackerSetupPhase({
           onClick={() => {
             setPhase('game');
             setTimeout(() => {
+              if (typeof document === 'undefined') return;
               const grimoireElement = document.getElementById('grimoire-board-container');
               grimoireElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);

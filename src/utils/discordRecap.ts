@@ -1,13 +1,15 @@
 import type { Player, Role } from '../types';
+import { seatIsEvil } from './playerSeat';
 
 export const DISCORD_MESSAGE_LIMIT = 2000;
+const MARKER_LEGEND = '**Legend (good/evil):** 💙/❤️ Townsfolk · 🔵/🔴 Outsider · 🟦/🟥 Minion · 🔷/♦️ Demon · 📘/📕 Traveler';
 
-const TEAM_EMOJI: Record<Role['team'], string> = {
-  townsfolk: '🔵',
-  outsider: '🔷',
-  minion: '🔴',
-  demon: '🟥',
-  traveler: '🟣',
+const TEAM_MARKERS: Record<Role['team'], { good: string; evil: string }> = {
+  townsfolk: { good: '💙', evil: '❤️' },
+  outsider: { good: '🔵', evil: '🔴' },
+  minion: { good: '🟦', evil: '🟥' },
+  demon: { good: '🔷', evil: '♦️' },
+  traveler: { good: '📘', evil: '📕' },
 };
 
 export interface RecapOptions {
@@ -45,18 +47,31 @@ function resolveRoles(player: Player, rolesData: Role[]): Role[] {
     .filter((r): r is Role => Boolean(r));
 }
 
+function describeRole(player: Player, perceivedRoleNames: string): string {
+  const trueCharacter = player.isTheMarionette
+    ? 'Marionette'
+    : player.isTheLunatic
+      ? 'Lunatic'
+      : player.isTheDrunk
+        ? 'Drunk'
+        : null;
+  if (!trueCharacter || perceivedRoleNames === trueCharacter) return perceivedRoleNames;
+  return `${trueCharacter} (${perceivedRoleNames})`;
+}
+
 function finalRoster(players: Player[], rolesData: Role[]): string[] {
   return players.map(p => {
     const roles = resolveRoles(p, rolesData);
-    const emoji = roles.length > 0 ? TEAM_EMOJI[roles[0].team] ?? '⚪' : '⚪';
-    const roleNames = roles.length > 0 ? roles.map(r => r.name).join(' / ') : 'No role';
+    const primaryRole = roles[0];
+    const markerTeam = p.isTheMarionette ? 'minion' : p.isTheLunatic || p.isTheDrunk ? 'outsider' : primaryRole?.team;
+    const alignment = seatIsEvil(p, primaryRole) ? 'evil' : 'good';
+    const emoji = markerTeam ? TEAM_MARKERS[markerTeam][alignment] : '⚪';
+    const perceivedRoleNames = roles.length > 0 ? roles.map(r => r.name).join(' / ') : 'No role';
+    const roleNames = describeRole(p, perceivedRoleNames);
     const tags: string[] = [];
-    if (p.isTheDrunk) tags.push('Drunk');
-    if (p.isTheMarionette) tags.push('Marionette');
-    if (p.isTheLunatic) tags.push('Lunatic');
     if (p.isTheLilMonsta) tags.push("Lil' Monsta");
     const suffix = tags.length > 0 ? ` _(${tags.join(', ')})_` : '';
-    const isDemon = roles.some(r => r.team === 'demon');
+    const isDemon = markerTeam === 'demon';
     const name = isDemon ? `***${p.name}***` : `**${p.name}**`;
     const role = isDemon ? `_${roleNames}_` : roleNames;
     const body = p.isDead ? `~~${name} — ${role}~~` : `${name} — ${role}`;
@@ -79,6 +94,8 @@ export function buildDiscordPost(opts: RecapOptions): { text: string; truncated:
     '',
     '**Final Grimoire**',
     ...finalRoster(players, rolesData),
+    '',
+    MARKER_LEGEND,
   ].join('\n');
 
   return clamp(head);

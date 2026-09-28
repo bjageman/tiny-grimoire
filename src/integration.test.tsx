@@ -644,6 +644,121 @@ describe('Storyteller Reset Integration', () => {
   });
 });
 
+describe('Deliberate Leave Notifications', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('drops the connected icon when a player clicks Leave Game Room', async () => {
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code')!;
+
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'p-alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Alice shows as connected in the storyteller's setup lobby.
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).not.toBeNull();
+
+    const leaveBtn = within(joinPage.container).getByText('Leave Game Room');
+    await act(async () => {
+      fireEvent.click(leaveBtn);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+
+    // Alice's player entry stays, but the connected icon drops.
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice')).not.toBeNull();
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).toBeNull();
+
+    storyteller.unmount();
+    joinPage.unmount();
+  });
+
+  it('drops the connected icon when a synced PlayerTracker confirms Reset Game', async () => {
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code')!;
+
+    // Alice joins first, as JoinPage would, so the Storyteller knows she's connected.
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'p-alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).not.toBeNull();
+    joinPage.unmount();
+
+    // Alice opens her synced Player Tracker (same browser session/sessionStorage) and resets it.
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    // The Storyteller (still mounted) has its own #header-menu-button, so scope by accessible name
+    // rather than a plain id selector, which can resolve to the wrong container's duplicate id.
+    fireEvent.click(within(tracker.container).getByLabelText('Menu'));
+    fireEvent.click(tracker.container.querySelector('#reset-game-button')!);
+    const confirmButton = tracker.container.querySelector('#dialog-confirm-button');
+    expect(confirmButton).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(confirmButton!);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice')).not.toBeNull();
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).toBeNull();
+
+    storyteller.unmount();
+    tracker.unmount();
+  });
+
+  it('drops the connected icon when a synced PlayerTracker confirms Disconnect Sync', async () => {
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    const gameCode = localStorage.getItem('standard-botc-game-code')!;
+
+    sessionStorage.setItem('joined-code', gameCode);
+    sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'p-alice');
+    const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).not.toBeNull();
+    joinPage.unmount();
+
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    const syncBadge = tracker.container.querySelector('[title="Click to disconnect from the Storyteller\'s live game"]');
+    expect(syncBadge).not.toBeNull();
+    fireEvent.click(syncBadge!);
+
+    const confirmButton = tracker.container.querySelector('#dialog-confirm-button');
+    expect(confirmButton).not.toBeNull();
+
+    await act(async () => {
+      fireEvent.click(confirmButton!);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice')).not.toBeNull();
+    expect(storyteller.container.querySelector('#edit-player-button-p-alice svg.lucide-wifi')).toBeNull();
+
+    storyteller.unmount();
+    tracker.unmount();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Storyteller Device Sync Integration
 // ---------------------------------------------------------------------------

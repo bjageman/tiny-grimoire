@@ -372,6 +372,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           customScriptRoles
         });
       }
+    } else if (payload.type === 'player_leave' && payload.id) {
+      setRemotePlayerIds(prev => {
+        if (!prev.has(payload.id)) return prev;
+        const next = new Set(prev);
+        next.delete(payload.id);
+        return next;
+      });
     }
   };
 

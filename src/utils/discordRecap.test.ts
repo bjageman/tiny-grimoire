@@ -108,8 +108,10 @@ describe('buildDiscordPost', () => {
   it.each([
     { roleId: 'washerwoman', isTheMarionette: true, marker: '🟥' },
     { roleId: 'imp', isTheLunatic: true, marker: '🔵' },
+    { roleId: 'washerwoman', isTheDrunk: true, marker: '🔵' },
     { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '🟦' },
     { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '🔴' },
+    { roleId: 'washerwoman', isTheDrunk: true, isEvil: true, marker: '🔴' },
   ])('uses effective alignment for disguised characters: %j', ({ marker, ...over }) => {
     const { text } = buildDiscordPost({
       ...base,
@@ -122,6 +124,7 @@ describe('buildDiscordPost', () => {
   it.each([
     { roleId: 'washerwoman', isTheMarionette: true, description: 'Marionette (Washerwoman)' },
     { roleId: 'nodashii', isTheLunatic: true, description: 'Lunatic (No Dashii)' },
+    { roleId: 'washerwoman', isTheDrunk: true, description: 'Drunk (Washerwoman)' },
   ])('puts the true character before the perceived role: %j', ({ description, ...over }) => {
     const { text } = buildDiscordPost({
       ...base,
@@ -131,13 +134,13 @@ describe('buildDiscordPost', () => {
     expect(text.split('\n').find(line => line.includes('Alice'))).toContain(`— ${description}`);
   });
 
-  it('names the character a player only thinks they are', () => {
+  it('does not repeat the Drunk label as a suffix', () => {
     const { text } = buildDiscordPost({
       ...base,
       players: [player({ id: 'p1', name: 'Alice', roleId: 'washerwoman', isTheDrunk: true })],
       gameLog: [],
     });
-    expect(text).toContain('_(Drunk)_');
+    expect(text).not.toContain('_(Drunk)_');
   });
 
   it('says the game is unfinished when no winner was declared', () => {

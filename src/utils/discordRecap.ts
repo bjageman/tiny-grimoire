@@ -4,10 +4,10 @@ import { seatIsEvil } from './playerSeat';
 export const DISCORD_MESSAGE_LIMIT = 2000;
 
 const TEAM_MARKERS: Record<Role['team'], { good: string; evil: string }> = {
-  townsfolk: { good: '🔵', evil: '🔴' },
-  outsider: { good: '🔵 ▲', evil: '🔴 ▲' },
+  townsfolk: { good: '💙', evil: '❤️' },
+  outsider: { good: '🔵', evil: '🔴' },
   minion: { good: '🟦', evil: '🟥' },
-  demon: { good: '🔵 ◆', evil: '🔴 ◆' },
+  demon: { good: '🔷', evil: '♦️' },
   traveler: { good: '🔵', evil: '🔴' },
 };
 

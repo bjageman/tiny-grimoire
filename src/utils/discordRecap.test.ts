@@ -59,27 +59,27 @@ describe('buildDiscordPost', () => {
 
     expect(text).toContain('## Trouble Brewing — 😈 Evil Wins');
     expect(text).toContain('4 players · 3 alive · ended Day 3');
-    expect(text).toContain('🔵 **Alice** — Washerwoman');
-    expect(text).toContain('🔴 ◆ ***Jonas*** — _Imp_');
+    expect(text).toContain('💙 **Alice** — Washerwoman');
+    expect(text).toContain('♦️ ***Jonas*** — _Imp_');
     expect(truncated).toBe(false);
   });
 
   it('marks the dead', () => {
     const { text } = buildDiscordPost({ ...base, gameLog: [] });
-    expect(text).toContain('🔵 ▲ ~~**Bob** — Butler~~');
-    expect(text).toContain('🔵 **Alice** — Washerwoman');
+    expect(text).toContain('🔵 ~~**Bob** — Butler~~');
+    expect(text).toContain('💙 **Alice** — Washerwoman');
     expect(text).not.toContain('~~**Alice**~~');
   });
 
   it.each([
-    ['washerwoman', false, '🔵'],
-    ['washerwoman', true, '🔴'],
-    ['butler', false, '🔵 ▲'],
-    ['butler', true, '🔴 ▲'],
+    ['washerwoman', false, '💙'],
+    ['washerwoman', true, '❤️'],
+    ['butler', false, '🔵'],
+    ['butler', true, '🔴'],
     ['poisoner', false, '🟦'],
     ['poisoner', true, '🟥'],
-    ['imp', false, '🔵 ◆'],
-    ['imp', true, '🔴 ◆'],
+    ['imp', false, '🔷'],
+    ['imp', true, '♦️'],
   ])('keeps %s character type independent of evil alignment %s', (roleId, isEvil, marker) => {
     const { text } = buildDiscordPost({
       ...base,
@@ -95,10 +95,10 @@ describe('buildDiscordPost', () => {
   });
 
   it.each([
-    { roleId: 'washerwoman', isTheMarionette: true, marker: '🔴' },
-    { roleId: 'imp', isTheLunatic: true, marker: '🔵 ◆' },
-    { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '🔵' },
-    { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '🔴 ◆' },
+    { roleId: 'washerwoman', isTheMarionette: true, marker: '❤️' },
+    { roleId: 'imp', isTheLunatic: true, marker: '🔷' },
+    { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '💙' },
+    { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '♦️' },
   ])('uses effective alignment for disguised characters: %j', ({ marker, ...over }) => {
     const { text } = buildDiscordPost({
       ...base,
@@ -133,7 +133,7 @@ describe('buildDiscordPost', () => {
     expect(text).not.toContain('**Game Log**');
     expect(text).not.toContain('filler entry number');
     // The roster is the point of the recap, so it survives intact.
-    expect(text).toContain('🔴 ◆ ***Jonas*** — _Imp_');
+    expect(text).toContain('♦️ ***Jonas*** — _Imp_');
   });
 
   it('never exceeds the limit even when the roster alone overflows it', () => {

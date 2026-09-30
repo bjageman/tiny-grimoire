@@ -44,7 +44,7 @@ All state is persisted to `localStorage`, so refreshing the page won't lose your
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 20+
+- [Node.js](https://nodejs.org/) 24.15.0 or newer in the 24.x release line
 - npm
 
 Real-time session routing is powered by **ntfy**. A self-hosted ntfy instance is required for practical use — the public `ntfy.sh` server will rate-limit a game session almost immediately.

@@ -41,6 +41,7 @@ export default function WhaleBucketDraftPhase({
   const doStartGame = () => {
     onStartGame();
     setTimeout(() => {
+      if (typeof document === 'undefined') return;
       document.getElementById('grimoire-board-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };

@@ -31,6 +31,7 @@ export type Player = Omit<BasePlayer, 'preferences'> & {
 type Phase = 'setup' | 'draft' | 'game';
 
 const STORAGE_KEY = 'whale-bucket-game';
+const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer', 'atheist'];
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -146,7 +147,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Exclusion states
-  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', ['drunk', 'marionette', 'lunatic']);
+  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -382,7 +383,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setDayNumber(incoming.dayNumber || 1);
       setAllowTravelers(incoming.allowTravelers ?? false);
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
-      setExcludedRoleIds(incoming.excludedRoleIds || ['drunk', 'marionette', 'lunatic']);
+      setExcludedRoleIds(incoming.excludedRoleIds || DEFAULT_EXCLUDED_ROLE_IDS);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
@@ -460,8 +461,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       showAlert("Please select a traveler role.");
       return;
     }
-    if (players.length >= 15) {
-      showAlert("Maximum players reached (15).");
+    if (players.length >= 20) {
+      showAlert("Maximum players reached (20).");
       return;
     }
     setPlayers([createNewPlayer(newTravelerName, newTravelerRoleId), ...players]);

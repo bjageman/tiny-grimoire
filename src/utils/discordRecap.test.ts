@@ -7,7 +7,9 @@ const roles: Role[] = [
   { id: 'butler', name: 'Butler', team: 'outsider' },
   { id: 'poisoner', name: 'Poisoner', team: 'minion' },
   { id: 'imp', name: 'Imp', team: 'demon' },
+  { id: 'nodashii', name: 'No Dashii', team: 'demon' },
   { id: 'drunk', name: 'Drunk', team: 'outsider' },
+  { id: 'beggar', name: 'Beggar', team: 'traveler' },
 ];
 
 const player = (over: Partial<Player> & { id: string; name: string }): Player => ({
@@ -59,25 +61,86 @@ describe('buildDiscordPost', () => {
 
     expect(text).toContain('## Trouble Brewing — 😈 Evil Wins');
     expect(text).toContain('4 players · 3 alive · ended Day 3');
-    expect(text).toContain('🔵 **Alice** — Washerwoman');
-    expect(text).toContain('🟥 ***Jonas*** — _Imp_');
+    expect(text).toContain('💙 **Alice** — Washerwoman');
+    expect(text).toContain('♦️ ***Jonas*** — _Imp_');
     expect(truncated).toBe(false);
   });
 
   it('marks the dead', () => {
     const { text } = buildDiscordPost({ ...base, gameLog: [] });
-    expect(text).toContain('🔷 ~~**Bob** — Butler~~');
-    expect(text).toContain('🔵 **Alice** — Washerwoman');
+    expect(text).toContain('🔵 ~~**Bob** — Butler~~');
+    expect(text).toContain('💙 **Alice** — Washerwoman');
     expect(text).not.toContain('~~**Alice**~~');
   });
 
-  it('names the character a player only thinks they are', () => {
+  it('ends with a single-line marker legend', () => {
+    const { text } = buildDiscordPost({ ...base, gameLog: [] });
+    expect(text.split('\n').at(-1)).toBe(
+      '**Legend (good/evil):** 💙/❤️ Townsfolk · 🔵/🔴 Outsider · 🟦/🟥 Minion · 🔷/♦️ Demon · 📘/📕 Traveler'
+    );
+  });
+
+  it.each([
+    ['washerwoman', false, '💙'],
+    ['washerwoman', true, '❤️'],
+    ['butler', false, '🔵'],
+    ['butler', true, '🔴'],
+    ['poisoner', false, '🟦'],
+    ['poisoner', true, '🟥'],
+    ['imp', false, '🔷'],
+    ['imp', true, '♦️'],
+    ['beggar', false, '📘'],
+    ['beggar', true, '📕'],
+  ])('keeps %s character type independent of evil alignment %s', (roleId, isEvil, marker) => {
+    const { text } = buildDiscordPost({
+      ...base,
+      players: [player({ id: 'p1', name: 'Alice', roleId, isEvil })],
+      gameLog: [],
+    });
+    expect(text.split('\n').find(line => line.includes('Alice'))).toMatch(new RegExp(`^${marker} `));
+  });
+
+  it('defaults Minions to evil squares', () => {
+    const { text } = buildDiscordPost({ ...base, gameLog: [] });
+    expect(text).toContain('🟥 **Iris** — Poisoner');
+  });
+
+  it.each([
+    { roleId: 'washerwoman', isTheMarionette: true, marker: '🟥' },
+    { roleId: 'imp', isTheLunatic: true, marker: '🔵' },
+    { roleId: 'washerwoman', isTheDrunk: true, marker: '🔵' },
+    { roleId: 'washerwoman', isTheMarionette: true, isEvil: false, marker: '🟦' },
+    { roleId: 'imp', isTheLunatic: true, isEvil: true, marker: '🔴' },
+    { roleId: 'washerwoman', isTheDrunk: true, isEvil: true, marker: '🔴' },
+  ])('uses effective alignment for disguised characters: %j', ({ marker, ...over }) => {
+    const { text } = buildDiscordPost({
+      ...base,
+      players: [player({ id: 'p1', name: 'Alice', ...over })],
+      gameLog: [],
+    });
+    expect(text.split('\n').find(line => line.includes('Alice'))).toMatch(new RegExp(`^${marker} `));
+  });
+
+  it.each([
+    { roleId: 'washerwoman', isTheMarionette: true, description: 'Marionette (Washerwoman)' },
+    { roleId: 'nodashii', isTheLunatic: true, description: 'Lunatic (No Dashii)' },
+    { roleId: 'washerwoman', isTheDrunk: true, description: 'Drunk (Washerwoman)' },
+  ])('puts the true character before the perceived role: %j', ({ description, ...over }) => {
+    const { text } = buildDiscordPost({
+      ...base,
+      players: [player({ id: 'p1', name: 'Alice', ...over })],
+      gameLog: [],
+    });
+    expect(text.split('\n').find(line => line.includes('Alice'))).toContain(`— ${description}`);
+  });
+
+  it('does not repeat the Drunk label as a suffix', () => {
     const { text } = buildDiscordPost({
       ...base,
       players: [player({ id: 'p1', name: 'Alice', roleId: 'washerwoman', isTheDrunk: true })],
       gameLog: [],
     });
-    expect(text).toContain('_(Drunk)_');
+    expect(text).not.toContain('_(Drunk)_');
   });
 
   it('says the game is unfinished when no winner was declared', () => {
@@ -96,7 +159,7 @@ describe('buildDiscordPost', () => {
     expect(text).not.toContain('**Game Log**');
     expect(text).not.toContain('filler entry number');
     // The roster is the point of the recap, so it survives intact.
-    expect(text).toContain('🟥 ***Jonas*** — _Imp_');
+    expect(text).toContain('♦️ ***Jonas*** — _Imp_');
   });
 
   it('never exceeds the limit even when the roster alone overflows it', () => {

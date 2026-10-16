@@ -1,18 +1,20 @@
-import { useState } from 'react';
 import { AlertTriangle, CheckCircle, ChevronDown, XCircle } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import type { ValidationSummary } from '../../../utils/validationSummary';
 
 interface GrimoireBalanceVerificationProps {
   validationSummary: ValidationSummary;
   isLightModeActive?: boolean;
+  persistenceKey?: string;
 }
 
 export default function GrimoireBalanceVerification({
   validationSummary,
   isLightModeActive = false,
+  persistenceKey,
 }: GrimoireBalanceVerificationProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
   const hasFailures = validationSummary.failures && validationSummary.failures.length > 0;
   const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
 
@@ -28,7 +30,7 @@ export default function GrimoireBalanceVerification({
     >
       <button
         type="button"
-        onClick={() => setIsExpanded(value => !value)}
+        onClick={toggleExpanded}
         aria-expanded={isExpanded}
         aria-controls="grimoire-balance-character-counts"
         className="w-full flex items-center gap-1.5"

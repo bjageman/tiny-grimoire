@@ -107,7 +107,11 @@ export default function WhaleBucketDraftPhase({
         <aside id="whalebucket-assignment-sidebar" className="contents md:order-2 md:block md:min-w-0 md:space-y-5">
           {validationSummary && (
             <div className="order-2">
-              <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+              <GrimoireBalanceVerification
+                validationSummary={validationSummary}
+                isLightModeActive={isLightModeActive}
+                persistenceKey="whale-bucket-balance-verification-expanded"
+              />
             </div>
           )}
           <div className="order-3">
@@ -117,6 +121,7 @@ export default function WhaleBucketDraftPhase({
               popeEnabled={popeEnabled}
               setPopeEnabled={setPopeEnabled}
               isLightModeActive={isLightModeActive}
+              persistenceKey="whale-bucket-setup-modifiers-expanded"
             />
           </div>
           <button

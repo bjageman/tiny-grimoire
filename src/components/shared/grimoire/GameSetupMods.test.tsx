@@ -31,4 +31,18 @@ describe('Setup Modifiers', () => {
     fireEvent.click(screen.getByRole('button', { name: /setup modifiers/i }));
     expect(screen.getByText('1 active')).toBeInTheDocument();
   });
+
+  it('restores its expanded state after leaving and returning', () => {
+    const persistenceKey = 'test-setup-modifiers-expanded';
+    localStorage.removeItem(persistenceKey);
+    const { unmount } = render(<GameSetupMods {...defaultProps} persistenceKey={persistenceKey} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /setup modifiers/i }));
+    expect(screen.getByRole('button', { name: /setup modifiers/i })).toHaveAttribute('aria-expanded', 'true');
+    unmount();
+
+    render(<GameSetupMods {...defaultProps} persistenceKey={persistenceKey} />);
+    expect(screen.getByRole('button', { name: /setup modifiers/i })).toHaveAttribute('aria-expanded', 'true');
+    localStorage.removeItem(persistenceKey);
+  });
 });

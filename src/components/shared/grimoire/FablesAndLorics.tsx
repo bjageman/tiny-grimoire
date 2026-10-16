@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
 interface FablesAndLoricsProps {
@@ -41,12 +41,12 @@ export default function FablesAndLorics({
         aria-controls="fables-and-lorics-body"
         className="w-full flex items-center gap-1.5 p-3"
       >
-        <Sparkles size={16} className="text-clocktower-traveler" />
+        <Settings size={16} className="text-clocktower-traveler" />
         <span className={cn(
           "font-semibold text-xs tracking-wide uppercase",
           isLightModeActive ? "text-gray-700" : "text-gray-300"
         )}>
-          Fables & Lorics
+          Setup Modifiers
         </span>
         {!isExpanded && activeCount > 0 && (
           <span className={cn(

@@ -2,6 +2,7 @@ import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
+import { hasActualDemonNeighbor, isActualDemon } from './marionetteEligibility';
 
 const OFFICIAL_ROLE_IDS = new Set((ALL_ROLES as Role[]).map(r => r.id));
 
@@ -343,24 +344,14 @@ export function getValidationSummary(
     return r?.team !== 'traveler';
   });
   const marionettePlayers = basePlayersInOrder.filter(p => p.isTheMarionette);
-  const demonPlayers = basePlayersInOrder.filter(p => {
-    if (!p.roleId || p.isTheMarionette || p.isTheDrunk || p.isTheLunatic) return false;
-    const r = allRoles.find(role => role.id === p.roleId);
-    return r?.team === 'demon';
-  });
+  const demonPlayers = basePlayersInOrder.filter(p => isActualDemon(p, findRole));
 
   if (marionettePlayers.length > 0) {
     if (demonPlayers.length === 0) {
       failures.push("A Marionette is in play, but there is no Demon assigned.");
     } else {
-      const K = basePlayersInOrder.length;
       for (const mp of marionettePlayers) {
-        const m_idx = basePlayersInOrder.findIndex(p => p.id === mp.id);
-        const isNeighboringDemon = demonPlayers.some(dp => {
-          const d_idx = basePlayersInOrder.findIndex(p => p.id === dp.id);
-          return (d_idx - 1 + K) % K === m_idx || (d_idx + 1) % K === m_idx;
-        });
-        if (!isNeighboringDemon) {
+        if (!hasActualDemonNeighbor(basePlayersInOrder, mp.id, findRole)) {
           failures.push(`Marionette (${mp.name}) must be sitting next to the Demon.`);
         }
       }

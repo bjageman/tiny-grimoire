@@ -122,6 +122,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
+  const resetSetupModifiers = () => {
+    setSentinelOutsiderDelta(0);
+    setPopeEnabled(false);
+  };
+
   // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
   const dayNumberRef = useRef(dayNumber);
@@ -183,7 +188,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
-    setPopeEnabled(false);
+    resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -222,6 +227,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setGameLog([]);
     setReminderTokens([]);
     setCheckedItems({});
+    resetSetupModifiers();
     setGrimoireConfirmed(false);
 
     // Broadcast immediately (no debounce): the reset command (primary signal) then a setup_update with the cleared roster/script as backup.

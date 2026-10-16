@@ -151,6 +151,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = usePersistedField<number>(STORAGE_KEY, 'sentinelOutsiderDelta', 0);
   const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
 
+  const resetSetupModifiers = () => {
+    setSentinelOutsiderDelta(0);
+    setPopeEnabled(false);
+  };
+
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
 
@@ -667,8 +672,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
-    setSentinelOutsiderDelta(0);
-    setPopeEnabled(false);
+    resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -710,6 +714,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setGameLog([]);
     setReminderTokens([]);
     setCheckedItems({});
+    resetSetupModifiers();
     // Re-arm the one-time "Send character assignments?" warning for the next round.
     setGrimoireConfirmed(false);
 

@@ -11,5 +11,9 @@ describe('HostPage', () => {
     expect(screen.queryByText('Full Control')).not.toBeInTheDocument();
     expect(screen.queryByText('Preference Draft')).not.toBeInTheDocument();
     expect(screen.queryByText('Randomized')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: "Cute Mage's Whale Bucket Draft" })).toHaveAttribute(
+      'href',
+      'https://sites.google.com/view/cute-mage-botc/scripts/whalebucket-draft',
+    );
   });
 });

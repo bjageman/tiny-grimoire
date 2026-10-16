@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { ArrowLeft, GitBranch, Coffee } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { WhaleIcon } from '../tokens/WhaleIcon';
 import HeaderMenu from './HeaderMenu';
 
 interface PageLayoutProps {
@@ -160,6 +161,20 @@ export default function PageLayout({
           </p>
         </div>
         <div id="page-footer-links" className="flex items-center gap-1">
+          <a
+            id="footer-whale-bucket-link"
+            href="https://sites.google.com/view/cute-mage-botc/scripts/whalebucket-draft"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Cute Mage's Whale Bucket Draft"
+            title="Cute Mage's Whale Bucket Draft"
+            className={cn(
+              "p-1.5 rounded-full transition-all",
+              isLight ? "text-gray-400 hover:text-gray-700 hover:bg-black/5" : "text-gray-600 hover:text-gray-300 hover:bg-white/10"
+            )}
+          >
+            <WhaleIcon size={18} />
+          </a>
           <a
             id="footer-github-link"
             href="https://github.com/bjageman/tiny-grimoire"

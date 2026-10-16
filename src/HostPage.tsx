@@ -68,7 +68,7 @@ export default function HostPage({ theme, toggleTheme }: HostPageProps) {
                 "font-display text-base font-bold tracking-wider uppercase transition-colors",
                 isLightModeActive ? "text-clocktower-night group-hover:text-clocktower-blood" : "text-gray-200 group-hover:text-white"
               )}>
-                Whale Buffet
+                Whale Bucket Draft
               </h2>
               <p className={cn("text-sm mt-1 leading-relaxed", isLightModeActive ? "text-gray-600" : "text-gray-500")}>
                 Players submit preferences by character type, then the grim is randomly assembled.

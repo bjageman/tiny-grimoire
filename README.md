@@ -23,7 +23,7 @@ Classic manual storyteller mode:
 - **Manual Assignment** — Fully dictate player assignments, set Drunk/Marionette status, and adjust team composition.
 - **Interactive Grimoire** — Responsive, circular layout showing alive status, dead votes, traveler characters, custom storyteller notes, and game phase states (Day/Night toggles).
 
-### 2. Whale Buffet Draft Mode
+### 2. Whale Bucket Draft Mode
 Semi-randomized player preference draft:
 - **Preference Drafting** — Add players and let them submit up to 4 preferred roles for Townsfolk, Outsider, Minion, and Demon teams.
 - **Randomized Assignment** — Roles are assigned based on player preferences using the shared distribution engine above.
@@ -32,7 +32,7 @@ Semi-randomized player preference draft:
 Players join from their own devices using a 4-letter room code:
 - **Character Token Reveal** — Players receive their assigned character token on their device when the grimoire opens.
 - **Real-Time Sync** — The town square layout, player statuses, and day/night phase stay in sync across all connected devices.
-- **Whale Buffet Preferences** — In Whale Buffet mode, players submit their role preferences directly from their phone before assignment.
+- **Whale Bucket Draft Preferences** — In Whale Bucket Draft mode, players submit their role preferences directly from their phone before assignment.
 - **Player Notes Tracker** — Players can track character claims and alive/dead statuses from their own device throughout the game.
 
 ### 4. Installable Web App

@@ -148,6 +148,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Exclusion states
   const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
+  const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = usePersistedField<number>(STORAGE_KEY, 'sentinelOutsiderDelta', 0);
+  const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -368,8 +370,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     reminderTokens,
     checkedItems,
     rotationOffset,
+    sentinelOutsiderDelta,
+    popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -388,10 +392,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
+      setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
+      setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -420,8 +426,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       alwaysShowNotes,
       fullNightOrder,
       allReminders,
+      sentinelOutsiderDelta,
+      popeEnabled,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -556,7 +564,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers);
+    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers, sentinelOutsiderDelta);
     if (!result) {
       showAlert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;
@@ -659,6 +667,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    setSentinelOutsiderDelta(0);
+    setPopeEnabled(false);
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -737,8 +747,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players);
-  }, [players]);
+    return getValidationSummary(players, ALL_ROLES as Role[], undefined, sentinelOutsiderDelta, popeEnabled);
+  }, [players, sentinelOutsiderDelta, popeEnabled]);
 
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
@@ -881,6 +891,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           remotePlayerIds={remotePlayerIds}
         />
       )}

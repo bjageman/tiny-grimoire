@@ -7,6 +7,7 @@ import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import { ALL_ROLES } from '../../utils/roleData';
+import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
 
 
 
@@ -37,6 +38,10 @@ interface WhaleBucketSetupPhaseProps {
   isLightModeActive: boolean;
   excludedRoleIds: string[];
   setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
+  sentinelOutsiderDelta: number;
+  setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   remotePlayerIds?: Set<string>;
   isSecondary?: boolean;
 }
@@ -68,6 +73,10 @@ export default function WhaleBucketSetupPhase({
   isLightModeActive,
   excludedRoleIds,
   setExcludedRoleIds,
+  sentinelOutsiderDelta,
+  setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   remotePlayerIds,
   isSecondary,
 }: WhaleBucketSetupPhaseProps) {
@@ -187,6 +196,13 @@ export default function WhaleBucketSetupPhase({
 
       {/* Section C: Distribution & Assign Button */}
       <div id="whalebucket-setup-controls-container" className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
+        <FablesAndLorics
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
+          isLightModeActive={isLightModeActive}
+        />
         {/* Exclude Characters Widget */}
         <div className={cn(
           "p-4 rounded-lg border flex flex-col gap-3 transition-colors duration-300",

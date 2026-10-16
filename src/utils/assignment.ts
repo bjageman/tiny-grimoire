@@ -6,7 +6,8 @@ import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
 export function assignCharacters(
   players: Player[],
   allRoles: Role[],
-  allowTravelers: boolean = false
+  allowTravelers: boolean = false,
+  sentinelOutsiderDelta: number = 0
 ): AssignmentResult[] | null {
   const N = players.length;
   if (N < 5) return null;
@@ -83,7 +84,7 @@ export function assignCharacters(
   if (baseCount < 5) return null;
 
   const baseDist = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
-  const baseAssignments = assignBaseCharacters(basePlayers, allRoles, baseDist);
+  const baseAssignments = assignBaseCharacters(basePlayers, allRoles, baseDist, sentinelOutsiderDelta);
   if (!baseAssignments) return null;
 
   const finalAssignments = [...baseAssignments, ...travelerAssignments];
@@ -112,7 +113,8 @@ export function assignCharacters(
 function assignBaseCharacters(
   players: Player[],
   allRoles: Role[],
-  base: { townsfolk: number; outsider: number; minion: number; demon: number }
+  base: { townsfolk: number; outsider: number; minion: number; demon: number },
+  sentinelOutsiderDelta: number
 ): AssignmentResult[] | null {
   const N = players.length;
   const hasPref = (roleId: string) => players.some(p => 
@@ -376,8 +378,10 @@ function assignBaseCharacters(
       const hasBalloonist = fullAssignment.some(a => a.role.id === 'balloonist');
       const hasGodfather = fullAssignment.some(a => a.role.id === 'godfather');
       const hasHermit = fullAssignment.some(a => a.role.id === 'hermit');
+      const hasXaan = fullAssignment.some(a => a.role.id === 'xaan');
       
-      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0);
+      const ignoresSentinel = demonRole.id === 'kazali' || hasXaan;
+      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
       const gfMods = hasGodfather ? [-1, 1] : [0];
@@ -386,7 +390,6 @@ function assignBaseCharacters(
       
       const possibleCounts = new Set<number>();
       const hasKazali = demonRole.id === 'kazali';
-      const hasXaan = fullAssignment.some(a => a.role.id === 'xaan');
       if (hasKazali || hasXaan) {
         let expectedDemon = base.demon;
         let expectedMinion = base.minion;

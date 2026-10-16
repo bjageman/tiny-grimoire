@@ -136,7 +136,7 @@ export default function FablesAndLorics({
               checked={popeEnabled}
               onChange={setPopeEnabled}
               isLightModeActive={isLightModeActive}
-              icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain" />}
+              icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
             />
           </label>
         </div>

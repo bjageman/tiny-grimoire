@@ -47,9 +47,12 @@ describe('WhaleBucketDraftPhase', () => {
     const layout = container.querySelector('#whalebucket-assignment-layout')!;
     const sidebar = container.querySelector('#whalebucket-assignment-sidebar')!;
     const grimoire = container.querySelector('#whalebucket-draft-grimoire')!;
+    const reassignButton = container.querySelector('#reassign-characters-button')!;
     expect(layout.className).toContain('md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]');
     expect(grimoire.className).toContain('md:max-w-none');
     expect(grimoire.className).toContain('md:aspect-[34/25]');
+    expect(reassignButton.className).toContain('min-w-[7rem]');
+    expect(reassignButton.className).toContain('sm:min-w-0');
     expect(sidebar.querySelector('#grimoire-balance-verification')).toBeInTheDocument();
     expect(sidebar.querySelector('#game-setup-mods')).toBeInTheDocument();
     expect(sidebar.querySelector('#open-grimoire-button')).toBeInTheDocument();

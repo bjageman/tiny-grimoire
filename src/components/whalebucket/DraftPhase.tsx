@@ -96,7 +96,7 @@ export default function WhaleBucketDraftPhase({
         id="whalebucket-assignment-layout"
         className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
       >
-        <div className="order-2 min-w-0 md:order-1">
+        <div id="whalebucket-assignment-grimoire" className="order-1 min-w-0 md:order-1">
           <WhaleBucketDraftCircle
             players={players}
             isLightModeActive={isLightModeActive}
@@ -104,28 +104,32 @@ export default function WhaleBucketDraftPhase({
             remotePlayerIds={remotePlayerIds}
           />
         </div>
-        <aside id="whalebucket-assignment-sidebar" className="order-1 min-w-0 space-y-5 md:order-2">
+        <aside id="whalebucket-assignment-sidebar" className="contents md:order-2 md:block md:min-w-0 md:space-y-5">
           {validationSummary && (
-            <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+            <div className="order-2">
+              <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+            </div>
           )}
-          <GameSetupMods
-            sentinelOutsiderDelta={sentinelOutsiderDelta}
-            setSentinelOutsiderDelta={setSentinelOutsiderDelta}
-            popeEnabled={popeEnabled}
-            setPopeEnabled={setPopeEnabled}
-            isLightModeActive={isLightModeActive}
-          />
+          <div className="order-3">
+            <GameSetupMods
+              sentinelOutsiderDelta={sentinelOutsiderDelta}
+              setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+              popeEnabled={popeEnabled}
+              setPopeEnabled={setPopeEnabled}
+              isLightModeActive={isLightModeActive}
+            />
+          </div>
           <button
             id="open-grimoire-button"
             disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
             onClick={handleOpenGrimoire}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
+            className="order-5 w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
           >
             Open Grimoire
           </button>
           {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
             <label className={cn(
-              "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors",
+              "order-4 flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors",
               isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
             )}>
               <ToggleSwitch

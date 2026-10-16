@@ -213,17 +213,13 @@ export function getValidationSummary(
     if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;
     roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
   }
-  const hasDuplicateOutsider = Object.entries(roleIdFreq).some(([roleId, count]) => count > 1 && findRole(roleId)?.team === 'outsider');
-  const popeAdjustedOutsiders = popeEnabled
-    && hasDuplicateOutsider
-    && validOutsiders.some(expected => expected > 0 && counts.outsider >= expected);
-  const isOutsiderValid = validOutsiders.includes(counts.outsider) || popeAdjustedOutsiders;
+  const isOutsiderValid = validOutsiders.includes(counts.outsider);
   const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
   const isDemonValid = counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
-  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : popeEnabled ? 'Pope-adjusted' : validOutsiders.join(' or ');
-  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : popeEnabled ? 'Pope-adjusted' : uniqueTownsfolk.join(' or ');
+  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : validOutsiders.join(' or ');
+  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);

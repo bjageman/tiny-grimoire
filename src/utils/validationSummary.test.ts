@@ -710,14 +710,12 @@ describe('validationSummary utility', () => {
     expect(popeSummary!.isValid).toBe(true);
   });
 
-  it('allows Pope to replace Townsfolk with duplicate Outsiders but not unique extra Outsiders', () => {
+  it('does not let Pope change Townsfolk and Outsider counts', () => {
     const roles: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
       { id: 'monk', name: 'Monk', team: 'townsfolk' },
       { id: 'butler', name: 'Butler', team: 'outsider' },
-      { id: 'recluse', name: 'Recluse', team: 'outsider' },
-      { id: 'saint', name: 'Saint', team: 'outsider' },
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
@@ -733,18 +731,10 @@ describe('validationSummary utility', () => {
     ];
 
     const popeSummary = getValidationSummary(players, roles, undefined, 0, true);
-    expect(popeSummary!.isOutsiderValid).toBe(true);
-    expect(popeSummary!.isTownsfolkValid).toBe(true);
+    expect(popeSummary!.isOutsiderValid).toBe(false);
+    expect(popeSummary!.isTownsfolkValid).toBe(false);
     expect(popeSummary!.failures.some(f => f.includes('Butler'))).toBe(false);
-
-    const uniqueOutsiders = players.map((player, index) => {
-      if (index === 4) return { ...player, roleId: 'recluse' };
-      if (index === 5) return { ...player, roleId: 'saint' };
-      return player;
-    });
-    const invalidSummary = getValidationSummary(uniqueOutsiders, roles, undefined, 0, true);
-    expect(invalidSummary!.isOutsiderValid).toBe(false);
-    expect(invalidSummary!.failures.some(f => f.includes('Outsiders'))).toBe(true);
+    expect(popeSummary!.failures.some(f => f.includes('Outsiders'))).toBe(true);
   });
 
   it('still rejects duplicate evil characters while Pope is enabled', () => {

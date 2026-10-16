@@ -51,6 +51,9 @@ export function getValidationSummary(
   }).length;
   const baseCount = Math.min(15, N - travelerCount);
   const base = getDistribution(baseCount);
+  const maxScriptOutsiders = new Set(allRoles
+    .filter(r => r.team === 'outsider' && (!selectedCharacterIds?.size || selectedCharacterIds.has(r.id)))
+    .map(r => r.id)).size;
   
   const counts = players.reduce((acc, p) => {
     if (p.roleId) {
@@ -198,7 +201,7 @@ export function getValidationSummary(
         for (const hunt of huntMods) {
           for (const herm of hermMods) {
             const total = base.outsider + fixedOutsiderDelta + gf + bal + hunt + herm;
-            possibleOutsiderCounts.add(Math.max(0, total));
+            possibleOutsiderCounts.add(Math.min(maxScriptOutsiders, Math.max(0, total)));
           }
         }
       }
@@ -223,8 +226,8 @@ export function getValidationSummary(
   const expectedTownsfolkLabel = hasFlexibleGoodCounts ? 'any' : uniqueTownsfolk.join(' or ');
 
   // For backward compatibility / display fallback
-  const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
-  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDelta);
+  const expectedOutsider = Math.min(maxScriptOutsiders, Math.max(0, base.outsider + fixedOutsiderDelta));
+  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
   
   // Jinx checks
   const hasChoirboy = players.some(p => p.roleId === 'choirboy');

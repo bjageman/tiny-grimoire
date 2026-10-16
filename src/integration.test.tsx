@@ -208,6 +208,9 @@ describe('Storyteller Reset Integration', () => {
   it('resets all Whale Bucket setup modifiers', async () => {
     window.location.hash = '#/whale-bucket';
     const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    const pageTitle = storyteller.container.querySelector('#whale-bucket-page-title')!;
+    expect(pageTitle.className).toContain('text-sm');
+    expect(pageTitle.className).toContain('sm:text-xl');
     enableSetupModifiers(storyteller.container);
 
     fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);

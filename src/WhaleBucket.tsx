@@ -799,7 +799,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
-          <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
+          <h1
+            id="whale-bucket-page-title"
+            className="font-display text-sm sm:text-xl font-bold text-clocktower-blood tracking-widest uppercase"
+          >
             Whale Bucket Draft
           </h1>
           {isSecondary ? (

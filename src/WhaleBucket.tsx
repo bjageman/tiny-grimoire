@@ -903,6 +903,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <WhaleBucketDraftPhase
           players={players}
           validationSummary={validationSummary}
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
           setPhase={setPhase}
           onStartGame={handleStartGame}

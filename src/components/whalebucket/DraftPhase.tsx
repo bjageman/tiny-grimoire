@@ -3,6 +3,7 @@ import { Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
+import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
@@ -11,6 +12,10 @@ import type { ValidationSummary } from '../../utils/validationSummary';
 interface WhaleBucketDraftPhaseProps {
   players: Player[];
   validationSummary: ValidationSummary | null;
+  sentinelOutsiderDelta: number;
+  setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
   setPhase: (p: 'setup' | 'draft' | 'game') => void;
   onStartGame: () => void;
@@ -25,6 +30,10 @@ interface WhaleBucketDraftPhaseProps {
 export default function WhaleBucketDraftPhase({
   players,
   validationSummary,
+  sentinelOutsiderDelta,
+  setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive,
   setPhase,
   onStartGame,
@@ -103,10 +112,18 @@ export default function WhaleBucketDraftPhase({
         </button>
       </div>
 
-      {/* Validation Summary Card */}
-      {validationSummary && (
-        <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
-      )}
+      <div className={cn("grid grid-cols-1 gap-5 items-start", validationSummary && "md:grid-cols-2")}>
+        {validationSummary && (
+          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+        )}
+        <FablesAndLorics
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
+          isLightModeActive={isLightModeActive}
+        />
+      </div>
 
       <WhaleBucketDraftCircle
         players={players}

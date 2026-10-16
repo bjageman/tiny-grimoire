@@ -7,7 +7,7 @@ import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import { ALL_ROLES } from '../../utils/roleData';
-import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 
 
 
@@ -196,7 +196,7 @@ export default function WhaleBucketSetupPhase({
 
       {/* Section C: Distribution & Assign Button */}
       <div id="whalebucket-setup-controls-container" className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
-        <FablesAndLorics
+        <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}

@@ -3,7 +3,7 @@ import { Shuffle, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
-import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
@@ -116,7 +116,7 @@ export default function WhaleBucketDraftPhase({
         {validationSummary && (
           <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
         )}
-        <FablesAndLorics
+        <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}

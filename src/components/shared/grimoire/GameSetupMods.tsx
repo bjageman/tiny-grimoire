@@ -3,7 +3,7 @@ import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
-interface FablesAndLoricsProps {
+interface GameSetupModsProps {
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
@@ -17,13 +17,13 @@ const SENTINEL_OPTIONS = [
   { value: 1, label: '+1' },
 ];
 
-export default function FablesAndLorics({
+export default function GameSetupMods({
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
   isLightModeActive = false,
-}: FablesAndLoricsProps) {
+}: GameSetupModsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
@@ -31,7 +31,7 @@ export default function FablesAndLorics({
 
   return (
     <div
-      id="fables-and-lorics"
+      id="game-setup-mods"
       className={cn(
         "border rounded-lg transition-colors duration-300 text-left",
         isLightModeActive
@@ -43,7 +43,7 @@ export default function FablesAndLorics({
         type="button"
         onClick={() => setIsExpanded(v => !v)}
         aria-expanded={isExpanded}
-        aria-controls="fables-and-lorics-body"
+        aria-controls="game-setup-mods-body"
         className="w-full flex items-center gap-1.5 p-3"
       >
         <Settings size={16} className="text-clocktower-traveler" />
@@ -73,7 +73,7 @@ export default function FablesAndLorics({
       </button>
 
       {isExpanded && (
-        <div id="fables-and-lorics-body" className="px-3 pb-3">
+        <div id="game-setup-mods-body" className="px-3 pb-3">
           <div className={cn(
             "flex items-center justify-between gap-3 border-t pt-2.5",
             isLightModeActive ? "border-gray-200" : "border-gray-800"

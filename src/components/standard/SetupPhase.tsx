@@ -12,7 +12,7 @@ import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
-import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
@@ -371,7 +371,7 @@ export default function StandardSetupPhase({
         {validationSummary && players.length >= 5 && (
           <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
         )}
-        <FablesAndLorics
+        <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}

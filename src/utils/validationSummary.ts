@@ -127,7 +127,7 @@ export function getValidationSummary(
     }
     if (hasLordOfTyphon) {
       expectedMinion += 1;
-      modifications.push("Lord of Typhon (+1 Minion)");
+      modifications.push("Lord of Typhon (+1 Minion, any Townsfolk/Outsider count)");
     }
     if (hasSummoner) {
       expectedDemon -= 1;
@@ -176,6 +176,7 @@ export function getValidationSummary(
   }
   
   expectedDemon = Math.max(0, expectedDemon);
+  const hasFlexibleGoodCounts = hasKazali || hasXaan || hasLordOfTyphon;
 
   const gfMods = (hasGodfather && !hasLegion) ? [-1, 1] : [0];
   const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];
@@ -186,7 +187,7 @@ export function getValidationSummary(
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion) {
     possibleOutsiderCounts.add(0);
-  } else if (hasKazali || hasXaan) {
+  } else if (hasFlexibleGoodCounts) {
     const maxOutsiders = Math.max(0, baseCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= maxOutsiders; i++) {
       possibleOutsiderCounts.add(i);
@@ -218,8 +219,8 @@ export function getValidationSummary(
   const isDemonValid = counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
-  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : validOutsiders.join(' or ');
-  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedOutsiderLabel = hasFlexibleGoodCounts ? 'any' : validOutsiders.join(' or ');
+  const expectedTownsfolkLabel = hasFlexibleGoodCounts ? 'any' : uniqueTownsfolk.join(' or ');
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
@@ -237,7 +238,7 @@ export function getValidationSummary(
   if (hasAlchemist) warnings.push("Alchemist in play — ability may affect setup.");
 
   // Setup validation failures for Outsiders/Townsfolk
-  if (!isOutsiderValid && !(hasKazali || hasXaan)) {
+  if (!isOutsiderValid && !hasFlexibleGoodCounts) {
     const minExpected = Math.min(...validOutsiders);
     const maxExpected = Math.max(...validOutsiders);
     if (counts.outsider < minExpected) {
@@ -249,7 +250,7 @@ export function getValidationSummary(
     }
   }
 
-  if (!(hasKazali || hasXaan)) {
+  if (!hasFlexibleGoodCounts) {
     if (!isOutsiderValid) {
       const minExpectedTF = Math.min(...uniqueTownsfolk);
       const maxExpectedTF = Math.max(...uniqueTownsfolk);

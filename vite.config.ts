@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true
+    host: true,
+    allowedHosts: ['minibox'],
   },
   test: {
     environment: 'jsdom',
@@ -16,4 +17,3 @@ export default defineConfig({
     retry: 2,
   }
 })
-

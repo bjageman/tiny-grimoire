@@ -20,6 +20,7 @@ const BOARD_WIDTH = 900;
 const BOARD_HEIGHT = 680;
 const CARD_PADDING = 40;
 const REMINDER_SIZE_PCT = 26;
+const REMINDER_LABEL_MAX_LENGTH = 7;
 // The shared grimoire layout sizes tokens for the on-screen board, which leaves big gaps
 // in the recap export; scale tokens (and their names) up to fill the ring.
 const RECAP_TOKEN_SCALE = 1.28;
@@ -159,6 +160,9 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
             >
               {playerReminders.map((reminder, ri) => {
                 const { left, top } = reminderArcOffset(ri, playerReminders.length, inward);
+                const labelText = reminder.text.slice(0, REMINDER_LABEL_MAX_LENGTH);
+                const labelFontSize = Math.min(42, 132 / Math.max(3, labelText.length + 0.5));
+                const labelPathId = `recap-reminder-arc-${reminder.id}`;
 
                 return (
                   <div
@@ -187,6 +191,35 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                       style={{ width: '80%', height: '80%', objectFit: 'contain', opacity: 0.75 }}
                       onError={roleIconFallback(rolesData.find(r => r.id === reminder.sourceCharId))}
                     />
+                    {labelText && (
+                      <svg
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="xMidYMid meet"
+                        aria-hidden="true"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}
+                      >
+                        <defs>
+                          <path id={labelPathId} d="M6.3 56.2 A46 46 0 0 0 93.7 56.2" fill="none" />
+                        </defs>
+                        <text
+                          textAnchor="middle"
+                          style={{
+                            fontFamily: DISPLAY_FONT,
+                            fontSize: `${labelFontSize.toFixed(2)}px`,
+                            fontWeight: 900,
+                            fill: '#111827',
+                            paintOrder: 'stroke',
+                            stroke: 'rgba(255,255,255,0.92)',
+                            strokeWidth: `${(labelFontSize * 0.13).toFixed(2)}px`,
+                            strokeLinejoin: 'round',
+                          }}
+                        >
+                          <textPath href={`#${labelPathId}`} startOffset="50%">
+                            {labelText}
+                          </textPath>
+                        </text>
+                      </svg>
+                    )}
                   </div>
                 );
               })}

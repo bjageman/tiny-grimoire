@@ -23,10 +23,11 @@ import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import ResetGameModal from './components/shared/modals/ResetGameModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
+import { buildPlayerTrackerTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
 type Phase = 'setup' | 'game';
 
-const STORAGE_KEY = 'standard-botc-game';
+const STORAGE_KEY = STANDARD_GAME_STORAGE_KEY;
 
 const generateId = (): string =>
   typeof crypto.randomUUID === 'function'
@@ -649,6 +650,43 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
 
+  const performTransferToGameNotes = async () => {
+    if (remotePlayerIds.size > 0 && sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on transfer:', e);
+      }
+    }
+    localStorage.setItem(PLAYER_TRACKER_STORAGE_KEY, JSON.stringify(buildPlayerTrackerTransfer({
+      players,
+      scriptName,
+      scriptAuthor,
+      customScriptRoles,
+    })));
+    sessionStorage.removeItem('joined-code');
+    sessionStorage.removeItem('joined-name');
+    window.location.hash = '#/tracker';
+  };
+
+  const transferToGameNotes = () => {
+    const replacingExisting = localStorage.getItem(PLAYER_TRACKER_STORAGE_KEY) !== null;
+    if (!replacingExisting && remotePlayerIds.size === 0) {
+      void performTransferToGameNotes();
+      return;
+    }
+    const liveSessionWarning = remotePlayerIds.size > 0
+      ? ` ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'} will be disconnected.`
+      : '';
+    const overwriteWarning = replacingExisting ? ' Existing Game Notes will be replaced.' : '';
+    showConfirm(
+      `Transfer player names, pronouns, seating order, and the script to Game Notes?${overwriteWarning} Characters, statuses, private notes, and game progress will not be copied.${liveSessionWarning}`,
+      performTransferToGameNotes,
+      'Transfer to Game Notes',
+      'Transfer'
+    );
+  };
+
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
@@ -726,6 +764,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onToggleFullNightOrder={setFullNightOrder}
           allReminders={allReminders}
           onToggleAllReminders={setAllReminders}
+          onTransferGame={transferToGameNotes}
+          transferLabel="Transfer"
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />

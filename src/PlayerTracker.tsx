@@ -20,10 +20,11 @@ import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { useDialog } from './hooks/useDialog';
+import { buildStandardTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
 type Phase = 'setup' | 'game';
 
-const STORAGE_KEY = 'player-tracker-botc-game';
+const STORAGE_KEY = PLAYER_TRACKER_STORAGE_KEY;
 
 function parseShareCodeFromHash(): string | null {
   const hash = window.location.hash;
@@ -342,6 +343,35 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }, 'Reset Tracker');
   };
 
+  const performTransferToStoryteller = () => {
+    if (isSynced) clearSyncSession();
+    localStorage.setItem(STANDARD_GAME_STORAGE_KEY, JSON.stringify(buildStandardTransfer({
+      players,
+      scriptName,
+      scriptAuthor,
+      customScriptRoles,
+    })));
+    localStorage.removeItem('standard-botc-game-code');
+    localStorage.removeItem('standard-botc-sync-code');
+    window.location.hash = '#/standard';
+  };
+
+  const transferToStoryteller = () => {
+    const replacingExisting = localStorage.getItem(STANDARD_GAME_STORAGE_KEY) !== null;
+    if (!replacingExisting && !isSynced) {
+      performTransferToStoryteller();
+      return;
+    }
+    const syncWarning = isSynced ? ' This device will disconnect from the current Storyteller.' : '';
+    const overwriteWarning = replacingExisting ? ' Existing Standard game data will be replaced.' : '';
+    showConfirm(
+      `Transfer player names, pronouns, seating order, and the script to Storyteller Setup?${overwriteWarning} Characters, statuses, notes, and game progress will not be copied.${syncWarning}`,
+      performTransferToStoryteller,
+      'Transfer to Storyteller Setup',
+      'Transfer'
+    );
+  };
+
   const resetDead = () => {
     showConfirm('Mark all players as alive?', () => {
       setPlayers(prev => prev.map(p => ({ ...p, isDead: false, hasDeadVote: false })));
@@ -596,6 +626,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onToggleAlwaysShowNotes={setAlwaysShowNotes}
           showReminders={enableReminders}
           onToggleShowReminders={setEnableReminders}
+          onTransferGame={transferToStoryteller}
+          transferLabel="Transfer"
           onResetGame={resetGame}
         />
       }

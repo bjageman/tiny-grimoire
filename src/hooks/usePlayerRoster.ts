@@ -57,10 +57,6 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
         ...p,
         roleId: roleId || undefined,
         isEvil: phase === 'game' ? currentAlignment : undefined,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
       };
       if (resolveAssignedFromPref) assigned.assignedFromPref = resolveAssignedFromPref(p, roleId);
       return assigned;

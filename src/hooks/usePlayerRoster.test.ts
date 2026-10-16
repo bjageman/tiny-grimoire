@@ -5,6 +5,7 @@ import type { Player, Role } from '../types';
 
 const ROLES: Record<string, Role> = {
   imp: { id: 'imp', name: 'Imp', team: 'demon' },
+  fanggu: { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
   chef: { id: 'chef', name: 'Chef', team: 'townsfolk' },
   choirboy: { id: 'choirboy', name: 'Choirboy', team: 'townsfolk' },
   king: { id: 'king', name: 'King', team: 'townsfolk' },
@@ -49,12 +50,15 @@ describe('usePlayerRoster.updatePlayerRole', () => {
     expect(result().filter(p => p.roleId === 'king')).toHaveLength(1);
   });
 
-  it('clears the drunk/marionette/lunatic/lilmonsta tokens on the assigned seat', () => {
-    const { roster, result } = make([seat('p1', { isTheDrunk: true, isTheMarionette: true })]);
-    roster.updatePlayerRole('p1', 'chef');
-    const p1 = result()[0];
-    expect(p1.isTheDrunk).toBe(false);
-    expect(p1.isTheMarionette).toBe(false);
+  it.each([
+    'isTheDrunk',
+    'isTheMarionette',
+    'isTheLunatic',
+    'isTheLilMonsta',
+  ] as const)('preserves the %s tag when the displayed role changes', (tag) => {
+    const { roster, result } = make([seat('p1', { roleId: 'imp', [tag]: true })]);
+    roster.updatePlayerRole('p1', 'fanggu');
+    expect(result()[0][tag]).toBe(true);
   });
 
   it('clears alignment in setup but preserves it in game', () => {

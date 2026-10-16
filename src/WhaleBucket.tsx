@@ -791,7 +791,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       titleContent={
         <div className="flex items-center justify-center gap-2">
           <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
-            Whale Buffet
+            Whale Bucket Draft
           </h1>
           {isSecondary ? (
             <HeaderCodeBadge
@@ -973,7 +973,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             const a = document.createElement('a');
             a.href = url;
             const dt = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
-            a.download = `whalebuffet-all-roles-${players.length}p-${dt}.txt`;
+            a.download = `whale-bucket-draft-all-roles-${players.length}p-${dt}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

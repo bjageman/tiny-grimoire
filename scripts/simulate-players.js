@@ -9,7 +9,7 @@
 //   npm run simulate -- --code=ABCD --players=1 --headed --url=http://localhost:5173
 //
 // Run this AFTER you've created a room as Storyteller (Host Game > Standard
-// or Whale Buffet) and are still on the setup screen — the bots just join
+// or Whale Bucket Draft) and are still on the setup screen — the bots just join
 // like any other player and wait for you to assign roles and open the
 // Grimoire.
 //

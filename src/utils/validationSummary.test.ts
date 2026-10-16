@@ -59,6 +59,26 @@ describe('validationSummary utility', () => {
     }
   });
 
+  it('allows any Townsfolk and Outsider split with Lord of Typhon', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'recluse', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'saint', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'butler', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'poisoner', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'spy', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'lordoftyphon', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+
+    expect(summary?.expected.minion).toBe(2);
+    expect(summary?.expectedOutsiderLabel).toBe('any');
+    expect(summary?.expectedTownsfolkLabel).toBe('any');
+    expect(summary?.isOutsiderValid).toBe(true);
+    expect(summary?.isTownsfolkValid).toBe(true);
+    expect(summary?.isValid).toBe(true);
+  });
+
   it("accepts a Marionette beside a Lil' Monsta player displaying a Minion", () => {
     const players: Player[] = [
       { id: '1', name: 'Marionette', roleId: 'washerwoman', isTheMarionette: true, isDead: false },

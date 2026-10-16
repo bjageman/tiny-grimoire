@@ -644,6 +644,167 @@ describe('Storyteller Reset Integration', () => {
   });
 });
 
+describe('Standard and Game Notes transfers', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('transfers Standard player identities and script into the Game Notes grimoire', async () => {
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{
+        id: 'alice-id',
+        name: 'Alice',
+        pronouns: 'she/her',
+        isDead: true,
+        roleId: 'imp',
+        notes: 'Storyteller secret',
+      }],
+      phase: 'game',
+      scriptName: 'Transfer Script',
+      scriptAuthor: 'Author',
+      customScriptRoles: [{ id: 'custom-role', name: 'Custom Role', team: 'townsfolk' }],
+      dayNumber: 4,
+      timeOfDay: 'day',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
+
+    await waitFor(() => expect(window.location.hash).toBe('#/tracker'));
+    const transferred = JSON.parse(localStorage.getItem('player-tracker-botc-game') || '{}');
+    expect(transferred.players).toEqual([
+      { id: 'alice-id', name: 'Alice', pronouns: 'she/her', isDead: false },
+    ]);
+    expect(transferred).toMatchObject({
+      phase: 'game',
+      scriptName: 'Transfer Script',
+      scriptAuthor: 'Author',
+      dayNumber: 1,
+      timeOfDay: 'night',
+    });
+    expect(transferred.players[0]).not.toHaveProperty('roleId');
+    expect(transferred.players[0]).not.toHaveProperty('notes');
+
+    storyteller.unmount();
+  });
+
+  it('confirms replacement and transfers Game Notes into a fresh Standard setup', () => {
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: [{
+        id: 'avery-id',
+        name: 'Avery',
+        pronouns: 'they/them',
+        isDead: true,
+        roleIds: ['empath', 'chef'],
+        notes: 'Player theory',
+      }],
+      phase: 'game',
+      scriptName: 'Notes Script',
+      scriptAuthor: 'Another Author',
+      customScriptRoles: null,
+      gameNotes: 'Do not copy this',
+      dayNumber: 3,
+      timeOfDay: 'day',
+    }));
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'old-id', name: 'Old Player', isDead: false }],
+      phase: 'game',
+    }));
+    localStorage.setItem('standard-botc-game-code', 'OLDG');
+    localStorage.setItem('standard-botc-sync-code', 'OLDS');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(tracker.container.querySelector('#header-menu-button')!);
+    fireEvent.click(tracker.container.querySelector('#transfer-game-button')!);
+
+    expect(within(tracker.container).getByText('Transfer to Storyteller Setup')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/tracker');
+    fireEvent.click(tracker.container.querySelector('#dialog-confirm-button')!);
+
+    expect(window.location.hash).toBe('#/standard');
+    const transferred = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    expect(transferred.players).toEqual([
+      { id: 'avery-id', name: 'Avery', pronouns: 'they/them', isDead: false },
+    ]);
+    expect(transferred).toMatchObject({
+      phase: 'setup',
+      scriptName: 'Notes Script',
+      scriptAuthor: 'Another Author',
+      dayNumber: 1,
+      timeOfDay: 'night',
+    });
+    expect(transferred.players[0]).not.toHaveProperty('roleIds');
+    expect(transferred.players[0]).not.toHaveProperty('notes');
+    expect(localStorage.getItem('standard-botc-game-code')).toBeNull();
+    expect(localStorage.getItem('standard-botc-sync-code')).toBeNull();
+
+    tracker.unmount();
+  });
+
+  it('notifies connected players before transferring a live Standard game', async () => {
+    localStorage.setItem('standard-botc-game-code', 'LIVE');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'alice-id', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    sessionStorage.setItem('joined-code', 'LIVE');
+    sessionStorage.setItem('joined-name', 'Alice');
+    const player = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
+    expect(within(storyteller.container).getByText(/1 connected player will be disconnected/i)).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+
+    expect(sentPayloads.some(item => (item.payload as { type?: string }).type === 'storyteller_quit')).toBe(true);
+    expect(window.location.hash).toBe('#/tracker');
+    expect(within(player.container).getByText('The Storyteller has quit the session.')).toBeInTheDocument();
+
+    storyteller.unmount();
+    player.unmount();
+  });
+
+  it('disconnects synced Game Notes before transferring to Standard setup', () => {
+    sessionStorage.setItem('joined-code', 'SYNC');
+    sessionStorage.setItem('joined-name', 'Avery');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: [{ id: 'avery-id', name: 'Avery', isDead: false }],
+      phase: 'game',
+      code: 'SYNC',
+    }));
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(tracker.container.querySelector('#header-menu-button')!);
+    fireEvent.click(tracker.container.querySelector('#transfer-game-button')!);
+    expect(within(tracker.container).getByText(/disconnect from the current Storyteller/i)).toBeInTheDocument();
+    fireEvent.click(tracker.container.querySelector('#dialog-confirm-button')!);
+
+    expect(sessionStorage.getItem('joined-code')).toBeNull();
+    expect(sessionStorage.getItem('joined-name')).toBeNull();
+    expect(window.location.hash).toBe('#/standard');
+    expect(JSON.parse(localStorage.getItem('standard-botc-game') || '{}')).not.toHaveProperty('code');
+
+    tracker.unmount();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Storyteller Device Sync Integration
 // ---------------------------------------------------------------------------

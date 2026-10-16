@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react';
-import { Menu, Sun, Moon, RotateCcw } from 'lucide-react';
+import { Menu, Sun, Moon, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import ToggleSwitch from './ToggleSwitch';
 
@@ -7,6 +7,8 @@ interface HeaderMenuProps {
   theme: 'light' | 'dark';
   onToggleTheme?: () => void;
   onResetGame?: () => void;
+  onTransferGame?: () => void;
+  transferLabel?: string;
   isSecondary?: boolean;
   alwaysShowNotes?: boolean;
   onToggleAlwaysShowNotes?: (alwaysShow: boolean) => void;
@@ -57,6 +59,8 @@ export default function HeaderMenu({
   theme,
   onToggleTheme,
   onResetGame,
+  onTransferGame,
+  transferLabel = 'Transfer Game',
   isSecondary = false,
   alwaysShowNotes,
   onToggleAlwaysShowNotes,
@@ -72,6 +76,7 @@ export default function HeaderMenu({
 
   const isLightModeActive = theme === 'light';
   const hasToggles = !!(onToggleTheme || onToggleAlwaysShowNotes || onToggleFullNightOrder || onToggleAllReminders || onToggleShowReminders);
+  const hasActions = !!(onTransferGame || onResetGame);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -182,8 +187,34 @@ export default function HeaderMenu({
             />
           )}
 
-          {hasToggles && onResetGame && (
+          {hasToggles && hasActions && (
             <div className={cn("my-1 h-px", isLightModeActive ? "bg-gray-200" : "bg-gray-800")} />
+          )}
+
+          {onTransferGame && (
+            <button
+              id="transfer-game-button"
+              onClick={() => {
+                setIsOpen(false);
+                onTransferGame();
+              }}
+              disabled={isSecondary}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-md transition-colors text-left",
+                isLightModeActive
+                  ? "text-gray-700 hover:bg-amber-500/10 hover:text-amber-900"
+                  : "text-gray-200 hover:bg-slate-800 hover:text-white",
+                isSecondary && "opacity-40 cursor-not-allowed hover:bg-transparent"
+              )}
+              title={
+                isSecondary
+                  ? "This action is disabled on secondary devices to prevent sync issues."
+                  : transferLabel
+              }
+            >
+              <ArrowRightLeft size={16} className="shrink-0" />
+              <span>{transferLabel}</span>
+            </button>
           )}
 
           {onResetGame && (

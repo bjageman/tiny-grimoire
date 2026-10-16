@@ -59,6 +59,21 @@ describe('validationSummary utility', () => {
     }
   });
 
+  it("accepts a Marionette beside a Lil' Monsta player displaying a Minion", () => {
+    const players: Player[] = [
+      { id: '1', name: 'Marionette', roleId: 'washerwoman', isTheMarionette: true, isDead: false },
+      { id: '2', name: "Lil' Monsta", roleId: 'poisoner', isTheLilMonsta: true, isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'librarian', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'investigator', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'chef', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'recluse', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary?.failures).not.toContain('A Marionette is in play, but there is no Demon assigned.');
+    expect(summary?.failures).not.toContain('Marionette (Marionette) must be sitting next to the Demon.');
+  });
+
   it('should handle Atheist setups correctly', () => {
     // Atheist setup with no evil players
     const players: Player[] = [

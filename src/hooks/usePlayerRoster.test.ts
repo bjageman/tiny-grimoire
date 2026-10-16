@@ -68,6 +68,15 @@ describe('usePlayerRoster.updatePlayerRole', () => {
     expect(result()[0][tag]).toBe(true);
   });
 
+  it("preserves Marionette beside a Lil' Monsta player displaying a Minion", () => {
+    const { roster, result } = make([
+      seat('p1', { roleId: 'chef', isTheMarionette: true }),
+      seat('p2', { roleId: 'poisoner', isTheLilMonsta: true }),
+    ]);
+    roster.updatePlayerRole('p1', 'recluse');
+    expect(result()[0].isTheMarionette).toBe(true);
+  });
+
   it.each([
     ['isTheDrunk', 'chef', 'imp'],
     ['isTheMarionette', 'chef', 'imp'],

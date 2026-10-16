@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Player, Role } from '../types';
+import { isMarionetteEligible } from '../utils/marionetteEligibility';
 
 interface UsePlayerRosterArgs<P extends Player> {
   players: P[];
@@ -44,11 +45,6 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
     const player = players.find(p => p.id === id);
     const currentAlignment = player ? alignmentOf(player, findRole(player.roleId)) : undefined;
     const selectedRole = findRole(roleId);
-    const playerIndex = players.findIndex(p => p.id === id);
-    const isNextToDemon = playerIndex !== -1 && [-1, 1].some(offset => {
-      const neighbor = players[(playerIndex + offset + players.length) % players.length];
-      return neighbor?.id !== id && !neighbor?.isTheLunatic && findRole(neighbor?.roleId)?.team === 'demon';
-    });
 
     if (phase === 'game' && player && player.roleId !== (roleId || undefined)) {
       const oldRole = findRole(player.roleId);
@@ -63,7 +59,7 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
         roleId: roleId || undefined,
         isEvil: phase === 'game' ? currentAlignment : undefined,
         isTheDrunk: !!p.isTheDrunk && selectedRole?.team === 'townsfolk',
-        isTheMarionette: !!p.isTheMarionette && isNextToDemon && (selectedRole?.team === 'townsfolk' || selectedRole?.team === 'outsider'),
+        isTheMarionette: !!p.isTheMarionette && isMarionetteEligible(players, id, roleId, findRole),
         isTheLunatic: !!p.isTheLunatic && selectedRole?.team === 'demon',
         isTheLilMonsta: !!p.isTheLilMonsta && selectedRole?.team === 'minion',
       };

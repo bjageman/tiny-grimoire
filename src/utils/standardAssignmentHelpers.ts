@@ -1,5 +1,6 @@
 import type { Player, Role } from '../types';
 import { ALL_ROLES } from './roleData';
+import { isActualDemon } from './marionetteEligibility';
 
 export const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
@@ -193,7 +194,10 @@ export function placeRolesAroundCircle(finalRolesList: Role[], K: number): Role[
   const assignedRoles: Role[] = new Array(K);
   const assignedIndices = new Set<number>();
 
-  const demonRoleIndex = finalRolesList.findIndex(r => r.team === 'demon');
+  const demonRoleIndex = finalRolesList.findIndex(r => isActualDemon(
+    { roleId: r.id },
+    roleId => finalRolesList.find(role => role.id === roleId)
+  ));
   const marionetteRoleIndex = finalRolesList.findIndex(r => r.id === 'marionette');
   const typhonRoleIndex = finalRolesList.findIndex(r => r.id === 'lordoftyphon');
 

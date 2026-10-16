@@ -131,6 +131,17 @@ describe('SetupPlayerEditModal', () => {
     expect(screen.getByText('Marionette')).toBeInTheDocument();
   });
 
+  it("shows The Marionette toggle next to a Lil' Monsta player displaying a Minion", () => {
+    render(
+      <SetupPlayerEditModal
+        {...defaultProps}
+        players={[alice, { ...bob, roleId: 'poisoner', isTheLilMonsta: true }, charlie, dave]}
+        activePlayerId="p1"
+      />
+    );
+    expect(screen.getByText('Marionette')).toBeInTheDocument();
+  });
+
   it('hides The Marionette toggle for a good player not seated next to the Demon', () => {
     render(<SetupPlayerEditModal {...defaultProps} activePlayerId="p4" />);
     expect(screen.queryByText('Marionette')).toBeNull();

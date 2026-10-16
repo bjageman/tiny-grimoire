@@ -9,6 +9,7 @@ import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
+import { isMarionetteEligible } from '../../utils/marionetteEligibility';
 
 interface SetupPlayerEditModalProps {
   activePlayerId: string;
@@ -74,7 +75,6 @@ export default function SetupPlayerEditModal({
   });
 
   const player = players.find(p => p.id === activePlayerId);
-  const index = players.findIndex(p => p.id === activePlayerId);
 
   const [editedName, setEditedName] = useBufferedField(activePlayerId, player?.name ?? '', updatePlayerName);
 
@@ -87,17 +87,13 @@ export default function SetupPlayerEditModal({
   const hasLunaticInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'lunatic');
   const hasLilMonstaInScript = !customScriptRoles || customScriptRoles.some(r => r.id === 'lilmonsta');
 
-  const N = players.length;
-  const leftNeighbor = players[(index - 1 + N) % N];
-  const rightNeighbor = players[(index + 1) % N];
-  const leftRoleObj = selectionRoles.find(r => r.id === leftNeighbor?.roleId) || PLAYABLE_ROLES.find(r => r.id === leftNeighbor?.roleId);
-  const rightRoleObj = selectionRoles.find(r => r.id === rightNeighbor?.roleId) || PLAYABLE_ROLES.find(r => r.id === rightNeighbor?.roleId);
-  const isNextToDemon = (leftRoleObj?.team === 'demon' && !leftNeighbor?.isTheLunatic)
-    || (rightRoleObj?.team === 'demon' && !rightNeighbor?.isTheLunatic);
-
-  const isGood = roleObj?.team === 'townsfolk' || roleObj?.team === 'outsider';
   const canBeDrunk = player.isTheDrunk || (roleObj?.team === 'townsfolk' && hasDrunkInScript);
-  const canBeMarionette = player.isTheMarionette || (isGood && isNextToDemon && hasMarionetteInScript);
+  const canBeMarionette = player.isTheMarionette || (hasMarionetteInScript && isMarionetteEligible(
+    players,
+    player.id,
+    player.roleId,
+    roleId => selectionRoles.find(r => r.id === roleId) || PLAYABLE_ROLES.find(r => r.id === roleId)
+  ));
   const canBeLunatic = player.isTheLunatic || (roleObj?.team === 'demon' && hasLunaticInScript);
   const canBeLilMonsta = player.isTheLilMonsta || (roleObj?.team === 'minion' && hasLilMonstaInScript);
 

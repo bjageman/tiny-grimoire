@@ -9,6 +9,7 @@ import type { Role } from '../../types';
 import { TEAM_ORDER } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import PronounSelect from '../shared/ui/PronounSelect';
+import { isMarionetteEligible } from '../../utils/marionetteEligibility';
 
 interface WhaleBucketDraftEditModalProps {
   activeDraftPlayerId: string;
@@ -56,18 +57,13 @@ export default function WhaleBucketDraftEditModal({
 
   const roleObj = PLAYABLE_ROLES.find(r => r.id === player.roleId);
   const isTownsfolk = roleObj?.team === 'townsfolk';
-  const isGood = roleObj?.team === 'townsfolk' || roleObj?.team === 'outsider';
-
-  const N = players.length;
-  const leftNeighbor = players[(index - 1 + N) % N];
-  const rightNeighbor = players[(index + 1) % N];
-  const leftRoleObj = PLAYABLE_ROLES.find(r => r.id === leftNeighbor?.roleId);
-  const rightRoleObj = PLAYABLE_ROLES.find(r => r.id === rightNeighbor?.roleId);
-  const isNextToDemon = (leftRoleObj?.team === 'demon' && !leftNeighbor?.isTheLunatic)
-    || (rightRoleObj?.team === 'demon' && !rightNeighbor?.isTheLunatic);
-
   const canBeDrunk = player.isTheDrunk || isTownsfolk;
-  const canBeMarionette = player.isTheMarionette || (isGood && isNextToDemon);
+  const canBeMarionette = player.isTheMarionette || isMarionetteEligible(
+    players,
+    player.id,
+    player.roleId,
+    roleId => PLAYABLE_ROLES.find(r => r.id === roleId)
+  );
   const canBeLunatic = player.isTheLunatic || roleObj?.team === 'demon';
   const canBeLilMonsta = player.isTheLilMonsta || roleObj?.team === 'minion';
 

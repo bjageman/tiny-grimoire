@@ -51,7 +51,10 @@ export default function CharacterAssignmentCircle({
   remotePlayerIds,
   selectionRoles,
 }: CharacterAssignmentCircleProps) {
-  const { boardRef, isMeasured, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+  const { boardRef, isMeasured, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(
+    players.length,
+    { fluidDesktop: true },
+  );
 
   const [seatsReady, setSeatsReady] = useState(false);
   const [seatedCount, setSeatedCount] = useState(players.length);

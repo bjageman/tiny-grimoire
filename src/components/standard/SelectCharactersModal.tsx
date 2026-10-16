@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { X, Shuffle, AlertTriangle } from 'lucide-react';
+import { X, Dices, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
@@ -292,7 +292,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
             disabled={!canAssign}
             className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-2.5 rounded text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Shuffle size={14} /> Randomly Assign
+            <Dices size={14} /> Randomly Assign
           </button>
         </div>
       </div>

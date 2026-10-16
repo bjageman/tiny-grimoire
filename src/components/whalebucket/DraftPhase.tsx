@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shuffle, AlertTriangle } from 'lucide-react';
+import { Dices, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
@@ -17,7 +17,6 @@ interface WhaleBucketDraftPhaseProps {
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
-  setPhase: (p: 'setup' | 'draft' | 'game') => void;
   onStartGame: () => void;
   runAssignment: () => void;
   setActiveDraftPlayerId: (id: string | null) => void;
@@ -35,7 +34,6 @@ export default function WhaleBucketDraftPhase({
   popeEnabled,
   setPopeEnabled,
   isLightModeActive,
-  setPhase,
   onStartGame,
   runAssignment,
   setActiveDraftPlayerId,
@@ -81,87 +79,70 @@ export default function WhaleBucketDraftPhase({
           2. Character Assignment
         </h2>
         <button
+          id="reassign-characters-button"
           onClick={runAssignment}
           className={cn(
-            "text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border",
+            "min-w-[7rem] shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:min-w-0 sm:shrink",
             isLightModeActive
               ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
               : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
           )}
         >
-          <Shuffle size={14} /> Re-Assign
+          <Dices size={14} /> Re-Assign
         </button>
       </div>
 
-      {/* Top Action Buttons */}
-      <div className="flex gap-2">
-        <button
-          id="back-to-setup-button-top"
-          onClick={() => setPhase('setup')}
-          className="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-bold transition-colors"
-        >
-          Back to Setup
-        </button>
-        <button
-          id="open-grimoire-button-top"
-          disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
-          onClick={handleOpenGrimoire}
-          className="flex-[2] bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
-        >
-          Open Grimoire
-        </button>
-      </div>
-
-      <div className={cn("grid grid-cols-1 gap-5 items-start", validationSummary && "md:grid-cols-2")}>
-        {validationSummary && (
-          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
-        )}
-        <GameSetupMods
-          sentinelOutsiderDelta={sentinelOutsiderDelta}
-          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
-          popeEnabled={popeEnabled}
-          setPopeEnabled={setPopeEnabled}
-          isLightModeActive={isLightModeActive}
-        />
-      </div>
-
-      <WhaleBucketDraftCircle
-        players={players}
-        isLightModeActive={isLightModeActive}
-        setActiveDraftPlayerId={setActiveDraftPlayerId}
-        remotePlayerIds={remotePlayerIds}
-      />
-      <div className="flex gap-2">
-        <button
-          id="back-to-setup-button"
-          onClick={() => setPhase('setup')}
-          className="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-bold transition-colors"
-        >
-          Back to Setup
-        </button>
-        <button
-          id="open-grimoire-button"
-          disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
-          onClick={handleOpenGrimoire}
-          className="flex-[2] bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
-        >
-          Open Grimoire
-        </button>
-      </div>
-      {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
-        <label className={cn(
-          "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",
-          isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
-        )}>
-          <ToggleSwitch
-            id="override-failures-checkbox-whale"
-            checked={overrideFailures}
-            onChange={setOverrideFailures}
+      <div
+        id="whalebucket-assignment-layout"
+        className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+      >
+        <div id="whalebucket-assignment-grimoire" className="order-1 min-w-0 md:order-1">
+          <WhaleBucketDraftCircle
+            players={players}
             isLightModeActive={isLightModeActive}
+            setActiveDraftPlayerId={setActiveDraftPlayerId}
+            remotePlayerIds={remotePlayerIds}
           />
-          <span>Override failures</span>
-        </label>
-      )}
+        </div>
+        <aside id="whalebucket-assignment-sidebar" className="contents md:order-2 md:block md:min-w-0 md:space-y-5">
+          {validationSummary && (
+            <div className="order-2">
+              <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+            </div>
+          )}
+          <div className="order-3">
+            <GameSetupMods
+              sentinelOutsiderDelta={sentinelOutsiderDelta}
+              setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+              popeEnabled={popeEnabled}
+              setPopeEnabled={setPopeEnabled}
+              isLightModeActive={isLightModeActive}
+            />
+          </div>
+          <button
+            id="open-grimoire-button"
+            disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
+            onClick={handleOpenGrimoire}
+            className="order-5 w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
+          >
+            Open Grimoire
+          </button>
+          {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
+            <label className={cn(
+              "order-4 flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors",
+              isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+            )}>
+              <ToggleSwitch
+                id="override-failures-checkbox-whale"
+                checked={overrideFailures}
+                onChange={setOverrideFailures}
+                isLightModeActive={isLightModeActive}
+              />
+              <span>Override failures</span>
+            </label>
+          )}
+        </aside>
+      </div>
     </div>
 
     {showGrimoireWarning && (

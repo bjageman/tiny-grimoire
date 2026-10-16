@@ -19,11 +19,15 @@ export default function WhaleBucketDraftCircle({
   setActiveDraftPlayerId,
   remotePlayerIds,
 }: WhaleBucketDraftCircleProps) {
-  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(
+    players.length,
+    { fluidDesktop: true },
+  );
 
   return (
     <div className="w-full flex flex-col items-center">
       <div
+        id="whalebucket-draft-grimoire"
         ref={boardRef}
         className={cn(
           "relative border shadow-inner overflow-visible mx-auto",

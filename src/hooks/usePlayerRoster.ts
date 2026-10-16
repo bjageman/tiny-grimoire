@@ -43,12 +43,17 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
   const updatePlayerRole = (id: string, roleId: string) => {
     const player = players.find(p => p.id === id);
     const currentAlignment = player ? alignmentOf(player, findRole(player.roleId)) : undefined;
+    const selectedRole = findRole(roleId);
+    const playerIndex = players.findIndex(p => p.id === id);
+    const isNextToDemon = playerIndex !== -1 && [-1, 1].some(offset => {
+      const neighbor = players[(playerIndex + offset + players.length) % players.length];
+      return neighbor?.id !== id && !neighbor?.isTheLunatic && findRole(neighbor?.roleId)?.team === 'demon';
+    });
 
     if (phase === 'game' && player && player.roleId !== (roleId || undefined)) {
       const oldRole = findRole(player.roleId);
-      const newRole = findRole(roleId);
-      if (oldRole && newRole) onLog(`${player.name} changed from ${oldRole.name} to ${newRole.name}`);
-      else if (newRole) onLog(`${player.name} assigned ${newRole.name}`);
+      if (oldRole && selectedRole) onLog(`${player.name} changed from ${oldRole.name} to ${selectedRole.name}`);
+      else if (selectedRole) onLog(`${player.name} assigned ${selectedRole.name}`);
     }
 
     let newPlayers = players.map(p => {
@@ -57,6 +62,10 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
         ...p,
         roleId: roleId || undefined,
         isEvil: phase === 'game' ? currentAlignment : undefined,
+        isTheDrunk: !!p.isTheDrunk && selectedRole?.team === 'townsfolk',
+        isTheMarionette: !!p.isTheMarionette && isNextToDemon && (selectedRole?.team === 'townsfolk' || selectedRole?.team === 'outsider'),
+        isTheLunatic: !!p.isTheLunatic && selectedRole?.team === 'demon',
+        isTheLilMonsta: !!p.isTheLilMonsta && selectedRole?.team === 'minion',
       };
       if (resolveAssignedFromPref) assigned.assignedFromPref = resolveAssignedFromPref(p, roleId);
       return assigned;

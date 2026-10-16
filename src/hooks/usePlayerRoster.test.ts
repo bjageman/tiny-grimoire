@@ -5,7 +5,12 @@ import type { Player, Role } from '../types';
 
 const ROLES: Record<string, Role> = {
   imp: { id: 'imp', name: 'Imp', team: 'demon' },
+  fanggu: { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
   chef: { id: 'chef', name: 'Chef', team: 'townsfolk' },
+  monk: { id: 'monk', name: 'Monk', team: 'townsfolk' },
+  recluse: { id: 'recluse', name: 'Recluse', team: 'outsider' },
+  poisoner: { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+  spy: { id: 'spy', name: 'Spy', team: 'minion' },
   choirboy: { id: 'choirboy', name: 'Choirboy', team: 'townsfolk' },
   king: { id: 'king', name: 'King', team: 'townsfolk' },
   huntsman: { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },
@@ -49,12 +54,32 @@ describe('usePlayerRoster.updatePlayerRole', () => {
     expect(result().filter(p => p.roleId === 'king')).toHaveLength(1);
   });
 
-  it('clears the drunk/marionette/lunatic/lilmonsta tokens on the assigned seat', () => {
-    const { roster, result } = make([seat('p1', { isTheDrunk: true, isTheMarionette: true })]);
-    roster.updatePlayerRole('p1', 'chef');
-    const p1 = result()[0];
-    expect(p1.isTheDrunk).toBe(false);
-    expect(p1.isTheMarionette).toBe(false);
+  it.each([
+    ['isTheDrunk', 'chef', 'monk'],
+    ['isTheMarionette', 'chef', 'recluse'],
+    ['isTheLunatic', 'imp', 'fanggu'],
+    ['isTheLilMonsta', 'poisoner', 'spy'],
+  ] as const)('preserves the %s tag when the replacement role remains valid', (tag, oldRole, newRole) => {
+    const { roster, result } = make([
+      seat('p1', { roleId: oldRole, [tag]: true }),
+      seat('p2', { roleId: 'imp' }),
+    ]);
+    roster.updatePlayerRole('p1', newRole);
+    expect(result()[0][tag]).toBe(true);
+  });
+
+  it.each([
+    ['isTheDrunk', 'chef', 'imp'],
+    ['isTheMarionette', 'chef', 'imp'],
+    ['isTheLunatic', 'imp', 'chef'],
+    ['isTheLilMonsta', 'poisoner', 'chef'],
+  ] as const)('clears the %s tag when the replacement role is invalid', (tag, oldRole, newRole) => {
+    const { roster, result } = make([
+      seat('p1', { roleId: oldRole, [tag]: true }),
+      seat('p2', { roleId: 'imp' }),
+    ]);
+    roster.updatePlayerRole('p1', newRole);
+    expect(result()[0][tag]).toBe(false);
   });
 
   it('clears alignment in setup but preserves it in game', () => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shuffle, AlertTriangle } from 'lucide-react';
+import { Dices, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
@@ -88,7 +88,7 @@ export default function WhaleBucketDraftPhase({
               : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
           )}
         >
-          <Shuffle size={14} /> Re-Assign
+          <Dices size={14} /> Re-Assign
         </button>
       </div>
 

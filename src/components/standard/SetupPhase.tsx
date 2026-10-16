@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Dices, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
@@ -274,7 +274,7 @@ export default function StandardSetupPhase({
               disabled={players.length < 5}
               title="Randomly assign roles to all players based on the active script, keeping to standard distribution rules"
             >
-              <Shuffle size={14} /> Randomly Assign
+              <Dices size={14} /> Randomly Assign
             </button>
           </div>
         </section>

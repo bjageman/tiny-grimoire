@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Shuffle, Trash2 } from 'lucide-react';
+import { Search, Dices, Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -271,7 +271,7 @@ export default function WhaleBucketPlayerPreferenceModal({
             className="shrink-0 p-2 rounded border border-gray-855 text-gray-500 hover:text-clocktower-townsfolk hover:border-clocktower-townsfolk/40 transition-colors"
             title="Auto-fill remaining preferences"
           >
-            <Shuffle size={16} />
+            <Dices size={16} />
           </button>
         </div>
 

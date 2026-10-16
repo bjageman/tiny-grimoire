@@ -757,6 +757,34 @@ describe('validationSummary utility', () => {
     expect(popeSummary!.failures.some(f => f.includes('Outsiders'))).toBe(true);
   });
 
+  it('caps expected Outsiders at the number available on the script', () => {
+    const roles: Role[] = [
+      ...['chef', 'empath', 'monk', 'virgin', 'washerwoman', 'librarian', 'investigator'].map(id => ({ id, name: id, team: 'townsfolk' as const })),
+      ...['recluse', 'saint', 'butler', 'mutant'].map(id => ({ id, name: id, team: 'outsider' as const })),
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+    ];
+    const players: Player[] = roles.map((role, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      roleId: role.id,
+      isDead: false,
+    }));
+
+    const summary = getValidationSummary(players, roles);
+
+    expect(summary!.expected.outsider).toBe(4);
+    expect(summary!.expected.townsfolk).toBe(7);
+    expect(summary!.expectedOutsiderLabel).toBe('4');
+    expect(summary!.expectedTownsfolkLabel).toBe('7');
+    expect(summary!.isOutsiderValid).toBe(true);
+    expect(summary!.isTownsfolkValid).toBe(true);
+    expect(summary!.failures).not.toContain('Too few Outsiders: expected 5, but got 4.');
+    expect(summary!.failures).not.toContain('Too many Townsfolk: expected 6, but got 7.');
+  });
+
   it('still rejects duplicate evil characters while Pope is enabled', () => {
     const roles: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },

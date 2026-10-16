@@ -697,6 +697,29 @@ describe('performStandardAssignment', () => {
       }
     });
 
+    it('caps Outsiders at the number of unique Outsiders on the script', () => {
+      const script: Role[] = [
+        ...baseTownsfolk,
+        { id: 'drunk', name: 'Drunk', team: 'outsider' },
+        { id: 'recluse', name: 'Recluse', team: 'outsider' },
+        { id: 'butler', name: 'Butler', team: 'outsider' },
+        { id: 'saint', name: 'Saint', team: 'outsider' },
+        { id: 'baron', name: 'Baron', team: 'minion' },
+        { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+        { id: 'spy', name: 'Spy', team: 'minion' },
+        { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+      ];
+      const players: Player[] = Array.from({ length: 15 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+
+      expect(result).not.toBeNull();
+      const outsiderCount = result!.filter(player =>
+        player.isTheDrunk || script.some(role => role.team === 'outsider' && role.id === player.roleId)
+      ).length;
+      expect(outsiderCount).toBe(4);
+    });
+
     it('should assign different traveler characters to travelers when player count is > 15', () => {
       const players: Player[] = Array.from({ length: 18 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
       const travelerRoles: Role[] = [

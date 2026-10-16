@@ -126,6 +126,9 @@ function assignBaseCharacters(
 
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+  const maxScriptOutsiders = new Set(allRoles
+    .filter(r => r.team === 'outsider' && r.id !== 'drunk' && r.id !== 'marionette')
+    .map(r => r.id)).size;
 
   const selectRoleForPlayer = (
     player: Player,
@@ -247,7 +250,7 @@ function assignBaseCharacters(
 
   if (mode === 'atheist') {
     const includeBalloonist = hasPref('balloonist') && Math.random() < 0.7;
-    const O = base.outsider + (includeBalloonist ? 1 : 0);
+    const O = Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxScriptOutsiders);
     const T = N - O;
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
@@ -345,7 +348,9 @@ function assignBaseCharacters(
     const minionPlayerIds = new Set(minionPlayers.map(mp => mp.id));
     const remainingPlayers = shuffledPlayers.filter(p => p.id !== demonPlayer.id && !minionPlayerIds.has(p.id));
     const hasXaan = assignment.some(a => a.role.id === 'xaan');
-    const targetOutsiders = (demonRole.id === 'kazali' || hasXaan) ? Math.floor(Math.random() * (remainingPlayers.length + 1)) : base.outsider;
+    const targetOutsiders = (demonRole.id === 'kazali' || hasXaan)
+      ? Math.floor(Math.random() * (Math.min(remainingPlayers.length, maxScriptOutsiders) + 1))
+      : Math.min(base.outsider, maxScriptOutsiders);
     const tempAssignment: { player: Player; team: 'townsfolk' | 'outsider' }[] = [];
     for (let i = 0; i < remainingPlayers.length; i++) {
       const team = (i < targetOutsiders) ? 'outsider' : 'townsfolk';
@@ -410,7 +415,7 @@ function assignBaseCharacters(
           expectedMinion = 0;
         }
         expectedDemon = Math.max(0, expectedDemon);
-        const maxOutsiders = Math.max(0, N - expectedDemon - expectedMinion);
+        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion));
         for (let i = 0; i <= maxOutsiders; i++) {
           possibleCounts.add(i);
         }
@@ -418,7 +423,7 @@ function assignBaseCharacters(
         for (const gf of gfMods) {
           for (const bal of balMods) {
             for (const herm of hermMods) {
-              possibleCounts.add(Math.max(0, base.outsider + fixedDeltaOut + gf + bal + herm));
+              possibleCounts.add(Math.min(maxScriptOutsiders, Math.max(0, base.outsider + fixedDeltaOut + gf + bal + herm)));
             }
           }
         }
@@ -437,7 +442,7 @@ function assignBaseCharacters(
         }
       }
       
-      chosenTargetOut = Math.max(0, Math.min(remainingPlayers.length, chosenTargetOut));
+      chosenTargetOut = Math.max(0, Math.min(remainingPlayers.length, maxScriptOutsiders, chosenTargetOut));
       
       if (currentOutsiders.length === chosenTargetOut) {
         const hasChoirboy = fullAssignment.some(a => a.role.id === 'choirboy');

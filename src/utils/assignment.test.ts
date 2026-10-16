@@ -88,6 +88,40 @@ describe('assignCharacters', () => {
     expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(expectedOutsiders);
   });
 
+  it('caps Outsiders at the number of unique assignable Outsiders on the script', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'mutant', name: 'Mutant', team: 'outsider' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 15 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(4);
+    expect(new Set(result!.map(assignment => assignment.role.id)).size).toBe(15);
+  });
+
   it('should assign a Damsel when a Huntsman is in play', () => {
     const roles: Role[] = [
       { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },

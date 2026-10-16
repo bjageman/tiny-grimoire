@@ -922,7 +922,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
-          setPhase={setPhase}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
           setActiveDraftPlayerId={setActiveDraftPlayerId}

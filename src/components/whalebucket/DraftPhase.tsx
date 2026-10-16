@@ -17,7 +17,6 @@ interface WhaleBucketDraftPhaseProps {
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
-  setPhase: (p: 'setup' | 'draft' | 'game') => void;
   onStartGame: () => void;
   runAssignment: () => void;
   setActiveDraftPlayerId: (id: string | null) => void;
@@ -35,7 +34,6 @@ export default function WhaleBucketDraftPhase({
   popeEnabled,
   setPopeEnabled,
   isLightModeActive,
-  setPhase,
   onStartGame,
   runAssignment,
   setActiveDraftPlayerId,
@@ -93,25 +91,6 @@ export default function WhaleBucketDraftPhase({
         </button>
       </div>
 
-      {/* Top Action Buttons */}
-      <div className="flex gap-2">
-        <button
-          id="back-to-setup-button-top"
-          onClick={() => setPhase('setup')}
-          className="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-bold transition-colors"
-        >
-          Back to Setup
-        </button>
-        <button
-          id="open-grimoire-button-top"
-          disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
-          onClick={handleOpenGrimoire}
-          className="flex-[2] bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
-        >
-          Open Grimoire
-        </button>
-      </div>
-
       <div
         id="whalebucket-assignment-layout"
         className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]"
@@ -135,6 +114,14 @@ export default function WhaleBucketDraftPhase({
             setPopeEnabled={setPopeEnabled}
             isLightModeActive={isLightModeActive}
           />
+          <button
+            id="open-grimoire-button"
+            disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
+            onClick={handleOpenGrimoire}
+            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
+          >
+            Open Grimoire
+          </button>
           {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
             <label className={cn(
               "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors",
@@ -150,23 +137,6 @@ export default function WhaleBucketDraftPhase({
             </label>
           )}
         </aside>
-      </div>
-      <div className="flex gap-2">
-        <button
-          id="back-to-setup-button"
-          onClick={() => setPhase('setup')}
-          className="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-bold transition-colors"
-        >
-          Back to Setup
-        </button>
-        <button
-          id="open-grimoire-button"
-          disabled={players.some(p => !p.roleId) || (!!validationSummary?.failures?.length && !overrideFailures)}
-          onClick={handleOpenGrimoire}
-          className="flex-[2] bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-display font-bold tracking-widest uppercase transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40"
-        >
-          Open Grimoire
-        </button>
       </div>
     </div>
 

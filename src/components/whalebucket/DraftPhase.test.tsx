@@ -38,7 +38,6 @@ describe('WhaleBucketDraftPhase', () => {
         popeEnabled={false}
         setPopeEnabled={vi.fn()}
         isLightModeActive={false}
-        setPhase={vi.fn()}
         onStartGame={vi.fn()}
         runAssignment={vi.fn()}
         setActiveDraftPlayerId={vi.fn()}
@@ -50,6 +49,9 @@ describe('WhaleBucketDraftPhase', () => {
     expect(layout.className).toContain('md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]');
     expect(sidebar.querySelector('#grimoire-balance-verification')).toBeInTheDocument();
     expect(sidebar.querySelector('#game-setup-mods')).toBeInTheDocument();
+    expect(sidebar.querySelector('#open-grimoire-button')).toBeInTheDocument();
+    expect(container.querySelectorAll('#open-grimoire-button')).toHaveLength(1);
+    expect(container.querySelector('[id^="back-to-setup-button"]')).not.toBeInTheDocument();
     expect(sidebar.previousElementSibling?.querySelector('#edit-draft-player-button-1')).toBeInTheDocument();
   });
 });

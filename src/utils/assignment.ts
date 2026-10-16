@@ -2,6 +2,7 @@ import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
+import { getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
 
 export function assignCharacters(
   players: Player[],
@@ -136,7 +137,7 @@ function assignBaseCharacters(
     usedRoleIds: Set<string>,
     villageIdiotSlots?: { remaining: number }
   ): { role: Role; fromPref: boolean } => {
-    const prefs = player.preferences?.[team] || [];
+    const prefs = getWhaleBucketPreferenceIds(player.preferences, team);
     // Village Idiot is the one role a second player may still be given, and only if they asked for it.
     const canRepeatVillageIdiot = !!villageIdiotSlots && villageIdiotSlots.remaining > 0;
     const availablePrefs = prefs.filter(id =>
@@ -259,7 +260,7 @@ function assignBaseCharacters(
     assignment.push({
       player: { ...initialShuffledPlayers[0], isEvil: undefined },
       role: atheistRole,
-      fromPref: !!initialShuffledPlayers[0].preferences?.townsfolk.includes('atheist')
+      fromPref: getWhaleBucketPreferenceIds(initialShuffledPlayers[0].preferences, 'townsfolk').includes('atheist')
     });
     let assignedT = 1;
     for (let i = 1; i < N; i++) {

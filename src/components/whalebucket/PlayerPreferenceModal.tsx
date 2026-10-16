@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { ALL_ROLES } from '../../utils/roleData';
+import { getWhaleBucketPreferenceTeam } from '../../utils/whaleBucketPreferences';
 import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketPlayerPreferenceModalProps {
@@ -84,7 +85,7 @@ export default function WhaleBucketPlayerPreferenceModal({
   if (pickingTeam) {
     const filteredRoles = (ALL_ROLES as Role[])
       .filter(r =>
-        r.team === pickingTeam &&
+        getWhaleBucketPreferenceTeam(r) === pickingTeam &&
         !excludedRoleIds.includes(r.id) &&
         r.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -182,7 +183,7 @@ export default function WhaleBucketPlayerPreferenceModal({
             </button>
             <button
               onClick={() => {
-                const available = (ALL_ROLES as Role[]).filter(r => r.team === pickingTeam && !excludedRoleIds.includes(r.id));
+                const available = (ALL_ROLES as Role[]).filter(r => getWhaleBucketPreferenceTeam(r) === pickingTeam && !excludedRoleIds.includes(r.id));
                 if (available.length > 0) {
                   const r = available[Math.floor(Math.random() * available.length)];
                   setPlayers(prev => prev.map(x => x.id === player.id ? {

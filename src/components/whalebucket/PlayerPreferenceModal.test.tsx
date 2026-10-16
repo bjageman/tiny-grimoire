@@ -96,6 +96,17 @@ describe('WhaleBucketPlayerPreferenceModal', () => {
     expect(screen.queryByText('Select Townsfolk')).not.toBeInTheDocument();
   });
 
+  it('offers Atheist and Summoner as Demon preferences', () => {
+    render(<WhaleBucketPlayerPreferenceModal {...defaultProps} />);
+
+    fireEvent.click(screen.getByText('Demon'));
+
+    expect(screen.getByText('Atheist')).toBeInTheDocument();
+    expect(screen.getByText('Summoner')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Atheist'));
+    expect(defaultProps.togglePreference).toHaveBeenCalledWith('1', 'demon', 'atheist');
+  });
+
   it('filters the picker list by search term', () => {
     render(<WhaleBucketPlayerPreferenceModal {...defaultProps} />);
     fireEvent.click(screen.getByText('Townsfolk'));

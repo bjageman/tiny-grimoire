@@ -4,6 +4,7 @@ import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } fr
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
+import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -31,7 +32,8 @@ export type Player = Omit<BasePlayer, 'preferences'> & {
 type Phase = 'setup' | 'draft' | 'game';
 
 const STORAGE_KEY = 'whale-bucket-game';
-const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer', 'atheist'];
+const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer'];
+const EXCLUDED_ROLE_DEFAULTS_VERSION = 1;
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -147,7 +149,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Exclusion states
-  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
+  const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>(() => {
+    const savedRoleIds = readPersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
+    const savedVersion = readPersistedField<number>(STORAGE_KEY, 'excludedRoleDefaultsVersion', 0);
+    return savedVersion < EXCLUDED_ROLE_DEFAULTS_VERSION
+      ? [...new Set([...savedRoleIds.filter(id => id !== 'atheist'), ...DEFAULT_EXCLUDED_ROLE_IDS])]
+      : savedRoleIds;
+  });
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = usePersistedField<number>(STORAGE_KEY, 'sentinelOutsiderDelta', 0);
   const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
 
@@ -423,6 +431,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       allowTravelers,
       isLilMonstaGame,
       excludedRoleIds,
+      excludedRoleDefaultsVersion: EXCLUDED_ROLE_DEFAULTS_VERSION,
       gameLog,
       demonBluffs,
       reminderTokens,
@@ -544,7 +553,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       for (const team of teams) {
         if (newPrefs[team].length === 0) {
-          const available = allRoles.filter(r => r.team === team && !excludedRoleIds.includes(r.id));
+          const available = allRoles.filter(r => getWhaleBucketPreferenceTeam(r) === team && !excludedRoleIds.includes(r.id));
           if (available.length > 0) {
             const randIdx = Math.floor(Math.random() * available.length);
             newPrefs[team] = [available[randIdx].id];
@@ -644,7 +653,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     onLilMonstaEnabled: () => setIsLilMonstaGame(true),
     resolveAssignedFromPref: (pl, rid) => {
       const role = (ALL_ROLES as Role[]).find(r => r.id === rid);
-      return role ? (pl.preferences?.[role.team] || []).includes(rid) : false;
+      return role ? getWhaleBucketPreferenceIds(pl.preferences, role.team).includes(rid) : false;
     },
   });
 

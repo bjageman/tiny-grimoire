@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
+import { getWhaleBucketPreferenceTeam } from '../../utils/whaleBucketPreferences';
 
 type PrefTeam = 'townsfolk' | 'outsider' | 'minion' | 'demon';
 type Prefs = Record<PrefTeam, string[]>;
@@ -157,7 +158,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
               isLight ? "border-gray-200 divide-gray-150" : "border-gray-855 divide-gray-800/60"
             )}>
               {PLAYABLE_ROLES
-                .filter(r => r.team === activePrefSelect.team && !excludedRoleIds.includes(r.id) && r.name.toLowerCase().includes(prefSearchTerm.toLowerCase()))
+                .filter(r => getWhaleBucketPreferenceTeam(r) === activePrefSelect.team && !excludedRoleIds.includes(r.id) && r.name.toLowerCase().includes(prefSearchTerm.toLowerCase()))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(role => {
                   const isSelected = prefs[activePrefSelect.team].includes(role.id);

@@ -349,7 +349,7 @@ describe('assignCharacters', () => {
     ];
 
     const players: Player[] = [
-      { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: ['atheist'], outsider: [], minion: [], demon: [], traveler: [] } },
+      { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: ['atheist'], traveler: [] } },
       { id: '2', name: 'Bob', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
       { id: '3', name: 'Charlie', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
       { id: '4', name: 'David', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
@@ -367,6 +367,28 @@ describe('assignCharacters', () => {
         expect(evilPlayers.length).toBe(0);
       }
     }
+  });
+
+  it('honors a Summoner preference submitted in the Demon slot', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'summoner', name: 'Summoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: ['summoner'], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.find(assignment => assignment.role.id === 'summoner')?.fromPref).toBe(true);
   });
 
   describe('Village Idiot preferences', () => {

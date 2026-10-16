@@ -220,6 +220,29 @@ describe('Storyteller Reset Integration', () => {
     storyteller.unmount();
   });
 
+  it('adds the complete prohibited-character defaults to existing Whale Bucket games', async () => {
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [],
+      phase: 'setup',
+      excludedRoleIds: ['drunk', 'marionette', 'lunatic', 'atheist'],
+    }));
+    window.location.hash = '#/whale-bucket';
+
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    expect(storyteller.getByText('Engineer')).toBeInTheDocument();
+    expect(storyteller.getByText('Pit-Hag')).toBeInTheDocument();
+    expect(storyteller.getByText('Psychopath')).toBeInTheDocument();
+    expect(storyteller.getByText('Legion')).toBeInTheDocument();
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem('whale-bucket-game')!);
+      expect(saved.excludedRoleDefaultsVersion).toBe(1);
+      expect(saved.excludedRoleIds).toEqual(expect.arrayContaining(['engineer', 'pithag', 'psychopath', 'legion']));
+      expect(saved.excludedRoleIds).not.toContain('atheist');
+    });
+    storyteller.unmount();
+  });
+
   // Renders a storyteller mid-game with one revealed remote player (Alice),
   // returning handles plus Alice's current JoinPage screen state.
   async function renderGameWithRevealedPlayer() {

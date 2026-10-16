@@ -54,6 +54,7 @@ export function performStandardAssignment(
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');
   const mins = currentScriptRoles.filter(r => r.team === 'minion');
   const dems = currentScriptRoles.filter(r => r.team === 'demon');
+  const maxScriptOutsiders = new Set(outs.map(r => r.id)).size;
 
   const hasAtheistRole = tfs.some(r => r.id === 'atheist');
   let isAtheistActive = false;
@@ -63,7 +64,7 @@ export function performStandardAssignment(
   }
 
   if (isAtheistActive) {
-    const O = base.outsider;
+    const O = Math.min(base.outsider, maxScriptOutsiders);
     const atheistRole = tfs.find(r => r.id === 'atheist')!;
     let selectedOutsiders = shuffle(outs).slice(0, O);
     let selectedTownsfolk = [atheistRole, ...shuffle(tfs.filter(t => t.id !== 'atheist')).slice(0, baseCount - O - 1)];
@@ -146,7 +147,7 @@ export function performStandardAssignment(
         let tempTfs = baseCount - selectedDemons.length - selectedMinions.length - tempOuts;
         if (tempTfs < 0) tempTfs = 0;
 
-        const fitsOutsiders = tempOuts <= outs.length;
+        const fitsOutsiders = tempOuts <= maxScriptOutsiders;
         const fitsTownsfolk = (tempTfs + tfDelta) <= tfs.length;
 
         if (fitsOutsiders && fitsTownsfolk) {
@@ -174,6 +175,7 @@ export function performStandardAssignment(
     const maxOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
     targetOutsiders = Math.floor(Math.random() * (maxOutsiders + 1));
   }
+  targetOutsiders = Math.min(targetOutsiders, maxScriptOutsiders);
   let targetTownsfolk = baseCount - selectedDemons.length - selectedMinions.length - targetOutsiders;
   if (targetTownsfolk < 0) {
     targetTownsfolk = 0;

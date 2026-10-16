@@ -93,7 +93,7 @@ export default function WhaleBucketDraftPhase({
 
       <div
         id="whalebucket-assignment-layout"
-        className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]"
+        className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
       >
         <div className="order-2 min-w-0 md:order-1">
           <WhaleBucketDraftCircle
@@ -103,7 +103,7 @@ export default function WhaleBucketDraftPhase({
             remotePlayerIds={remotePlayerIds}
           />
         </div>
-        <aside id="whalebucket-assignment-sidebar" className="order-1 space-y-5 md:order-2">
+        <aside id="whalebucket-assignment-sidebar" className="order-1 min-w-0 space-y-5 md:order-2">
           {validationSummary && (
             <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
           )}

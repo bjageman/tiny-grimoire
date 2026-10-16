@@ -15,6 +15,22 @@ interface SocketSubscription {
 const activeSubscriptions: SocketSubscription[] = [];
 const sentPayloads: Array<{ gameCode: string; payload: unknown }> = [];
 
+function enableSetupModifiers(container: HTMLElement) {
+  const view = within(container);
+  fireEvent.click(view.getByRole('button', { name: /setup modifiers/i }));
+  fireEvent.click(view.getByRole('button', { name: '+1' }));
+  fireEvent.click(view.getByLabelText(/Pope/));
+  expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'true');
+  expect(view.getByLabelText(/Pope/)).toBeChecked();
+}
+
+function expectSetupModifiersReset(container: HTMLElement) {
+  const view = within(container);
+  expect(view.getByRole('button', { name: '0' })).toHaveAttribute('aria-pressed', 'true');
+  expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'false');
+  expect(view.getByLabelText(/Pope/)).not.toBeChecked();
+}
+
 // Mock useGameSocket to route messages between components sharing the same game code
 vi.mock('./hooks/useGameSocket', () => {
   return {
@@ -172,6 +188,36 @@ describe('Storyteller Reset Integration', () => {
 
     unmountStoryteller();
     unmountJoinPage();
+  });
+
+  it('resets all Standard setup modifiers', async () => {
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    enableSetupModifiers(storyteller.container);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+    });
+
+    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    storyteller.unmount();
+  });
+
+  it('resets all Whale Bucket setup modifiers', async () => {
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    enableSetupModifiers(storyteller.container);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+    });
+
+    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    storyteller.unmount();
   });
 
   // Renders a storyteller mid-game with one revealed remote player (Alice),

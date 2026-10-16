@@ -12,7 +12,7 @@ import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
-import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
@@ -61,6 +61,8 @@ interface StandardSetupPhaseProps {
   validationSummary: ValidationSummary | null;
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
   isSecondary?: boolean;
 }
@@ -107,6 +109,8 @@ export default function StandardSetupPhase({
   validationSummary,
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive,
   isSecondary,
   remotePlayerCount = 0,
@@ -367,9 +371,11 @@ export default function StandardSetupPhase({
         {validationSummary && players.length >= 5 && (
           <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
         )}
-        <FablesAndLorics
+        <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
         />
         <button

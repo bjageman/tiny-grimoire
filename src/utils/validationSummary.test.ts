@@ -703,6 +703,64 @@ describe('validationSummary utility', () => {
     const withDuplicateChef = players.map(p => p.id === '5' ? { ...p, roleId: 'chef' } : p);
     const dupeSummary = getValidationSummary(withDuplicateChef, roles);
     expect(dupeSummary!.failures.some(f => f.includes('Chef'))).toBe(true);
+
+    const popeSummary = getValidationSummary(withDuplicateChef, roles, undefined, 0, true);
+    expect(popeSummary!.failures.some(f => f.includes('Chef'))).toBe(false);
+    expect(popeSummary!.modifications).toContain('Pope (duplicate good characters allowed)');
+    expect(popeSummary!.isValid).toBe(true);
+  });
+
+  it('does not let Pope change Townsfolk and Outsider counts', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'chef', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'empath', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'monk', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'butler', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'butler', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'butler', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const popeSummary = getValidationSummary(players, roles, undefined, 0, true);
+    expect(popeSummary!.isOutsiderValid).toBe(false);
+    expect(popeSummary!.isTownsfolkValid).toBe(false);
+    expect(popeSummary!.failures.some(f => f.includes('Butler'))).toBe(false);
+    expect(popeSummary!.failures.some(f => f.includes('Outsiders'))).toBe(true);
+  });
+
+  it('still rejects duplicate evil characters while Pope is enabled', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'chef', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'empath', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'monk', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'virgin', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'butler', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'poisoner', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players, roles, undefined, 0, true);
+    expect(summary!.failures.some(f => f.includes('Poisoner is assigned to 2 players'))).toBe(true);
   });
 });
 

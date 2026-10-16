@@ -59,6 +59,35 @@ describe('assignCharacters', () => {
     expect(legionAssignments.length).toBe(4);
   });
 
+  it.each([
+    [1, 2],
+    [-1, 0],
+  ])('applies a Sentinel outsider delta of %i in Whale Bucket assignments', (delta, expectedOutsiders) => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles, false, delta);
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(expectedOutsiders);
+  });
+
   it('should assign a Damsel when a Huntsman is in play', () => {
     const roles: Role[] = [
       { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },

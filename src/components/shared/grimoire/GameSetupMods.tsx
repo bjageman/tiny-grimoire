@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import ToggleSwitch from '../ui/ToggleSwitch';
 
-interface FablesAndLoricsProps {
+interface GameSetupModsProps {
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive?: boolean;
 }
 
@@ -14,19 +17,21 @@ const SENTINEL_OPTIONS = [
   { value: 1, label: '+1' },
 ];
 
-export default function FablesAndLorics({
+export default function GameSetupMods({
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive = false,
-}: FablesAndLoricsProps) {
+}: GameSetupModsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
-  const activeCount = sentinelOutsiderDelta !== 0 ? 1 : 0;
+  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
 
   return (
     <div
-      id="fables-and-lorics"
+      id="game-setup-mods"
       className={cn(
         "border rounded-lg transition-colors duration-300 text-left",
         isLightModeActive
@@ -38,15 +43,15 @@ export default function FablesAndLorics({
         type="button"
         onClick={() => setIsExpanded(v => !v)}
         aria-expanded={isExpanded}
-        aria-controls="fables-and-lorics-body"
+        aria-controls="game-setup-mods-body"
         className="w-full flex items-center gap-1.5 p-3"
       >
-        <Sparkles size={16} className="text-clocktower-traveler" />
+        <Settings size={16} className="text-clocktower-traveler" />
         <span className={cn(
           "font-semibold text-xs tracking-wide uppercase",
           isLightModeActive ? "text-gray-700" : "text-gray-300"
         )}>
-          Fables & Lorics
+          Setup Modifiers
         </span>
         {!isExpanded && activeCount > 0 && (
           <span className={cn(
@@ -68,7 +73,7 @@ export default function FablesAndLorics({
       </button>
 
       {isExpanded && (
-        <div id="fables-and-lorics-body" className="px-3 pb-3">
+        <div id="game-setup-mods-body" className="px-3 pb-3">
           <div className={cn(
             "flex items-center justify-between gap-3 border-t pt-2.5",
             isLightModeActive ? "border-gray-200" : "border-gray-800"
@@ -111,6 +116,29 @@ export default function FablesAndLorics({
               })}
             </div>
           </div>
+          <label htmlFor="pope-enabled-toggle" className={cn(
+            "flex items-center justify-between gap-3 border-t mt-2.5 pt-2.5 cursor-pointer",
+            isLightModeActive ? "border-gray-200" : "border-gray-800"
+          )}>
+            <div>
+              <div className={cn(
+                "text-[11px] font-bold",
+                isLightModeActive ? "text-gray-800" : "text-gray-200"
+              )}>
+                Pope
+              </div>
+              <div className="text-[9px] text-gray-500 leading-tight">
+                Allow duplicate Townsfolk and Outsiders
+              </div>
+            </div>
+            <ToggleSwitch
+              id="pope-enabled-toggle"
+              checked={popeEnabled}
+              onChange={setPopeEnabled}
+              isLightModeActive={isLightModeActive}
+              icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
+            />
+          </label>
         </div>
       )}
     </div>

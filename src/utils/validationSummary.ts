@@ -28,7 +28,8 @@ export function getValidationSummary(
   players: Player[],
   allRoles: Role[] = ALL_ROLES as Role[],
   selectedCharacterIds?: Set<string>,
-  sentinelOutsiderDelta: number = 0
+  sentinelOutsiderDelta: number = 0,
+  popeEnabled: boolean = false
 ): ValidationSummary | null {
   if (players.length === 0) return null;
 
@@ -161,6 +162,10 @@ export function getValidationSummary(
     }
   }
 
+  if (popeEnabled) {
+    modifications.push('Pope (duplicate good characters allowed)');
+  }
+
   if (hasKazali) {
     expectedMinion = 0;
     modifications.push("Kazali (0 Minions)");
@@ -203,13 +208,22 @@ export function getValidationSummary(
   const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out));
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
-  const isOutsiderValid = validOutsiders.includes(counts.outsider);
+  const roleIdFreq: Record<string, number> = {};
+  for (const p of players) {
+    if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;
+    roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
+  }
+  const hasDuplicateOutsider = Object.entries(roleIdFreq).some(([roleId, count]) => count > 1 && findRole(roleId)?.team === 'outsider');
+  const popeAdjustedOutsiders = popeEnabled
+    && hasDuplicateOutsider
+    && validOutsiders.some(expected => expected > 0 && counts.outsider >= expected);
+  const isOutsiderValid = validOutsiders.includes(counts.outsider) || popeAdjustedOutsiders;
   const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
   const isDemonValid = counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
-  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : validOutsiders.join(' or ');
-  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : popeEnabled ? 'Pope-adjusted' : validOutsiders.join(' or ');
+  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : popeEnabled ? 'Pope-adjusted' : uniqueTownsfolk.join(' or ');
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
@@ -322,18 +336,14 @@ export function getValidationSummary(
     }
   }
 
-  const roleIdFreq: Record<string, number> = {};
-  for (const p of players) {
-    if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;
-    roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
-  }
   for (const [roleId, count] of Object.entries(roleIdFreq)) {
     if (count <= 1 || roleId === 'legion') continue;
     if (roleId === 'villageidiot' && count <= VILLAGE_IDIOT_MAX) {
       modifications.push(`${count} Village Idiots in play.`);
       continue;
     }
-    const role = allRoles.find(r => r.id === roleId);
+    const role = findRole(roleId);
+    if (popeEnabled && (role?.team === 'townsfolk' || role?.team === 'outsider')) continue;
     failures.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
   }
 

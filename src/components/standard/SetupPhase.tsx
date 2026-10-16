@@ -61,6 +61,8 @@ interface StandardSetupPhaseProps {
   validationSummary: ValidationSummary | null;
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
   isSecondary?: boolean;
 }
@@ -107,6 +109,8 @@ export default function StandardSetupPhase({
   validationSummary,
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive,
   isSecondary,
   remotePlayerCount = 0,
@@ -370,6 +374,8 @@ export default function StandardSetupPhase({
         <FablesAndLorics
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
         />
         <button

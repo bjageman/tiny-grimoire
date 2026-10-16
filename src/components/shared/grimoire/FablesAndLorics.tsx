@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import ToggleSwitch from '../ui/ToggleSwitch';
 
 interface FablesAndLoricsProps {
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive?: boolean;
 }
 
@@ -17,12 +20,14 @@ const SENTINEL_OPTIONS = [
 export default function FablesAndLorics({
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive = false,
 }: FablesAndLoricsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
-  const activeCount = sentinelOutsiderDelta !== 0 ? 1 : 0;
+  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
 
   return (
     <div
@@ -111,6 +116,29 @@ export default function FablesAndLorics({
               })}
             </div>
           </div>
+          <label htmlFor="pope-enabled-toggle" className={cn(
+            "flex items-center justify-between gap-3 border-t mt-2.5 pt-2.5 cursor-pointer",
+            isLightModeActive ? "border-gray-200" : "border-gray-800"
+          )}>
+            <div>
+              <div className={cn(
+                "text-[11px] font-bold",
+                isLightModeActive ? "text-gray-800" : "text-gray-200"
+              )}>
+                Pope
+              </div>
+              <div className="text-[9px] text-gray-500 leading-tight">
+                Allow duplicate Townsfolk and Outsiders
+              </div>
+            </div>
+            <ToggleSwitch
+              id="pope-enabled-toggle"
+              checked={popeEnabled}
+              onChange={setPopeEnabled}
+              isLightModeActive={isLightModeActive}
+              icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain" />}
+            />
+          </label>
         </div>
       )}
     </div>

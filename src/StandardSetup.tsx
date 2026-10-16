@@ -118,6 +118,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [bagOnly, setBagOnly] = useState(false);
   const [villageIdiotCount, setVillageIdiotCount] = usePersistedField<number>(STORAGE_KEY, 'villageIdiotCount', 1);
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = useState(0);
+  const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
 
@@ -182,6 +183,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    setPopeEnabled(false);
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -422,8 +424,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     reminderTokens,
     checkedItems,
     rotationOffset,
+    popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -443,10 +446,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
+      setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -482,12 +486,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
       villageIdiotCount,
+      popeEnabled,
       rotationOffset,
       alwaysShowNotes,
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -643,8 +648,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta);
-  }, [players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta]);
+    return getValidationSummary(players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta, popeEnabled);
+  }, [players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta, popeEnabled]);
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
@@ -850,6 +855,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           villageIdiotCount={villageIdiotCount}
           setVillageIdiotCount={setVillageIdiotCount}
           isLightModeActive={isLightModeActive}

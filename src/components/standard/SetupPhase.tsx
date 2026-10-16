@@ -369,7 +369,11 @@ export default function StandardSetupPhase({
       <div className="md:col-start-2 md:row-start-2 space-y-6 w-full">
         {/* Validation Summary */}
         {validationSummary && players.length >= 5 && (
-          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+          <GrimoireBalanceVerification
+            validationSummary={validationSummary}
+            isLightModeActive={isLightModeActive}
+            persistenceKey="standard-balance-verification-expanded"
+          />
         )}
         <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
@@ -377,6 +381,7 @@ export default function StandardSetupPhase({
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
+          persistenceKey="standard-setup-modifiers-expanded"
         />
         <button
           id="open-grimoire-button"

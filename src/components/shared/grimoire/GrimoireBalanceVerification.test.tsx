@@ -39,4 +39,20 @@ describe('GrimoireBalanceVerification', () => {
     expect(screen.queryByText('Tfolk')).not.toBeInTheDocument();
     expect(screen.getByText('Godfather (+1 Outsider)')).toBeInTheDocument();
   });
+
+  it('restores its expanded state after leaving and returning', () => {
+    const persistenceKey = 'test-balance-verification-expanded';
+    localStorage.removeItem(persistenceKey);
+    const { unmount } = render(
+      <GrimoireBalanceVerification validationSummary={validationSummary} persistenceKey={persistenceKey} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /grimoire balance verification/i }));
+    expect(screen.getByRole('button', { name: /grimoire balance verification/i })).toHaveAttribute('aria-expanded', 'true');
+    unmount();
+
+    render(<GrimoireBalanceVerification validationSummary={validationSummary} persistenceKey={persistenceKey} />);
+    expect(screen.getByRole('button', { name: /grimoire balance verification/i })).toHaveAttribute('aria-expanded', 'true');
+    localStorage.removeItem(persistenceKey);
+  });
 });

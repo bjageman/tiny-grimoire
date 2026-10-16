@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
 interface GameSetupModsProps {
@@ -9,6 +9,7 @@ interface GameSetupModsProps {
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive?: boolean;
+  persistenceKey?: string;
 }
 
 const SENTINEL_OPTIONS = [
@@ -23,8 +24,9 @@ export default function GameSetupMods({
   popeEnabled,
   setPopeEnabled,
   isLightModeActive = false,
+  persistenceKey,
 }: GameSetupModsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
   const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
@@ -41,7 +43,7 @@ export default function GameSetupMods({
     >
       <button
         type="button"
-        onClick={() => setIsExpanded(v => !v)}
+        onClick={toggleExpanded}
         aria-expanded={isExpanded}
         aria-controls="game-setup-mods-body"
         className="w-full flex items-center gap-1.5 p-3"

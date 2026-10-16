@@ -112,25 +112,45 @@ export default function WhaleBucketDraftPhase({
         </button>
       </div>
 
-      <div className={cn("grid grid-cols-1 gap-5 items-start", validationSummary && "md:grid-cols-2")}>
-        {validationSummary && (
-          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
-        )}
-        <GameSetupMods
-          sentinelOutsiderDelta={sentinelOutsiderDelta}
-          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
-          popeEnabled={popeEnabled}
-          setPopeEnabled={setPopeEnabled}
-          isLightModeActive={isLightModeActive}
-        />
+      <div
+        id="whalebucket-assignment-layout"
+        className="grid grid-cols-1 gap-5 items-start md:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]"
+      >
+        <div className="order-2 min-w-0 md:order-1">
+          <WhaleBucketDraftCircle
+            players={players}
+            isLightModeActive={isLightModeActive}
+            setActiveDraftPlayerId={setActiveDraftPlayerId}
+            remotePlayerIds={remotePlayerIds}
+          />
+        </div>
+        <aside id="whalebucket-assignment-sidebar" className="order-1 space-y-5 md:order-2">
+          {validationSummary && (
+            <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+          )}
+          <GameSetupMods
+            sentinelOutsiderDelta={sentinelOutsiderDelta}
+            setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+            popeEnabled={popeEnabled}
+            setPopeEnabled={setPopeEnabled}
+            isLightModeActive={isLightModeActive}
+          />
+          {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
+            <label className={cn(
+              "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors",
+              isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
+            )}>
+              <ToggleSwitch
+                id="override-failures-checkbox-whale"
+                checked={overrideFailures}
+                onChange={setOverrideFailures}
+                isLightModeActive={isLightModeActive}
+              />
+              <span>Override failures</span>
+            </label>
+          )}
+        </aside>
       </div>
-
-      <WhaleBucketDraftCircle
-        players={players}
-        isLightModeActive={isLightModeActive}
-        setActiveDraftPlayerId={setActiveDraftPlayerId}
-        remotePlayerIds={remotePlayerIds}
-      />
       <div className="flex gap-2">
         <button
           id="back-to-setup-button"
@@ -148,20 +168,6 @@ export default function WhaleBucketDraftPhase({
           Open Grimoire
         </button>
       </div>
-      {validationSummary && validationSummary.failures && validationSummary.failures.length > 0 && (
-        <label className={cn(
-          "flex items-center justify-center gap-2 text-xs font-semibold select-none cursor-pointer transition-colors mt-2",
-          isLightModeActive ? "text-gray-600 hover:text-gray-800" : "text-gray-400 hover:text-gray-200"
-        )}>
-          <ToggleSwitch
-            id="override-failures-checkbox-whale"
-            checked={overrideFailures}
-            onChange={setOverrideFailures}
-            isLightModeActive={isLightModeActive}
-          />
-          <span>Override failures</span>
-        </label>
-      )}
     </div>
 
     {showGrimoireWarning && (

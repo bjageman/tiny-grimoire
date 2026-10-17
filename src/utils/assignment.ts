@@ -418,7 +418,8 @@ function assignBaseCharacters(
       const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
-      const gfMods = hasGodfather ? [-1, 1] : [0];
+      const outsidersBeforeGodfather = Math.max(0, base.outsider + fixedDeltaOut);
+      const gfMods = hasGodfather ? [outsidersBeforeGodfather === 0 ? 1 : -1] : [0];
       const balMods = hasBalloonist ? [0, 1] : [0];
       const hermMods = hasHermit ? [-1, 0] : [0];
       

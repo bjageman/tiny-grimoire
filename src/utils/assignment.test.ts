@@ -463,10 +463,10 @@ describe('assignCharacters', () => {
   });
 
   it.each([
-    ['godfather', 'adds an Outsider', -1, 1],
-    ['godfather', 'subtracts an Outsider', 1, 1],
-    ['baron', 'adds two Outsiders', 0, 3],
-  ] as const)("applies a Lil' Monsta holder's %s modifier when it %s", (minionId, _description, sentinelDelta, expectedOutsiders) => {
+    ['godfather', 'adds an Outsider', 5, 1],
+    ['godfather', 'subtracts an Outsider', 6, 0],
+    ['baron', 'adds two Outsiders', 6, 3],
+  ] as const)("applies a Lil' Monsta holder's %s modifier when it %s", (minionId, _description, playerCount, expectedOutsiders) => {
     const roles: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
@@ -479,7 +479,7 @@ describe('assignCharacters', () => {
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
       { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon', setup: true },
     ];
-    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+    const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
       id: String(index + 1),
       name: `Player ${index + 1}`,
       isDead: false,
@@ -492,7 +492,7 @@ describe('assignCharacters', () => {
       },
     }));
 
-    const result = assignCharacters(players, roles, false, sentinelDelta);
+    const result = assignCharacters(players, roles);
 
     expect(result).not.toBeNull();
     const lilMonsta = result!.find(assignment => assignment.role.id === 'lilmonsta');

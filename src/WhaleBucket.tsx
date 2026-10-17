@@ -950,6 +950,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           handleMouseDown={handleMouseDown}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}

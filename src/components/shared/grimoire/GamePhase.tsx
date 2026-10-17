@@ -31,6 +31,7 @@ interface Props {
   isLightModeActive: boolean;
   draggedIndex: number | null;
   dragOverIndex: number | null;
+  hoverSide: 'before' | 'after' | null;
   setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
   addTravelerGamePhase: () => void;
@@ -38,12 +39,12 @@ interface Props {
   setNewTravelerRoleId: (v: string) => void;
   handleMouseDown: (e: React.MouseEvent) => void;
   handleDragStart: (e: React.DragEvent, index: number) => void;
-  handleDragOver: (e: React.DragEvent, index: number) => void;
+  handleDragOver: (e: React.DragEvent, index: number, side?: 'before' | 'after') => void;
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
   handleTouchStart: (e: React.TouchEvent, index: number) => void;
-  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchMove: (e: React.TouchEvent, getTouchSide?: (clientX: number, clientY: number, targetIndex: number) => 'before' | 'after') => void;
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
@@ -80,7 +81,7 @@ interface Props {
 
 export default function GamePhase({
   players, timeOfDay, dayNumber, newTravelerName, newTravelerRoleId,
-  isLightModeActive, draggedIndex, dragOverIndex,
+  isLightModeActive, draggedIndex, dragOverIndex, hoverSide,
   setSelectedPlayerId, toggleTimeOfDay, addTravelerGamePhase,
   setNewTravelerName, setNewTravelerRoleId,
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
@@ -394,7 +395,7 @@ export default function GamePhase({
           onToggleCollapsed={() => setIsLedgerCollapsed(prev => !prev)}
           onSelectPlayer={setSelectedPlayerId}
           dnd={{
-            draggedIndex, dragOverIndex,
+            draggedIndex, dragOverIndex, hoverSide,
             onMouseDown: handleMouseDown,
             onDragStart: handleDragStart,
             onDragOver: handleDragOver,

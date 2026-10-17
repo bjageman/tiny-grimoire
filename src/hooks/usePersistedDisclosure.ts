@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
-export function usePersistedDisclosure(storageKey?: string) {
-  const [isExpanded, setIsExpanded] = useState(() => (
-    storageKey ? localStorage.getItem(storageKey) === 'true' : false
-  ));
+export function usePersistedDisclosure(storageKey?: string, defaultExpanded = false) {
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const storedValue = storageKey ? localStorage.getItem(storageKey) : null;
+    return storedValue === null ? defaultExpanded : storedValue === 'true';
+  });
 
   const toggleExpanded = () => {
     setIsExpanded(current => {

@@ -641,6 +641,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setPhase('draft');
   };
 
+  const clearAssignedRoles = () => {
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      roleId: undefined,
+      roleIds: undefined,
+      assignedFromPref: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+    })));
+    setIsLilMonstaGame(false);
+  };
+
   const {
     updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRole,
     togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
@@ -927,6 +942,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
+          onClearRoles={clearAssignedRoles}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
           remotePlayerCount={remotePlayerIds.size}

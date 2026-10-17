@@ -22,3 +22,21 @@ export function getWhaleBucketPreferenceIds(
   }
   return teamPreferences;
 }
+
+export function chooseLilMonstaMinion(
+  preferences: PlayerPreferences | undefined,
+  assignedMinionIds: Set<string>,
+  roles: Role[],
+  excludedRoleIds: string[]
+): Role | undefined {
+  const excludedIds = new Set(excludedRoleIds);
+  const eligibleMinions = roles.filter(role => role.team === 'minion' && !excludedIds.has(role.id));
+  const preferredMinion = preferences?.minion
+    .map(id => eligibleMinions.find(role => role.id === id))
+    .find((role): role is Role => role !== undefined);
+  if (preferredMinion) return preferredMinion;
+
+  const unusedMinions = eligibleMinions.filter(role => !assignedMinionIds.has(role.id));
+  const candidates = unusedMinions.length > 0 ? unusedMinions : eligibleMinions;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}

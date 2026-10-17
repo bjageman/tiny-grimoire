@@ -4,7 +4,7 @@ import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } fr
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
-import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
+import { chooseLilMonstaMinion, getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -615,15 +615,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
         const assignedMinionIds = result.filter(r => r.role.team === 'minion').map(r => r.role.id);
-        const candidates = (ALL_ROLES as Role[]).filter(r => 
-          r.team === 'minion' && 
-          !excludedRoleIds.includes(r.id) && 
-          !assignedMinionIds.includes(r.id)
+        const chosenMinion = chooseLilMonstaMinion(
+          p.preferences,
+          new Set(assignedMinionIds),
+          ALL_ROLES as Role[],
+          excludedRoleIds,
         );
-        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r => r.team === 'minion' && !excludedRoleIds.includes(r.id));
-        const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'poisoner' }]);
-        const chosenMinion = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
-        roleId = chosenMinion.id;
+        if (chosenMinion) roleId = chosenMinion.id;
       }
 
       return {

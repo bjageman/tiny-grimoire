@@ -308,9 +308,13 @@ function assignBaseCharacters(
     const demonPlayer = shuffledPlayers[0];
     const { role: demonRole, fromPref: demonFromPref } = selectRoleForPlayer(demonPlayer, 'demon', usedRoleIds);
     usedRoleIds.add(demonRole.id);
+    const lilMonstaMinionPreference = demonRole.id === 'lilmonsta'
+      ? demonPlayer.preferences?.minion.find(id => allRoles.some(role => role.id === id && role.team === 'minion'))
+      : undefined;
+    if (lilMonstaMinionPreference) usedRoleIds.add(lilMonstaMinionPreference);
     assignment.push({ player: { ...demonPlayer, isEvil: undefined }, role: demonRole, fromPref: demonFromPref });
     
-    const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lilmonsta' || demonRole.id === 'lordoftyphon' ? 1 : 0));
+    const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lordoftyphon' ? 1 : 0));
     const minionPlayers: Player[] = [];
     if (demonRole.id === 'lordoftyphon') {
       const d_idx = players.findIndex(p => p.id === demonPlayer.id);

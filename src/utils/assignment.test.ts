@@ -429,6 +429,38 @@ describe('assignCharacters', () => {
     expect(result!.find(assignment => assignment.role.id === 'summoner')?.fromPref).toBe(true);
   });
 
+  it("reserves the Lil' Monsta player's Minion preference", () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'widow', name: 'Widow', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: ['poisoner'],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.some(assignment => assignment.role.id === 'lilmonsta')).toBe(true);
+    expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(false);
+  });
+
   describe('Village Idiot preferences', () => {
     const script: Role[] = [
       { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },

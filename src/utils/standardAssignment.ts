@@ -111,7 +111,15 @@ export function performStandardAssignment(
   const targetMinionsCount = hasKazali ? 0 : (base.minion + (hasLordOfTyphon ? 1 : 0));
 
   const minionBag = drewLilMonsta ? mins.filter(minion => minion.id !== 'summoner') : mins;
-  const selectedMinions = shuffle(minionBag).slice(0, targetMinionsCount);
+  const selectedMinions: Role[] = [];
+  for (const minion of shuffle(minionBag)) {
+    const conflictsWithSelected =
+      (minion.id === 'summoner' && selectedMinions.some(selected => selected.id === 'marionette')) ||
+      (minion.id === 'marionette' && selectedMinions.some(selected => selected.id === 'summoner'));
+    if (!conflictsWithSelected) selectedMinions.push(minion);
+    if (selectedMinions.length === targetMinionsCount) break;
+  }
+  if (selectedMinions.length < targetMinionsCount && minionBag.length >= targetMinionsCount) return null;
   const hasSummoner = selectedMinions.some(m => m.id === 'summoner');
 
   const targetDemonsCount = hasSummoner ? Math.max(0, base.demon - 1) : base.demon;

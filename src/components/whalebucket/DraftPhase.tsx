@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dices, AlertTriangle } from 'lucide-react';
+import { Dices, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import WhaleBucketDraftCircle from './DraftCircle';
@@ -19,6 +19,7 @@ interface WhaleBucketDraftPhaseProps {
   isLightModeActive: boolean;
   onStartGame: () => void;
   runAssignment: () => void;
+  onClearRoles: () => void;
   setActiveDraftPlayerId: (id: string | null) => void;
   remotePlayerIds?: Set<string>;
   remotePlayerCount?: number;
@@ -36,6 +37,7 @@ export default function WhaleBucketDraftPhase({
   isLightModeActive,
   onStartGame,
   runAssignment,
+  onClearRoles,
   setActiveDraftPlayerId,
   remotePlayerIds,
   remotePlayerCount = 0,
@@ -78,18 +80,32 @@ export default function WhaleBucketDraftPhase({
         )}>
           2. Character Assignment
         </h2>
-        <button
-          id="reassign-characters-button"
-          onClick={runAssignment}
-          className={cn(
-            "min-w-[7rem] shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:min-w-0 sm:shrink",
-            isLightModeActive
-              ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
-              : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
-          )}
-        >
-          <Dices size={14} /> Auto-Assign
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            id="reassign-characters-button"
+            onClick={runAssignment}
+            className={cn(
+              "min-w-[7rem] shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:min-w-0 sm:shrink",
+              isLightModeActive
+                ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
+                : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
+            )}
+          >
+            <Dices size={14} /> Auto-Assign
+          </button>
+          <button
+            id="clear-roles-button"
+            onClick={onClearRoles}
+            className={cn(
+              "shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border",
+              isLightModeActive
+                ? "bg-clocktower-blood/10 hover:bg-clocktower-blood/20 text-clocktower-blood border-clocktower-blood/20"
+                : "bg-clocktower-blood/20 hover:bg-clocktower-blood/35 text-red-300 border-clocktower-blood/30"
+            )}
+          >
+            <Trash2 size={14} /> Clear Roles
+          </button>
+        </div>
       </div>
 
       <div

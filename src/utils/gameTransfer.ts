@@ -47,6 +47,7 @@ export function buildStandardTransfer(source: TransferSource) {
     isLilMonstaGame: false,
     demonBluffs: [],
     gameLog: [],
+    gameNotes: '',
     reminderTokens: [],
     checkedItems: {},
     selectedCharacterIds: source.customScriptRoles?.map(role => role.id) ?? null,

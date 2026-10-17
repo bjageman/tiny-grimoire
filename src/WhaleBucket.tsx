@@ -92,6 +92,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   // Traveler states
   const [allowTravelers, setAllowTravelers] = usePersistedField<boolean>(STORAGE_KEY, 'allowTravelers', false);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
+  const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
 
   // Refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
@@ -385,8 +386,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     rotationOffset,
     sentinelOutsiderDelta,
     popeEnabled,
+    gameNotes,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, gameNotes
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -407,10 +409,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setRotationOffset(incoming.rotationOffset ?? 0);
       setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
+      setGameNotes(incoming.gameNotes ?? '');
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setGameNotes
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -433,6 +436,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       excludedRoleIds,
       excludedRoleDefaultsVersion: EXCLUDED_ROLE_DEFAULTS_VERSION,
       gameLog,
+      gameNotes,
       demonBluffs,
       reminderTokens,
       checkedItems,
@@ -443,7 +447,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       sentinelOutsiderDelta,
       popeEnabled,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -676,6 +680,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
@@ -719,6 +724,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     resetSetupModifiers();
@@ -974,6 +980,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             }
           }}
           gameLog={gameLog}
+          notes={gameNotes}
+          onNotesChange={setGameNotes}
           onDownloadLog={() => {
             const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
             const content = header + gameLog.join('\n');

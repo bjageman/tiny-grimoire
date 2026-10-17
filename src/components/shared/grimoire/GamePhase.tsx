@@ -19,6 +19,7 @@ import NotesCard from './NotesCard';
 import { buildDiscordPost } from '../../../utils/discordRecap';
 import { copyText } from '../../../utils/clipboard';
 import { useDialog } from '../../../hooks/useDialog';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 
 interface Props {
   players: Player[];
@@ -118,6 +119,7 @@ export default function GamePhase({
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [postCopied, setPostCopied] = useState(false);
   const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
+  const { isExpanded: areNotesExpanded, toggleExpanded: toggleNotesExpanded } = usePersistedDisclosure('game-notes-expanded', true);
   const [localReminderTokens, setLocalReminderTokens] = useState<PlacedReminder[]>([]);
   const reminderTokens = propReminderTokens !== undefined ? propReminderTokens : localReminderTokens;
   const setReminderTokens = onSetReminderTokens !== undefined ? onSetReminderTokens : setLocalReminderTokens;
@@ -254,12 +256,26 @@ export default function GamePhase({
           />
         )}
         {onNotesChange && (
+          <div className="md:hidden">
+            <NotesCard
+              id="game-notes-mobile"
+              notes={notes ?? ''}
+              onNotesChange={onNotesChange}
+              isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
+            />
+          </div>
+        )}
+        {onNotesChange && (
           <div className="hidden md:block">
             <NotesCard
               id="game-notes-desktop"
               notes={notes ?? ''}
               onNotesChange={onNotesChange}
               isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
             />
           </div>
         )}
@@ -383,17 +399,6 @@ export default function GamePhase({
             onTouchEnd: handleTouchEnd,
           }}
         />
-
-        {onNotesChange && (
-          <div className="md:hidden">
-            <NotesCard
-              id="game-notes-mobile"
-              notes={notes ?? ''}
-              onNotesChange={onNotesChange}
-              isLightModeActive={isLightModeActive}
-            />
-          </div>
-        )}
 
         {/* Game Log */}
         {!isSynced && onDownloadLog && (

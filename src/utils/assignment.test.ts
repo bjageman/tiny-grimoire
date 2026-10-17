@@ -462,6 +462,45 @@ describe('assignCharacters', () => {
     expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(false);
   });
 
+  it.each([
+    ['godfather', 'adds an Outsider', -1, 1],
+    ['godfather', 'subtracts an Outsider', 1, 1],
+    ['baron', 'adds two Outsiders', 0, 3],
+  ] as const)("applies a Lil' Monsta holder's %s modifier when it %s", (minionId, _description, sentinelDelta, expectedOutsiders) => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: minionId, name: minionId, team: 'minion', setup: true },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon', setup: true },
+    ];
+    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: [minionId],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles, false, sentinelDelta);
+
+    expect(result).not.toBeNull();
+    const lilMonsta = result!.find(assignment => assignment.role.id === 'lilmonsta');
+    expect(lilMonsta?.displayRole?.id).toBe(minionId);
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(expectedOutsiders);
+    expect(result!.filter(assignment => assignment.role.id === minionId)).toHaveLength(0);
+  });
+
   describe('Village Idiot preferences', () => {
     const script: Role[] = [
       { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },

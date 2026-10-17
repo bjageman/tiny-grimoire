@@ -138,10 +138,10 @@ export default function PageLayout({
       </div>
 
       <footer id="page-footer" className={cn(
-        "flex justify-between items-center py-4 px-4 md:px-8 lg:px-12 border-t",
+        "flex justify-between items-start sm:items-center py-4 px-4 md:px-8 lg:px-12 border-t",
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
           <a
             id="footer-ccc-badge"
             href="https://bloodontheclocktower.com/pages/community-created-content-policy"
@@ -156,7 +156,7 @@ export default function PageLayout({
               className="h-7 w-auto"
             />
           </a>
-          <p className={cn("text-xs min-w-0", isLight ? "text-gray-400" : "text-gray-600")}>
+          <p className={cn("min-w-0 text-left text-xs", isLight ? "text-gray-400" : "text-gray-600")}>
             Unofficial fan-made tool. Not affiliated with or endorsed by The Pandemonium Institute.
           </p>
         </div>

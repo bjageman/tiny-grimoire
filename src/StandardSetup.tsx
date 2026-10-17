@@ -434,9 +434,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     checkedItems,
     rotationOffset,
     popeEnabled,
-    gameNotes,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, gameNotes
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -457,11 +456,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
-      setGameNotes(incoming.gameNotes ?? '');
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setGameNotes
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({

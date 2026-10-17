@@ -20,6 +20,7 @@ import { buildDiscordPost } from '../../../utils/discordRecap';
 import { copyText } from '../../../utils/clipboard';
 import { useDialog } from '../../../hooks/useDialog';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
+import { getValidationSummary } from '../../../utils/validationSummary';
 
 interface Props {
   players: Player[];
@@ -157,6 +158,11 @@ export default function GamePhase({
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (ALL_ROLES as Role[]);
+  const currentDistribution = useMemo(() => {
+    if (!isStoryteller) return undefined;
+    const roles = customScriptRoles || selectionRoles || PLAYABLE_ROLES;
+    return getValidationSummary(players, roles)?.counts;
+  }, [customScriptRoles, isStoryteller, players, selectionRoles]);
 
   const isMobile = useIsMobile();
 
@@ -300,6 +306,7 @@ export default function GamePhase({
             <BaseDistributionCard
               playerCount={players.length}
               dist={dist}
+              currentDist={currentDistribution}
               isLightModeActive={isLightModeActive}
             />
           );

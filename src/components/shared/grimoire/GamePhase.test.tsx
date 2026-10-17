@@ -129,6 +129,27 @@ describe('GamePhase - Script Modal Integration', () => {
     expect(localStorage.getItem('game-notes-expanded')).toBe('false');
   });
 
+  it('offers current character-type counts only on the Storyteller grimoire', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Bob', roleId: 'chef', isDead: false },
+      { id: '3', name: 'Charlie', roleId: 'empath', isTheDrunk: true, isDead: false },
+      { id: '4', name: 'Dana', roleId: 'poisoner', isDead: false },
+      { id: '5', name: 'Evan', roleId: 'imp', isDead: false },
+    ];
+    const { unmount } = render(<GamePhase {...defaultProps} players={players} isStoryteller />);
+    const card = within(document.getElementById('standard-base-distribution')!);
+
+    fireEvent.click(card.getByLabelText('Current'));
+    expect(card.getByText('Current Distribution')).toBeInTheDocument();
+    expect(card.getByText('Townsfolk').parentElement).toHaveTextContent('2');
+    expect(card.getByText('Outsiders').parentElement).toHaveTextContent('1');
+    unmount();
+
+    render(<GamePhase {...defaultProps} players={players} />);
+    expect(screen.queryByLabelText('Current')).toBeNull();
+  });
+
   it('opens modal on script button click and displays active characters sorted by team', () => {
     render(<GamePhase {...defaultProps} />);
 

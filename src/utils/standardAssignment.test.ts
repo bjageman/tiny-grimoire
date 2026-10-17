@@ -561,6 +561,20 @@ describe('performStandardAssignment', () => {
       expect(lilMonstaPlayer?.roleId).not.toBe('marionette');
     });
 
+    it("does not give Lil' Monsta a Summoner display role", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const summoner: Role = { id: 'summoner', name: 'Summoner', team: 'minion', setup: true };
+      const script = [...baseTownsfolk, poisoner, summoner, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      const lilMonstaPlayer = result?.find(player => player.isTheLilMonsta);
+      expect(lilMonstaPlayer).toBeDefined();
+      expect(lilMonstaPlayer?.roleId).not.toBe('summoner');
+    });
+
     it("does not give a Lunatic the Lil' Monsta display role", () => {
       const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
       const script = [...baseTownsfolk, lunaticRole, poisoner, imp, lilMonstaRole];

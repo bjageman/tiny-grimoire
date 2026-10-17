@@ -8,6 +8,7 @@ describe('isEligibleAutoAssignedDisplayRole', () => {
     ['marionette', 'lunatic'],
     ['lunatic', 'lilmonsta'],
     ['lilmonsta', 'marionette'],
+    ['lilmonsta', 'summoner'],
   ] as const)('rejects %s displaying as %s during auto-assignment', (tag, roleId) => {
     expect(isEligibleAutoAssignedDisplayRole(tag, roleId)).toBe(false);
   });

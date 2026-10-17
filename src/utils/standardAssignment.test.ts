@@ -575,6 +575,29 @@ describe('performStandardAssignment', () => {
       expect(result!.some(player => player.roleId === 'summoner')).toBe(false);
     });
 
+    it('never draws Summoner and Marionette together', () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const summoner: Role = { id: 'summoner', name: 'Summoner', team: 'minion' };
+      const players: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const summonerFirst = performStandardAssignment(
+        players,
+        [...baseTownsfolk, summoner, marionetteRole, poisoner, imp],
+        [],
+      );
+      const marionetteFirst = performStandardAssignment(
+        players,
+        [...baseTownsfolk, marionetteRole, summoner, poisoner, imp],
+        [],
+      );
+      random.mockRestore();
+
+      expect(summonerFirst?.some(player => player.roleId === 'summoner')).toBe(true);
+      expect(summonerFirst?.some(player => player.isTheMarionette)).toBe(false);
+      expect(marionetteFirst?.some(player => player.isTheMarionette)).toBe(true);
+      expect(marionetteFirst?.some(player => player.roleId === 'summoner')).toBe(false);
+    });
+
     it("does not give a Lunatic the Lil' Monsta display role", () => {
       const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
       const script = [...baseTownsfolk, lunaticRole, poisoner, imp, lilMonstaRole];

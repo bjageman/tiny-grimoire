@@ -15,5 +15,9 @@ describe('HostPage', () => {
       'href',
       'https://sites.google.com/view/cute-mage-botc/scripts/whalebucket-draft',
     );
+    const changelogLink = screen.getByRole('link', { name: 'Changelog' });
+    const whaleLink = screen.getByRole('link', { name: "Cute Mage's Whale Bucket Draft" });
+    expect(changelogLink).toHaveAttribute('href', '#/changelog');
+    expect(changelogLink.nextElementSibling).toBe(whaleLink);
   });
 });

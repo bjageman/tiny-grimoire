@@ -5,8 +5,9 @@ import WhaleBucket from './WhaleBucket';
 import StandardSetup from './StandardSetup';
 import PlayerTracker from './PlayerTracker';
 import JoinPage from './JoinPage';
+import ChangelogPage from './ChangelogPage';
 
-type Route = 'home' | 'host' | 'whale-bucket' | 'standard' | 'tracker' | 'join';
+type Route = 'home' | 'host' | 'whale-bucket' | 'standard' | 'tracker' | 'join' | 'changelog';
 
 function getRouteFromHash(): Route {
   const hash = window.location.hash;
@@ -16,6 +17,7 @@ function getRouteFromHash(): Route {
   if (hash === '#/whale-bucket' || hash.startsWith('#/whale-bucket?')) return 'whale-bucket';
   if (hash === '#/standard' || hash.startsWith('#/standard?')) return 'standard';
   if (hash === '#/tracker' || hash.startsWith('#/tracker?')) return 'tracker';
+  if (hash === '#/changelog') return 'changelog';
   return 'home';
 }
 
@@ -40,6 +42,10 @@ export default function Router() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [route]);
+
   switch (route) {
     case 'host':
       return <HostPage theme={theme} toggleTheme={toggleTheme} />;
@@ -51,6 +57,8 @@ export default function Router() {
       return <PlayerTracker theme={theme} toggleTheme={toggleTheme} />;
     case 'join':
       return <JoinPage theme={theme} toggleTheme={toggleTheme} />;
+    case 'changelog':
+      return <ChangelogPage theme={theme} toggleTheme={toggleTheme} />;
     default:
       return <HomePage theme={theme} toggleTheme={toggleTheme} />;
   }

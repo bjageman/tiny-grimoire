@@ -202,6 +202,7 @@ export default function WhaleBucketSetupPhase({
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
+          persistenceKey="whale-bucket-setup-modifiers-expanded"
         />
         {/* Exclude Characters Widget */}
         <div className={cn(

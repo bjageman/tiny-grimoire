@@ -904,6 +904,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           selectionRoles={selectionRoles}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           setSelectedPlayerId={setSelectedPlayerId}
           toggleTimeOfDay={toggleTimeOfDay}
           addTravelerGamePhase={addTravelerGamePhase}

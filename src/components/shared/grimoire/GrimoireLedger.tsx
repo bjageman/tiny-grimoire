@@ -9,14 +9,15 @@ import type { Player, Role } from '../../../types';
 interface LedgerDnd {
   draggedIndex: number | null;
   dragOverIndex: number | null;
+  hoverSide: 'before' | 'after' | null;
   onMouseDown: (e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent, index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number, side: 'before' | 'after') => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, index: number) => void;
   onDragEnd: () => void;
   onTouchStart: (e: React.TouchEvent, index: number) => void;
-  onTouchMove: (e: React.TouchEvent) => void;
+  onTouchMove: (e: React.TouchEvent, getTouchSide?: (clientX: number, clientY: number, targetIndex: number) => 'before' | 'after') => void;
   onTouchEnd: () => void;
 }
 
@@ -65,6 +66,7 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
       )}>
         {players.map((p, index) => {
           const rObj = roles.find(r => r.id === p.roleId);
+          const isDropTarget = dnd.draggedIndex !== null && dnd.dragOverIndex === index && dnd.draggedIndex !== index;
           return (
             <div
               id={`ledger-player-${p.id}`}
@@ -73,16 +75,20 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
               draggable={!isSynced}
               onMouseDown={isSynced ? undefined : dnd.onMouseDown}
               onDragStart={isSynced ? undefined : (e) => dnd.onDragStart(e, index)}
-              onDragOver={isSynced ? undefined : (e) => dnd.onDragOver(e, index)}
+              onDragOver={isSynced ? undefined : (e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const side = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+                dnd.onDragOver(e, index, side);
+              }}
               onDragLeave={isSynced ? undefined : dnd.onDragLeave}
               onDrop={isSynced ? undefined : (e) => dnd.onDrop(e, index)}
               onDragEnd={isSynced ? undefined : dnd.onDragEnd}
               onClick={() => onSelectPlayer(p.id)}
               className={cn(
-                'flex items-center gap-1.5 py-2.5 px-1.5 rounded border transition-all duration-200 min-w-0 hover:ring-1 hover:ring-gray-500/50 select-none cursor-pointer touch-auto',
+                'relative flex items-center gap-1.5 py-2.5 px-1.5 rounded border transition-all duration-200 min-w-0 hover:ring-1 hover:ring-gray-500/50 select-none cursor-pointer touch-auto',
                 p.isDead && 'opacity-45',
                 dnd.draggedIndex === index && 'opacity-20 border-2 border-dashed border-clocktower-blood bg-black/40 scale-[0.96]',
-                dnd.dragOverIndex === index && dnd.draggedIndex !== index && 'border-t-4 border-t-clocktower-blood bg-clocktower-blood/10 shadow-[0_4px_12px_rgba(139,0,0,0.15)] translate-y-0.5',
+                isDropTarget && 'bg-clocktower-blood/10',
                 isLightModeActive
                   ? 'bg-white/40 border-gray-200 hover:bg-white/70'
                   : 'bg-gray-955/20 border-gray-900/40 hover:bg-gray-900/60'
@@ -92,12 +98,28 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
                 <div
                   onClick={(e) => e.stopPropagation()}
                   onTouchStart={(e) => dnd.onTouchStart(e, index)}
-                  onTouchMove={dnd.onTouchMove}
+                  onTouchMove={(e) => dnd.onTouchMove(e, (_clientX, clientY, targetIndex) => {
+                    const targetPlayer = players[targetIndex];
+                    const target = targetPlayer ? document.getElementById(`ledger-player-${targetPlayer.id}`) : null;
+                    if (!target) return 'before';
+                    const rect = target.getBoundingClientRect();
+                    return clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+                  })}
                   onTouchEnd={dnd.onTouchEnd}
                   className="text-gray-555 p-0.5 shrink-0 flex items-center transition-opacity duration-200 drag-handle opacity-60 hover:opacity-100 cursor-move touch-none"
                 >
                   <GripVertical size={10} />
                 </div>
+              )}
+              {isDropTarget && dnd.hoverSide && (
+                <div
+                  aria-hidden="true"
+                  data-drop-position={dnd.hoverSide}
+                  className={cn(
+                    'pointer-events-none absolute -left-0.5 -right-0.5 z-20 h-1 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)]',
+                    dnd.hoverSide === 'before' ? '-top-1' : '-bottom-1'
+                  )}
+                />
               )}
               <span className={cn('text-[9px] font-mono w-4 shrink-0', isLightModeActive ? 'text-gray-505' : 'text-gray-600')}>{index + 1}</span>
               <span className={cn(

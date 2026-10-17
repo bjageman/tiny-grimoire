@@ -117,16 +117,22 @@ export function performStandardAssignment(
     selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
   }
 
-  const hasXaan = selectedMinions.some(m => m.id === 'xaan');
+  let lilMonstaFakeRole: Role | null = null;
+  if (hasLilMonsta) {
+    const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
+    lilMonstaFakeRole = getMasqueradeFakeRole(mins, fallbackMins, masterMins, excludeIds);
+  }
+  const activeMinions = lilMonstaFakeRole ? [...selectedMinions, lilMonstaFakeRole] : selectedMinions;
+  const hasXaan = activeMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
 
   // Sentinel (Fabled): a fixed Storyteller-chosen ±1 Outsider shift; ignored under Kazali/Xaan.
-  const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
+  const baseOutsiderModifier = (activeMinions.some(m => m.id === 'baron') ? 2 : 0) +
                                (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
                                (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +
                                (bypassAdjustments ? 0 : sentinelOutsiderDelta);
 
-  const gfRange = (!bypassAdjustments && selectedMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
+  const gfRange = (!bypassAdjustments && activeMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
   const balRange = (!bypassAdjustments && tfs.some(t => t.id === 'balloonist')) ? [0, 1] : [0];
   const hermRange = (!bypassAdjustments && outs.some(o => o.id === 'hermit')) ? [-1, 0] : [0];
 
@@ -271,20 +277,6 @@ export function performStandardAssignment(
       masterTfs,
       excludeIds,
       r => r.id !== marionetteFakeRole?.id
-    );
-  }
-
-  // Lil' Monsta displays as a Minion; draw its fake identity from script minions first, then master list.
-  const hasLilMonstaInPlay = finalRolesList.some(r => r.id === 'lilmonsta');
-  let lilMonstaFakeRole: Role | null = null;
-  if (hasLilMonstaInPlay) {
-    const excludeIds = new Set([...roleIdsInPlay]);
-
-    lilMonstaFakeRole = getMasqueradeFakeRole(
-      mins,
-      fallbackMins,
-      masterMins,
-      excludeIds
     );
   }
 

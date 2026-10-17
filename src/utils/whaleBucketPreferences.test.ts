@@ -38,4 +38,22 @@ describe('chooseLilMonstaMinion', () => {
 
     expect(chosenRole?.id).toBe('spy');
   });
+
+  it("does not assign Marionette to the Lil' Monsta tag", () => {
+    const preferences: PlayerPreferences = {
+      townsfolk: [],
+      outsider: [],
+      minion: ['marionette'],
+      demon: ['lilmonsta'],
+      traveler: [],
+    };
+    const roles: Role[] = [
+      { id: 'marionette', name: 'Marionette', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+    ];
+
+    const chosenRole = chooseLilMonstaMinion(preferences, new Set(), roles, []);
+
+    expect(chosenRole?.id).toBe('poisoner');
+  });
 });

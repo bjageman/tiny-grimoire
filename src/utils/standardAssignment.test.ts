@@ -537,6 +537,7 @@ describe('performStandardAssignment', () => {
         godfather,
         lilMonstaRole,
       ];
+
       const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
 
       const result = performStandardAssignment(players, script, []);
@@ -545,6 +546,32 @@ describe('performStandardAssignment', () => {
       expect(result).not.toBeNull();
       expect(result!.find(player => player.isTheLilMonsta)?.roleId).toBe('godfather');
       expect(result!.filter(player => script.find(role => role.id === player.roleId)?.team === 'outsider')).toHaveLength(1);
+    });
+
+    it("does not give Lil' Monsta a Marionette display role", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const script = [...baseTownsfolk, poisoner, marionetteRole, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      const lilMonstaPlayer = result?.find(player => player.isTheLilMonsta);
+      expect(lilMonstaPlayer).toBeDefined();
+      expect(lilMonstaPlayer?.roleId).not.toBe('marionette');
+    });
+
+    it("does not give a Lunatic the Lil' Monsta display role", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const script = [...baseTownsfolk, lunaticRole, poisoner, imp, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      const lunaticPlayer = result?.find(player => player.isTheLunatic);
+      expect(lunaticPlayer).toBeDefined();
+      expect(lunaticPlayer?.roleId).not.toBe('lilmonsta');
     });
 
     const scripts: Record<string, Role[]> = {

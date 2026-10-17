@@ -1,6 +1,7 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
+import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './masqueradeRoleEligibility';
 import {
   shuffle,
   fillToCount,
@@ -49,6 +50,7 @@ export function performStandardAssignment(
   const masterOuts = (ALL_ROLES as Role[]).filter(r => r.team === 'outsider');
   const masterMins = (ALL_ROLES as Role[]).filter(r => r.team === 'minion');
   const masterDems = (ALL_ROLES as Role[]).filter(r => r.team === 'demon');
+  const eligibleForTag = (tag: AutoAssignmentTag, roles: Role[]) => roles.filter(role => isEligibleAutoAssignedDisplayRole(tag, role.id));
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');
@@ -120,7 +122,12 @@ export function performStandardAssignment(
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonsta) {
     const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
-    lilMonstaFakeRole = getMasqueradeFakeRole(mins, fallbackMins, masterMins, excludeIds);
+    lilMonstaFakeRole = getMasqueradeFakeRole(
+      eligibleForTag('lilmonsta', mins),
+      eligibleForTag('lilmonsta', fallbackMins),
+      eligibleForTag('lilmonsta', masterMins),
+      excludeIds
+    );
   }
   const activeMinions = lilMonstaFakeRole ? [...selectedMinions, lilMonstaFakeRole] : selectedMinions;
   const hasXaan = activeMinions.some(m => m.id === 'xaan');
@@ -256,11 +263,11 @@ export function performStandardAssignment(
     const masterPool = marionetteFakeTeam === 'outsider' ? masterOuts : masterTfs;
 
     marionetteFakeRole = getMasqueradeFakeRole(
-      scriptPool,
-      fallbackPool,
-      masterPool,
+      eligibleForTag('marionette', scriptPool),
+      eligibleForTag('marionette', fallbackPool),
+      eligibleForTag('marionette', masterPool),
       excludeIds,
-      r => r.id !== 'drunk' && r.id !== 'lunatic'
+      r => isEligibleAutoAssignedDisplayRole('marionette', r.id)
     );
   }
 
@@ -272,11 +279,11 @@ export function performStandardAssignment(
     if (marionetteFakeRole) excludeIds.add(marionetteFakeRole.id);
 
     drunkFakeRole = getMasqueradeFakeRole(
-      tfs,
-      fallbackTfs,
-      masterTfs,
+      eligibleForTag('drunk', tfs),
+      eligibleForTag('drunk', fallbackTfs),
+      eligibleForTag('drunk', masterTfs),
       excludeIds,
-      r => r.id !== marionetteFakeRole?.id
+      r => isEligibleAutoAssignedDisplayRole('drunk', r.id) && r.id !== marionetteFakeRole?.id
     );
   }
 
@@ -287,9 +294,9 @@ export function performStandardAssignment(
     const excludeIds = new Set([...roleIdsInPlay]);
 
     lunaticFakeRole = getMasqueradeFakeRole(
-      dems,
-      fallbackDems,
-      masterDems,
+      eligibleForTag('lunatic', dems),
+      eligibleForTag('lunatic', fallbackDems),
+      eligibleForTag('lunatic', masterDems),
       excludeIds
     );
   }
@@ -327,27 +334,27 @@ export function performStandardAssignment(
     if (roleId === 'drunk') {
       isTheDrunk = true;
       const fakeTF = drunkFakeRole
-        ?? tfs.filter(t => !roleIdsInPlay.has(t.id))[0]
-        ?? tfs[Math.floor(Math.random() * tfs.length)];
+        ?? eligibleForTag('drunk', tfs).filter(t => !roleIdsInPlay.has(t.id))[0]
+        ?? eligibleForTag('drunk', tfs)[Math.floor(Math.random() * eligibleForTag('drunk', tfs).length)];
       roleId = fakeTF?.id ?? roleId;
     } else if (roleId === 'marionette') {
       isTheMarionette = true;
       const matchedGood = marionetteFakeRole
-        ?? [...tfs, ...outs].filter(g => !roleIdsInPlay.has(g.id))[0]
-        ?? tfs[0];
+        ?? eligibleForTag('marionette', [...tfs, ...outs]).filter(g => !roleIdsInPlay.has(g.id))[0]
+        ?? eligibleForTag('marionette', tfs)[0];
       roleId = matchedGood.id;
     } else if (roleId === 'lunatic') {
       isTheLunatic = true;
       const matchedDemon = lunaticFakeRole
-        ?? dems.filter(d => !roleIdsInPlay.has(d.id))[0]
-        ?? dems[Math.floor(Math.random() * dems.length)]
-        ?? dems[0];
+        ?? eligibleForTag('lunatic', dems).filter(d => !roleIdsInPlay.has(d.id))[0]
+        ?? eligibleForTag('lunatic', dems)[Math.floor(Math.random() * eligibleForTag('lunatic', dems).length)]
+        ?? eligibleForTag('lunatic', dems)[0];
       roleId = matchedDemon.id;
     } else if (roleId === 'lilmonsta') {
       isTheLilMonsta = true;
       const matchedMinion = lilMonstaFakeRole
-        ?? mins.filter(m => !roleIdsInPlay.has(m.id))[0]
-        ?? mins[0];
+        ?? eligibleForTag('lilmonsta', mins).filter(m => !roleIdsInPlay.has(m.id))[0]
+        ?? eligibleForTag('lilmonsta', mins)[0];
       roleId = matchedMinion.id;
     }
 

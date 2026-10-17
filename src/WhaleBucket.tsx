@@ -5,7 +5,7 @@ import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
 import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
-import { isEligibleAutoAssignedDisplayRole } from './utils/masqueradeRoleEligibility';
+import { isEligibleHiddenRole } from './utils/hiddenRoleEligibility';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -608,13 +608,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         const assignedDemonIds = result.filter(r => r.role.team === 'demon').map(r => r.role.id);
         const candidates = (ALL_ROLES as Role[]).filter(r => 
           r.team === 'demon' && 
-          isEligibleAutoAssignedDisplayRole('lunatic', r.id) &&
+          isEligibleHiddenRole('lunatic', r.id) &&
           !excludedRoleIds.includes(r.id) && 
           !assignedDemonIds.includes(r.id)
         );
         const fallbackCandidates = (ALL_ROLES as Role[]).filter(r =>
           r.team === 'demon' &&
-          isEligibleAutoAssignedDisplayRole('lunatic', r.id) &&
+          isEligibleHiddenRole('lunatic', r.id) &&
           !excludedRoleIds.includes(r.id)
         );
         const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'imp' }]);

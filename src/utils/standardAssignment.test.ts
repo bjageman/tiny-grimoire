@@ -515,7 +515,7 @@ describe('performStandardAssignment', () => {
     });
   });
 
-  describe('masquerade roles (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
+  describe('hidden-role characters (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
     const tfNames = ['washerwoman', 'librarian', 'investigator', 'chef', 'empath', 'fortuneteller', 'undertaker', 'monk', 'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor'];
     const baseTownsfolk = tfNames.map(id => ({ id, name: id, team: 'townsfolk' as const }));
     const recluse: Role = { id: 'recluse', name: 'Recluse', team: 'outsider' };

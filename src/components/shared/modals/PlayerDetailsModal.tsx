@@ -33,6 +33,7 @@ interface Player {
   hasDeadVote?: boolean;
   notes?: string;
   pronouns?: string;
+  preferences?: Partial<Record<Role['team'], string[]>>;
 }
 
 interface PlayerDetailsModalProps {
@@ -152,12 +153,18 @@ export default function PlayerDetailsModal({
   }, [filteredModalRoles, allowMultipleRoles, showAllTravelers, modalRoleSearch]);
 
   const displayRolesList = useMemo(() => {
+    const preferredIds = Object.values(p.preferences ?? {}).flat();
     return [...rolesForList].sort((a, b) => {
       // 1. Currently assigned role(s) float to the top
       const isCurrentA = allowMultipleRoles ? (p.roleIds ?? []).includes(a.id) : a.id === p.roleId;
       const isCurrentB = allowMultipleRoles ? (p.roleIds ?? []).includes(b.id) : b.id === p.roleId;
       if (isCurrentA && !isCurrentB) return -1;
       if (!isCurrentA && isCurrentB) return 1;
+
+      const isPreferredA = preferredIds.includes(a.id);
+      const isPreferredB = preferredIds.includes(b.id);
+      if (isPreferredA && !isPreferredB) return -1;
+      if (!isPreferredA && isPreferredB) return 1;
 
       // 2. Keep teams separated
       const orderA = TEAM_ORDER[a.team] ?? 99;
@@ -177,7 +184,7 @@ export default function PlayerDetailsModal({
         return a.name.localeCompare(b.name);
       }
     });
-  }, [rolesForList, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds]);
+  }, [rolesForList, sortAlphabetically, allowMultipleRoles, allRoles, p.roleId, p.roleIds, p.preferences]);
 
   const modalNameInputRef = useRef<HTMLInputElement | null>(null);
   const { dialogProps, showAlert } = useDialog();
@@ -537,6 +544,7 @@ export default function PlayerDetailsModal({
                 isLightModeActive={isLightModeActive}
                 allowMultipleRoles={allowMultipleRoles}
                 roleIds={p.roleIds || []}
+                preferredRoleIds={Object.values(p.preferences ?? {}).flat()}
                 onSelect={(roleId) => {
                   if (allowMultipleRoles && onUpdateRoles) {
                     const currentRoles = p.roleIds || [];
@@ -749,6 +757,7 @@ interface RoleListProps {
   onSelect: (roleId: string) => void;
   allowMultipleRoles?: boolean;
   roleIds?: string[];
+  preferredRoleIds?: string[];
 }
 
 function RoleList({
@@ -759,6 +768,7 @@ function RoleList({
   onSelect,
   allowMultipleRoles = false,
   roleIds = [],
+  preferredRoleIds = [],
 }: RoleListProps) {
   const teamColor = (team: Role['team']) => ({
     townsfolk: 'text-clocktower-townsfolk',
@@ -816,6 +826,11 @@ function RoleList({
               )}>
                 {role.name} {isCurrent && '✓'}
               </span>
+              {preferredRoleIds.includes(role.id) && (
+                <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
+                  ★ Pick
+                </span>
+              )}
               {takenBy && (
                 <span className={cn(
                   'text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border',

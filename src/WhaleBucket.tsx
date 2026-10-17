@@ -374,7 +374,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Storyteller Sync channel (laptop <-> phone)
   const syncState = useMemo(() => ({
-    players: phase === 'game' ? players.map(({ preferences, ...rest }) => rest) : players,
+    players,
     phase,
     timeOfDay,
     dayNumber,

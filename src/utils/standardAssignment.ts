@@ -207,6 +207,7 @@ export function performStandardAssignment(
 
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
+  const hermitInInitialDraw = selectedOutsiders.some(o => o.id === 'hermit');
 
   // 1. Balloonist's +0/+1 Outsider only applies if it was actually dealt (balRange is gated on the pool), so re-check the draw.
   const balloonistInPlay = selectedTownsfolk.some(t => t.id === 'balloonist');
@@ -225,8 +226,7 @@ export function performStandardAssignment(
   }
 
   // 2. Hermit: same pool-vs-draw problem as Balloonist; only fires when another Outsider can absorb the -1 (removing the Hermit would invalidate it).
-  const hermitInPlay = selectedOutsiders.some(o => o.id === 'hermit');
-  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInPlay) {
+  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInInitialDraw) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
     if (otherOutsiders.length > 0) {
       const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];

@@ -101,6 +101,28 @@ describe('GamePhase - Script Modal Integration', () => {
     expect(scriptButton).toBeInTheDocument();
   });
 
+  it('places the Notes widget below Night Order on desktop and above Game Log on mobile', () => {
+    render(
+      <GamePhase
+        {...defaultProps}
+        notes="Storyteller note"
+        onNotesChange={vi.fn()}
+        gameLog={[]}
+        onDownloadLog={vi.fn()}
+      />
+    );
+
+    const nightOrder = document.getElementById('night-order-widget')!;
+    const desktopNotes = document.getElementById('game-notes-desktop')!;
+    const mobileNotes = document.getElementById('game-notes-mobile')!;
+    const gameLog = document.getElementById('game-log-card')!;
+
+    expect(desktopNotes.parentElement).toHaveClass('hidden', 'md:block');
+    expect(nightOrder.compareDocumentPosition(desktopNotes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mobileNotes.parentElement).toHaveClass('md:hidden');
+    expect(mobileNotes.parentElement?.nextElementSibling).toBe(gameLog);
+  });
+
   it('opens modal on script button click and displays active characters sorted by team', () => {
     render(<GamePhase {...defaultProps} />);
 

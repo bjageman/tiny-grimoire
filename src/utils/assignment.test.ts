@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { assignCharacters } from './assignment';
 import type { Player, Role } from '../types';
 
@@ -460,6 +460,43 @@ describe('assignCharacters', () => {
     expect(result!.some(assignment => assignment.role.id === 'lilmonsta')).toBe(true);
     expect(result!.filter(assignment => assignment.role.team === 'minion')).toHaveLength(1);
     expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(false);
+  });
+
+  it("removes Summoner from the bag when Lil' Monsta is drawn", () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'summoner', name: 'Summoner', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: index === 0 ? ['baron'] : ['summoner'],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+
+    try {
+      const result = assignCharacters(players, roles);
+
+      expect(result).not.toBeNull();
+      expect(result!.some(assignment => assignment.role.id === 'summoner')).toBe(false);
+      expect(result!.find(assignment => assignment.role.id === 'lilmonsta')?.displayRole?.id).toBe('baron');
+      expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(true);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it.each([

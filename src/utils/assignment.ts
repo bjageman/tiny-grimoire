@@ -147,13 +147,15 @@ function assignBaseCharacters(
     player: Player,
     team: Role['team'],
     usedRoleIds: Set<string>,
-    villageIdiotSlots?: { remaining: number }
+    villageIdiotSlots?: { remaining: number },
+    excludedRoleIds: Set<string> = new Set()
   ): { role: Role; fromPref: boolean } => {
     const prefs = getWhaleBucketPreferenceIds(player.preferences, team);
     // Village Idiot is the one role a second player may still be given, and only if they asked for it.
     const canRepeatVillageIdiot = !!villageIdiotSlots && villageIdiotSlots.remaining > 0;
     const availablePrefs = prefs.filter(id =>
       (!usedRoleIds.has(id) || (id === 'villageidiot' && canRepeatVillageIdiot)) &&
+      !excludedRoleIds.has(id) &&
       id !== 'legion' &&
       id !== 'atheist' &&
       id !== 'drunk' &&
@@ -172,6 +174,7 @@ function assignBaseCharacters(
     const teamRoles = allRoles.filter(r =>
       r.team === team &&
       !usedRoleIds.has(r.id) &&
+      !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
@@ -184,6 +187,7 @@ function assignBaseCharacters(
     
     const fallbackRoles = allRoles.filter(r =>
       r.team === team &&
+      !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
@@ -319,6 +323,7 @@ function assignBaseCharacters(
       : undefined;
     if (lilMonstaMinionPreference) usedRoleIds.add(lilMonstaMinionPreference);
     assignment.push({ player: { ...demonPlayer, isEvil: undefined }, role: demonRole, fromPref: demonFromPref });
+    const excludedMinionRoleIds = demonRole.id === 'lilmonsta' ? new Set(['summoner']) : new Set<string>();
     
     const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lordoftyphon' ? 1 : 0));
     const minionPlayers: Player[] = [];
@@ -344,7 +349,13 @@ function assignBaseCharacters(
     }
 
     for (const minionPlayer of minionPlayers) {
-      const { role: minionRole, fromPref: minionFromPref } = selectRoleForPlayer(minionPlayer, 'minion', usedRoleIds);
+      const { role: minionRole, fromPref: minionFromPref } = selectRoleForPlayer(
+        minionPlayer,
+        'minion',
+        usedRoleIds,
+        undefined,
+        excludedMinionRoleIds,
+      );
       usedRoleIds.add(minionRole.id);
       assignment.push({ player: { ...minionPlayer, isEvil: undefined }, role: minionRole, fromPref: minionFromPref });
     }
@@ -356,7 +367,7 @@ function assignBaseCharacters(
         lilMonstaAssignment.player.preferences,
         assignedMinionIds,
         allRoles,
-        [],
+        [...excludedMinionRoleIds],
       );
     }
 

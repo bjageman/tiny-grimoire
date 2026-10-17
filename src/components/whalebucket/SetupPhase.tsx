@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Sparkles, Edit } from 'lucide-react';
+import { Plus, Edit } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
@@ -33,7 +33,6 @@ interface WhaleBucketSetupPhaseProps {
   clearAllPreferences: () => void;
   resetGame: () => void;
   setActivePreferencePlayerId: (id: string | null) => void;
-  runAssignment: () => void;
   onManuallyAssign: () => void;
   isLightModeActive: boolean;
   excludedRoleIds: string[];
@@ -68,7 +67,6 @@ export default function WhaleBucketSetupPhase({
   clearAllPreferences,
   resetGame,
   setActivePreferencePlayerId,
-  runAssignment,
   onManuallyAssign,
   isLightModeActive,
   excludedRoleIds,
@@ -323,20 +321,12 @@ export default function WhaleBucketSetupPhase({
 
         <div className="flex flex-col gap-3">
           <button
-            id="random-assign-characters-button"
-            disabled={players.length < 5}
-            onClick={runAssignment}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
-          >
-            <Sparkles size={16} /> Randomly Assign Characters
-          </button>
-          <button
             id="manual-assign-characters-button"
             disabled={players.length === 0}
             onClick={onManuallyAssign}
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
           >
-            <Edit size={16} /> Manually Assign
+            <Edit size={16} /> Assign Roles
           </button>
         </div>
       </div>

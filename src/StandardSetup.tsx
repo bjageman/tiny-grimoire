@@ -631,7 +631,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount);
+    if (!assignedPlayers) {
+      showAlert("The selected characters could not be assigned. Try changing the characters in the bag.");
+      return;
+    }
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };

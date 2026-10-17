@@ -374,7 +374,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Storyteller Sync channel (laptop <-> phone)
   const syncState = useMemo(() => ({
-    players: phase === 'game' ? players.map(({ preferences, ...rest }) => rest) : players,
+    players,
     phase,
     timeOfDay,
     dayNumber,
@@ -639,6 +639,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setPlayers(updatedPlayers);
     setIsLilMonstaGame(updatedPlayers.some(p => p.isTheLilMonsta));
     setPhase('draft');
+  };
+
+  const clearAssignedRoles = () => {
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      roleId: undefined,
+      roleIds: undefined,
+      assignedFromPref: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+    })));
+    setIsLilMonstaGame(false);
   };
 
   const {
@@ -927,6 +942,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
+          onClearRoles={clearAssignedRoles}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
           remotePlayerCount={remotePlayerIds.size}

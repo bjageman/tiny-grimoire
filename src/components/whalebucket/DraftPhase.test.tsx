@@ -40,6 +40,7 @@ describe('WhaleBucketDraftPhase', () => {
         isLightModeActive={false}
         onStartGame={vi.fn()}
         runAssignment={vi.fn()}
+        onClearRoles={vi.fn()}
         setActiveDraftPlayerId={vi.fn()}
       />
     );

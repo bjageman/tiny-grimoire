@@ -238,6 +238,7 @@ export function getValidationSummary(
   const failures: string[] = [];
   if (hasChoirboy && !hasKing) failures.push("Choirboy in play, but no King assigned.");
   if (hasHuntsman && !hasDamsel) failures.push("Huntsman in play, but no Damsel assigned.");
+  if (hasSummoner && hasLilMonsta) failures.push("Summoner and Lil' Monsta cannot both be in play.");
   if (hasAlchemist) warnings.push("Alchemist in play — ability may affect setup.");
 
   // Setup validation failures for Outsiders/Townsfolk

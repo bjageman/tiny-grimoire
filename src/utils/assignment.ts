@@ -362,14 +362,14 @@ function assignBaseCharacters(
 
     const hasSummoner = assignment.some(a => a.role.id === 'summoner');
     if (hasSummoner) {
-      const demonAss = assignment.find(a => a.role.team === 'demon');
-      if (demonAss) {
-        usedRoleIds.delete(demonAss.role.id);
+      const demonAssignment = assignment.find(a => a.role.team === 'demon');
+      if (demonAssignment) {
+        usedRoleIds.delete(demonAssignment.role.id);
         const { role: tfRole, fromPref: tfFromPref } = selectRoleForPlayer(demonPlayer, 'townsfolk', usedRoleIds);
-        demonAss.role = tfRole;
-        demonAss.fromPref = tfFromPref;
-        demonAss.player = { ...demonPlayer, isEvil: undefined };
-        demonAss.displayRole = undefined;
+        demonAssignment.role = tfRole;
+        demonAssignment.fromPref = tfFromPref;
+        demonAssignment.player = { ...demonPlayer, isEvil: undefined };
+        demonAssignment.displayRole = undefined;
         usedRoleIds.add(tfRole.id);
       }
     }

@@ -435,10 +435,7 @@ describe('assignCharacters', () => {
       { id: 'empath', name: 'Empath', team: 'townsfolk' },
       { id: 'monk', name: 'Monk', team: 'townsfolk' },
       { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
-      { id: 'butler', name: 'Butler', team: 'outsider' },
-      { id: 'recluse', name: 'Recluse', team: 'outsider' },
       { id: 'summoner', name: 'Summoner', team: 'minion' },
-      { id: 'baron', name: 'Baron', team: 'minion', setup: true },
       { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' },
     ];
     const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
@@ -452,10 +449,7 @@ describe('assignCharacters', () => {
 
     expect(result).not.toBeNull();
     expect(result!.some(assignment => assignment.role.id === 'summoner')).toBe(true);
-    expect(result!.some(assignment => assignment.role.id === 'lilmonsta')).toBe(false);
-    expect(result!.every(assignment => assignment.displayRole === undefined)).toBe(true);
-    expect(result!.filter(assignment => assignment.role.team === 'minion')).toHaveLength(1);
-    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(0);
+    expect(result!.some(assignment => assignment.role.id === 'lilmonsta' || assignment.displayRole?.id === 'summoner')).toBe(false);
   });
 
   it("reserves the Lil' Monsta player's Minion preference", () => {

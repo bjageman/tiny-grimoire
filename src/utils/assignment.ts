@@ -369,7 +369,6 @@ function assignBaseCharacters(
         demonAss.role = tfRole;
         demonAss.fromPref = tfFromPref;
         demonAss.player = { ...demonPlayer, isEvil: undefined };
-        demonAss.displayRole = undefined;
         usedRoleIds.add(tfRole.id);
       }
     }

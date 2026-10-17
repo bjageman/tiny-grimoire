@@ -51,6 +51,7 @@ export function performStandardAssignment(
   const masterMins = (ALL_ROLES as Role[]).filter(r => r.team === 'minion');
   const masterDems = (ALL_ROLES as Role[]).filter(r => r.team === 'demon');
   const eligibleForTag = (tag: AutoAssignmentTag, roles: Role[]) => roles.filter(role => isEligibleAutoAssignedDisplayRole(tag, role.id));
+  const eligibleForLilMonstaTag = (roles: Role[]) => eligibleForTag('lilmonsta', roles).filter(role => role.id !== 'summoner');
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');
@@ -106,26 +107,25 @@ export function performStandardAssignment(
 
   const hasLordOfTyphon = chosenDemon && chosenDemon.id === 'lordoftyphon';
   const hasKazali = chosenDemon && chosenDemon.id === 'kazali';
+  const drewLilMonsta = chosenDemon?.id === 'lilmonsta';
   const targetMinionsCount = hasKazali ? 0 : (base.minion + (hasLordOfTyphon ? 1 : 0));
 
-  let selectedMinions = shuffle(mins).slice(0, targetMinionsCount);
+  const minionBag = drewLilMonsta ? mins.filter(minion => minion.id !== 'summoner') : mins;
+  const selectedMinions = shuffle(minionBag).slice(0, targetMinionsCount);
   const hasSummoner = selectedMinions.some(m => m.id === 'summoner');
 
   const targetDemonsCount = hasSummoner ? Math.max(0, base.demon - 1) : base.demon;
   const selectedDemons = chosenDemon && targetDemonsCount > 0 ? [chosenDemon] : [];
 
   const hasLilMonsta = selectedDemons.some(d => d.id === 'lilmonsta');
-  if (hasLilMonsta) {
-    selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
-  }
 
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonsta) {
     const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
     lilMonstaFakeRole = getMasqueradeFakeRole(
-      eligibleForTag('lilmonsta', mins),
-      eligibleForTag('lilmonsta', fallbackMins),
-      eligibleForTag('lilmonsta', masterMins),
+      eligibleForLilMonstaTag(mins),
+      eligibleForLilMonstaTag(fallbackMins),
+      eligibleForLilMonstaTag(masterMins),
       excludeIds
     );
   }
@@ -353,8 +353,8 @@ export function performStandardAssignment(
     } else if (roleId === 'lilmonsta') {
       isTheLilMonsta = true;
       const matchedMinion = lilMonstaFakeRole
-        ?? eligibleForTag('lilmonsta', mins).filter(m => !roleIdsInPlay.has(m.id))[0]
-        ?? eligibleForTag('lilmonsta', mins)[0];
+        ?? eligibleForLilMonstaTag(mins).filter(m => !roleIdsInPlay.has(m.id))[0]
+        ?? eligibleForLilMonstaTag(mins)[0];
       roleId = matchedMinion.id;
     }
 

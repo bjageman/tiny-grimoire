@@ -42,6 +42,10 @@ export default function Router() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [route]);
+
   switch (route) {
     case 'host':
       return <HostPage theme={theme} toggleTheme={toggleTheme} />;

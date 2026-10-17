@@ -223,7 +223,7 @@ describe('Storyteller Reset Integration', () => {
     storyteller.unmount();
   });
 
-  it('adds the complete prohibited-character defaults to existing Whale Bucket games', async () => {
+  it('migrates Whale Bucket masquerade exclusions to setup toggles', async () => {
     localStorage.setItem('whale-bucket-game', JSON.stringify({
       players: [],
       phase: 'setup',
@@ -239,9 +239,10 @@ describe('Storyteller Reset Integration', () => {
     expect(storyteller.getByText('Legion')).toBeInTheDocument();
     await waitFor(() => {
       const saved = JSON.parse(localStorage.getItem('whale-bucket-game')!);
-      expect(saved.excludedRoleDefaultsVersion).toBe(1);
+      expect(saved.excludedRoleDefaultsVersion).toBe(2);
       expect(saved.excludedRoleIds).toEqual(expect.arrayContaining(['engineer', 'pithag', 'psychopath', 'legion']));
       expect(saved.excludedRoleIds).not.toContain('atheist');
+      expect(saved.excludedRoleIds).not.toEqual(expect.arrayContaining(['drunk', 'marionette', 'lunatic']));
     });
     storyteller.unmount();
   });

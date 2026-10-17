@@ -45,4 +45,21 @@ describe('Setup Modifiers', () => {
     expect(screen.getByRole('button', { name: /setup modifiers/i })).toHaveAttribute('aria-expanded', 'true');
     localStorage.removeItem(persistenceKey);
   });
+
+  it('shows Whale Bucket masquerade assignment toggles when configured', () => {
+    const setMasqueradeOption = vi.fn();
+    render(
+      <GameSetupMods
+        {...defaultProps}
+        masqueradeOptions={{ drunk: false, marionette: true, lunatic: false }}
+        setMasqueradeOption={setMasqueradeOption}
+      />
+    );
+
+    expect(screen.getByText('1 active')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /setup modifiers/i }));
+    fireEvent.click(screen.getByLabelText(/drunk/i));
+
+    expect(setMasqueradeOption).toHaveBeenCalledWith('drunk', true);
+  });
 });

@@ -1,5 +1,5 @@
 import type { PlayerPreferences, Role } from '../types';
-import { isEligibleAutoAssignedDisplayRole } from './masqueradeRoleEligibility';
+import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './masqueradeRoleEligibility';
 
 const DEMON_SLOT_ROLE_IDS = new Set(['atheist', 'summoner']);
 
@@ -43,5 +43,29 @@ export function chooseLilMonstaMinion(
 
   const unusedMinions = eligibleMinions.filter(role => !assignedMinionIds.has(role.id));
   const candidates = unusedMinions.length > 0 ? unusedMinions : eligibleMinions;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+export function chooseWhaleBucketDisplayRole(
+  preferences: PlayerPreferences | undefined,
+  tag: Extract<AutoAssignmentTag, 'drunk' | 'marionette' | 'lunatic'>,
+  assignedRoleIds: Set<string>,
+  roles: Role[],
+  excludedRoleIds: string[]
+): Role | undefined {
+  const team = tag === 'lunatic' ? 'demon' : 'townsfolk';
+  const excludedIds = new Set(excludedRoleIds);
+  const eligibleRoles = roles.filter(role =>
+    role.team === team &&
+    !excludedIds.has(role.id) &&
+    isEligibleAutoAssignedDisplayRole(tag, role.id)
+  );
+  const preferredRole = (preferences?.[team] ?? [])
+    .map(id => eligibleRoles.find(role => role.id === id))
+    .find((role): role is Role => role !== undefined);
+  if (preferredRole) return preferredRole;
+
+  const unusedRoles = eligibleRoles.filter(role => !assignedRoleIds.has(role.id));
+  const candidates = unusedRoles.length > 0 ? unusedRoles : eligibleRoles;
   return candidates[Math.floor(Math.random() * candidates.length)];
 }

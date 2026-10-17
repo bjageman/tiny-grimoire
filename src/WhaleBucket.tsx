@@ -3,9 +3,8 @@ import { ALL_ROLES } from './utils/roleData';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
-import { assignCharacters } from './utils/assignment';
+import { assignCharacters, type WhaleBucketMasqueradeOptions } from './utils/assignment';
 import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
-import { isEligibleAutoAssignedDisplayRole } from './utils/masqueradeRoleEligibility';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -33,8 +32,9 @@ export type Player = Omit<BasePlayer, 'preferences'> & {
 type Phase = 'setup' | 'draft' | 'game';
 
 const STORAGE_KEY = 'whale-bucket-game';
-const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer'];
-const EXCLUDED_ROLE_DEFAULTS_VERSION = 1;
+const MASQUERADE_ROLE_IDS = ['drunk', 'marionette', 'lunatic'];
+const DEFAULT_EXCLUDED_ROLE_IDS = ['pithag', 'legion', 'psychopath', 'engineer'];
+const EXCLUDED_ROLE_DEFAULTS_VERSION = 2;
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -155,15 +155,24 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     const savedRoleIds = readPersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
     const savedVersion = readPersistedField<number>(STORAGE_KEY, 'excludedRoleDefaultsVersion', 0);
     return savedVersion < EXCLUDED_ROLE_DEFAULTS_VERSION
-      ? [...new Set([...savedRoleIds.filter(id => id !== 'atheist'), ...DEFAULT_EXCLUDED_ROLE_IDS])]
+      ? [...new Set([...savedRoleIds.filter(id => id !== 'atheist' && !MASQUERADE_ROLE_IDS.includes(id)), ...DEFAULT_EXCLUDED_ROLE_IDS])]
       : savedRoleIds;
   });
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = usePersistedField<number>(STORAGE_KEY, 'sentinelOutsiderDelta', 0);
   const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
+  const [masqueradeOptions, setMasqueradeOptions] = usePersistedField<WhaleBucketMasqueradeOptions>(
+    STORAGE_KEY,
+    'masqueradeOptions',
+    { drunk: false, marionette: false, lunatic: false },
+  );
+  const setMasqueradeOption = useCallback((role: keyof WhaleBucketMasqueradeOptions, enabled: boolean) => {
+    setMasqueradeOptions(current => ({ ...current, [role]: enabled }));
+  }, [setMasqueradeOptions]);
 
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
     setPopeEnabled(false);
+    setMasqueradeOptions({ drunk: false, marionette: false, lunatic: false });
   };
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -387,8 +396,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     rotationOffset,
     sentinelOutsiderDelta,
     popeEnabled,
+    masqueradeOptions,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, masqueradeOptions
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -409,10 +419,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setRotationOffset(incoming.rotationOffset ?? 0);
       setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
+      setMasqueradeOptions(incoming.masqueradeOptions ?? { drunk: false, marionette: false, lunatic: false });
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setMasqueradeOptions
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -445,8 +456,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       allReminders,
       sentinelOutsiderDelta,
       popeEnabled,
+      masqueradeOptions,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled, masqueradeOptions]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -556,7 +568,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       for (const team of teams) {
         if (newPrefs[team].length === 0) {
-          const available = allRoles.filter(r => getWhaleBucketPreferenceTeam(r) === team && !excludedRoleIds.includes(r.id));
+          const available = allRoles.filter(r =>
+            getWhaleBucketPreferenceTeam(r) === team &&
+            !excludedRoleIds.includes(r.id) &&
+            !MASQUERADE_ROLE_IDS.includes(r.id)
+          );
           if (available.length > 0) {
             const randIdx = Math.floor(Math.random() * available.length);
             newPrefs[team] = [available[randIdx].id];
@@ -581,7 +597,14 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers, sentinelOutsiderDelta, excludedRoleIds);
+    const result = assignCharacters(
+      players,
+      ALL_ROLES as Role[],
+      allowTravelers,
+      sentinelOutsiderDelta,
+      excludedRoleIds,
+      masqueradeOptions,
+    );
     if (!result) {
       showAlert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;
@@ -600,26 +623,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         isRevealed = true;
       }
       let roleId = isRevealed ? assigned?.role.id : undefined;
+      let isTheDrunk = false;
+      let isTheMarionette = false;
       let isTheLunatic = false;
       let isTheLilMonsta = false;
 
-      if (assigned && assigned.role.id === 'lunatic') {
+      if (assigned && assigned.role.id === 'drunk') {
+        isTheDrunk = true;
+        if (assigned.displayRole) roleId = assigned.displayRole.id;
+      } else if (assigned && assigned.role.id === 'marionette') {
+        isTheMarionette = true;
+        if (assigned.displayRole) roleId = assigned.displayRole.id;
+      } else if (assigned && assigned.role.id === 'lunatic') {
         isTheLunatic = true;
-        const assignedDemonIds = result.filter(r => r.role.team === 'demon').map(r => r.role.id);
-        const candidates = (ALL_ROLES as Role[]).filter(r => 
-          r.team === 'demon' && 
-          isEligibleAutoAssignedDisplayRole('lunatic', r.id) &&
-          !excludedRoleIds.includes(r.id) && 
-          !assignedDemonIds.includes(r.id)
-        );
-        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r =>
-          r.team === 'demon' &&
-          isEligibleAutoAssignedDisplayRole('lunatic', r.id) &&
-          !excludedRoleIds.includes(r.id)
-        );
-        const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'imp' }]);
-        const chosenDemon = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
-        roleId = chosenDemon.id;
+        if (assigned.displayRole) roleId = assigned.displayRole.id;
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
         if (assigned.displayRole) roleId = assigned.displayRole.id;
@@ -629,8 +646,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         ...p,
         roleId,
         assignedFromPref: assigned?.fromPref || false,
-        isTheDrunk: false,
-        isTheMarionette: false,
+        isTheDrunk,
+        isTheMarionette,
         isTheLunatic,
         isTheLilMonsta,
         isEvil: assigned?.player.isEvil,
@@ -913,6 +930,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          masqueradeOptions={masqueradeOptions}
+          setMasqueradeOption={setMasqueradeOption}
           remotePlayerIds={remotePlayerIds}
         />
       )}
@@ -925,6 +944,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          masqueradeOptions={masqueradeOptions}
+          setMasqueradeOption={setMasqueradeOption}
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
@@ -1029,7 +1050,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           players={players}
           setPlayers={setPlayers}
           allowTravelers={allowTravelers}
-          excludedRoleIds={excludedRoleIds}
+          excludedRoleIds={[...excludedRoleIds, ...MASQUERADE_ROLE_IDS]}
           isLightModeActive={isLightModeActive}
           updatePlayerName={updatePlayerName}
           removePlayer={removePlayer}

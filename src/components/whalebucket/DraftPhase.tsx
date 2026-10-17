@@ -8,6 +8,7 @@ import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerif
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 
 import type { ValidationSummary } from '../../utils/validationSummary';
+import type { WhaleBucketMasqueradeOptions } from '../../utils/assignment';
 
 interface WhaleBucketDraftPhaseProps {
   players: Player[];
@@ -16,6 +17,8 @@ interface WhaleBucketDraftPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  masqueradeOptions?: WhaleBucketMasqueradeOptions;
+  setMasqueradeOption?: (role: keyof WhaleBucketMasqueradeOptions, enabled: boolean) => void;
   isLightModeActive: boolean;
   onStartGame: () => void;
   runAssignment: () => void;
@@ -33,6 +36,8 @@ export default function WhaleBucketDraftPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  masqueradeOptions,
+  setMasqueradeOption,
   isLightModeActive,
   onStartGame,
   runAssignment,
@@ -120,6 +125,8 @@ export default function WhaleBucketDraftPhase({
               setSentinelOutsiderDelta={setSentinelOutsiderDelta}
               popeEnabled={popeEnabled}
               setPopeEnabled={setPopeEnabled}
+              masqueradeOptions={masqueradeOptions}
+              setMasqueradeOption={setMasqueradeOption}
               isLightModeActive={isLightModeActive}
               persistenceKey="whale-bucket-setup-modifiers-expanded"
             />

@@ -122,6 +122,114 @@ describe('assignCharacters', () => {
     expect(new Set(result!.map(assignment => assignment.role.id)).size).toBe(15);
   });
 
+  it("assigns an enabled Drunk with the player's drafted Townsfolk identity", () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'drunk', name: 'Drunk', team: 'outsider', setup: true },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: ['chef'],
+        outsider: ['drunk'],
+        minion: ['poisoner'],
+        demon: ['imp'],
+        traveler: [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles, false, 0, [], { drunk: true, marionette: false, lunatic: false });
+
+    expect(result).not.toBeNull();
+    const drunk = result!.find(assignment => assignment.role.id === 'drunk');
+    expect(drunk?.displayRole?.id).toBe('chef');
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(2);
+  });
+
+  it('assigns enabled Marionette and Lunatic roles with drafted display identities', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'lunatic', name: 'Lunatic', team: 'outsider' },
+      { id: 'marionette', name: 'Marionette', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: ['chef'],
+        outsider: ['lunatic'],
+        minion: ['marionette'],
+        demon: [index === 0 ? 'imp' : 'fanggu'],
+        traveler: [],
+      },
+    }));
+
+    try {
+      const result = assignCharacters(players, roles, false, 0, [], { drunk: false, marionette: true, lunatic: true });
+
+      expect(result).not.toBeNull();
+      expect(result!.find(assignment => assignment.role.id === 'marionette')?.displayRole?.id).toBe('chef');
+      expect(result!.find(assignment => assignment.role.id === 'lunatic')?.displayRole?.id).toBe('fanggu');
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it('does not combine enabled Marionette with Summoner', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
+      { id: 'summoner', name: 'Summoner', team: 'minion' },
+      { id: 'marionette', name: 'Marionette', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 10 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: ['chef'],
+        outsider: [],
+        minion: ['summoner'],
+        demon: ['imp'],
+        traveler: [],
+      },
+    }));
+
+    try {
+      const result = assignCharacters(players, roles, false, 0, [], { drunk: false, marionette: true, lunatic: false });
+
+      expect(result).not.toBeNull();
+      expect(result!.some(assignment => assignment.role.id === 'summoner')).toBe(true);
+      expect(result!.some(assignment => assignment.role.id === 'marionette')).toBe(false);
+    } finally {
+      random.mockRestore();
+    }
+  });
+
   it('does not assign excluded characters from base or Traveler preferences', () => {
     const roles: Role[] = [
       { id: 'chef', name: 'Chef', team: 'townsfolk' },

@@ -2,10 +2,22 @@ import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
-import { chooseLilMonstaMinion, getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
+import { chooseLilMonstaMinion, chooseWhaleBucketDisplayRole, getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
+
+export interface WhaleBucketMasqueradeOptions {
+  drunk: boolean;
+  marionette: boolean;
+  lunatic: boolean;
+}
+
+const DEFAULT_MASQUERADE_OPTIONS: WhaleBucketMasqueradeOptions = {
+  drunk: false,
+  marionette: false,
+  lunatic: false,
+};
 
 function getActiveRoles(assignments: AssignmentResult[]): Role[] {
-  return assignments.flatMap(assignment => assignment.displayRole
+  return assignments.flatMap(assignment => assignment.role.id === 'lilmonsta' && assignment.displayRole
     ? [assignment.role, assignment.displayRole]
     : [assignment.role]);
 }
@@ -15,13 +27,19 @@ export function assignCharacters(
   allRoles: Role[],
   allowTravelers: boolean = false,
   sentinelOutsiderDelta: number = 0,
-  excludedRoleIds: string[] = []
+  excludedRoleIds: string[] = [],
+  masqueradeOptions: WhaleBucketMasqueradeOptions = DEFAULT_MASQUERADE_OPTIONS
 ): AssignmentResult[] | null {
   const N = players.length;
   if (N < 5) return null;
 
   const excludedRoles = new Set(excludedRoleIds);
-  const availableRoles = allRoles.filter(role => !excludedRoles.has(role.id));
+  const availableRoles = allRoles.filter(role => {
+    if (role.id === 'drunk' || role.id === 'marionette' || role.id === 'lunatic') {
+      return masqueradeOptions[role.id];
+    }
+    return !excludedRoles.has(role.id);
+  });
 
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
@@ -97,7 +115,7 @@ export function assignCharacters(
   if (baseCount < 5) return null;
 
   const baseDist = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
-  const baseAssignments = assignBaseCharacters(basePlayers, availableRoles, baseDist, sentinelOutsiderDelta);
+  const baseAssignments = assignBaseCharacters(basePlayers, availableRoles, baseDist, sentinelOutsiderDelta, excludedRoleIds);
   if (!baseAssignments) return null;
 
   const finalAssignments = [...baseAssignments, ...travelerAssignments];
@@ -127,7 +145,8 @@ function assignBaseCharacters(
   players: Player[],
   allRoles: Role[],
   base: { townsfolk: number; outsider: number; minion: number; demon: number },
-  sentinelOutsiderDelta: number
+  sentinelOutsiderDelta: number,
+  globallyExcludedRoleIds: string[]
 ): AssignmentResult[] | null {
   const N = players.length;
   const hasPref = (roleId: string) => players.some(p => 
@@ -140,7 +159,7 @@ function assignBaseCharacters(
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
   const maxScriptOutsiders = new Set(allRoles
-    .filter(r => r.team === 'outsider' && r.id !== 'drunk' && r.id !== 'marionette')
+    .filter(r => r.team === 'outsider')
     .map(r => r.id)).size;
 
   const selectRoleForPlayer = (
@@ -157,9 +176,7 @@ function assignBaseCharacters(
       (!usedRoleIds.has(id) || (id === 'villageidiot' && canRepeatVillageIdiot)) &&
       !excludedRoleIds.has(id) &&
       id !== 'legion' &&
-      id !== 'atheist' &&
-      id !== 'drunk' &&
-      id !== 'marionette'
+      id !== 'atheist'
     );
     
     if (availablePrefs.length > 0) {
@@ -176,9 +193,7 @@ function assignBaseCharacters(
       !usedRoleIds.has(r.id) &&
       !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
-      r.id !== 'atheist' &&
-      r.id !== 'drunk' &&
-      r.id !== 'marionette'
+      r.id !== 'atheist'
     );
     if (teamRoles.length > 0) {
       const role = randomChoice(teamRoles);
@@ -189,9 +204,7 @@ function assignBaseCharacters(
       r.team === team &&
       !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
-      r.id !== 'atheist' &&
-      r.id !== 'drunk' &&
-      r.id !== 'marionette'
+      r.id !== 'atheist'
     );
     return { role: randomChoice(fallbackRoles), fromPref: false };
   };
@@ -349,15 +362,36 @@ function assignBaseCharacters(
     }
 
     for (const minionPlayer of minionPlayers) {
+      const currentMinionExclusions = new Set(excludedMinionRoleIds);
+      if (usedRoleIds.has('summoner')) currentMinionExclusions.add('marionette');
+      if (usedRoleIds.has('marionette')) currentMinionExclusions.add('summoner');
       const { role: minionRole, fromPref: minionFromPref } = selectRoleForPlayer(
         minionPlayer,
         'minion',
         usedRoleIds,
         undefined,
-        excludedMinionRoleIds,
+        currentMinionExclusions,
       );
       usedRoleIds.add(minionRole.id);
-      assignment.push({ player: { ...minionPlayer, isEvil: undefined }, role: minionRole, fromPref: minionFromPref });
+      const minionAssignment: AssignmentResult = {
+        player: { ...minionPlayer, isEvil: undefined },
+        role: minionRole,
+        fromPref: minionFromPref,
+      };
+      if (minionRole.id === 'marionette') {
+        minionAssignment.displayRole = chooseWhaleBucketDisplayRole(
+          minionPlayer.preferences,
+          'marionette',
+          usedRoleIds,
+          allRoles,
+          globallyExcludedRoleIds,
+        );
+        if (minionAssignment.displayRole) {
+          usedRoleIds.add(minionAssignment.displayRole.id);
+          minionAssignment.fromPref = !!minionPlayer.preferences?.townsfolk.includes(minionAssignment.displayRole.id);
+        }
+      }
+      assignment.push(minionAssignment);
     }
 
     const lilMonstaAssignment = assignment.find(a => a.role.id === 'lilmonsta');
@@ -409,7 +443,22 @@ function assignBaseCharacters(
     for (const temp of tempAssignment) {
       const { role, fromPref } = selectRoleForPlayer(temp.player, temp.team, tempUsedRoleIds, villageIdiotSlots);
       tempUsedRoleIds.add(role.id);
-      goodAssignments.push({ player: { ...temp.player, isEvil: undefined }, role, fromPref });
+      const goodAssignment: AssignmentResult = { player: { ...temp.player, isEvil: undefined }, role, fromPref };
+      if (role.id === 'drunk' || role.id === 'lunatic') {
+        goodAssignment.displayRole = chooseWhaleBucketDisplayRole(
+          temp.player.preferences,
+          role.id,
+          tempUsedRoleIds,
+          allRoles,
+          globallyExcludedRoleIds,
+        );
+        if (goodAssignment.displayRole) {
+          tempUsedRoleIds.add(goodAssignment.displayRole.id);
+          const preferenceTeam = role.id === 'lunatic' ? 'demon' : 'townsfolk';
+          goodAssignment.fromPref = !!temp.player.preferences?.[preferenceTeam].includes(goodAssignment.displayRole.id);
+        }
+      }
+      goodAssignments.push(goodAssignment);
     }
     
     const fullAssignment = [...assignment, ...goodAssignments];
@@ -424,9 +473,10 @@ function assignBaseCharacters(
       const hasGodfather = activeRoles.some(role => role.id === 'godfather');
       const hasHermit = activeRoles.some(role => role.id === 'hermit');
       const hasXaan = activeRoles.some(role => role.id === 'xaan');
+      const hasDrunk = activeRoles.some(role => role.id === 'drunk');
       
       const ignoresSentinel = demonRole.id === 'kazali' || hasXaan;
-      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
+      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (hasDrunk ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
       const outsidersBeforeGodfather = Math.max(0, base.outsider + fixedDeltaOut);
@@ -549,7 +599,7 @@ function assignBaseCharacters(
           break;
         }
       } else if (currentOutsiders.length > chosenTargetOut) {
-        const outToChange = fullAssignment.find(a => a.role.team === 'outsider' && a.role.id !== 'damsel');
+        const outToChange = fullAssignment.find(a => a.role.team === 'outsider' && a.role.id !== 'damsel' && a.role.id !== 'drunk' && a.role.id !== 'lunatic');
         if (outToChange) {
           usedIds.delete(outToChange.role.id);
           const { role, fromPref } = selectRoleForPlayer(outToChange.player, 'townsfolk', usedIds);
@@ -575,6 +625,16 @@ function assignBaseCharacters(
         }
       }
       if (duplicateCheck) {
+        const marionetteAssignment = fullAssignment.find(a => a.role.id === 'marionette');
+        const demonAssignment = fullAssignment.find(a => a.role.team === 'demon');
+        if (marionetteAssignment) {
+          if (!demonAssignment) continue;
+          const marionetteIndex = players.findIndex(player => player.id === marionetteAssignment.player.id);
+          const demonIndex = players.findIndex(player => player.id === demonAssignment.player.id);
+          const clockwiseDistance = (marionetteIndex - demonIndex + players.length) % players.length;
+          const neighborsDemon = clockwiseDistance === 1 || clockwiseDistance === players.length - 1;
+          if (!neighborsDemon) continue;
+        }
         return fullAssignment;
       }
     }

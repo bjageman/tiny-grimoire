@@ -8,7 +8,9 @@ import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import { ALL_ROLES } from '../../utils/roleData';
 import GameSetupMods from '../shared/grimoire/GameSetupMods';
+import type { WhaleBucketMasqueradeOptions } from '../../utils/assignment';
 
+const MASQUERADE_ROLE_IDS = new Set(['drunk', 'marionette', 'lunatic']);
 
 
 interface WhaleBucketSetupPhaseProps {
@@ -42,6 +44,8 @@ interface WhaleBucketSetupPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  masqueradeOptions?: WhaleBucketMasqueradeOptions;
+  setMasqueradeOption?: (role: keyof WhaleBucketMasqueradeOptions, enabled: boolean) => void;
   remotePlayerIds?: Set<string>;
   isSecondary?: boolean;
 }
@@ -77,6 +81,8 @@ export default function WhaleBucketSetupPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  masqueradeOptions,
+  setMasqueradeOption,
   remotePlayerIds,
   isSecondary,
 }: WhaleBucketSetupPhaseProps) {
@@ -85,6 +91,7 @@ export default function WhaleBucketSetupPhase({
 
   const excludeSuggestions = (ALL_ROLES as Role[]).filter(r =>
     !excludedRoleIds.includes(r.id) &&
+    !MASQUERADE_ROLE_IDS.has(r.id) &&
     (excludeSearchTerm
       ? (r.name.toLowerCase().includes(excludeSearchTerm.toLowerCase()) ||
          r.team.toLowerCase().includes(excludeSearchTerm.toLowerCase()))
@@ -201,6 +208,8 @@ export default function WhaleBucketSetupPhase({
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          masqueradeOptions={masqueradeOptions}
+          setMasqueradeOption={setMasqueradeOption}
           isLightModeActive={isLightModeActive}
           persistenceKey="whale-bucket-setup-modifiers-expanded"
         />

@@ -2,6 +2,7 @@ import { Settings, ChevronDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import ToggleSwitch from '../ui/ToggleSwitch';
+import type { WhaleBucketMasqueradeOptions } from '../../../utils/assignment';
 
 interface GameSetupModsProps {
   sentinelOutsiderDelta: number;
@@ -10,6 +11,8 @@ interface GameSetupModsProps {
   setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive?: boolean;
   persistenceKey?: string;
+  masqueradeOptions?: WhaleBucketMasqueradeOptions;
+  setMasqueradeOption?: (role: keyof WhaleBucketMasqueradeOptions, enabled: boolean) => void;
 }
 
 const SENTINEL_OPTIONS = [
@@ -25,11 +28,15 @@ export default function GameSetupMods({
   setPopeEnabled,
   isLightModeActive = false,
   persistenceKey,
+  masqueradeOptions,
+  setMasqueradeOption,
 }: GameSetupModsProps) {
   const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
-  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
+  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) +
+    (popeEnabled ? 1 : 0) +
+    (masqueradeOptions ? Object.values(masqueradeOptions).filter(Boolean).length : 0);
 
   return (
     <div
@@ -141,6 +148,31 @@ export default function GameSetupMods({
               icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
             />
           </label>
+          {masqueradeOptions && setMasqueradeOption && (['drunk', 'marionette', 'lunatic'] as const).map(role => (
+            <label key={role} htmlFor={`auto-assign-${role}-toggle`} className={cn(
+              "flex items-center justify-between gap-3 border-t mt-2.5 pt-2.5 cursor-pointer",
+              isLightModeActive ? "border-gray-200" : "border-gray-800"
+            )}>
+              <div>
+                <div className={cn(
+                  "text-[11px] font-bold capitalize",
+                  isLightModeActive ? "text-gray-800" : "text-gray-200"
+                )}>
+                  {role}
+                </div>
+                <div className="text-[9px] text-gray-500 leading-tight">
+                  Allow during random assignment
+                </div>
+              </div>
+              <ToggleSwitch
+                id={`auto-assign-${role}-toggle`}
+                checked={masqueradeOptions[role]}
+                onChange={enabled => setMasqueradeOption(role, enabled)}
+                isLightModeActive={isLightModeActive}
+                icon={<img src={`/icons/${role}.svg`} alt="" className="w-3 h-3 object-contain" />}
+              />
+            </label>
+          ))}
         </div>
       )}
     </div>

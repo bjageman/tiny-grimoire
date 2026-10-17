@@ -5,7 +5,7 @@ import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
 import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
-import { isEligibleAutoAssignedDisplayRole } from './utils/masqueradeRoleEligibility';
+import { isEligibleAutoAssignedDisplayRole } from './utils/displayRoleEligibility';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';

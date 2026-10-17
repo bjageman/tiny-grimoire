@@ -1,11 +1,11 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
-import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './masqueradeRoleEligibility';
+import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './displayRoleEligibility';
 import {
   shuffle,
   fillToCount,
-  getMasqueradeFakeRole,
+  getFakeDisplayRole,
   isTravelerRole,
   splitTravelers,
   applyChoirboyKing,
@@ -130,7 +130,7 @@ export function performStandardAssignment(
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonsta) {
     const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
-    lilMonstaFakeRole = getMasqueradeFakeRole(
+    lilMonstaFakeRole = getFakeDisplayRole(
       eligibleForLilMonstaTag(mins),
       eligibleForLilMonstaTag(fallbackMins),
       eligibleForLilMonstaTag(masterMins),
@@ -270,7 +270,7 @@ export function performStandardAssignment(
     const fallbackPool = marionetteFakeTeam === 'outsider' ? fallbackOuts : fallbackTfs;
     const masterPool = marionetteFakeTeam === 'outsider' ? masterOuts : masterTfs;
 
-    marionetteFakeRole = getMasqueradeFakeRole(
+    marionetteFakeRole = getFakeDisplayRole(
       eligibleForTag('marionette', scriptPool),
       eligibleForTag('marionette', fallbackPool),
       eligibleForTag('marionette', masterPool),
@@ -286,7 +286,7 @@ export function performStandardAssignment(
     const excludeIds = new Set([...roleIdsInPlay]);
     if (marionetteFakeRole) excludeIds.add(marionetteFakeRole.id);
 
-    drunkFakeRole = getMasqueradeFakeRole(
+    drunkFakeRole = getFakeDisplayRole(
       eligibleForTag('drunk', tfs),
       eligibleForTag('drunk', fallbackTfs),
       eligibleForTag('drunk', masterTfs),
@@ -301,7 +301,7 @@ export function performStandardAssignment(
   if (hasLunaticInPlay) {
     const excludeIds = new Set([...roleIdsInPlay]);
 
-    lunaticFakeRole = getMasqueradeFakeRole(
+    lunaticFakeRole = getFakeDisplayRole(
       eligibleForTag('lunatic', dems),
       eligibleForTag('lunatic', fallbackDems),
       eligibleForTag('lunatic', masterDems),

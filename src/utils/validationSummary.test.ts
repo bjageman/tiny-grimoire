@@ -253,7 +253,7 @@ describe('validationSummary utility', () => {
     });
   });
 
-  describe('masquerade identity exposure', () => {
+  describe('hidden identity exposure', () => {
     const basePlayers: Player[] = [
       { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
       { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },

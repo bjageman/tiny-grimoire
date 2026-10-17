@@ -458,6 +458,7 @@ describe('assignCharacters', () => {
 
     expect(result).not.toBeNull();
     expect(result!.some(assignment => assignment.role.id === 'lilmonsta')).toBe(true);
+    expect(result!.filter(assignment => assignment.role.team === 'minion')).toHaveLength(1);
     expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(false);
   });
 

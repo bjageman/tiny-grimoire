@@ -68,6 +68,7 @@ export interface PlacedReminder {
 export interface AssignmentResult {
   player: Player;
   role: Role;
+  displayRole?: Role;
   fromPref: boolean;
 }
 

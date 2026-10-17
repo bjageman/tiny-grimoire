@@ -4,7 +4,7 @@ import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } fr
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
-import { chooseLilMonstaMinion, getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
+import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -616,14 +616,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         roleId = chosenDemon.id;
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
-        const assignedMinionIds = result.filter(r => r.role.team === 'minion').map(r => r.role.id);
-        const chosenMinion = chooseLilMonstaMinion(
-          p.preferences,
-          new Set(assignedMinionIds),
-          ALL_ROLES as Role[],
-          excludedRoleIds,
-        );
-        if (chosenMinion) roleId = chosenMinion.id;
+        if (assigned.displayRole) roleId = assigned.displayRole.id;
       }
 
       return {

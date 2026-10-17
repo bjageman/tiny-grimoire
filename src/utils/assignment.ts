@@ -2,7 +2,13 @@ import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
-import { getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
+import { chooseLilMonstaMinion, getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
+
+function getActiveRoles(assignments: AssignmentResult[]): Role[] {
+  return assignments.flatMap(assignment => assignment.displayRole
+    ? [assignment.role, assignment.displayRole]
+    : [assignment.role]);
+}
 
 export function assignCharacters(
   players: Player[],
@@ -343,6 +349,17 @@ function assignBaseCharacters(
       assignment.push({ player: { ...minionPlayer, isEvil: undefined }, role: minionRole, fromPref: minionFromPref });
     }
 
+    const lilMonstaAssignment = assignment.find(a => a.role.id === 'lilmonsta');
+    if (lilMonstaAssignment) {
+      const assignedMinionIds = new Set(assignment.filter(a => a.role.team === 'minion').map(a => a.role.id));
+      lilMonstaAssignment.displayRole = chooseLilMonstaMinion(
+        lilMonstaAssignment.player.preferences,
+        assignedMinionIds,
+        allRoles,
+        [],
+      );
+    }
+
     const hasSummoner = assignment.some(a => a.role.id === 'summoner');
     if (hasSummoner) {
       const demonAss = assignment.find(a => a.role.team === 'demon');
@@ -358,7 +375,7 @@ function assignBaseCharacters(
     
     const minionPlayerIds = new Set(minionPlayers.map(mp => mp.id));
     const remainingPlayers = shuffledPlayers.filter(p => p.id !== demonPlayer.id && !minionPlayerIds.has(p.id));
-    const hasXaan = assignment.some(a => a.role.id === 'xaan');
+    const hasXaan = getActiveRoles(assignment).some(role => role.id === 'xaan');
     const targetOutsiders = (demonRole.id === 'kazali' || hasXaan)
       ? Math.floor(Math.random() * (Math.min(remainingPlayers.length, maxScriptOutsiders) + 1))
       : Math.min(base.outsider, maxScriptOutsiders);
@@ -388,19 +405,21 @@ function assignBaseCharacters(
     let valid = false;
     
     for (let adj = 0; adj < 10; adj++) {
-      const hasBaron = fullAssignment.some(a => a.role.id === 'baron');
-      const hasFangGu = fullAssignment.some(a => a.role.id === 'fanggu');
-      const hasVigormortis = fullAssignment.some(a => a.role.id === 'vigormortis');
-      const hasBalloonist = fullAssignment.some(a => a.role.id === 'balloonist');
-      const hasGodfather = fullAssignment.some(a => a.role.id === 'godfather');
-      const hasHermit = fullAssignment.some(a => a.role.id === 'hermit');
-      const hasXaan = fullAssignment.some(a => a.role.id === 'xaan');
+      const activeRoles = getActiveRoles(fullAssignment);
+      const hasBaron = activeRoles.some(role => role.id === 'baron');
+      const hasFangGu = activeRoles.some(role => role.id === 'fanggu');
+      const hasVigormortis = activeRoles.some(role => role.id === 'vigormortis');
+      const hasBalloonist = activeRoles.some(role => role.id === 'balloonist');
+      const hasGodfather = activeRoles.some(role => role.id === 'godfather');
+      const hasHermit = activeRoles.some(role => role.id === 'hermit');
+      const hasXaan = activeRoles.some(role => role.id === 'xaan');
       
       const ignoresSentinel = demonRole.id === 'kazali' || hasXaan;
       const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
-      const gfMods = hasGodfather ? [-1, 1] : [0];
+      const outsidersBeforeGodfather = Math.max(0, base.outsider + fixedDeltaOut);
+      const gfMods = hasGodfather ? [outsidersBeforeGodfather === 0 ? 1 : -1] : [0];
       const balMods = hasBalloonist ? [0, 1] : [0];
       const hermMods = hasHermit ? [-1, 0] : [0];
       
@@ -409,9 +428,9 @@ function assignBaseCharacters(
       if (hasKazali || hasXaan) {
         let expectedDemon = base.demon;
         let expectedMinion = base.minion;
-        const hasLilMonsta = fullAssignment.some(a => a.role.id === 'lilmonsta');
-        const hasLordOfTyphon = fullAssignment.some(a => a.role.id === 'lordoftyphon');
-        const hasSummoner = fullAssignment.some(a => a.role.id === 'summoner');
+        const hasLilMonsta = activeRoles.some(role => role.id === 'lilmonsta');
+        const hasLordOfTyphon = activeRoles.some(role => role.id === 'lordoftyphon');
+        const hasSummoner = activeRoles.some(role => role.id === 'summoner');
         if (hasLilMonsta) {
           expectedMinion += 1;
           expectedDemon -= 1;

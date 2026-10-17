@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, RotateCcw, Moon } from 'lucide-react';
+import { Check, ChevronDown, RotateCcw, Moon } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import DayNightLabel from '../ui/DayNightLabel';
 import type { Player, Role } from '../../../types';
 import nightSheet from '../../../nightsheet.json';
 import { ALL_ROLES } from '../../../utils/roleData';
+
+const NIGHT_ORDER_DISCLOSURE_KEY = 'night-order-guide-expanded';
 
 interface NightOrderWidgetProps {
   players: Player[];
@@ -43,6 +46,7 @@ export default function NightOrderWidget({
   scriptRoles,
   fullNightOrder = false,
 }: NightOrderWidgetProps) {
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(NIGHT_ORDER_DISCLOSURE_KEY, true);
   const [activeTab, setActiveTab] = useState<'first' | 'other'>(
     dayNumber === 1 && timeOfDay === 'night' ? 'first' : 'other'
   );
@@ -304,14 +308,29 @@ export default function NightOrderWidget({
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dashed border-gray-300 dark:border-gray-800">
-        <div>
-          <h3 className="font-display text-base font-bold tracking-wider uppercase flex items-center gap-2">
-            <Moon className="w-5 h-5 text-amber-500" />
-            Night Order Guide
+        <div className="min-w-0">
+          <h3>
+            <button
+              type="button"
+              onClick={toggleExpanded}
+              aria-expanded={isExpanded}
+              aria-controls="night-order-items"
+              aria-label="Night Order Guide"
+              className="flex items-center gap-2 text-left"
+            >
+              <Moon className="w-5 h-5 text-amber-500" />
+              <span className="font-display text-base font-bold tracking-wider uppercase">Night Order Guide</span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200",
+                  isExpanded && "rotate-180"
+                )}
+              />
+            </button>
           </h3>
           <p className="text-[11px] text-gray-500 font-medium">
             {fullNightOrder
-              ? 'Every character in the script, in wake-up sequence'
+              ? 'Displaying all characters on the script'
               : 'Currently active characters in wake-up sequence'}
           </p>
         </div>
@@ -366,8 +385,7 @@ export default function NightOrderWidget({
         </div>
       </div>
 
-      {/* Items List */}
-      <div className="space-y-2">
+      {isExpanded && <div id="night-order-items" className="space-y-2">
         {items.length === 0 ? (
           <div className="text-center py-6 text-xs text-gray-500 italic">
             No active characters wake up tonight.
@@ -482,7 +500,7 @@ export default function NightOrderWidget({
             );
           })
         )}
-      </div>
+      </div>}
     </div>
   );
 }

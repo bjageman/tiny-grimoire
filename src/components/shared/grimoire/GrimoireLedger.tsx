@@ -54,7 +54,7 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
         <ChevronDown
           size={14}
           className={cn(
-            'md:hidden shrink-0 transition-transform duration-200',
+            'shrink-0 transition-transform duration-200',
             isLightModeActive ? 'text-gray-655' : 'text-gray-500',
             !collapsed && 'rotate-180'
           )}
@@ -62,7 +62,7 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
       </button>
       <div className={cn(
         'gap-1.5 text-xs grid-cols-1',
-        collapsed ? 'hidden md:grid' : 'grid'
+        collapsed ? 'hidden' : 'grid'
       )}>
         {players.map((p, index) => {
           const rObj = roles.find(r => r.id === p.roleId);

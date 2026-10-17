@@ -350,11 +350,13 @@ describe('GamePhase - Reset Reminders confirmation', () => {
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(ledgerList.className).toContain('hidden');
-    expect(ledgerList.className).toContain('md:grid');
+    expect(ledgerList.className).not.toContain('md:grid');
+    expect(toggle.querySelector('svg')?.className.baseVal).not.toContain('md:hidden');
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(ledgerList.className).not.toContain('hidden');
+    expect(ledgerList.className).toContain('grid');
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');

@@ -1,11 +1,11 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
-import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './displayRoleEligibility';
+import { isEligibleHiddenIdentityRole, type HiddenIdentityTag } from './hiddenIdentityEligibility';
 import {
   shuffle,
   fillToCount,
-  getFakeDisplayRole,
+  getHiddenIdentityRole,
   isTravelerRole,
   splitTravelers,
   applyChoirboyKing,
@@ -50,7 +50,7 @@ export function performStandardAssignment(
   const masterOuts = (ALL_ROLES as Role[]).filter(r => r.team === 'outsider');
   const masterMins = (ALL_ROLES as Role[]).filter(r => r.team === 'minion');
   const masterDems = (ALL_ROLES as Role[]).filter(r => r.team === 'demon');
-  const eligibleForTag = (tag: AutoAssignmentTag, roles: Role[]) => roles.filter(role => isEligibleAutoAssignedDisplayRole(tag, role.id));
+  const eligibleForTag = (tag: HiddenIdentityTag, roles: Role[]) => roles.filter(role => isEligibleHiddenIdentityRole(tag, role.id));
   const eligibleForLilMonstaTag = (roles: Role[]) => eligibleForTag('lilmonsta', roles).filter(role => role.id !== 'summoner');
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
@@ -130,7 +130,7 @@ export function performStandardAssignment(
   let lilMonstaFakeRole: Role | null = null;
   if (hasLilMonsta) {
     const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
-    lilMonstaFakeRole = getFakeDisplayRole(
+    lilMonstaFakeRole = getHiddenIdentityRole(
       eligibleForLilMonstaTag(mins),
       eligibleForLilMonstaTag(fallbackMins),
       eligibleForLilMonstaTag(masterMins),
@@ -270,12 +270,12 @@ export function performStandardAssignment(
     const fallbackPool = marionetteFakeTeam === 'outsider' ? fallbackOuts : fallbackTfs;
     const masterPool = marionetteFakeTeam === 'outsider' ? masterOuts : masterTfs;
 
-    marionetteFakeRole = getFakeDisplayRole(
+    marionetteFakeRole = getHiddenIdentityRole(
       eligibleForTag('marionette', scriptPool),
       eligibleForTag('marionette', fallbackPool),
       eligibleForTag('marionette', masterPool),
       excludeIds,
-      r => isEligibleAutoAssignedDisplayRole('marionette', r.id)
+      r => isEligibleHiddenIdentityRole('marionette', r.id)
     );
   }
 
@@ -286,12 +286,12 @@ export function performStandardAssignment(
     const excludeIds = new Set([...roleIdsInPlay]);
     if (marionetteFakeRole) excludeIds.add(marionetteFakeRole.id);
 
-    drunkFakeRole = getFakeDisplayRole(
+    drunkFakeRole = getHiddenIdentityRole(
       eligibleForTag('drunk', tfs),
       eligibleForTag('drunk', fallbackTfs),
       eligibleForTag('drunk', masterTfs),
       excludeIds,
-      r => isEligibleAutoAssignedDisplayRole('drunk', r.id) && r.id !== marionetteFakeRole?.id
+      r => isEligibleHiddenIdentityRole('drunk', r.id) && r.id !== marionetteFakeRole?.id
     );
   }
 
@@ -301,7 +301,7 @@ export function performStandardAssignment(
   if (hasLunaticInPlay) {
     const excludeIds = new Set([...roleIdsInPlay]);
 
-    lunaticFakeRole = getFakeDisplayRole(
+    lunaticFakeRole = getHiddenIdentityRole(
       eligibleForTag('lunatic', dems),
       eligibleForTag('lunatic', fallbackDems),
       eligibleForTag('lunatic', masterDems),

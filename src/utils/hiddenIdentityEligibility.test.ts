@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './displayRoleEligibility';
+import { isEligibleHiddenIdentityRole, type HiddenIdentityTag } from './hiddenIdentityEligibility';
 
-describe('isEligibleAutoAssignedDisplayRole', () => {
+describe('isEligibleHiddenIdentityRole', () => {
   it.each([
     ['drunk', 'drunk'],
     ['marionette', 'drunk'],
@@ -9,7 +9,7 @@ describe('isEligibleAutoAssignedDisplayRole', () => {
     ['lunatic', 'lilmonsta'],
     ['lilmonsta', 'marionette'],
   ] as const)('rejects %s displaying as %s during auto-assignment', (tag, roleId) => {
-    expect(isEligibleAutoAssignedDisplayRole(tag, roleId)).toBe(false);
+    expect(isEligibleHiddenIdentityRole(tag, roleId)).toBe(false);
   });
 
   it.each([
@@ -17,7 +17,7 @@ describe('isEligibleAutoAssignedDisplayRole', () => {
     ['marionette', 'recluse'],
     ['lunatic', 'imp'],
     ['lilmonsta', 'poisoner'],
-  ] as [AutoAssignmentTag, string][])('allows %s displaying as %s during auto-assignment', (tag, roleId) => {
-    expect(isEligibleAutoAssignedDisplayRole(tag, roleId)).toBe(true);
+  ] as [HiddenIdentityTag, string][])('allows %s shown as %s during auto-assignment', (tag, roleId) => {
+    expect(isEligibleHiddenIdentityRole(tag, roleId)).toBe(true);
   });
 });

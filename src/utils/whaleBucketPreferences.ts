@@ -1,5 +1,5 @@
 import type { PlayerPreferences, Role } from '../types';
-import { isEligibleAutoAssignedDisplayRole } from './displayRoleEligibility';
+import { isEligibleHiddenIdentityRole } from './hiddenIdentityEligibility';
 
 const DEMON_SLOT_ROLE_IDS = new Set(['atheist', 'summoner']);
 
@@ -34,7 +34,7 @@ export function chooseLilMonstaMinion(
   const eligibleMinions = roles.filter(role =>
     role.team === 'minion' &&
     !excludedIds.has(role.id) &&
-    isEligibleAutoAssignedDisplayRole('lilmonsta', role.id)
+    isEligibleHiddenIdentityRole('lilmonsta', role.id)
   );
   const preferredMinion = preferences?.minion
     .map(id => eligibleMinions.find(role => role.id === id))

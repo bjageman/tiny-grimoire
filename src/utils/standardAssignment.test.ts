@@ -526,25 +526,26 @@ describe('performStandardAssignment', () => {
     const imp: Role = { id: 'imp', name: 'Imp', team: 'demon' };
     const lilMonstaRole: Role = { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' };
 
-    it("applies the displayed Godfather's Outsider modifier for Lil' Monsta", () => {
+    it("adds two Outsiders when Lil' Monsta draws Baron as its displayed Minion", () => {
       const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
-      const godfather: Role = { id: 'godfather', name: 'Godfather', team: 'minion', setup: true };
+      const baron: Role = { id: 'baron', name: 'Baron', team: 'minion', setup: true };
       const script: Role[] = [
         ...baseTownsfolk,
         recluse,
         { id: 'saint', name: 'Saint', team: 'outsider' },
+        { id: 'butler', name: 'Butler', team: 'outsider' },
         poisoner,
-        godfather,
+        baron,
         lilMonstaRole,
       ];
-      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+      const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
 
       const result = performStandardAssignment(players, script, []);
       random.mockRestore();
 
       expect(result).not.toBeNull();
-      expect(result!.find(player => player.isTheLilMonsta)?.roleId).toBe('godfather');
-      expect(result!.filter(player => script.find(role => role.id === player.roleId)?.team === 'outsider')).toHaveLength(1);
+      expect(result!.find(player => player.isTheLilMonsta)?.roleId).toBe('baron');
+      expect(result!.filter(player => script.find(role => role.id === player.roleId)?.team === 'outsider')).toHaveLength(3);
     });
 
     const scripts: Record<string, Role[]> = {

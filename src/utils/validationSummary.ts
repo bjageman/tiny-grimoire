@@ -329,9 +329,9 @@ export function getValidationSummary(
   }
 
   // Drunk/Marionette/Lunatic must display as a different fake character; showing the role itself exposes their true identity.
-  const revealingMasqueradeIds = new Set(['drunk', 'marionette', 'lunatic']);
+  const revealingHiddenIdentityIds = new Set(['drunk', 'marionette', 'lunatic']);
   for (const p of players) {
-    if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {
+    if (p.roleId && revealingHiddenIdentityIds.has(p.roleId)) {
       const role = allRoles.find(r => r.id === p.roleId);
       failures.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
     }

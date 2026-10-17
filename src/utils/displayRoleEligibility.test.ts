@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './masqueradeRoleEligibility';
+import { isEligibleAutoAssignedDisplayRole, type AutoAssignmentTag } from './displayRoleEligibility';
 
 describe('isEligibleAutoAssignedDisplayRole', () => {
   it.each([

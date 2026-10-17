@@ -1,5 +1,5 @@
 import type { PlayerPreferences, Role } from '../types';
-import { isEligibleAutoAssignedDisplayRole } from './masqueradeRoleEligibility';
+import { isEligibleAutoAssignedDisplayRole } from './displayRoleEligibility';
 
 const DEMON_SLOT_ROLE_IDS = new Set(['atheist', 'summoner']);
 

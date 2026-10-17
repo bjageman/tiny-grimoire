@@ -29,7 +29,7 @@ function findUnusedRole(pools: Role[][], excludeIds: Set<string>): Role | null {
   return null;
 }
 
-export function getMasqueradeFakeRole(
+export function getFakeDisplayRole(
   activePool: Role[],
   fallbackPool: Role[],
   masterPool: Role[],

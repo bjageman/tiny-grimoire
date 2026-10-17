@@ -1779,6 +1779,43 @@ describe('Storyteller Notes Privacy', () => {
   });
 });
 
+describe('Storyteller Game Notes', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ['Standard', 'standard-botc-game', '#/standard', StandardSetup],
+    ['Whale Bucket', 'whale-bucket-game', '#/whale-bucket', WhaleBucket],
+  ] as const)('shows and persists the Notes widget in %s Storyteller games', async (_name, storageKey, hash, Page) => {
+    window.location.hash = hash;
+    localStorage.setItem(storageKey, JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+      gameNotes: 'Remember this',
+    }));
+
+    const storyteller = render(<Page theme="dark" toggleTheme={vi.fn()} />);
+    const desktopNotes = storyteller.container.querySelector('#game-notes-desktop textarea') as HTMLTextAreaElement;
+    const mobileNotes = storyteller.container.querySelector('#game-notes-mobile textarea') as HTMLTextAreaElement;
+
+    expect(desktopNotes).toHaveValue('Remember this');
+    expect(mobileNotes).toHaveValue('Remember this');
+    fireEvent.change(desktopNotes, { target: { value: 'Updated note' } });
+
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem(storageKey) || '{}').gameNotes).toBe('Updated note');
+    });
+    storyteller.unmount();
+  });
+});
+
 describe('Player Limit Enforcement', () => {
   beforeEach(() => {
     localStorage.clear();

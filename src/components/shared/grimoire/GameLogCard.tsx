@@ -26,7 +26,7 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
   const iconSize = isMobile ? 14 : 12;
 
   return (
-    <div className={cn(
+    <div id="game-log-card" className={cn(
       'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
       isLightModeActive
         ? 'bg-white/50 border-gray-300'

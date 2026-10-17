@@ -121,6 +121,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
+  const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
 
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
@@ -185,6 +186,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
@@ -225,6 +227,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     resetSetupModifiers();
@@ -488,6 +491,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       isLilMonstaGame,
       demonBluffs,
       gameLog,
+      gameNotes,
       reminderTokens,
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
@@ -498,7 +502,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -930,6 +934,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             }
           }}
           gameLog={gameLog}
+          notes={gameNotes}
+          onNotesChange={setGameNotes}
           onDownloadLog={() => {
             const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
             const content = header + gameLog.join('\n');

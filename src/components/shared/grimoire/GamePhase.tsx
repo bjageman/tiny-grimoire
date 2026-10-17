@@ -13,12 +13,13 @@ import GameLogCard from './GameLogCard';
 import GrimoireLedger from './GrimoireLedger';
 import DemonBluffs from './DemonBluffs';
 import BaseDistributionCard from './BaseDistributionCard';
-import AutoResizeTextarea from '../ui/AutoResizeTextarea';
 import DialogModal from '../modals/DialogModal';
 import RecapImageExport from '../recap/RecapImageExport';
+import NotesCard from './NotesCard';
 import { buildDiscordPost } from '../../../utils/discordRecap';
 import { copyText } from '../../../utils/clipboard';
 import { useDialog } from '../../../hooks/useDialog';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import { getValidationSummary } from '../../../utils/validationSummary';
 
 interface Props {
@@ -119,6 +120,7 @@ export default function GamePhase({
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [postCopied, setPostCopied] = useState(false);
   const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
+  const { isExpanded: areNotesExpanded, toggleExpanded: toggleNotesExpanded } = usePersistedDisclosure('game-notes-expanded', true);
   const [localReminderTokens, setLocalReminderTokens] = useState<PlacedReminder[]>([]);
   const reminderTokens = propReminderTokens !== undefined ? propReminderTokens : localReminderTokens;
   const setReminderTokens = onSetReminderTokens !== undefined ? onSetReminderTokens : setLocalReminderTokens;
@@ -260,13 +262,26 @@ export default function GamePhase({
           />
         )}
         {onNotesChange && (
-          <div className="hidden md:block space-y-1.5">
-            <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
-            <AutoResizeTextarea
-              value={notes ?? ''}
-              onChange={onNotesChange}
-              placeholder="Write anything here. Deductions, suspicions, reminders..."
+          <div className="md:hidden">
+            <NotesCard
+              id="game-notes-mobile"
+              notes={notes ?? ''}
+              onNotesChange={onNotesChange}
               isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
+            />
+          </div>
+        )}
+        {onNotesChange && (
+          <div className="hidden md:block">
+            <NotesCard
+              id="game-notes-desktop"
+              notes={notes ?? ''}
+              onNotesChange={onNotesChange}
+              isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
             />
           </div>
         )}
@@ -436,18 +451,6 @@ export default function GamePhase({
       )}
 
     </div>
-
-    {onNotesChange && (
-      <div className="md:hidden mt-6 space-y-1.5">
-        <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
-        <AutoResizeTextarea
-          value={notes ?? ''}
-          onChange={onNotesChange}
-          placeholder="Write anything here. Deductions, suspicions, reminders..."
-          isLightModeActive={isLightModeActive}
-        />
-      </div>
-    )}
     </>
   );
 }

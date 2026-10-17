@@ -101,6 +101,34 @@ describe('GamePhase - Script Modal Integration', () => {
     expect(scriptButton).toBeInTheDocument();
   });
 
+  it('places the Notes widget below Night Order on desktop and mobile', () => {
+    render(
+      <GamePhase
+        {...defaultProps}
+        notes="Storyteller note"
+        onNotesChange={vi.fn()}
+        gameLog={[]}
+        onDownloadLog={vi.fn()}
+      />
+    );
+
+    const nightOrder = document.getElementById('night-order-widget')!;
+    const desktopNotes = document.getElementById('game-notes-desktop')!;
+    const mobileNotes = document.getElementById('game-notes-mobile')!;
+    const gameLog = document.getElementById('game-log-card')!;
+
+    expect(desktopNotes.parentElement).toHaveClass('hidden', 'md:block');
+    expect(nightOrder.compareDocumentPosition(desktopNotes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mobileNotes.parentElement).toHaveClass('md:hidden');
+    expect(nightOrder.nextElementSibling).toBe(mobileNotes.parentElement);
+    expect(mobileNotes.compareDocumentPosition(gameLog) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(within(desktopNotes).getByRole('button', { name: 'Notes' }));
+    expect(desktopNotes.querySelector('textarea')).toBeNull();
+    expect(mobileNotes.querySelector('textarea')).toBeNull();
+    expect(localStorage.getItem('game-notes-expanded')).toBe('false');
+  });
+
   it('offers current character-type counts only on the Storyteller grimoire', () => {
     const players: Player[] = [
       { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false },

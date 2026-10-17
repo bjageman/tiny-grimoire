@@ -88,7 +88,7 @@ export default function WhaleBucketDraftPhase({
               : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
           )}
         >
-          <Dices size={14} /> Re-Assign
+          <Dices size={14} /> Auto-Assign
         </button>
       </div>
 

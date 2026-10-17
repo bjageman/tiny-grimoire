@@ -904,7 +904,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           clearAllPreferences={clearAllPreferences}
           resetGame={resetGame}
           setActivePreferencePlayerId={setActivePreferencePlayerId}
-          runAssignment={runAssignment}
           onManuallyAssign={() => setPhase('draft')}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}

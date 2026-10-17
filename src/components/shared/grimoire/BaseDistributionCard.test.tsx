@@ -16,7 +16,7 @@ describe('BaseDistributionCard', () => {
     );
     const card = within(document.getElementById('standard-base-distribution')!);
 
-    expect(card.getByText('Standard Base Distribution')).toBeInTheDocument();
+    expect(card.getByText('Base Distribution')).toBeInTheDocument();
     expect(card.getByText('Townsfolk').parentElement).toHaveTextContent('3');
     expect(card.getByText('Outsiders').parentElement).toHaveTextContent('0');
 
@@ -31,6 +31,6 @@ describe('BaseDistributionCard', () => {
     render(<BaseDistributionCard playerCount={5} dist={baseDistribution} />);
 
     expect(screen.queryByLabelText('Current')).toBeNull();
-    expect(screen.getByText('Standard Base Distribution')).toBeInTheDocument();
+    expect(screen.getByText('Base Distribution')).toBeInTheDocument();
   });
 });

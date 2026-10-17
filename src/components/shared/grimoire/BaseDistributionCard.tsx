@@ -35,7 +35,7 @@ export default function BaseDistributionCard({
         <h4 className={cn(
           'text-xs uppercase font-bold tracking-wider',
           isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-        )}>{showCurrent && currentDist ? 'Current Distribution' : 'Standard Base Distribution'}</h4>
+        )}>{showCurrent && currentDist ? 'Current Distribution' : 'Base Distribution'}</h4>
         {currentDist && (
           <label
             htmlFor={`${id}-current-toggle`}

@@ -578,7 +578,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers, sentinelOutsiderDelta);
+    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers, sentinelOutsiderDelta, excludedRoleIds);
     if (!result) {
       showAlert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;

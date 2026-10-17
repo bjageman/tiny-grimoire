@@ -8,10 +8,14 @@ export function assignCharacters(
   players: Player[],
   allRoles: Role[],
   allowTravelers: boolean = false,
-  sentinelOutsiderDelta: number = 0
+  sentinelOutsiderDelta: number = 0,
+  excludedRoleIds: string[] = []
 ): AssignmentResult[] | null {
   const N = players.length;
   if (N < 5) return null;
+
+  const excludedRoles = new Set(excludedRoleIds);
+  const availableRoles = allRoles.filter(role => !excludedRoles.has(role.id));
 
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
@@ -41,11 +45,13 @@ export function assignCharacters(
   const basePlayers = players.filter(p => !travelerIds.has(p.id));
 
   // 2. Assign traveler roles
-  const travelerRoles = allRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller');
+  const travelerRoles = availableRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller');
   const masterTravelers = (ALL_ROLES as Role[])
-    .filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+    .filter(r => (r.team === 'traveler' || (r.team as string) === 'traveller') && !excludedRoles.has(r.id))
     .map(r => ({ ...r, team: (r.team as string) === 'traveller' ? 'traveler' : r.team }));
   const availableTravelers = travelerRoles.length > 0 ? travelerRoles : masterTravelers;
+
+  if (travelerPlayers.length > 0 && availableTravelers.length === 0) return null;
 
   const usedTravelerIds = new Set<string>();
   const travelerAssignments: AssignmentResult[] = [];
@@ -59,7 +65,7 @@ export function assignCharacters(
 
     if (availablePrefs.length > 0) {
       const id = randomChoice(availablePrefs);
-      const role = allRoles.find(r => r.id === id) || masterTravelers.find(r => r.id === id);
+      const role = availableRoles.find(r => r.id === id) || masterTravelers.find(r => r.id === id);
       if (role) {
         chosenRole = role;
         fromPref = true;
@@ -85,7 +91,7 @@ export function assignCharacters(
   if (baseCount < 5) return null;
 
   const baseDist = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
-  const baseAssignments = assignBaseCharacters(basePlayers, allRoles, baseDist, sentinelOutsiderDelta);
+  const baseAssignments = assignBaseCharacters(basePlayers, availableRoles, baseDist, sentinelOutsiderDelta);
   if (!baseAssignments) return null;
 
   const finalAssignments = [...baseAssignments, ...travelerAssignments];

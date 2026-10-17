@@ -122,6 +122,44 @@ describe('assignCharacters', () => {
     expect(new Set(result!.map(assignment => assignment.role.id)).size).toBe(15);
   });
 
+  it('does not assign excluded characters from base or Traveler preferences', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+      { id: 'beggar', name: 'Beggar', team: 'traveler' },
+      { id: 'thief', name: 'Thief', team: 'traveler' },
+    ];
+    const excludedRoleIds = ['chef', 'poisoner', 'imp', 'beggar'];
+    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: ['chef'],
+        outsider: [],
+        minion: ['poisoner'],
+        demon: ['imp'],
+        traveler: index === 0 ? ['beggar'] : [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles, true, 0, excludedRoleIds);
+
+    expect(result).not.toBeNull();
+    expect(result!.map(assignment => assignment.role.id)).not.toEqual(
+      expect.arrayContaining(excludedRoleIds),
+    );
+    expect(result!.find(assignment => assignment.player.id === '1')?.role.id).toBe('thief');
+  });
+
   it('should assign a Damsel when a Huntsman is in play', () => {
     const roles: Role[] = [
       { id: 'huntsman', name: 'Huntsman', team: 'townsfolk' },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { ArrowLeft, GitBranch, Coffee } from 'lucide-react';
+import { ArrowLeft, GitBranch, Coffee, History } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { WhaleIcon } from '../tokens/WhaleIcon';
 import HeaderMenu from './HeaderMenu';
@@ -161,6 +161,18 @@ export default function PageLayout({
           </p>
         </div>
         <div id="page-footer-links" className="flex items-center gap-1">
+          <a
+            id="footer-changelog-link"
+            href="#/changelog"
+            aria-label="Changelog"
+            title="Changelog"
+            className={cn(
+              "p-1.5 rounded-full transition-all",
+              isLight ? "text-gray-400 hover:text-gray-700 hover:bg-black/5" : "text-gray-600 hover:text-gray-300 hover:bg-white/10"
+            )}
+          >
+            <History size={18} />
+          </a>
           <a
             id="footer-whale-bucket-link"
             href="https://sites.google.com/view/cute-mage-botc/scripts/whalebucket-draft"

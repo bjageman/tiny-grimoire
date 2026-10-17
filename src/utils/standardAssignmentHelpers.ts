@@ -29,7 +29,7 @@ function findUnusedRole(pools: Role[][], excludeIds: Set<string>): Role | null {
   return null;
 }
 
-export function getHiddenIdentityRole(
+export function getHiddenRoleCharacter(
   activePool: Role[],
   fallbackPool: Role[],
   masterPool: Role[],

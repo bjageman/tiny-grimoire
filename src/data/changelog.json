@@ -26,6 +26,22 @@
       {
         "description": "Setup Modifiers and Grimoire Balance Verification now remember whether they are expanded.",
         "pullRequests": [413]
+      },
+      {
+        "description": "Added the weekly changelog, a collapsible night-order guide, and a current grimoire distribution summary.",
+        "pullRequests": [417, 419, 420]
+      },
+      {
+        "description": "Improved Game Notes responsiveness, ledger reorder feedback, and grimoire recap images.",
+        "pullRequests": [421, 422, 425]
+      },
+      {
+        "description": "Applied Lil' Monsta holder setup modifiers and tightened character assignment safeguards for tag roles, Summoner conflicts, and impossible selections.",
+        "pullRequests": [423, 426, 427, 429, 431]
+      },
+      {
+        "description": "Simplified Whale Bucket assignment with clearer Auto-Assign and Clear Roles actions.",
+        "pullRequests": [433]
       }
     ]
   },

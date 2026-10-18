@@ -107,19 +107,19 @@ export default function WhaleBucketSetupPhase({
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <div className="flex flex-col items-center gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
-            <h2 className="text-center font-display text-base font-bold tracking-wider uppercase text-gray-300 sm:text-left">Setup <span>({players.length} Players)</span></h2>
+            <h2 className="text-center font-display text-lg font-bold tracking-wider uppercase text-gray-300 sm:text-left">Setup <span>({players.length} Players)</span></h2>
             <div className="flex justify-center gap-2">
               {players.length > 0 && (
                 <>
                   <button
                     onClick={autoFillAllPreferences}
-                    className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
+                    className="text-xs bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
                   >
                     Auto-Fill All
                   </button>
                   <button
                     onClick={clearAllPreferences}
-                    className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                    className="text-xs bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
                   >
                     Clear All
                   </button>
@@ -130,7 +130,7 @@ export default function WhaleBucketSetupPhase({
                 onClick={resetGame}
                 disabled={isSecondary}
                 className={cn(
-                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  "text-xs bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
                   isSecondary && "opacity-40 cursor-not-allowed"
                 )}
                 title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}

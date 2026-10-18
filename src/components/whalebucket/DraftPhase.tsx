@@ -67,7 +67,7 @@ export default function WhaleBucketDraftPhase({
     <div className="space-y-5">
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
         <h2 className={cn(
-          "text-center font-display text-base font-bold tracking-wider uppercase sm:text-left",
+          "text-center font-display text-lg font-bold tracking-wider uppercase sm:text-left",
           isLightModeActive ? "text-gray-800" : "text-gray-300"
         )}>
           Character Assignment
@@ -77,7 +77,7 @@ export default function WhaleBucketDraftPhase({
             id="reassign-characters-button"
             onClick={runAssignment}
             className={cn(
-              "w-full shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto sm:min-w-0 sm:shrink",
+              "w-full shrink-0 justify-center whitespace-nowrap text-base font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto sm:min-w-0 sm:shrink",
               isLightModeActive
                 ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
                 : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
@@ -89,7 +89,7 @@ export default function WhaleBucketDraftPhase({
             id="clear-roles-button"
             onClick={onClearRoles}
             className={cn(
-              "w-full shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto",
+              "w-full shrink-0 justify-center whitespace-nowrap text-base font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto",
               isLightModeActive
                 ? "bg-clocktower-blood/10 hover:bg-clocktower-blood/20 text-clocktower-blood border-clocktower-blood/20"
                 : "bg-clocktower-blood/20 hover:bg-clocktower-blood/35 text-red-300 border-clocktower-blood/30"

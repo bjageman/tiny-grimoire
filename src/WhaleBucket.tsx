@@ -893,7 +893,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
+      contentClassName="px-4 md:px-8 lg:px-12 pt-3 pb-4"
     >
 
       {phase === 'setup' && (

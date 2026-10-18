@@ -220,6 +220,29 @@ describe('computeBalance — Lord of Typhon', () => {
   });
 });
 
+describe('computeBalance — Legion', () => {
+  it('allows any good-role split, no Minions, and a Demon range from half the players to all but one', () => {
+    const roles = [dem('legion'), dem('legion'), dem('legion'), dem('legion'), tf('chef'), out('butler')];
+    const b = computeBalance(roles, 8);
+
+    expect(b.expectedTownsfolkLabel).toBe('any');
+    expect(b.expectedOutsiderLabel).toBe('any');
+    expect(b.expectedMinion).toBe(0);
+    expect(b.expectedDemon).toBe(4);
+    expect(b.expectedDemonLabel).toBe('4 - 7');
+    expect(b.isDemonValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+
+  it('rejects Legion Demon counts outside the allowed range', () => {
+    const b = computeBalance([dem('legion'), dem('legion'), dem('legion')], 8);
+
+    expect(b.expectedDemonLabel).toBe('4 - 7');
+    expect(b.isDemonValid).toBe(false);
+    expect(b.isValid).toBe(false);
+  });
+});
+
 describe('computeBalance — Atheist', () => {
   it('allows any Townsfolk and Outsider split with no evil players', () => {
     const roles = [tf('atheist'), tf('washerwoman'), tf('chef'), out('recluse'), out('saint'), out('butler')];

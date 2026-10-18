@@ -19,6 +19,7 @@ const validationSummary: ValidationSummary = {
   isValid: true,
   expectedOutsiderLabel: '0',
   expectedTownsfolkLabel: '3',
+  expectedDemonLabel: '1',
 };
 
 describe('WhaleBucketDraftPhase', () => {

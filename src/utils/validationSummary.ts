@@ -22,6 +22,7 @@ export interface ValidationSummary {
   isValid: boolean;
   expectedOutsiderLabel: string;
   expectedTownsfolkLabel: string;
+  expectedDemonLabel: string;
 }
 
 export function getValidationSummary(
@@ -108,10 +109,9 @@ export function getValidationSummary(
   const modifications: string[] = [];
   
   if (hasLegion) {
-    const L = Math.round(baseCount * 0.6);
-    expectedDemon = L;
+    expectedDemon = Math.ceil(baseCount / 2);
     expectedMinion = 0;
-    modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
+    modifications.push(`Legion active (${expectedDemon}–${baseCount - 1} Demons, 0 Minions, any Townsfolk/Outsiders)`);
   } else if (hasAtheist) {
     expectedDemon = 0;
     expectedMinion = 0;
@@ -180,7 +180,7 @@ export function getValidationSummary(
   }
   
   expectedDemon = Math.max(0, expectedDemon);
-  const hasFlexibleGoodCounts = hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
+  const hasFlexibleGoodCounts = hasLegion || hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
 
   const gfMods = (hasGodfather && !hasLegion) ? [-1, 1] : [0];
   const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];
@@ -190,7 +190,7 @@ export function getValidationSummary(
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion) {
-    possibleOutsiderCounts.add(0);
+    for (let i = 0; i <= baseCount; i++) possibleOutsiderCounts.add(i);
   } else if (hasFlexibleGoodCounts) {
     const maxOutsiders = Math.max(0, baseCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= maxOutsiders; i++) {
@@ -219,12 +219,15 @@ export function getValidationSummary(
     roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
   }
   const isOutsiderValid = validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
-  const isDemonValid = counts.demon === expectedDemon;
+  const isTownsfolkValid = hasLegion || (isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider);
+  const isDemonValid = hasLegion
+    ? counts.demon >= expectedDemon && counts.demon <= baseCount - 1
+    : counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
   const expectedOutsiderLabel = hasFlexibleGoodCounts ? 'any' : validOutsiders.join(' or ');
   const expectedTownsfolkLabel = hasFlexibleGoodCounts ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedDemonLabel = hasLegion ? `${expectedDemon} - ${baseCount - 1}` : String(expectedDemon);
 
   // For backward compatibility / display fallback
   const expectedOutsider = Math.min(maxScriptOutsiders, Math.max(0, base.outsider + fixedOutsiderDelta));
@@ -285,9 +288,9 @@ export function getValidationSummary(
 
   if (!isDemonValid) {
     if (counts.demon < expectedDemon) {
-      failures.push(`Too few Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+      failures.push(`Too few Demons: expected ${expectedDemonLabel}, but got ${counts.demon}.`);
     } else if (counts.demon > expectedDemon) {
-      failures.push(`Too many Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+      failures.push(`Too many Demons: expected ${expectedDemonLabel}, but got ${counts.demon}.`);
     }
   }
 
@@ -417,6 +420,7 @@ export function getValidationSummary(
     failures,
     isValid,
     expectedOutsiderLabel,
-    expectedTownsfolkLabel
+    expectedTownsfolkLabel,
+    expectedDemonLabel
   };
 }

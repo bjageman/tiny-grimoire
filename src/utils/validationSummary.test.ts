@@ -701,6 +701,60 @@ describe('validationSummary utility', () => {
     });
   });
 
+  describe('Legion', () => {
+    it('allows any Townsfolk/Outsider split, no Minions, and Demon counts from half to total minus one', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'legion', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'legion', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'legion', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'legion', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'chef', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'librarian', isDead: false },
+        { id: '7', name: 'Player 7', roleId: 'washerwoman', isDead: false },
+        { id: '8', name: 'Player 8', roleId: 'butler', isDead: false },
+      ];
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.expected.townsfolk).toBe(3);
+        expect(summary.expected.outsider).toBe(1);
+        expect(summary.expected.minion).toBe(0);
+        expect(summary.expected.demon).toBe(4);
+        expect(summary.expectedDemonLabel).toBe('4 - 7');
+        expect(summary.expectedTownsfolkLabel).toBe('any');
+        expect(summary.expectedOutsiderLabel).toBe('any');
+        expect(summary.isValid).toBe(true);
+      }
+    });
+
+    it('rejects Demon counts below the minimum or equal to the total player count', () => {
+      for (const demonCount of [3, 8]) {
+        const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+          id: String(index + 1),
+          name: `Player ${index + 1}`,
+          roleId: index < demonCount ? 'legion' : 'chef',
+          isDead: false,
+        }));
+
+        const summary = getValidationSummary(players);
+        expect(summary?.isValid).toBe(false);
+        expect(summary?.expectedDemonLabel).toBe('4 - 7');
+      }
+    });
+
+    it('does not require a fixed Townsfolk count when the Demon count is above its minimum', () => {
+      const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+        id: String(index + 1),
+        name: `Player ${index + 1}`,
+        roleId: index < 5 ? 'legion' : index === 5 ? 'chef' : index === 6 ? 'librarian' : 'butler',
+        isDead: false,
+      }));
+
+      expect(getValidationSummary(players)?.isValid).toBe(true);
+    });
+  });
+
   it('accepts up to three Village Idiots but still flags other duplicates', () => {
     const roles: Role[] = [
       { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },

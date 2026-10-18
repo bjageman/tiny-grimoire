@@ -107,7 +107,7 @@ export default function GrimoireBalanceVerification({
           <div>
             <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
             <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-              {validationSummary.counts.demon} / {validationSummary.expected.demon}
+              {validationSummary.counts.demon} / {validationSummary.expectedDemonLabel}
             </div>
           </div>
           {validationSummary.counts.traveler > 0 && (

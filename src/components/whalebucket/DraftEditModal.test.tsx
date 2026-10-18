@@ -70,6 +70,17 @@ describe('WhaleBucketDraftEditModal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('places the pronoun control before the player name in the header', () => {
+    const { container } = render(
+      <WhaleBucketDraftEditModal {...defaultProps} onUpdatePronouns={vi.fn()} isLightModeActive={false} />
+    );
+    const pronounButton = container.querySelector('#draft-player-pronouns-select');
+    const playerName = container.querySelector('#whalebucket-draft-edit-modal h3');
+
+    expect(pronounButton?.parentElement?.parentElement).toBe(playerName?.parentElement);
+    expect(pronounButton?.parentElement?.nextElementSibling).toBe(playerName);
+  });
+
   it('enables character selection and special role toggles when isSecondary is true', () => {
     const aliceWithRole: Player = {
       id: 'p1',

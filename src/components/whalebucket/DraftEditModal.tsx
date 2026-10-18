@@ -170,10 +170,22 @@ export default function WhaleBucketDraftEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center">
-          <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
-            {player.name}
-          </h3>
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {onUpdatePronouns && (
+              <PronounSelect
+                id="draft-player-pronouns-select"
+                pronouns={player.pronouns}
+                onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
+                isLightModeActive={isLightModeActive}
+                open={pronounsOpen}
+                onOpenChange={setPronounsOpen}
+              />
+            )}
+            <h3 className="truncate font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
+              {player.name}
+            </h3>
+          </div>
           <button
             id="close-draft-edit-modal-button"
             type="button"
@@ -184,19 +196,6 @@ export default function WhaleBucketDraftEditModal({
             <X size={18} />
           </button>
         </div>
-
-        {onUpdatePronouns && (
-          <div className="flex">
-            <PronounSelect
-              id="draft-player-pronouns-select"
-              pronouns={player.pronouns}
-              onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
-              isLightModeActive={isLightModeActive}
-              open={pronounsOpen}
-              onOpenChange={setPronounsOpen}
-            />
-          </div>
-        )}
 
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
           <div className="flex flex-wrap gap-1.5">

@@ -113,13 +113,13 @@ export default function WhaleBucketSetupPhase({
                 <>
                   <button
                     onClick={autoFillAllPreferences}
-                    className="text-xs bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
+                    className="text-sm sm:text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
                   >
                     Auto-Fill All
                   </button>
                   <button
                     onClick={clearAllPreferences}
-                    className="text-xs bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                    className="text-sm sm:text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-gray-700 transition-all"
                   >
                     Clear All
                   </button>
@@ -130,7 +130,7 @@ export default function WhaleBucketSetupPhase({
                 onClick={resetGame}
                 disabled={isSecondary}
                 className={cn(
-                  "text-xs bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  "text-sm sm:text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-clocktower-blood/25 transition-all",
                   isSecondary && "opacity-40 cursor-not-allowed"
                 )}
                 title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}

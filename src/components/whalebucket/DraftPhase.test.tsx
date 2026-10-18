@@ -52,6 +52,7 @@ describe('WhaleBucketDraftPhase', () => {
     const assignmentActions = container.querySelector('#whalebucket-assignment-actions')!;
     const reassignButton = container.querySelector('#reassign-characters-button')!;
     const openGrimoireButton = container.querySelector('#open-grimoire-button')!;
+    const assignmentHeader = container.querySelector('#whalebucket-assignment-actions')!.parentElement!;
     expect(layout.className).toContain('md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]');
     expect(sidebar.className).toContain('contents');
     expect(sidebar.className).toContain('md:block');
@@ -62,6 +63,8 @@ describe('WhaleBucketDraftPhase', () => {
     expect(grimoire.className).toContain('md:max-w-none');
     expect(grimoire.className).toContain('md:aspect-[34/25]');
     expect(reassignButton.className).toContain('w-full');
+    expect(assignmentHeader.className).toContain('flex-col');
+    expect(assignmentHeader.className).toContain('sm:flex-row');
     expect(assignmentActions.className).toContain('flex-col');
     expect(assignmentActions.className).toContain('sm:flex-row');
     expect(sidebar.querySelector('#grimoire-balance-verification')).toBeInTheDocument();

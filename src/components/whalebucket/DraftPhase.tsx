@@ -65,14 +65,14 @@ export default function WhaleBucketDraftPhase({
   return (
     <>
     <div className="space-y-5">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
         <h2 className={cn(
           "font-display text-base font-bold tracking-wider uppercase",
           isLightModeActive ? "text-gray-800" : "text-gray-300"
         )}>
           Character Assignment
         </h2>
-        <div id="whalebucket-assignment-actions" className="w-32 shrink-0 flex flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div id="whalebucket-assignment-actions" className="w-32 shrink-0 self-end flex flex-col items-stretch gap-2 sm:w-auto sm:self-auto sm:flex-row sm:items-center">
           <button
             id="reassign-characters-button"
             onClick={runAssignment}

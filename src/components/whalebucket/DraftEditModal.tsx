@@ -182,7 +182,7 @@ export default function WhaleBucketDraftEditModal({
                 onOpenChange={setPronounsOpen}
               />
             )}
-            <h3 className="truncate font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
+            <h3 className="truncate font-display font-bold text-base text-gray-200 tracking-wider uppercase">
               {player.name}
             </h3>
           </div>

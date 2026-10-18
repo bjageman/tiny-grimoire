@@ -11,7 +11,17 @@ function teamCounts(preset: PresetScript): Record<Role['team'], number> {
 
 describe('PRESET_SCRIPTS', () => {
   it('ships the three official base scripts', () => {
-    expect(PRESET_SCRIPTS.map(p => p.name)).toEqual(['Trouble Brewing', 'Bad Moon Rising', 'Sects & Violets']);
+    expect(PRESET_SCRIPTS.slice(0, 3).map(p => p.name)).toEqual(['Trouble Brewing', 'Bad Moon Rising', 'Sects & Violets']);
+    expect(PRESET_SCRIPTS[3].name).toBe('The Base 3 Roster');
+  });
+
+  it('combines the distinct characters from all three base scripts', () => {
+    const baseScripts = PRESET_SCRIPTS.slice(0, 3);
+    const expectedRoleIds = new Set(baseScripts.flatMap(script => script.roles.map(role => role.id)));
+    const roster = PRESET_SCRIPTS.find(script => script.id === 'base-3-roster')!;
+
+    expect(new Set(roster.roles.map(role => role.id))).toEqual(expectedRoleIds);
+    expect(roster.roles.length).toBe(expectedRoleIds.size);
   });
 
   it('resolves every character against the app role list', () => {

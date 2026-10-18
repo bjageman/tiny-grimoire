@@ -7,11 +7,19 @@ const props = { onSelect: vi.fn(), onCancel: vi.fn(), isLightModeActive: false }
 describe('PresetScriptModal', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('offers all three base scripts', () => {
+  it('offers all three base scripts and their combined roster', () => {
     render(<PresetScriptModal {...props} />);
-    ['Trouble Brewing', 'Bad Moon Rising', 'Sects & Violets'].forEach(name => {
+    ['Trouble Brewing', 'Bad Moon Rising', 'Sects & Violets', 'The Base 3 Roster'].forEach(name => {
       expect(screen.getByText(new RegExp(name))).toBeInTheDocument();
     });
+  });
+
+  it('selects the combined Base 3 roster', () => {
+    render(<PresetScriptModal {...props} />);
+    fireEvent.click(document.getElementById('preset-script-base-3-roster-button')!);
+
+    expect(props.onSelect).toHaveBeenCalledOnce();
+    expect(props.onSelect.mock.calls[0][0].name).toBe('The Base 3 Roster');
   });
 
   it('hands back the chosen script with its roles', () => {

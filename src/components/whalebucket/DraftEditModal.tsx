@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -105,7 +105,10 @@ export default function WhaleBucketDraftEditModal({
       <button
         key={role.id}
         id={`role-option-${role.id}`}
-        onClick={() => updatePlayerRole(activeDraftPlayerId, isCurrent ? '' : role.id)}
+        onClick={() => {
+          updatePlayerRole(activeDraftPlayerId, isCurrent ? '' : role.id);
+          onClose();
+        }}
         className={cn(
           "w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center",
           isPreferred ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-gray-800",
@@ -167,27 +170,32 @@ export default function WhaleBucketDraftEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center">
-          <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
-            {player.name}
-          </h3>
-          <button id="close-draft-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
-            Close
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {onUpdatePronouns && (
+              <PronounSelect
+                id="draft-player-pronouns-select"
+                pronouns={player.pronouns}
+                onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
+                isLightModeActive={isLightModeActive}
+                open={pronounsOpen}
+                onOpenChange={setPronounsOpen}
+              />
+            )}
+            <h3 className="truncate font-display font-bold text-base text-gray-200 tracking-wider uppercase">
+              {player.name}
+            </h3>
+          </div>
+          <button
+            id="close-draft-edit-modal-button"
+            type="button"
+            onClick={onClose}
+            className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
+            aria-label="Close"
+          >
+            <X size={18} />
           </button>
         </div>
-
-        {onUpdatePronouns && (
-          <div className="flex">
-            <PronounSelect
-              id="draft-player-pronouns-select"
-              pronouns={player.pronouns}
-              onChange={(pronouns) => onUpdatePronouns(player.id, pronouns)}
-              isLightModeActive={isLightModeActive}
-              open={pronounsOpen}
-              onOpenChange={setPronounsOpen}
-            />
-          </div>
-        )}
 
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
           <div className="flex flex-wrap gap-1.5">
@@ -197,7 +205,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isDrunkSelectedElsewhere}
                 onClick={() => togglePlayerTheDrunk(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheDrunk
                     ? "bg-yellow-600 border-yellow-755 text-black font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -220,7 +228,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isMarionetteSelectedElsewhere}
                 onClick={() => togglePlayerTheMarionette(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheMarionette
                     ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -243,7 +251,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isLunaticSelectedElsewhere}
                 onClick={() => togglePlayerTheLunatic(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheLunatic
                     ? "bg-clocktower-outsider border-clocktower-outsider/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -265,7 +273,7 @@ export default function WhaleBucketDraftEditModal({
                 type="button"
                 onClick={() => togglePlayerTheLilMonsta(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5",
                   player.isTheLilMonsta
                     ? "bg-clocktower-demon border-clocktower-demon/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"

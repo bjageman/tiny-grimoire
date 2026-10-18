@@ -135,6 +135,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     });
 
     setPhase('game');
+    document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [players, addLogEntry, setPhase]);
 
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
@@ -892,7 +893,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
+      contentClassName="px-4 md:px-8 lg:px-12 pt-3 pb-4"
     >
 
       {phase === 'setup' && (
@@ -919,7 +920,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           clearAllPreferences={clearAllPreferences}
           resetGame={resetGame}
           setActivePreferencePlayerId={setActivePreferencePlayerId}
-          onManuallyAssign={() => setPhase('draft')}
+          onManuallyAssign={() => {
+            setPhase('draft');
+            document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}
@@ -942,7 +946,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
-          onClearRoles={clearAssignedRoles}
+          onClearRoles={() => showConfirm('Are you sure you want to clear all assigned roles?', clearAssignedRoles, 'Clear Roles')}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
           remotePlayerCount={remotePlayerIds.size}

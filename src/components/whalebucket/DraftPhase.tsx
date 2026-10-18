@@ -47,45 +47,37 @@ export default function WhaleBucketDraftPhase({
   const [overrideFailures, setOverrideFailures] = useState(false);
   const [showGrimoireWarning, setShowGrimoireWarning] = useState(false);
 
-  const doStartGame = () => {
-    onStartGame();
-    setTimeout(() => {
-      if (typeof document === 'undefined') return;
-      document.getElementById('grimoire-board-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
-
   // Warn once before sending assignments to players, mirroring Standard mode (grimoireConfirmed re-arms only on Reset).
   const handleOpenGrimoire = () => {
     if (remotePlayerCount > 0 && !grimoireConfirmed) {
       setShowGrimoireWarning(true);
     } else {
-      doStartGame();
+      onStartGame();
     }
   };
 
   const confirmOpenGrimoire = () => {
     setShowGrimoireWarning(false);
     onGrimoireConfirmed?.();
-    doStartGame();
+    onStartGame();
   };
 
   return (
     <>
     <div className="space-y-5">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
         <h2 className={cn(
-          "font-display text-base font-bold tracking-wider uppercase",
+          "text-center font-display text-lg font-bold tracking-wider uppercase sm:text-left",
           isLightModeActive ? "text-gray-800" : "text-gray-300"
         )}>
-          2. Character Assignment
+          Character Assignment
         </h2>
-        <div className="flex shrink-0 items-center gap-2">
+        <div id="whalebucket-assignment-actions" className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
           <button
             id="reassign-characters-button"
             onClick={runAssignment}
             className={cn(
-              "min-w-[7rem] shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:min-w-0 sm:shrink",
+              "min-w-0 flex-1 justify-center whitespace-nowrap text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm border sm:w-auto sm:flex-none sm:shrink",
               isLightModeActive
                 ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
                 : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
@@ -97,7 +89,7 @@ export default function WhaleBucketDraftPhase({
             id="clear-roles-button"
             onClick={onClearRoles}
             className={cn(
-              "shrink-0 justify-center whitespace-nowrap text-sm font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border",
+              "min-w-0 flex-1 justify-center whitespace-nowrap text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm border sm:w-auto sm:flex-none",
               isLightModeActive
                 ? "bg-clocktower-blood/10 hover:bg-clocktower-blood/20 text-clocktower-blood border-clocktower-blood/20"
                 : "bg-clocktower-blood/20 hover:bg-clocktower-blood/35 text-red-300 border-clocktower-blood/30"

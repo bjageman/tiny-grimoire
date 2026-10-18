@@ -220,6 +220,21 @@ describe('computeBalance — Lord of Typhon', () => {
   });
 });
 
+describe('computeBalance — Atheist', () => {
+  it('allows any Townsfolk and Outsider split with no evil players', () => {
+    const roles = [tf('atheist'), tf('washerwoman'), tf('chef'), out('recluse'), out('saint'), out('butler')];
+    const b = computeBalance(roles, 6);
+
+    expect(b.expectedDemon).toBe(0);
+    expect(b.expectedMinion).toBe(0);
+    expect(b.expectedOutsiderLabel).toBe('any');
+    expect(b.expectedTownsfolkLabel).toBe('any');
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+});
+
 describe('computeBalance — Alchemist', () => {
   it('warns that the Alchemist ability may affect setup whenever it is selected', () => {
     const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('alchemist'), out('recluse'), min('poisoner'), dem('imp')];

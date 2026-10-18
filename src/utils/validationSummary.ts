@@ -116,6 +116,7 @@ export function getValidationSummary(
     expectedDemon = 0;
     expectedMinion = 0;
     modifications.push("Atheist (No Evil players)");
+    modifications.push("Atheist (Any Townsfolk/Outsider count)");
     if (hasBaron) modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu) modifications.push("Fang Gu (+1 Outsider)");
     if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
@@ -179,7 +180,7 @@ export function getValidationSummary(
   }
   
   expectedDemon = Math.max(0, expectedDemon);
-  const hasFlexibleGoodCounts = hasKazali || hasXaan || hasLordOfTyphon;
+  const hasFlexibleGoodCounts = hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
 
   const gfMods = (hasGodfather && !hasLegion) ? [-1, 1] : [0];
   const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];

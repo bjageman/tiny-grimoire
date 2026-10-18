@@ -946,7 +946,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
-          onClearRoles={clearAssignedRoles}
+          onClearRoles={() => showConfirm('Are you sure you want to clear all assigned roles?', clearAssignedRoles, 'Clear Roles')}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
           remotePlayerCount={remotePlayerIds.size}

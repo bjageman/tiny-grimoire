@@ -1423,6 +1423,12 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
     expect(openGrimBtn).toBeDisabled();
 
+    fireEvent.click(storyteller.container.querySelector('#clear-roles-button')!);
+    expect(storyteller.getByText('Are you sure you want to clear all assigned roles?')).toBeInTheDocument();
+    expect(storyteller.container.querySelector('#dialog-confirm-button')).toBeInTheDocument();
+    fireEvent.click(storyteller.container.querySelector('#dialog-cancel-button')!);
+    expect(storyteller.container.querySelector('#dialog-modal')).toBeNull();
+
     storyteller.unmount();
   });
 

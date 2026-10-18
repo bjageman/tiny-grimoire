@@ -123,22 +123,22 @@ export default function WhaleBucketDraftCircle({
                 )}
 
                 {p.isTheDrunk && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-[10px] font-black bg-yellow-600 text-black border border-yellow-700 shadow-sm leading-none whitespace-nowrap">
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-xs font-black bg-yellow-600 text-black border border-yellow-700 shadow-sm leading-none whitespace-nowrap">
                     DRUNK
                   </span>
                 )}
                 {p.isTheMarionette && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-[10px] font-black bg-clocktower-minion text-white border border-clocktower-minion/40 shadow-sm leading-none whitespace-nowrap">
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-xs font-black bg-clocktower-minion text-white border border-clocktower-minion/40 shadow-sm leading-none whitespace-nowrap">
                     MARIONETTE
                   </span>
                 )}
                 {p.isTheLunatic && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-[10px] font-black bg-clocktower-outsider text-white border border-clocktower-outsider/40 shadow-sm leading-none whitespace-nowrap">
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-xs font-black bg-clocktower-outsider text-white border border-clocktower-outsider/40 shadow-sm leading-none whitespace-nowrap">
                     LUNATIC
                   </span>
                 )}
                 {p.isTheLilMonsta && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-[10px] font-black bg-clocktower-demon text-white border border-clocktower-demon/40 shadow-sm leading-none whitespace-nowrap">
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-2 py-0.5 rounded text-xs font-black bg-clocktower-demon text-white border border-clocktower-demon/40 shadow-sm leading-none whitespace-nowrap">
                     LIL' MONSTA
                   </span>
                 )}

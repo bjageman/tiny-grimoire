@@ -60,6 +60,16 @@ describe('WhaleBucketDraftEditModal', () => {
     expect(modal.className).toContain('bg-gray-900');
   });
 
+  it('closes from the icon-only close button', () => {
+    const onClose = vi.fn();
+    const { getByRole } = render(
+      <WhaleBucketDraftEditModal {...defaultProps} onClose={onClose} isLightModeActive={false} />
+    );
+
+    fireEvent.click(getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('enables character selection and special role toggles when isSecondary is true', () => {
     const aliceWithRole: Player = {
       id: 'p1',

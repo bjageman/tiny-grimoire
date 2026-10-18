@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -174,8 +174,14 @@ export default function WhaleBucketDraftEditModal({
           <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase">
             {player.name}
           </h3>
-          <button id="close-draft-edit-modal-button" onClick={onClose} className="text-xs text-gray-500 underline">
-            Close
+          <button
+            id="close-draft-edit-modal-button"
+            type="button"
+            onClick={onClose}
+            className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
+            aria-label="Close"
+          >
+            <X size={18} />
           </button>
         </div>
 

@@ -108,5 +108,6 @@ describe('WhaleBucketDraftEditModal', () => {
     const drunkButton = Array.from(container.querySelectorAll('button')).find(el => el.textContent?.includes('Drunk'));
     expect(drunkButton).toBeDefined();
     expect(drunkButton).not.toBeDisabled();
+    expect(drunkButton?.className).toContain('text-xs');
   });
 });

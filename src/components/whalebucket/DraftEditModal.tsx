@@ -205,7 +205,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isDrunkSelectedElsewhere}
                 onClick={() => togglePlayerTheDrunk(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheDrunk
                     ? "bg-yellow-600 border-yellow-755 text-black font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -228,7 +228,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isMarionetteSelectedElsewhere}
                 onClick={() => togglePlayerTheMarionette(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheMarionette
                     ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -251,7 +251,7 @@ export default function WhaleBucketDraftEditModal({
                 disabled={isLunaticSelectedElsewhere}
                 onClick={() => togglePlayerTheLunatic(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
                   player.isTheLunatic
                     ? "bg-clocktower-outsider border-clocktower-outsider/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
@@ -273,7 +273,7 @@ export default function WhaleBucketDraftEditModal({
                 type="button"
                 onClick={() => togglePlayerTheLilMonsta(player.id)}
                 className={cn(
-                  "px-2.5 py-1 rounded text-[10px] font-bold border transition-all flex items-center gap-1",
+                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5",
                   player.isTheLilMonsta
                     ? "bg-clocktower-demon border-clocktower-demon/40 text-white font-black"
                     : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"

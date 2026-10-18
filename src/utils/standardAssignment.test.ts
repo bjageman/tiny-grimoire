@@ -370,6 +370,30 @@ describe('performStandardAssignment', () => {
     }
   });
 
+  it('deals no Minions when Kazali is the Demon', () => {
+    const script: Role[] = [
+      ...Array.from({ length: 9 }, (_, index) => ({ id: `townsfolk-${index}`, name: `Townsfolk ${index}`, team: 'townsfolk' as const })),
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'scarletwoman', name: 'Scarlet Woman', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 10 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+    }));
+
+    const result = performStandardAssignment(players, script, script);
+
+    expect(result).not.toBeNull();
+    const assignedRoles = result!.map(player => script.find(role => role.id === player.roleId));
+    expect(assignedRoles.filter(role => role?.team === 'minion')).toHaveLength(0);
+    expect(assignedRoles.filter(role => role?.team === 'demon').map(role => role?.id)).toEqual(['kazali']);
+  });
+
   it('ensures the Marionette\'s fake identity is always on the script, even if it must duplicate a character in play', () => {
     // A tiny script (few Townsfolk/Outsider options) is the scenario that used to force the
     // old "unmatched" fallback into duplicating a real character's identity — e.g. a real

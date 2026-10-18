@@ -919,7 +919,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           clearAllPreferences={clearAllPreferences}
           resetGame={resetGame}
           setActivePreferencePlayerId={setActivePreferencePlayerId}
-          onManuallyAssign={() => setPhase('draft')}
+          onManuallyAssign={() => {
+            setPhase('draft');
+            document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}

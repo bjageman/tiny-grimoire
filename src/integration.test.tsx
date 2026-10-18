@@ -1406,10 +1406,14 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(manualBtn).not.toBeDisabled();
 
     // Click "Manually Assign"
+    const headerDivider = storyteller.container.querySelector('#page-header-divider')!;
+    const scrollIntoView = vi.spyOn(headerDivider, 'scrollIntoView');
     fireEvent.click(manualBtn!);
 
     // Should transition to draft (Character Assignment) phase
-    expect(storyteller.getByText(/2. Character Assignment/i)).toBeInTheDocument();
+    expect(storyteller.getByText(/Character Assignment/i)).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    scrollIntoView.mockRestore();
 
     // Bob still has no character, so "Open Grimoire" is disabled
     const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');

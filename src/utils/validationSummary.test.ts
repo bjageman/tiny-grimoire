@@ -102,7 +102,7 @@ describe('validationSummary utility', () => {
       { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
       { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
       { id: '5', name: 'Player 5', roleId: 'empath', isDead: false },
-      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'monk', isTheDrunk: true, isDead: false },
       { id: '7', name: 'Player 7', roleId: 'butler', isDead: false },
       { id: '8', name: 'Player 8', roleId: 'atheist', isDead: false },
     ];
@@ -112,7 +112,13 @@ describe('validationSummary utility', () => {
     if (summary) {
       expect(summary.expected.demon).toBe(0);
       expect(summary.expected.minion).toBe(0);
+      expect(summary.expectedOutsiderLabel).toBe('any');
+      expect(summary.expectedTownsfolkLabel).toBe('any');
+      expect(summary.isOutsiderValid).toBe(true);
+      expect(summary.isTownsfolkValid).toBe(true);
+      expect(summary.isValid).toBe(true);
       expect(summary.modifications).toContain("Atheist (No Evil players)");
+      expect(summary.modifications).toContain("Atheist (Any Townsfolk/Outsider count)");
     }
   });
 

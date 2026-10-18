@@ -49,6 +49,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     expectedDemon  = 0;
     expectedMinion = 0;
     modifications.push("Atheist (No Evil players)");
+    modifications.push("Atheist (Any Townsfolk/Outsider count)");
     if (hasBaron)      modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu)     modifications.push("Fang Gu (+1 Outsider)");
     if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
@@ -78,7 +79,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (hasXaan)   modifications.push("Xaan (Any Outsider count)");
 
   expectedDemon = Math.max(0, expectedDemon);
-  const hasFlexibleGoodCounts = hasKazali || hasXaan || hasLordOfTyphon;
+  const hasFlexibleGoodCounts = hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
 
   // Drunk and Marionette each need an extra Townsfolk beyond the real target for a non-colliding fake identity (see standardAssignment.ts).
   const tfDelta = hasLegion ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);

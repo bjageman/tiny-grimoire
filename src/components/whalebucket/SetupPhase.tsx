@@ -107,7 +107,7 @@ export default function WhaleBucketSetupPhase({
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup ({players.length} Players)</h2>
+            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup <span className="block sm:inline">({players.length} Players)</span></h2>
             <div className="flex gap-2">
               {players.length > 0 && (
                 <>

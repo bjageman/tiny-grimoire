@@ -20,7 +20,6 @@ describe('SelectCharactersModal', () => {
     roles,
     playerCount: 5,
     isLightModeActive: false,
-    onAssign: vi.fn(),
     selectedIds: new Set<string>(),
     setSelectedIds: vi.fn(),
     villageIdiotCount: 1,
@@ -29,10 +28,22 @@ describe('SelectCharactersModal', () => {
 
   it('renders correctly and displays list of roles grouped by team', () => {
     render(<SelectCharactersModal {...defaultProps} />);
+    expect(screen.getByRole('heading', { name: 'Setup Bag' })).toBeInTheDocument();
     expect(screen.getByText('Chef')).toBeInTheDocument();
     expect(screen.getByText('Washerwoman')).toBeInTheDocument();
     expect(screen.getByText('Poisoner')).toBeInTheDocument();
     expect(screen.getByText('Butler')).toBeInTheDocument();
+  });
+
+  it('closes from the footer button without assigning roles', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<SelectCharactersModal {...defaultProps} onClose={onClose} />);
+
+    fireEvent.click(screen.getByText('Close'));
+
+    expect(onClose).toHaveBeenCalledOnce();
+    rerender(<SelectCharactersModal {...defaultProps} isOpen={false} onClose={onClose} />);
+    expect(screen.queryByRole('heading', { name: 'Setup Bag' })).not.toBeInTheDocument();
   });
 
   it('displays roles in the original script JSON order by default and sorts alphabetically when toggled', () => {

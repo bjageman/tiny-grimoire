@@ -1432,6 +1432,28 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
+  it('Whale Bucket: reveals Atheist when random assignment activates Atheist mode', async () => {
+    const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: Array.from({ length: 5 }, (_, index) => ({
+        id: `p${index + 1}`,
+        name: `Player ${index + 1}`,
+        isDead: false,
+        preferences,
+      })),
+      phase: 'draft',
+    }));
+    window.location.hash = '#/whale-bucket';
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(storyteller.container.querySelector('#reassign-characters-button')!);
+
+    expect(storyteller.container.querySelector('img[alt="Atheist"]')).toBeInTheDocument();
+    randomSpy.mockRestore();
+    storyteller.unmount();
+  });
+
   it('persists both name and notes when edited together and the modal is closed (regression: stale-closure race)', async () => {
     const PLAYERS = [
       { id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' },

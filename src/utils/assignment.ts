@@ -267,7 +267,7 @@ function assignBaseCharacters(
 
   if (mode === 'atheist') {
     const includeBalloonist = hasPref('balloonist') && Math.random() < 0.7;
-    const O = Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxScriptOutsiders);
+    const O = Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxScriptOutsiders, 5);
     const T = N - O;
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
@@ -388,7 +388,7 @@ function assignBaseCharacters(
     const remainingPlayers = shuffledPlayers.filter(p => p.id !== demonPlayer.id && !minionPlayerIds.has(p.id));
     const hasXaan = getActiveRoles(assignment).some(role => role.id === 'xaan');
     const targetOutsiders = (demonRole.id === 'kazali' || hasXaan)
-      ? Math.floor(Math.random() * (Math.min(remainingPlayers.length, maxScriptOutsiders) + 1))
+      ? Math.floor(Math.random() * (Math.min(remainingPlayers.length, maxScriptOutsiders, 5) + 1))
       : Math.min(base.outsider, maxScriptOutsiders);
     const tempAssignment: { player: Player; team: 'townsfolk' | 'outsider' }[] = [];
     for (let i = 0; i < remainingPlayers.length; i++) {
@@ -456,7 +456,7 @@ function assignBaseCharacters(
           expectedMinion = 0;
         }
         expectedDemon = Math.max(0, expectedDemon);
-        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion));
+        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion), 5);
         for (let i = 0; i <= maxOutsiders; i++) {
           possibleCounts.add(i);
         }

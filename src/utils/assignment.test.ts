@@ -382,6 +382,8 @@ describe('assignCharacters', () => {
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
       { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
@@ -405,6 +407,78 @@ describe('assignCharacters', () => {
         expect(evilPlayers.length).toBe(0);
       }
     }
+  });
+
+  it('caps flexible outsider assignments at five', () => {
+    const roles: Role[] = [
+      ...Array.from({ length: 6 }, (_, index) => ({ id: `townsfolk-${index}`, name: `Townsfolk ${index}`, team: 'townsfolk' as const })),
+      ...Array.from({ length: 6 }, (_, index) => ({ id: `outsider-${index}`, name: `Outsider ${index}`, team: 'outsider' as const })),
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 12 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: roles.filter(role => role.team === 'outsider').map(role => role.id), minion: [], demon: ['kazali'], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(5);
+    expect(result!.some(assignment => assignment.role.id === 'kazali')).toBe(true);
+  });
+
+  it('assigns at least one Outsider for flexible Kazali counts', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: ['kazali'], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
+  });
+
+  it('assigns at least one Outsider in Atheist mode when the base count is zero', () => {
+    const roles: Role[] = [
+      { id: 'atheist', name: 'Atheist', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.some(assignment => assignment.role.id === 'atheist')).toBe(true);
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
   });
 
   it('honors a Summoner preference submitted in the Demon slot', () => {

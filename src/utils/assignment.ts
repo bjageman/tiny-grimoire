@@ -267,7 +267,9 @@ function assignBaseCharacters(
 
   if (mode === 'atheist') {
     const includeBalloonist = hasPref('balloonist') && Math.random() < 0.7;
-    const O = Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxScriptOutsiders);
+    const maxAtheistOutsiders = Math.min(maxScriptOutsiders, 5, N - 1);
+    if (maxAtheistOutsiders < 1) return null;
+    const O = Math.max(1, Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxAtheistOutsiders));
     const T = N - O;
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
@@ -387,8 +389,11 @@ function assignBaseCharacters(
     const minionPlayerIds = new Set(minionPlayers.map(mp => mp.id));
     const remainingPlayers = shuffledPlayers.filter(p => p.id !== demonPlayer.id && !minionPlayerIds.has(p.id));
     const hasXaan = getActiveRoles(assignment).some(role => role.id === 'xaan');
-    const targetOutsiders = (demonRole.id === 'kazali' || hasXaan)
-      ? Math.floor(Math.random() * (Math.min(remainingPlayers.length, maxScriptOutsiders) + 1))
+    const hasFlexibleOutsiderCount = demonRole.id === 'kazali' || hasXaan;
+    const maxRandomOutsiders = Math.min(remainingPlayers.length, maxScriptOutsiders, 5);
+    if (hasFlexibleOutsiderCount && maxRandomOutsiders < 1) return null;
+    const targetOutsiders = hasFlexibleOutsiderCount
+      ? 1 + Math.floor(Math.random() * maxRandomOutsiders)
       : Math.min(base.outsider, maxScriptOutsiders);
     const tempAssignment: { player: Player; team: 'townsfolk' | 'outsider' }[] = [];
     for (let i = 0; i < remainingPlayers.length; i++) {
@@ -456,8 +461,8 @@ function assignBaseCharacters(
           expectedMinion = 0;
         }
         expectedDemon = Math.max(0, expectedDemon);
-        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion));
-        for (let i = 0; i <= maxOutsiders; i++) {
+        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion), 5);
+        for (let i = 1; i <= maxOutsiders; i++) {
           possibleCounts.add(i);
         }
       } else {

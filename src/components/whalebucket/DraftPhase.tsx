@@ -70,7 +70,7 @@ export default function WhaleBucketDraftPhase({
           "font-display text-base font-bold tracking-wider uppercase",
           isLightModeActive ? "text-gray-800" : "text-gray-300"
         )}>
-          2. Character Assignment
+          Character Assignment
         </h2>
         <div id="whalebucket-assignment-actions" className="w-32 shrink-0 flex flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
           <button

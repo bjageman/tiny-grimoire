@@ -62,11 +62,10 @@ describe('WhaleBucketDraftPhase', () => {
     expect(openGrimoireButton.className).toContain('order-5');
     expect(grimoire.className).toContain('md:max-w-none');
     expect(grimoire.className).toContain('md:aspect-[34/25]');
-    expect(reassignButton.className).toContain('w-full');
+    expect(reassignButton.className).toContain('flex-1');
     expect(assignmentHeader.className).toContain('flex-col');
     expect(assignmentHeader.className).toContain('sm:flex-row');
-    expect(assignmentActions.className).toContain('flex-col');
-    expect(assignmentActions.className).toContain('sm:flex-row');
+    expect(assignmentActions.className).toContain('items-center');
     expect(sidebar.querySelector('#grimoire-balance-verification')).toBeInTheDocument();
     expect(sidebar.querySelector('#game-setup-mods')).toBeInTheDocument();
     expect(sidebar.querySelector('#open-grimoire-button')).toBeInTheDocument();

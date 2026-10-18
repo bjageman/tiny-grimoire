@@ -72,12 +72,12 @@ export default function WhaleBucketDraftPhase({
         )}>
           Character Assignment
         </h2>
-        <div id="whalebucket-assignment-actions" className="w-36 shrink-0 flex flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div id="whalebucket-assignment-actions" className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
           <button
             id="reassign-characters-button"
             onClick={runAssignment}
             className={cn(
-              "w-full shrink-0 justify-center whitespace-nowrap text-lg sm:text-sm font-bold px-4 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto sm:min-w-0 sm:shrink",
+              "min-w-0 flex-1 justify-center whitespace-nowrap text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm border sm:w-auto sm:flex-none sm:shrink",
               isLightModeActive
                 ? "bg-clocktower-townsfolk/10 hover:bg-clocktower-townsfolk/20 text-clocktower-townsfolk border-clocktower-townsfolk/20"
                 : "bg-clocktower-townsfolk/20 hover:bg-clocktower-townsfolk/35 text-blue-300 border-clocktower-townsfolk/30"
@@ -89,7 +89,7 @@ export default function WhaleBucketDraftPhase({
             id="clear-roles-button"
             onClick={onClearRoles}
             className={cn(
-              "w-full shrink-0 justify-center whitespace-nowrap text-lg sm:text-sm font-bold px-4 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm border sm:w-auto",
+              "min-w-0 flex-1 justify-center whitespace-nowrap text-sm font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm border sm:w-auto sm:flex-none",
               isLightModeActive
                 ? "bg-clocktower-blood/10 hover:bg-clocktower-blood/20 text-clocktower-blood border-clocktower-blood/20"
                 : "bg-clocktower-blood/20 hover:bg-clocktower-blood/35 text-red-300 border-clocktower-blood/30"

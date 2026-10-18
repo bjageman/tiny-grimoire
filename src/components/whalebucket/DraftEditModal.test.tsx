@@ -26,21 +26,25 @@ describe('WhaleBucketDraftEditModal', () => {
 
   it('picking the character the player already has clears it', () => {
     const updatePlayerRole = vi.fn();
+    const onClose = vi.fn();
     const aliceWithRole: Player = { ...alice, roleId: 'washerwoman' };
     const { container } = render(
       <WhaleBucketDraftEditModal
         {...defaultProps}
         players={[aliceWithRole]}
         updatePlayerRole={updatePlayerRole}
+        onClose={onClose}
         isLightModeActive={false}
       />
     );
 
     fireEvent.click(container.querySelector('#role-option-washerwoman')!);
     expect(updatePlayerRole).toHaveBeenCalledWith('p1', '');
+    expect(onClose).toHaveBeenCalledOnce();
 
     fireEvent.click(container.querySelector('#role-option-chef')!);
     expect(updatePlayerRole).toHaveBeenCalledWith('p1', 'chef');
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 
   it('never renders a solid-dark background class while in light mode', () => {

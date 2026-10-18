@@ -270,7 +270,7 @@ export default function WhaleBucketSetupPhase({
 
           {/* Excluded Pills list */}
           {excludedRoleIds.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
               {excludedRoleIds.map(id => {
                 const r = (ALL_ROLES as Role[]).find(x => x.id === id);
                 if (!r) return null;
@@ -278,16 +278,16 @@ export default function WhaleBucketSetupPhase({
                   <span
                     key={id}
                     className={cn(
-                      "flex items-center gap-1 text-[10px] font-bold pl-2 pr-1 py-0.5 rounded border",
+                      "flex w-full min-w-0 items-center justify-between gap-1 text-xs font-bold pl-2 pr-1 py-0.5 rounded border",
                       isLightModeActive
                         ? "bg-gray-100 border-gray-200 text-gray-700"
                         : "bg-gray-955 border-gray-800 text-gray-400"
                     )}
                   >
-                    {r.name}
+                    <span className="min-w-0 truncate">{r.name}</span>
                     <button
                       onClick={() => handleRemoveExcludedRole(id)}
-                      className="hover:text-red-500 p-0.5 transition-colors"
+                      className="shrink-0 hover:text-red-500 p-0.5 transition-colors"
                     >
                       <Plus className="w-3 h-3 rotate-45" />
                     </button>

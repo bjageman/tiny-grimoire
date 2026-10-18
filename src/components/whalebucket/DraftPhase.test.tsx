@@ -70,6 +70,7 @@ describe('WhaleBucketDraftPhase', () => {
     expect(sidebar.querySelector('#game-setup-mods')).toBeInTheDocument();
     expect(sidebar.querySelector('#open-grimoire-button')).toBeInTheDocument();
     expect(container.querySelectorAll('#open-grimoire-button')).toHaveLength(1);
+    expect(screen.queryByText('Tap to select character')).not.toBeInTheDocument();
     expect(container.querySelector('[id^="back-to-setup-button"]')).not.toBeInTheDocument();
     expect(sidebar.previousElementSibling?.querySelector('#edit-draft-player-button-1')).toBeInTheDocument();
   });

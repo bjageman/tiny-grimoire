@@ -106,9 +106,9 @@ export default function WhaleBucketSetupPhase({
       {/* Section B: Players & Role Preferences */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
-          <div className="flex flex-col items-stretch gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
-            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup <span>({players.length} Players)</span></h2>
-            <div className="flex justify-end gap-2">
+          <div className="flex flex-col items-center gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
+            <h2 className="text-center font-display text-base font-bold tracking-wider uppercase text-gray-300 sm:text-left">Setup <span>({players.length} Players)</span></h2>
+            <div className="flex justify-center gap-2">
               {players.length > 0 && (
                 <>
                   <button

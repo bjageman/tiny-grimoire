@@ -1363,11 +1363,15 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
 
     // Confirm → the game starts (leaves the draft phase).
+    const headerDivider = storyteller.container.querySelector('#page-header-divider')!;
+    const scrollIntoView = vi.spyOn(headerDivider, 'scrollIntoView');
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button-whale')!);
       await new Promise(r => setTimeout(r, 50));
     });
     expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    scrollIntoView.mockRestore();
 
     storyteller.unmount();
   });

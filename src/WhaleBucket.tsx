@@ -135,6 +135,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     });
 
     setPhase('game');
+    document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [players, addLogEntry, setPhase]);
 
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);

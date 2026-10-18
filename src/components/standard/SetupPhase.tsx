@@ -480,7 +480,6 @@ export default function StandardSetupPhase({
       roles={scriptRoles}
       playerCount={bagPlayerCount}
       isLightModeActive={isLightModeActive}
-      onAssign={randomlyAssignWithRoles}
       selectedIds={selectedCharacterIds}
       setSelectedIds={setSelectedCharacterIds}
       villageIdiotCount={villageIdiotCount}

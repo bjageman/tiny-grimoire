@@ -19,6 +19,7 @@ const validationSummary: ValidationSummary = {
   isValid: true,
   expectedOutsiderLabel: '1',
   expectedTownsfolkLabel: '4',
+  expectedDemonLabel: '1',
 };
 
 describe('GrimoireBalanceVerification', () => {

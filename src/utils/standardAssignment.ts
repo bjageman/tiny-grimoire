@@ -113,11 +113,11 @@ export function performStandardAssignment(
   const minionBag = drewLilMonsta ? mins.filter(minion => minion.id !== 'summoner') : mins;
   const selectedMinions: Role[] = [];
   for (const minion of shuffle(minionBag)) {
+    if (selectedMinions.length >= targetMinionsCount) break;
     const conflictsWithSelected =
       (minion.id === 'summoner' && selectedMinions.some(selected => selected.id === 'marionette')) ||
       (minion.id === 'marionette' && selectedMinions.some(selected => selected.id === 'summoner'));
     if (!conflictsWithSelected) selectedMinions.push(minion);
-    if (selectedMinions.length === targetMinionsCount) break;
   }
   if (selectedMinions.length < targetMinionsCount && minionBag.length >= targetMinionsCount) return null;
   const hasSummoner = selectedMinions.some(m => m.id === 'summoner');

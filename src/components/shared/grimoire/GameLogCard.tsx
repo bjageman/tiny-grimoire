@@ -1,6 +1,9 @@
-import { Check, Download, ImageDown } from 'lucide-react';
+import { Check, ChevronDown, Download, ImageDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import { DiscordIcon } from '../tokens/DiscordIcon';
+
+const GAME_LOG_DISCLOSURE_KEY = 'game-log-expanded';
 
 interface GameLogCardProps {
   isLightModeActive: boolean;
@@ -15,6 +18,7 @@ interface GameLogCardProps {
 
 // The end-of-game log with its save-image / copy-to-Discord / download-log actions.
 export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSavingImage, onSaveImage, onCopyPost, postCopied, onDownloadLog }: GameLogCardProps) {
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(GAME_LOG_DISCLOSURE_KEY, true);
   const logBtn = cn(
     'inline-flex items-center gap-1.5 rounded text-white hover:opacity-90 transition-opacity text-xs font-bold disabled:opacity-50 disabled:cursor-wait',
     isMobile ? 'p-1.5' : 'px-2 py-0.5'
@@ -22,17 +26,32 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
   const iconSize = isMobile ? 14 : 12;
 
   return (
-    <div className={cn(
+    <div id="game-log-card" className={cn(
       'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
       isLightModeActive
         ? 'bg-white/50 border-gray-300'
         : 'bg-gray-900/40 border-gray-800/80'
     )}>
       <div className="flex items-center justify-between">
-        <h4 className={cn(
-          'text-xs uppercase font-bold tracking-wider',
-          isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-        )}>Game Log</h4>
+        <h4>
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            aria-expanded={isExpanded}
+            aria-controls="game-log-entries"
+            aria-label="Game Log"
+            className={cn(
+              'flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider',
+              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
+            )}
+          >
+            <span>Game Log</span>
+            <ChevronDown
+              size={14}
+              className={cn('transition-transform duration-200', isExpanded && 'rotate-180')}
+            />
+          </button>
+        </h4>
         {gameLog && gameLog.length > 0 && (
           <div className="flex items-center gap-1.5">
             <button
@@ -69,7 +88,7 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
           </div>
         )}
       </div>
-      <div className={cn(
+      {isExpanded && <div id="game-log-entries" className={cn(
         'max-h-48 overflow-y-auto space-y-1 text-[10px] font-mono',
         isLightModeActive ? 'text-gray-700' : 'text-gray-400'
       )}>
@@ -79,7 +98,7 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
             ))
           : <p className={cn('italic', isLightModeActive ? 'text-gray-400' : 'text-gray-600')}>No entries yet.</p>
         }
-      </div>
+      </div>}
     </div>
   );
 }

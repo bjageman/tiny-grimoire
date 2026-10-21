@@ -23,10 +23,11 @@ import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import ResetGameModal from './components/shared/modals/ResetGameModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
+import { buildPlayerTrackerTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
 type Phase = 'setup' | 'game';
 
-const STORAGE_KEY = 'standard-botc-game';
+const STORAGE_KEY = STANDARD_GAME_STORAGE_KEY;
 
 const generateId = (): string =>
   typeof crypto.randomUUID === 'function'
@@ -117,8 +118,15 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [bagOnly, setBagOnly] = useState(false);
   const [villageIdiotCount, setVillageIdiotCount] = usePersistedField<number>(STORAGE_KEY, 'villageIdiotCount', 1);
   const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = useState(0);
+  const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
+  const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
+
+  const resetSetupModifiers = () => {
+    setSentinelOutsiderDelta(0);
+    setPopeEnabled(false);
+  };
 
   // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
@@ -178,9 +186,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -217,8 +227,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
+    resetSetupModifiers();
     setGrimoireConfirmed(false);
 
     // Broadcast immediately (no debounce): the reset command (primary signal) then a setup_update with the cleared roster/script as backup.
@@ -421,8 +433,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     reminderTokens,
     checkedItems,
     rotationOffset,
+    popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -442,10 +455,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
+      setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -477,16 +491,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       isLilMonstaGame,
       demonBluffs,
       gameLog,
+      gameNotes,
       reminderTokens,
       checkedItems,
       selectedCharacterIds: [...selectedCharacterIds],
       villageIdiotCount,
+      popeEnabled,
       rotationOffset,
       alwaysShowNotes,
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -615,7 +631,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         customSelectionRoles.push(traveler);
       }
     }
-    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount)!;
+    const assignedPlayers = performStandardAssignment(players, selectedRoles, customSelectionRoles, currentScriptRoles, sentinelOutsiderDelta, villageIdiotCount);
+    if (!assignedPlayers) {
+      showAlert("The selected characters could not be assigned. Try changing the characters in the bag.");
+      return;
+    }
     setPlayers(assignedPlayers);
     setIsLilMonstaGame(assignedPlayers.some(p => p.isTheLilMonsta));
   };
@@ -642,12 +662,49 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta);
-  }, [players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta]);
+    return getValidationSummary(players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta, popeEnabled);
+  }, [players, selectionRoles, selectedCharacterIds, sentinelOutsiderDelta, popeEnabled]);
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
+
+  const performTransferToGameNotes = async () => {
+    if (remotePlayerIds.size > 0 && sendMessageRef.current) {
+      try {
+        await sendMessageRef.current({ type: 'storyteller_quit' });
+      } catch (e) {
+        console.error('Failed to notify players on transfer:', e);
+      }
+    }
+    localStorage.setItem(PLAYER_TRACKER_STORAGE_KEY, JSON.stringify(buildPlayerTrackerTransfer({
+      players,
+      scriptName,
+      scriptAuthor,
+      customScriptRoles,
+    })));
+    sessionStorage.removeItem('joined-code');
+    sessionStorage.removeItem('joined-name');
+    window.location.hash = '#/tracker';
+  };
+
+  const transferToGameNotes = () => {
+    const replacingExisting = localStorage.getItem(PLAYER_TRACKER_STORAGE_KEY) !== null;
+    if (!replacingExisting && remotePlayerIds.size === 0) {
+      void performTransferToGameNotes();
+      return;
+    }
+    const liveSessionWarning = remotePlayerIds.size > 0
+      ? ` ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'} will be disconnected.`
+      : '';
+    const overwriteWarning = replacingExisting ? ' Existing Game Notes will be replaced.' : '';
+    showConfirm(
+      `Transfer player names, pronouns, seating order, and the script to Game Notes?${overwriteWarning} Characters, statuses, private notes, and game progress will not be copied.${liveSessionWarning}`,
+      performTransferToGameNotes,
+      'Transfer to Game Notes',
+      'Transfer'
+    );
+  };
 
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
@@ -726,6 +783,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onToggleFullNightOrder={setFullNightOrder}
           allReminders={allReminders}
           onToggleAllReminders={setAllReminders}
+          onTransferGame={transferToGameNotes}
+          transferLabel="Transfer"
           onResetGame={resetGame}
           isSecondary={isSecondary}
         />
@@ -810,6 +869,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           validationSummary={validationSummary}
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           villageIdiotCount={villageIdiotCount}
           setVillageIdiotCount={setVillageIdiotCount}
           isLightModeActive={isLightModeActive}
@@ -847,6 +908,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           selectionRoles={selectionRoles}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           setSelectedPlayerId={setSelectedPlayerId}
           toggleTimeOfDay={toggleTimeOfDay}
           addTravelerGamePhase={addTravelerGamePhase}
@@ -877,6 +939,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             }
           }}
           gameLog={gameLog}
+          notes={gameNotes}
+          onNotesChange={setGameNotes}
           onDownloadLog={() => {
             const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
             const content = header + gameLog.join('\n');

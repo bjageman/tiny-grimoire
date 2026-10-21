@@ -1,5 +1,5 @@
 import { parseScriptJson } from './scriptUtils';
-import type { Role } from '../types';
+import { TEAM_ORDER, type Role } from '../types';
 import troubleBrewing from '../scripts/trouble-brewing.json';
 import badMoonRising from '../scripts/bad-moon-rising.json';
 import sectsAndViolets from '../scripts/sects-and-violets.json';
@@ -18,7 +18,23 @@ const BUNDLED = [
   { id: 'snv', file: sectsAndViolets },
 ];
 
-export const PRESET_SCRIPTS: PresetScript[] = BUNDLED.map(({ id, file }) => {
+const baseScripts: PresetScript[] = BUNDLED.map(({ id, file }) => {
   const { name, author, roles } = parseScriptJson(file, id);
   return { id, name, author, roles };
 });
+
+const base3Roles = new Map<string, Role>();
+baseScripts.forEach(script => script.roles.forEach(role => base3Roles.set(role.id, role)));
+
+export const PRESET_SCRIPTS: PresetScript[] = [
+  ...baseScripts,
+  {
+    id: 'base-3-roster',
+    name: 'The Base 3 Roster',
+    author: 'The Pandemonium Institute',
+    roles: [...base3Roles.values()].sort((a, b) => {
+      const teamOrder = (TEAM_ORDER[a.team] ?? 99) - (TEAM_ORDER[b.team] ?? 99);
+      return teamOrder || a.name.localeCompare(b.name);
+    }),
+  },
+];

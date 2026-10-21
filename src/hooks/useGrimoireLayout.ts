@@ -6,7 +6,11 @@ import type { CSSProperties } from 'react';
 /** Width the desktop token/name pixel sizes below were hand-tuned against (`max-w-[680px]`). */
 const BOARD_BASELINE_WIDTH = 680;
 
-export function useGrimoireLayout(playerCount: number) {
+interface GrimoireLayoutOptions {
+  fluidDesktop?: boolean;
+}
+
+export function useGrimoireLayout(playerCount: number, { fluidDesktop = false }: GrimoireLayoutOptions = {}) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [boardAspect, setBoardAspect] = useState(1.3);
   const [boardWidth, setBoardWidth] = useState(BOARD_BASELINE_WIDTH);
@@ -40,13 +44,17 @@ export function useGrimoireLayout(playerCount: number) {
     const count = playerCount;
     const isDesktop = boardAspect < 1.15;
 
-    // Desktop sizes are px tuned for a 680px board; scale down when the actual board is narrower or tokens overhang.
-    const s = boardWidth > 0 ? Math.min(1, boardWidth / BOARD_BASELINE_WIDTH) : 1;
+    // Desktop sizes are px tuned for a 680px board; fluid boards scale in both directions.
+    const boardScale = boardWidth / BOARD_BASELINE_WIDTH;
+    const s = boardWidth > 0 ? (fluidDesktop ? boardScale : Math.min(1, boardScale)) : 1;
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
+    const desktopBoardClass = fluidDesktop
+      ? 'md:w-full md:max-w-none md:h-auto md:aspect-[34/25] md:max-h-none'
+      : 'md:w-full md:h-[500px] landscape:max-h-[500px]';
 
     if (count <= 6) {
       return {
-        boardClass: "w-[88vw] h-[112vw] max-w-[680px] max-h-[760px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[28px]",
+        boardClass: `w-[88vw] h-[112vw] max-w-[680px] max-h-[760px] ${desktopBoardClass} rounded-[28px]`,
         radiusX: 38,
         radiusY: 36,
         btnStyle: isDesktop
@@ -58,7 +66,7 @@ export function useGrimoireLayout(playerCount: number) {
       };
     } else if (count <= 10) {
       return {
-        boardClass: "w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[34px]",
+        boardClass: `w-[90vw] h-[118vw] max-w-[680px] max-h-[760px] ${desktopBoardClass} rounded-[34px]`,
         radiusX: 40,
         radiusY: 38,
         btnStyle: isDesktop
@@ -70,7 +78,7 @@ export function useGrimoireLayout(playerCount: number) {
       };
     } else {
       return {
-        boardClass: "w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] md:w-full md:h-[500px] landscape:max-h-[500px] rounded-[40px]",
+        boardClass: `w-[92vw] h-[124vw] max-w-[680px] max-h-[820px] ${desktopBoardClass} rounded-[40px]`,
         radiusX: 42,
         radiusY: 40,
         btnStyle: isDesktop
@@ -81,7 +89,7 @@ export function useGrimoireLayout(playerCount: number) {
           : { fontSize: '3.7cqw', maxWidth: '19cqw', marginTop: '0.3cqw' } as CSSProperties,
       };
     }
-  }, [playerCount, boardAspect, boardWidth]);
+  }, [playerCount, boardAspect, boardWidth, fluidDesktop]);
 
   const dynamicRadiusX = grimoireConfig.radiusX;
   const dynamicRadiusY = useMemo(() => {

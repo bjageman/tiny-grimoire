@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Shuffle, Upload, AlertTriangle, Package } from 'lucide-react';
+import { Plus, Dices, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { Player, Role } from '../../types';
@@ -12,7 +12,7 @@ import SelectCharactersModal from './SelectCharactersModal';
 import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
-import FablesAndLorics from '../shared/grimoire/FablesAndLorics';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 import type { ValidationSummary } from '../../utils/validationSummary';
 
 interface StandardSetupPhaseProps {
@@ -61,6 +61,8 @@ interface StandardSetupPhaseProps {
   validationSummary: ValidationSummary | null;
   sentinelOutsiderDelta: number;
   setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
   isSecondary?: boolean;
 }
@@ -107,6 +109,8 @@ export default function StandardSetupPhase({
   validationSummary,
   sentinelOutsiderDelta,
   setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   isLightModeActive,
   isSecondary,
   remotePlayerCount = 0,
@@ -270,7 +274,7 @@ export default function StandardSetupPhase({
               disabled={players.length < 5}
               title="Randomly assign roles to all players based on the active script, keeping to standard distribution rules"
             >
-              <Shuffle size={14} /> Randomly Assign
+              <Dices size={14} /> Randomly Assign
             </button>
           </div>
         </section>
@@ -365,12 +369,19 @@ export default function StandardSetupPhase({
       <div className="md:col-start-2 md:row-start-2 space-y-6 w-full">
         {/* Validation Summary */}
         {validationSummary && players.length >= 5 && (
-          <GrimoireBalanceVerification validationSummary={validationSummary} isLightModeActive={isLightModeActive} />
+          <GrimoireBalanceVerification
+            validationSummary={validationSummary}
+            isLightModeActive={isLightModeActive}
+            persistenceKey="standard-balance-verification-expanded"
+          />
         )}
-        <FablesAndLorics
+        <GameSetupMods
           sentinelOutsiderDelta={sentinelOutsiderDelta}
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
+          persistenceKey="standard-setup-modifiers-expanded"
         />
         <button
           id="open-grimoire-button"
@@ -469,7 +480,6 @@ export default function StandardSetupPhase({
       roles={scriptRoles}
       playerCount={bagPlayerCount}
       isLightModeActive={isLightModeActive}
-      onAssign={randomlyAssignWithRoles}
       selectedIds={selectedCharacterIds}
       setSelectedIds={setSelectedCharacterIds}
       villageIdiotCount={villageIdiotCount}

@@ -150,6 +150,38 @@ describe('HeaderMenu', () => {
     expect(resetButton).toBeDisabled();
   });
 
+  it('renders a labelled transfer action, invokes it, and closes the menu', () => {
+    const onTransferGame = vi.fn();
+    render(
+      <HeaderMenu
+        theme="dark"
+        onTransferGame={onTransferGame}
+        transferLabel="Transfer to Game Notes"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Transfer to Game Notes' }));
+
+    expect(onTransferGame).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Transfer to Game Notes' })).not.toBeInTheDocument();
+  });
+
+  it('disables the transfer action on a secondary device', () => {
+    render(
+      <HeaderMenu
+        theme="dark"
+        onTransferGame={vi.fn()}
+        transferLabel="Transfer to Game Notes"
+        isSecondary
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+
+    expect(screen.getByRole('button', { name: 'Transfer to Game Notes' })).toBeDisabled();
+  });
+
   it('closes dropdown when clicking outside', () => {
     render(
       <div>

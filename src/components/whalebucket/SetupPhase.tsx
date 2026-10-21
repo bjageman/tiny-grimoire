@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Sparkles, Edit } from 'lucide-react';
+import { Plus, Edit } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
@@ -7,6 +7,7 @@ import { getDistribution } from '../../constants';
 import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import { ALL_ROLES } from '../../utils/roleData';
+import GameSetupMods from '../shared/grimoire/GameSetupMods';
 
 
 
@@ -32,11 +33,14 @@ interface WhaleBucketSetupPhaseProps {
   clearAllPreferences: () => void;
   resetGame: () => void;
   setActivePreferencePlayerId: (id: string | null) => void;
-  runAssignment: () => void;
   onManuallyAssign: () => void;
   isLightModeActive: boolean;
   excludedRoleIds: string[];
   setExcludedRoleIds: React.Dispatch<React.SetStateAction<string[]>>;
+  sentinelOutsiderDelta: number;
+  setSentinelOutsiderDelta: (delta: number) => void;
+  popeEnabled: boolean;
+  setPopeEnabled: (enabled: boolean) => void;
   remotePlayerIds?: Set<string>;
   isSecondary?: boolean;
 }
@@ -63,11 +67,14 @@ export default function WhaleBucketSetupPhase({
   clearAllPreferences,
   resetGame,
   setActivePreferencePlayerId,
-  runAssignment,
   onManuallyAssign,
   isLightModeActive,
   excludedRoleIds,
   setExcludedRoleIds,
+  sentinelOutsiderDelta,
+  setSentinelOutsiderDelta,
+  popeEnabled,
+  setPopeEnabled,
   remotePlayerIds,
   isSecondary,
 }: WhaleBucketSetupPhaseProps) {
@@ -99,20 +106,20 @@ export default function WhaleBucketSetupPhase({
       {/* Section B: Players & Role Preferences */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 space-y-6 w-full">
         <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display text-base font-bold tracking-wider uppercase text-gray-300">Setup ({players.length} Players)</h2>
-            <div className="flex gap-2">
+          <div className="flex flex-col items-center gap-3 mb-4 sm:flex-row sm:justify-between sm:items-center sm:gap-0">
+            <h2 className="text-center font-display text-lg font-bold tracking-wider uppercase text-gray-300 sm:text-left">Setup <span>({players.length} Players)</span></h2>
+            <div className="flex justify-center gap-2">
               {players.length > 0 && (
                 <>
                   <button
                     onClick={autoFillAllPreferences}
-                    className="text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-2 py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
+                    className="text-sm sm:text-[10px] bg-clocktower-townsfolk/10 text-clocktower-townsfolk border border-clocktower-townsfolk/20 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-clocktower-townsfolk/25 transition-all"
                   >
                     Auto-Fill All
                   </button>
                   <button
                     onClick={clearAllPreferences}
-                    className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-2 py-1 rounded hover:bg-gray-700 transition-all"
+                    className="text-sm sm:text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-gray-700 transition-all"
                   >
                     Clear All
                   </button>
@@ -123,7 +130,7 @@ export default function WhaleBucketSetupPhase({
                 onClick={resetGame}
                 disabled={isSecondary}
                 className={cn(
-                  "text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-2 py-1 rounded hover:bg-clocktower-blood/25 transition-all",
+                  "text-sm sm:text-[10px] bg-clocktower-blood/10 text-red-400 border border-clocktower-blood/30 px-3 sm:px-2 py-1.5 sm:py-1 rounded hover:bg-clocktower-blood/25 transition-all",
                   isSecondary && "opacity-40 cursor-not-allowed"
                 )}
                 title={isSecondary ? "Resetting the game is disabled on secondary devices." : "Reset game"}
@@ -187,6 +194,14 @@ export default function WhaleBucketSetupPhase({
 
       {/* Section C: Distribution & Assign Button */}
       <div id="whalebucket-setup-controls-container" className="md:col-start-2 md:row-start-1 md:row-span-2 space-y-6 w-full">
+        <GameSetupMods
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
+          isLightModeActive={isLightModeActive}
+          persistenceKey="whale-bucket-setup-modifiers-expanded"
+        />
         {/* Exclude Characters Widget */}
         <div className={cn(
           "p-4 rounded-lg border flex flex-col gap-3 transition-colors duration-300",
@@ -255,7 +270,7 @@ export default function WhaleBucketSetupPhase({
 
           {/* Excluded Pills list */}
           {excludedRoleIds.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
               {excludedRoleIds.map(id => {
                 const r = (ALL_ROLES as Role[]).find(x => x.id === id);
                 if (!r) return null;
@@ -263,16 +278,16 @@ export default function WhaleBucketSetupPhase({
                   <span
                     key={id}
                     className={cn(
-                      "flex items-center gap-1 text-[10px] font-bold pl-2 pr-1 py-0.5 rounded border",
+                      "flex w-full min-w-0 items-center justify-between gap-1 text-xs font-bold pl-2 pr-1 py-0.5 rounded border",
                       isLightModeActive
                         ? "bg-gray-100 border-gray-200 text-gray-700"
                         : "bg-gray-955 border-gray-800 text-gray-400"
                     )}
                   >
-                    {r.name}
+                    <span className="min-w-0 truncate">{r.name}</span>
                     <button
                       onClick={() => handleRemoveExcludedRole(id)}
-                      className="hover:text-red-500 p-0.5 transition-colors"
+                      className="shrink-0 hover:text-red-500 p-0.5 transition-colors"
                     >
                       <Plus className="w-3 h-3 rotate-45" />
                     </button>
@@ -306,20 +321,12 @@ export default function WhaleBucketSetupPhase({
 
         <div className="flex flex-col gap-3">
           <button
-            id="random-assign-characters-button"
-            disabled={players.length < 5}
-            onClick={runAssignment}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
-          >
-            <Sparkles size={16} /> Randomly Assign Characters
-          </button>
-          <button
             id="manual-assign-characters-button"
             disabled={players.length === 0}
             onClick={onManuallyAssign}
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
+            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-3 rounded-lg font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-black/40 flex items-center justify-center gap-2"
           >
-            <Edit size={16} /> Manually Assign
+            <Edit size={16} /> Assign Roles
           </button>
         </div>
       </div>

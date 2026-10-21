@@ -28,6 +28,33 @@ describe('NightOrderWidget', () => {
     }
   ];
 
+  it('is open by default, keeps its controls visible when closed, and remembers its state', () => {
+    localStorage.removeItem('night-order-guide-expanded');
+    const props = {
+      players: mockPlayers,
+      timeOfDay: 'night' as const,
+      dayNumber: 1,
+      isLightModeActive: false,
+    };
+    const { unmount } = render(<NightOrderWidget {...props} />);
+    const toggle = screen.getByRole('button', { name: 'Night Order Guide' });
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Lunatic', { selector: '.font-serif' })).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Lunatic', { selector: '.font-serif' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'First Night' })).toBeInTheDocument();
+    expect(screen.getByTitle('Reset checklist')).toBeInTheDocument();
+    unmount();
+
+    render(<NightOrderWidget {...props} />);
+    expect(screen.getByRole('button', { name: 'Night Order Guide' })).toHaveAttribute('aria-expanded', 'false');
+    localStorage.removeItem('night-order-guide-expanded');
+  });
+
   it('correctly displays lunatic and marionette in the first night list', () => {
     render(
       <NightOrderWidget

@@ -1,16 +1,20 @@
-import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ChevronDown, XCircle } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import type { ValidationSummary } from '../../../utils/validationSummary';
 
 interface GrimoireBalanceVerificationProps {
   validationSummary: ValidationSummary;
   isLightModeActive?: boolean;
+  persistenceKey?: string;
 }
 
 export default function GrimoireBalanceVerification({
   validationSummary,
   isLightModeActive = false,
+  persistenceKey,
 }: GrimoireBalanceVerificationProps) {
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
   const hasFailures = validationSummary.failures && validationSummary.failures.length > 0;
   const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
 
@@ -24,7 +28,13 @@ export default function GrimoireBalanceVerification({
           : "bg-gray-900/90 border-gray-800"
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={toggleExpanded}
+        aria-expanded={isExpanded}
+        aria-controls="grimoire-balance-character-counts"
+        className="w-full flex items-center gap-1.5"
+      >
         {validationSummary.isValid ? (
           <CheckCircle size={16} className="text-clocktower-outsider" />
         ) : hasFailures ? (
@@ -38,7 +48,14 @@ export default function GrimoireBalanceVerification({
         )}>
           Grimoire Balance Verification
         </span>
-      </div>
+        <ChevronDown
+          size={16}
+          className={cn(
+            "ml-auto text-gray-500 transition-transform duration-200",
+            isExpanded && "rotate-180"
+          )}
+        />
+      </button>
 
       {validationSummary.modifications.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -58,46 +75,51 @@ export default function GrimoireBalanceVerification({
         </div>
       )}
 
-      <div className={cn(
-        "grid text-center text-[10px] font-mono border-t pt-2.5",
-        isLightModeActive ? "border-gray-200" : "border-gray-800",
-        validationSummary.counts.traveler > 0
-          ? "grid-cols-5 gap-1"
-          : "grid-cols-4 gap-2"
-      )}>
-        <div>
-          <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
-          <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-            {validationSummary.counts.townsfolk} / {validationSummary.expectedTownsfolkLabel}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Outsider</div>
-          <div className={cn("font-bold text-xs mt-0.5", validationSummary.isOutsiderValid ? "text-clocktower-outsider" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-            {validationSummary.counts.outsider} / {validationSummary.expectedOutsiderLabel}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Minion</div>
-          <div className={cn("font-bold text-xs mt-0.5", validationSummary.isMinionValid ? "text-clocktower-minion" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-            {validationSummary.counts.minion} / {validationSummary.expected.minion}
-          </div>
-        </div>
-        <div>
-          <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
-          <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
-            {validationSummary.counts.demon} / {validationSummary.expected.demon}
-          </div>
-        </div>
-        {validationSummary.counts.traveler > 0 && (
+      {isExpanded && (
+        <div
+          id="grimoire-balance-character-counts"
+          className={cn(
+            "grid text-center text-[10px] font-mono border-t pt-2.5",
+            isLightModeActive ? "border-gray-200" : "border-gray-800",
+            validationSummary.counts.traveler > 0
+              ? "grid-cols-5 gap-1"
+              : "grid-cols-4 gap-2"
+          )}
+        >
           <div>
-            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
-            <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
-              {validationSummary.counts.traveler} / 5
+            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Tfolk</div>
+            <div className={cn("font-bold text-xs mt-0.5", validationSummary.isTownsfolkValid ? "text-clocktower-townsfolk" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
+              {validationSummary.counts.townsfolk} / {validationSummary.expectedTownsfolkLabel}
             </div>
           </div>
-        )}
-      </div>
+          <div>
+            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Outsider</div>
+            <div className={cn("font-bold text-xs mt-0.5", validationSummary.isOutsiderValid ? "text-clocktower-outsider" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
+              {validationSummary.counts.outsider} / {validationSummary.expectedOutsiderLabel}
+            </div>
+          </div>
+          <div>
+            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Minion</div>
+            <div className={cn("font-bold text-xs mt-0.5", validationSummary.isMinionValid ? "text-clocktower-minion" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
+              {validationSummary.counts.minion} / {validationSummary.expected.minion}
+            </div>
+          </div>
+          <div>
+            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Demon</div>
+            <div className={cn("font-bold text-xs mt-0.5", validationSummary.isDemonValid ? "text-clocktower-demon" : (isLightModeActive ? "text-amber-700" : "text-yellow-500"))}>
+              {validationSummary.counts.demon} / {validationSummary.expectedDemonLabel}
+            </div>
+          </div>
+          {validationSummary.counts.traveler > 0 && (
+            <div>
+              <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-500 font-sans">Traveler</div>
+              <div className="font-bold text-xs mt-0.5 text-clocktower-traveler">
+                {validationSummary.counts.traveler} / 5
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {hasFailures && (
         <div className={cn("border-t pt-2 space-y-1", isLightModeActive ? "border-gray-200" : "border-gray-800")}>

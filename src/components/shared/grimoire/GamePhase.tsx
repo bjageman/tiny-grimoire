@@ -13,12 +13,14 @@ import GameLogCard from './GameLogCard';
 import GrimoireLedger from './GrimoireLedger';
 import DemonBluffs from './DemonBluffs';
 import BaseDistributionCard from './BaseDistributionCard';
-import AutoResizeTextarea from '../ui/AutoResizeTextarea';
 import DialogModal from '../modals/DialogModal';
 import RecapImageExport from '../recap/RecapImageExport';
+import NotesCard from './NotesCard';
 import { buildDiscordPost } from '../../../utils/discordRecap';
 import { copyText } from '../../../utils/clipboard';
 import { useDialog } from '../../../hooks/useDialog';
+import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
+import { getValidationSummary } from '../../../utils/validationSummary';
 
 interface Props {
   players: Player[];
@@ -29,6 +31,7 @@ interface Props {
   isLightModeActive: boolean;
   draggedIndex: number | null;
   dragOverIndex: number | null;
+  hoverSide: 'before' | 'after' | null;
   setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
   addTravelerGamePhase: () => void;
@@ -36,12 +39,12 @@ interface Props {
   setNewTravelerRoleId: (v: string) => void;
   handleMouseDown: (e: React.MouseEvent) => void;
   handleDragStart: (e: React.DragEvent, index: number) => void;
-  handleDragOver: (e: React.DragEvent, index: number) => void;
+  handleDragOver: (e: React.DragEvent, index: number, side?: 'before' | 'after') => void;
   handleDragLeave: () => void;
   handleDrop: (e: React.DragEvent, index: number) => void;
   handleDragEnd: () => void;
   handleTouchStart: (e: React.TouchEvent, index: number) => void;
-  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchMove: (e: React.TouchEvent, getTouchSide?: (clientX: number, clientY: number, targetIndex: number) => 'before' | 'after') => void;
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
@@ -78,7 +81,7 @@ interface Props {
 
 export default function GamePhase({
   players, timeOfDay, dayNumber, newTravelerName, newTravelerRoleId,
-  isLightModeActive, draggedIndex, dragOverIndex,
+  isLightModeActive, draggedIndex, dragOverIndex, hoverSide,
   setSelectedPlayerId, toggleTimeOfDay, addTravelerGamePhase,
   setNewTravelerName, setNewTravelerRoleId,
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
@@ -118,6 +121,7 @@ export default function GamePhase({
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [postCopied, setPostCopied] = useState(false);
   const [isLedgerCollapsed, setIsLedgerCollapsed] = useState(true);
+  const { isExpanded: areNotesExpanded, toggleExpanded: toggleNotesExpanded } = usePersistedDisclosure('game-notes-expanded', true);
   const [localReminderTokens, setLocalReminderTokens] = useState<PlacedReminder[]>([]);
   const reminderTokens = propReminderTokens !== undefined ? propReminderTokens : localReminderTokens;
   const setReminderTokens = onSetReminderTokens !== undefined ? onSetReminderTokens : setLocalReminderTokens;
@@ -155,6 +159,11 @@ export default function GamePhase({
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (ALL_ROLES as Role[]);
+  const currentDistribution = useMemo(() => {
+    if (!isStoryteller) return undefined;
+    const roles = customScriptRoles || selectionRoles || PLAYABLE_ROLES;
+    return getValidationSummary(players, roles)?.counts;
+  }, [customScriptRoles, isStoryteller, players, selectionRoles]);
 
   const isMobile = useIsMobile();
 
@@ -254,13 +263,26 @@ export default function GamePhase({
           />
         )}
         {onNotesChange && (
-          <div className="hidden md:block space-y-1.5">
-            <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
-            <AutoResizeTextarea
-              value={notes ?? ''}
-              onChange={onNotesChange}
-              placeholder="Write anything here. Deductions, suspicions, reminders..."
+          <div className="md:hidden">
+            <NotesCard
+              id="game-notes-mobile"
+              notes={notes ?? ''}
+              onNotesChange={onNotesChange}
               isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
+            />
+          </div>
+        )}
+        {onNotesChange && (
+          <div className="hidden md:block">
+            <NotesCard
+              id="game-notes-desktop"
+              notes={notes ?? ''}
+              onNotesChange={onNotesChange}
+              isLightModeActive={isLightModeActive}
+              isExpanded={areNotesExpanded}
+              onToggleExpanded={toggleNotesExpanded}
             />
           </div>
         )}
@@ -285,6 +307,7 @@ export default function GamePhase({
             <BaseDistributionCard
               playerCount={players.length}
               dist={dist}
+              currentDist={currentDistribution}
               isLightModeActive={isLightModeActive}
             />
           );
@@ -372,7 +395,7 @@ export default function GamePhase({
           onToggleCollapsed={() => setIsLedgerCollapsed(prev => !prev)}
           onSelectPlayer={setSelectedPlayerId}
           dnd={{
-            draggedIndex, dragOverIndex,
+            draggedIndex, dragOverIndex, hoverSide,
             onMouseDown: handleMouseDown,
             onDragStart: handleDragStart,
             onDragOver: handleDragOver,
@@ -429,18 +452,6 @@ export default function GamePhase({
       )}
 
     </div>
-
-    {onNotesChange && (
-      <div className="md:hidden mt-6 space-y-1.5">
-        <p className={cn('text-[10px] uppercase font-bold tracking-wider', isLightModeActive ? 'text-gray-400' : 'text-gray-500')}>Notes</p>
-        <AutoResizeTextarea
-          value={notes ?? ''}
-          onChange={onNotesChange}
-          placeholder="Write anything here. Deductions, suspicions, reminders..."
-          isLightModeActive={isLightModeActive}
-        />
-      </div>
-    )}
     </>
   );
 }

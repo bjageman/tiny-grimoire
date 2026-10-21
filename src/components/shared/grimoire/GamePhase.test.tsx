@@ -28,6 +28,7 @@ describe('GamePhase - Script Modal Integration', () => {
     isLightModeActive: false,
     draggedIndex: null,
     dragOverIndex: null,
+    hoverSide: null,
     handleMouseDown: vi.fn(),
     handleDragStart: vi.fn(),
     handleDragOver: vi.fn(),
@@ -101,6 +102,55 @@ describe('GamePhase - Script Modal Integration', () => {
     expect(scriptButton).toBeInTheDocument();
   });
 
+  it('places the Notes widget below Night Order on desktop and mobile', () => {
+    render(
+      <GamePhase
+        {...defaultProps}
+        notes="Storyteller note"
+        onNotesChange={vi.fn()}
+        gameLog={[]}
+        onDownloadLog={vi.fn()}
+      />
+    );
+
+    const nightOrder = document.getElementById('night-order-widget')!;
+    const desktopNotes = document.getElementById('game-notes-desktop')!;
+    const mobileNotes = document.getElementById('game-notes-mobile')!;
+    const gameLog = document.getElementById('game-log-card')!;
+
+    expect(desktopNotes.parentElement).toHaveClass('hidden', 'md:block');
+    expect(nightOrder.compareDocumentPosition(desktopNotes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mobileNotes.parentElement).toHaveClass('md:hidden');
+    expect(nightOrder.nextElementSibling).toBe(mobileNotes.parentElement);
+    expect(mobileNotes.compareDocumentPosition(gameLog) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(within(desktopNotes).getByRole('button', { name: 'Notes' }));
+    expect(desktopNotes.querySelector('textarea')).toBeNull();
+    expect(mobileNotes.querySelector('textarea')).toBeNull();
+    expect(localStorage.getItem('game-notes-expanded')).toBe('false');
+  });
+
+  it('offers current character-type counts only on the Storyteller grimoire', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Alice', roleId: 'washerwoman', isDead: false },
+      { id: '2', name: 'Bob', roleId: 'chef', isDead: false },
+      { id: '3', name: 'Charlie', roleId: 'empath', isTheDrunk: true, isDead: false },
+      { id: '4', name: 'Dana', roleId: 'poisoner', isDead: false },
+      { id: '5', name: 'Evan', roleId: 'imp', isDead: false },
+    ];
+    const { unmount } = render(<GamePhase {...defaultProps} players={players} isStoryteller />);
+    const card = within(document.getElementById('standard-base-distribution')!);
+
+    fireEvent.click(card.getByLabelText('Current'));
+    expect(card.getByText('Current Distribution')).toBeInTheDocument();
+    expect(card.getByText('Townsfolk').parentElement).toHaveTextContent('2');
+    expect(card.getByText('Outsiders').parentElement).toHaveTextContent('1');
+    unmount();
+
+    render(<GamePhase {...defaultProps} players={players} />);
+    expect(screen.queryByLabelText('Current')).toBeNull();
+  });
+
   it('opens modal on script button click and displays active characters sorted by team', () => {
     render(<GamePhase {...defaultProps} />);
 
@@ -161,6 +211,7 @@ describe('GamePhase - Demon Bluffs candidate list', () => {
     isLightModeActive: false,
     draggedIndex: null,
     dragOverIndex: null,
+    hoverSide: null,
     handleMouseDown: vi.fn(),
     handleDragStart: vi.fn(),
     handleDragOver: vi.fn(),
@@ -224,6 +275,7 @@ describe('GamePhase - Reset Reminders confirmation', () => {
     isLightModeActive: false,
     draggedIndex: null,
     dragOverIndex: null,
+    hoverSide: null,
     handleMouseDown: vi.fn(),
     handleDragStart: vi.fn(),
     handleDragOver: vi.fn(),
@@ -298,11 +350,13 @@ describe('GamePhase - Reset Reminders confirmation', () => {
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(ledgerList.className).toContain('hidden');
-    expect(ledgerList.className).toContain('md:grid');
+    expect(ledgerList.className).not.toContain('md:grid');
+    expect(toggle.querySelector('svg')?.className.baseVal).not.toContain('md:hidden');
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(ledgerList.className).not.toContain('hidden');
+    expect(ledgerList.className).toContain('grid');
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');

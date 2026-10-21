@@ -19,11 +19,15 @@ export default function WhaleBucketDraftCircle({
   setActiveDraftPlayerId,
   remotePlayerIds,
 }: WhaleBucketDraftCircleProps) {
-  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(
+    players.length,
+    { fluidDesktop: true },
+  );
 
   return (
     <div className="w-full flex flex-col items-center">
       <div
+        id="whalebucket-draft-grimoire"
         ref={boardRef}
         className={cn(
           "relative border shadow-inner overflow-visible mx-auto",
@@ -139,12 +143,6 @@ export default function WhaleBucketDraftCircle({
                   </span>
                 )}
               </button>
-
-              {!roleObj && (
-                <span className="absolute left-1/2 -translate-x-1/2 -bottom-4 text-[9px] text-gray-500 whitespace-nowrap pointer-events-none">
-                  Tap to select character
-                </span>
-              )}
             </div>
           );
         })}

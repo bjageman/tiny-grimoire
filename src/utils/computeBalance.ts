@@ -41,14 +41,14 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const modifications: string[] = [];
 
   if (hasLegion) {
-    const L = Math.round(basePlayerCount * 0.6);
-    expectedDemon  = L;
+    expectedDemon  = Math.ceil(basePlayerCount / 2);
     expectedMinion = 0;
-    modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
+    modifications.push(`Legion active (${expectedDemon}–${basePlayerCount - 1} Demons, 0 Minions, any Townsfolk/Outsiders)`);
   } else if (hasAtheist) {
     expectedDemon  = 0;
     expectedMinion = 0;
     modifications.push("Atheist (No Evil players)");
+    modifications.push("Atheist (Any Townsfolk/Outsider count)");
     if (hasBaron)      modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu)     modifications.push("Fang Gu (+1 Outsider)");
     if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
@@ -57,7 +57,10 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
     if (hasHermit)     modifications.push("Hermit (0 or -1 Outsider)");
   } else {
     if (hasLilMonsta)    { expectedMinion += 1; expectedDemon -= 1; modifications.push("Lil' Monsta (+1 Minion, -1 Demon)"); }
-    if (hasLordOfTyphon) { expectedMinion += 1; modifications.push("Lord of Typhon (+1 Minion)"); }
+    if (hasLordOfTyphon) {
+      expectedMinion += 1;
+      modifications.push("Lord of Typhon (+1 Minion, any Townsfolk/Outsider count)");
+    }
     if (hasSummoner)     { expectedDemon  -= 1; modifications.push("Summoner (-1 Demon)"); }
     if (hasLunatic)      modifications.push("Lunatic (0 or +1 Demon)");
     if (hasBaron)        modifications.push("Baron (+2 Outsiders)");
@@ -75,6 +78,7 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   if (hasXaan)   modifications.push("Xaan (Any Outsider count)");
 
   expectedDemon = Math.max(0, expectedDemon);
+  const hasFlexibleGoodCounts = hasLegion || hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
 
   // Drunk and Marionette each need an extra Townsfolk beyond the real target for a non-colliding fake identity (see standardAssignment.ts).
   const tfDelta = hasLegion ? 0 : (hasDrunk ? 1 : 0) + (hasMarionette ? 1 : 0);
@@ -87,8 +91,8 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
 
   const possibleOutsiders = new Set<number>();
   if (hasLegion) {
-    possibleOutsiders.add(0);
-  } else if (hasKazali || hasXaan) {
+    for (let i = 0; i <= basePlayerCount; i++) possibleOutsiders.add(i);
+  } else if (hasFlexibleGoodCounts) {
     const max = Math.max(0, basePlayerCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= max; i++) possibleOutsiders.add(i);
   } else {
@@ -101,16 +105,20 @@ export function computeBalance(selectedRoles: Role[], playerCount: number) {
   const validTownsfolk  = validOutsiders.map(out => Math.max(0, basePlayerCount - expectedDemon - expectedMinion - out) + tfDelta);
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
-  const isOutsiderValid  = (hasKazali || hasXaan) ? true : validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = (hasKazali || hasXaan) ? true : (isOutsiderValid && counts.townsfolk === basePlayerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
-  const isDemonValid     = hasLunatic
+  const isOutsiderValid  = hasFlexibleGoodCounts ? true : validOutsiders.includes(counts.outsider);
+  const isTownsfolkValid = hasFlexibleGoodCounts ? true : (isOutsiderValid && counts.townsfolk === basePlayerCount - expectedDemon - expectedMinion - counts.outsider + tfDelta);
+  const isDemonValid     = hasLegion
+    ? counts.demon >= expectedDemon && counts.demon <= basePlayerCount - 1
+    : hasLunatic
     ? (counts.demon === expectedDemon || counts.demon === expectedDemon + 1)
     : (counts.demon === expectedDemon);
   const isMinionValid    = counts.minion === expectedMinion;
 
-  const expectedOutsiderLabel  = (hasKazali || hasXaan) ? 'any' : validOutsiders.join(' or ');
-  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
-  const expectedDemonLabel     = hasLunatic
+  const expectedOutsiderLabel  = hasFlexibleGoodCounts ? 'any' : validOutsiders.join(' or ');
+  const expectedTownsfolkLabel = hasFlexibleGoodCounts ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedDemonLabel     = hasLegion
+    ? `${expectedDemon} - ${basePlayerCount - 1}`
+    : hasLunatic
     ? `${expectedDemon} or ${expectedDemon + 1}`
     : String(expectedDemon);
 

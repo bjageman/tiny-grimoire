@@ -4,6 +4,8 @@ import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } fr
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
 import { assignCharacters } from './utils/assignment';
+import { getWhaleBucketPreferenceIds, getWhaleBucketPreferenceTeam } from './utils/whaleBucketPreferences';
+import { isEligibleHiddenRole } from './utils/hiddenRoleEligibility';
 import { getValidationSummary } from './utils/validationSummary';
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import WhaleBucketSetupPhase from './components/whalebucket/SetupPhase';
@@ -31,7 +33,8 @@ export type Player = Omit<BasePlayer, 'preferences'> & {
 type Phase = 'setup' | 'draft' | 'game';
 
 const STORAGE_KEY = 'whale-bucket-game';
-const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer', 'atheist'];
+const DEFAULT_EXCLUDED_ROLE_IDS = ['drunk', 'marionette', 'lunatic', 'pithag', 'legion', 'psychopath', 'engineer'];
+const EXCLUDED_ROLE_DEFAULTS_VERSION = 1;
 
 interface SetupProps {
   theme: 'light' | 'dark';
@@ -90,6 +93,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   // Traveler states
   const [allowTravelers, setAllowTravelers] = usePersistedField<boolean>(STORAGE_KEY, 'allowTravelers', false);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
+  const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
 
   // Refs so log callbacks always see current values without stale closures
   const timeOfDayRef = useRef(timeOfDay);
@@ -131,6 +135,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     });
 
     setPhase('game');
+    document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [players, addLogEntry, setPhase]);
 
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
@@ -147,7 +152,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [newTravelerRoleId, setNewTravelerRoleId] = useState('beggar');
 
   // Exclusion states
-  const [excludedRoleIds, setExcludedRoleIds] = usePersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
+  const [excludedRoleIds, setExcludedRoleIds] = useState<string[]>(() => {
+    const savedRoleIds = readPersistedField<string[]>(STORAGE_KEY, 'excludedRoleIds', DEFAULT_EXCLUDED_ROLE_IDS);
+    const savedVersion = readPersistedField<number>(STORAGE_KEY, 'excludedRoleDefaultsVersion', 0);
+    return savedVersion < EXCLUDED_ROLE_DEFAULTS_VERSION
+      ? [...new Set([...savedRoleIds.filter(id => id !== 'atheist'), ...DEFAULT_EXCLUDED_ROLE_IDS])]
+      : savedRoleIds;
+  });
+  const [sentinelOutsiderDelta, setSentinelOutsiderDelta] = usePersistedField<number>(STORAGE_KEY, 'sentinelOutsiderDelta', 0);
+  const [popeEnabled, setPopeEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'popeEnabled', false);
+
+  const resetSetupModifiers = () => {
+    setSentinelOutsiderDelta(0);
+    setPopeEnabled(false);
+  };
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -357,7 +375,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   // Storyteller Sync channel (laptop <-> phone)
   const syncState = useMemo(() => ({
-    players: phase === 'game' ? players.map(({ preferences, ...rest }) => rest) : players,
+    players,
     phase,
     timeOfDay,
     dayNumber,
@@ -368,8 +386,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     reminderTokens,
     checkedItems,
     rotationOffset,
+    sentinelOutsiderDelta,
+    popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -388,10 +408,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
+      setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
+      setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -412,7 +434,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       allowTravelers,
       isLilMonstaGame,
       excludedRoleIds,
+      excludedRoleDefaultsVersion: EXCLUDED_ROLE_DEFAULTS_VERSION,
       gameLog,
+      gameNotes,
       demonBluffs,
       reminderTokens,
       checkedItems,
@@ -420,8 +444,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       alwaysShowNotes,
       fullNightOrder,
       allReminders,
+      sentinelOutsiderDelta,
+      popeEnabled,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -531,7 +557,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       for (const team of teams) {
         if (newPrefs[team].length === 0) {
-          const available = allRoles.filter(r => r.team === team && !excludedRoleIds.includes(r.id));
+          const available = allRoles.filter(r => getWhaleBucketPreferenceTeam(r) === team && !excludedRoleIds.includes(r.id));
           if (available.length > 0) {
             const randIdx = Math.floor(Math.random() * available.length);
             newPrefs[team] = [available[randIdx].id];
@@ -556,7 +582,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const runAssignment = () => {
-    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers);
+    const result = assignCharacters(players, ALL_ROLES as Role[], allowTravelers, sentinelOutsiderDelta, excludedRoleIds);
     if (!result) {
       showAlert('Could not find a valid assignment matching standard/modified player counts. Try adding more preference options.');
       return;
@@ -567,7 +593,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
     const updatedPlayers = players.map(p => {
       const assigned = result.find(r => r.player.id === p.id);
-      let isRevealed = assigned?.fromPref || assigned?.role.id === 'legion' || assigned?.role.id === 'riot';
+      let isRevealed = assigned?.fromPref || assigned?.role.id === 'atheist' || assigned?.role.id === 'legion' || assigned?.role.id === 'riot';
       if (hasChoirboy && (assigned?.role.id === 'choirboy' || assigned?.role.id === 'king')) {
         isRevealed = true;
       }
@@ -583,25 +609,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         const assignedDemonIds = result.filter(r => r.role.team === 'demon').map(r => r.role.id);
         const candidates = (ALL_ROLES as Role[]).filter(r => 
           r.team === 'demon' && 
+          isEligibleHiddenRole('lunatic', r.id) &&
           !excludedRoleIds.includes(r.id) && 
           !assignedDemonIds.includes(r.id)
         );
-        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r => r.team === 'demon' && !excludedRoleIds.includes(r.id));
+        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r =>
+          r.team === 'demon' &&
+          isEligibleHiddenRole('lunatic', r.id) &&
+          !excludedRoleIds.includes(r.id)
+        );
         const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'imp' }]);
         const chosenDemon = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
         roleId = chosenDemon.id;
       } else if (assigned && assigned.role.id === 'lilmonsta') {
         isTheLilMonsta = true;
-        const assignedMinionIds = result.filter(r => r.role.team === 'minion').map(r => r.role.id);
-        const candidates = (ALL_ROLES as Role[]).filter(r => 
-          r.team === 'minion' && 
-          !excludedRoleIds.includes(r.id) && 
-          !assignedMinionIds.includes(r.id)
-        );
-        const fallbackCandidates = (ALL_ROLES as Role[]).filter(r => r.team === 'minion' && !excludedRoleIds.includes(r.id));
-        const finalCandidates = candidates.length > 0 ? candidates : (fallbackCandidates.length > 0 ? fallbackCandidates : [{ id: 'poisoner' }]);
-        const chosenMinion = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
-        roleId = chosenMinion.id;
+        if (assigned.displayRole) roleId = assigned.displayRole.id;
       }
 
       return {
@@ -620,6 +642,21 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setPhase('draft');
   };
 
+  const clearAssignedRoles = () => {
+    setPlayers(prev => prev.map(p => ({
+      ...p,
+      roleId: undefined,
+      roleIds: undefined,
+      assignedFromPref: false,
+      isTheDrunk: false,
+      isTheMarionette: false,
+      isTheLunatic: false,
+      isTheLilMonsta: false,
+      isEvil: undefined,
+    })));
+    setIsLilMonstaGame(false);
+  };
+
   const {
     updatePlayerName, updatePlayerNotes, updatePlayerPronouns, updatePlayerRole,
     togglePlayerDead, togglePlayerDeadVote, togglePlayerEvil, togglePlayerDrunkOrPoisoned,
@@ -631,7 +668,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     onLilMonstaEnabled: () => setIsLilMonstaGame(true),
     resolveAssignedFromPref: (pl, rid) => {
       const role = (ALL_ROLES as Role[]).find(r => r.id === rid);
-      return role ? (pl.preferences?.[role.team] || []).includes(rid) : false;
+      return role ? getWhaleBucketPreferenceIds(pl.preferences, role.team).includes(rid) : false;
     },
   });
 
@@ -656,9 +693,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
     localStorage.removeItem(STORAGE_KEY);
@@ -698,8 +737,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setIsLilMonstaGame(false);
     setDemonBluffs([]);
     setGameLog([]);
+    setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
+    resetSetupModifiers();
     // Re-arm the one-time "Send character assignments?" warning for the next round.
     setGrimoireConfirmed(false);
 
@@ -737,8 +778,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   };
 
   const validationSummary = useMemo(() => {
-    return getValidationSummary(players);
-  }, [players]);
+    return getValidationSummary(players, ALL_ROLES as Role[], undefined, sentinelOutsiderDelta, popeEnabled);
+  }, [players, sentinelOutsiderDelta, popeEnabled]);
 
   const isLightModeActive = theme === 'light';
   const { dialogProps, showAlert, showConfirm } = useDialog();
@@ -775,8 +816,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       }
       titleContent={
         <div className="flex items-center justify-center gap-2">
-          <h1 className="font-display text-xl font-bold text-clocktower-blood tracking-widest uppercase">
-            Whale Buffet
+          <h1
+            id="whale-bucket-page-title"
+            className="font-display text-sm sm:text-xl font-bold text-clocktower-blood tracking-widest uppercase"
+          >
+            Whale Bucket Draft
           </h1>
           {isSecondary ? (
             <HeaderCodeBadge
@@ -849,7 +893,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           </HeaderCodeBadge>
         )
       }
-      contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
+      contentClassName="px-4 md:px-8 lg:px-12 pt-3 pb-4"
     >
 
       {phase === 'setup' && (
@@ -876,11 +920,17 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           clearAllPreferences={clearAllPreferences}
           resetGame={resetGame}
           setActivePreferencePlayerId={setActivePreferencePlayerId}
-          runAssignment={runAssignment}
-          onManuallyAssign={() => setPhase('draft')}
+          onManuallyAssign={() => {
+            setPhase('draft');
+            document.getElementById('page-header-divider')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
           isLightModeActive={isLightModeActive}
           excludedRoleIds={excludedRoleIds}
           setExcludedRoleIds={setExcludedRoleIds}
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           remotePlayerIds={remotePlayerIds}
         />
       )}
@@ -889,10 +939,14 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         <WhaleBucketDraftPhase
           players={players}
           validationSummary={validationSummary}
+          sentinelOutsiderDelta={sentinelOutsiderDelta}
+          setSentinelOutsiderDelta={setSentinelOutsiderDelta}
+          popeEnabled={popeEnabled}
+          setPopeEnabled={setPopeEnabled}
           isLightModeActive={isLightModeActive}
-          setPhase={setPhase}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}
+          onClearRoles={() => showConfirm('Are you sure you want to clear all assigned roles?', clearAssignedRoles, 'Clear Roles')}
           setActiveDraftPlayerId={setActiveDraftPlayerId}
           remotePlayerIds={remotePlayerIds}
           remotePlayerCount={remotePlayerIds.size}
@@ -914,6 +968,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={isLightModeActive}
           draggedIndex={draggedIndex}
           dragOverIndex={dragOverIndex}
+          hoverSide={hoverSide}
           handleMouseDown={handleMouseDown}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}
@@ -942,6 +997,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             }
           }}
           gameLog={gameLog}
+          notes={gameNotes}
+          onNotesChange={setGameNotes}
           onDownloadLog={() => {
             const header = `Blood on the Clocktower — Game Log\n${new Date().toLocaleString()}\n${'─'.repeat(40)}\n`;
             const content = header + gameLog.join('\n');
@@ -950,7 +1007,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             const a = document.createElement('a');
             a.href = url;
             const dt = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
-            a.download = `whalebuffet-all-roles-${players.length}p-${dt}.txt`;
+            a.download = `whale-bucket-draft-all-roles-${players.length}p-${dt}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

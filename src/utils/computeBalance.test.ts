@@ -203,6 +203,61 @@ describe('computeBalance — Riot', () => {
   });
 });
 
+describe('computeBalance — Lord of Typhon', () => {
+  it('allows any Townsfolk and Outsider split while still requiring the extra Minion', () => {
+    const roles = [
+      out('recluse'), out('saint'), out('butler'),
+      min('poisoner'), min('spy'), dem('lordoftyphon'),
+    ];
+    const b = computeBalance(roles, 6);
+
+    expect(b.expectedMinion).toBe(2);
+    expect(b.expectedOutsiderLabel).toBe('any');
+    expect(b.expectedTownsfolkLabel).toBe('any');
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+});
+
+describe('computeBalance — Legion', () => {
+  it('allows any good-role split, no Minions, and a Demon range from half the players to all but one', () => {
+    const roles = [dem('legion'), dem('legion'), dem('legion'), dem('legion'), tf('chef'), out('butler')];
+    const b = computeBalance(roles, 8);
+
+    expect(b.expectedTownsfolkLabel).toBe('any');
+    expect(b.expectedOutsiderLabel).toBe('any');
+    expect(b.expectedMinion).toBe(0);
+    expect(b.expectedDemon).toBe(4);
+    expect(b.expectedDemonLabel).toBe('4 - 7');
+    expect(b.isDemonValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+
+  it('rejects Legion Demon counts outside the allowed range', () => {
+    const b = computeBalance([dem('legion'), dem('legion'), dem('legion')], 8);
+
+    expect(b.expectedDemonLabel).toBe('4 - 7');
+    expect(b.isDemonValid).toBe(false);
+    expect(b.isValid).toBe(false);
+  });
+});
+
+describe('computeBalance — Atheist', () => {
+  it('allows any Townsfolk and Outsider split with no evil players', () => {
+    const roles = [tf('atheist'), tf('washerwoman'), tf('chef'), out('recluse'), out('saint'), out('butler')];
+    const b = computeBalance(roles, 6);
+
+    expect(b.expectedDemon).toBe(0);
+    expect(b.expectedMinion).toBe(0);
+    expect(b.expectedOutsiderLabel).toBe('any');
+    expect(b.expectedTownsfolkLabel).toBe('any');
+    expect(b.isOutsiderValid).toBe(true);
+    expect(b.isTownsfolkValid).toBe(true);
+    expect(b.isValid).toBe(true);
+  });
+});
+
 describe('computeBalance — Alchemist', () => {
   it('warns that the Alchemist ability may affect setup whenever it is selected', () => {
     const roles = [tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('alchemist'), out('recluse'), min('poisoner'), dem('imp')];

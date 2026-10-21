@@ -1,10 +1,11 @@
 import type { Player, Role } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
+import { isEligibleHiddenRole, type HiddenRoleTag } from './hiddenRoleEligibility';
 import {
   shuffle,
   fillToCount,
-  getMasqueradeFakeRole,
+  getHiddenRoleCharacter,
   isTravelerRole,
   splitTravelers,
   applyChoirboyKing,
@@ -49,11 +50,14 @@ export function performStandardAssignment(
   const masterOuts = (ALL_ROLES as Role[]).filter(r => r.team === 'outsider');
   const masterMins = (ALL_ROLES as Role[]).filter(r => r.team === 'minion');
   const masterDems = (ALL_ROLES as Role[]).filter(r => r.team === 'demon');
+  const eligibleForTag = (tag: HiddenRoleTag, roles: Role[]) => roles.filter(role => isEligibleHiddenRole(tag, role.id));
+  const eligibleForLilMonstaTag = (roles: Role[]) => eligibleForTag('lilmonsta', roles).filter(role => role.id !== 'summoner');
 
   let tfs = currentScriptRoles.filter(r => r.team === 'townsfolk');
   const outs = currentScriptRoles.filter(r => r.team === 'outsider');
   const mins = currentScriptRoles.filter(r => r.team === 'minion');
   const dems = currentScriptRoles.filter(r => r.team === 'demon');
+  const maxScriptOutsiders = new Set(outs.map(r => r.id)).size;
 
   const hasAtheistRole = tfs.some(r => r.id === 'atheist');
   let isAtheistActive = false;
@@ -63,7 +67,7 @@ export function performStandardAssignment(
   }
 
   if (isAtheistActive) {
-    const O = base.outsider;
+    const O = Math.min(base.outsider, maxScriptOutsiders);
     const atheistRole = tfs.find(r => r.id === 'atheist')!;
     let selectedOutsiders = shuffle(outs).slice(0, O);
     let selectedTownsfolk = [atheistRole, ...shuffle(tfs.filter(t => t.id !== 'atheist')).slice(0, baseCount - O - 1)];
@@ -103,29 +107,47 @@ export function performStandardAssignment(
 
   const hasLordOfTyphon = chosenDemon && chosenDemon.id === 'lordoftyphon';
   const hasKazali = chosenDemon && chosenDemon.id === 'kazali';
+  const drewLilMonsta = chosenDemon?.id === 'lilmonsta';
   const targetMinionsCount = hasKazali ? 0 : (base.minion + (hasLordOfTyphon ? 1 : 0));
 
-  let selectedMinions = shuffle(mins).slice(0, targetMinionsCount);
+  const minionBag = drewLilMonsta ? mins.filter(minion => minion.id !== 'summoner') : mins;
+  const selectedMinions: Role[] = [];
+  for (const minion of shuffle(minionBag)) {
+    if (selectedMinions.length >= targetMinionsCount) break;
+    const conflictsWithSelected =
+      (minion.id === 'summoner' && selectedMinions.some(selected => selected.id === 'marionette')) ||
+      (minion.id === 'marionette' && selectedMinions.some(selected => selected.id === 'summoner'));
+    if (!conflictsWithSelected) selectedMinions.push(minion);
+  }
+  if (selectedMinions.length < targetMinionsCount && minionBag.length >= targetMinionsCount) return null;
   const hasSummoner = selectedMinions.some(m => m.id === 'summoner');
 
   const targetDemonsCount = hasSummoner ? Math.max(0, base.demon - 1) : base.demon;
   const selectedDemons = chosenDemon && targetDemonsCount > 0 ? [chosenDemon] : [];
 
   const hasLilMonsta = selectedDemons.some(d => d.id === 'lilmonsta');
-  if (hasLilMonsta) {
-    selectedMinions = shuffle(mins.filter(m => m.id !== 'lilmonsta')).slice(0, base.minion);
-  }
 
-  const hasXaan = selectedMinions.some(m => m.id === 'xaan');
+  let lilMonstaFakeRole: Role | null = null;
+  if (hasLilMonsta) {
+    const excludeIds = new Set([...selectedDemons, ...selectedMinions].map(role => role.id));
+    lilMonstaFakeRole = getHiddenRoleCharacter(
+      eligibleForLilMonstaTag(mins),
+      eligibleForLilMonstaTag(fallbackMins),
+      eligibleForLilMonstaTag(masterMins),
+      excludeIds
+    );
+  }
+  const activeMinions = lilMonstaFakeRole ? [...selectedMinions, lilMonstaFakeRole] : selectedMinions;
+  const hasXaan = activeMinions.some(m => m.id === 'xaan');
   const bypassAdjustments = hasKazali || hasXaan;
 
   // Sentinel (Fabled): a fixed Storyteller-chosen ±1 Outsider shift; ignored under Kazali/Xaan.
-  const baseOutsiderModifier = (selectedMinions.some(m => m.id === 'baron') ? 2 : 0) +
+  const baseOutsiderModifier = (activeMinions.some(m => m.id === 'baron') ? 2 : 0) +
                                (selectedDemons.some(d => d.id === 'fanggu') ? 1 : 0) -
                                (selectedDemons.some(d => d.id === 'vigormortis') ? 1 : 0) +
                                (bypassAdjustments ? 0 : sentinelOutsiderDelta);
 
-  const gfRange = (!bypassAdjustments && selectedMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
+  const gfRange = (!bypassAdjustments && activeMinions.some(m => m.id === 'godfather')) ? [-1, 1] : [0];
   const balRange = (!bypassAdjustments && tfs.some(t => t.id === 'balloonist')) ? [0, 1] : [0];
   const hermRange = (!bypassAdjustments && outs.some(o => o.id === 'hermit')) ? [-1, 0] : [0];
 
@@ -146,7 +168,7 @@ export function performStandardAssignment(
         let tempTfs = baseCount - selectedDemons.length - selectedMinions.length - tempOuts;
         if (tempTfs < 0) tempTfs = 0;
 
-        const fitsOutsiders = tempOuts <= outs.length;
+        const fitsOutsiders = tempOuts <= maxScriptOutsiders;
         const fitsTownsfolk = (tempTfs + tfDelta) <= tfs.length;
 
         if (fitsOutsiders && fitsTownsfolk) {
@@ -174,6 +196,7 @@ export function performStandardAssignment(
     const maxOutsiders = baseCount - selectedDemons.length - selectedMinions.length;
     targetOutsiders = Math.floor(Math.random() * (maxOutsiders + 1));
   }
+  targetOutsiders = Math.min(targetOutsiders, maxScriptOutsiders);
   let targetTownsfolk = baseCount - selectedDemons.length - selectedMinions.length - targetOutsiders;
   if (targetTownsfolk < 0) {
     targetTownsfolk = 0;
@@ -184,6 +207,7 @@ export function performStandardAssignment(
 
   let selectedOutsiders = shuffle(outs).slice(0, targetOutsiders);
   let selectedTownsfolk = shuffle(tfs).slice(0, targetTownsfolk);
+  const hermitInInitialDraw = selectedOutsiders.some(o => o.id === 'hermit');
 
   // 1. Balloonist's +0/+1 Outsider only applies if it was actually dealt (balRange is gated on the pool), so re-check the draw.
   const balloonistInPlay = selectedTownsfolk.some(t => t.id === 'balloonist');
@@ -202,8 +226,7 @@ export function performStandardAssignment(
   }
 
   // 2. Hermit: same pool-vs-draw problem as Balloonist; only fires when another Outsider can absorb the -1 (removing the Hermit would invalidate it).
-  const hermitInPlay = selectedOutsiders.some(o => o.id === 'hermit');
-  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInPlay) {
+  if (!bypassAdjustments && chosenCombo.herm === -1 && hermitInInitialDraw) {
     const otherOutsiders = selectedOutsiders.filter(o => o.id !== 'hermit');
     if (otherOutsiders.length > 0) {
       const outToRemove = otherOutsiders[Math.floor(Math.random() * otherOutsiders.length)];
@@ -247,12 +270,12 @@ export function performStandardAssignment(
     const fallbackPool = marionetteFakeTeam === 'outsider' ? fallbackOuts : fallbackTfs;
     const masterPool = marionetteFakeTeam === 'outsider' ? masterOuts : masterTfs;
 
-    marionetteFakeRole = getMasqueradeFakeRole(
-      scriptPool,
-      fallbackPool,
-      masterPool,
+    marionetteFakeRole = getHiddenRoleCharacter(
+      eligibleForTag('marionette', scriptPool),
+      eligibleForTag('marionette', fallbackPool),
+      eligibleForTag('marionette', masterPool),
       excludeIds,
-      r => r.id !== 'drunk' && r.id !== 'lunatic'
+      r => isEligibleHiddenRole('marionette', r.id)
     );
   }
 
@@ -263,26 +286,12 @@ export function performStandardAssignment(
     const excludeIds = new Set([...roleIdsInPlay]);
     if (marionetteFakeRole) excludeIds.add(marionetteFakeRole.id);
 
-    drunkFakeRole = getMasqueradeFakeRole(
-      tfs,
-      fallbackTfs,
-      masterTfs,
+    drunkFakeRole = getHiddenRoleCharacter(
+      eligibleForTag('drunk', tfs),
+      eligibleForTag('drunk', fallbackTfs),
+      eligibleForTag('drunk', masterTfs),
       excludeIds,
-      r => r.id !== marionetteFakeRole?.id
-    );
-  }
-
-  // Lil' Monsta displays as a Minion; draw its fake identity from script minions first, then master list.
-  const hasLilMonstaInPlay = finalRolesList.some(r => r.id === 'lilmonsta');
-  let lilMonstaFakeRole: Role | null = null;
-  if (hasLilMonstaInPlay) {
-    const excludeIds = new Set([...roleIdsInPlay]);
-
-    lilMonstaFakeRole = getMasqueradeFakeRole(
-      mins,
-      fallbackMins,
-      masterMins,
-      excludeIds
+      r => isEligibleHiddenRole('drunk', r.id) && r.id !== marionetteFakeRole?.id
     );
   }
 
@@ -292,10 +301,10 @@ export function performStandardAssignment(
   if (hasLunaticInPlay) {
     const excludeIds = new Set([...roleIdsInPlay]);
 
-    lunaticFakeRole = getMasqueradeFakeRole(
-      dems,
-      fallbackDems,
-      masterDems,
+    lunaticFakeRole = getHiddenRoleCharacter(
+      eligibleForTag('lunatic', dems),
+      eligibleForTag('lunatic', fallbackDems),
+      eligibleForTag('lunatic', masterDems),
       excludeIds
     );
   }
@@ -333,27 +342,27 @@ export function performStandardAssignment(
     if (roleId === 'drunk') {
       isTheDrunk = true;
       const fakeTF = drunkFakeRole
-        ?? tfs.filter(t => !roleIdsInPlay.has(t.id))[0]
-        ?? tfs[Math.floor(Math.random() * tfs.length)];
+        ?? eligibleForTag('drunk', tfs).filter(t => !roleIdsInPlay.has(t.id))[0]
+        ?? eligibleForTag('drunk', tfs)[Math.floor(Math.random() * eligibleForTag('drunk', tfs).length)];
       roleId = fakeTF?.id ?? roleId;
     } else if (roleId === 'marionette') {
       isTheMarionette = true;
       const matchedGood = marionetteFakeRole
-        ?? [...tfs, ...outs].filter(g => !roleIdsInPlay.has(g.id))[0]
-        ?? tfs[0];
+        ?? eligibleForTag('marionette', [...tfs, ...outs]).filter(g => !roleIdsInPlay.has(g.id))[0]
+        ?? eligibleForTag('marionette', tfs)[0];
       roleId = matchedGood.id;
     } else if (roleId === 'lunatic') {
       isTheLunatic = true;
       const matchedDemon = lunaticFakeRole
-        ?? dems.filter(d => !roleIdsInPlay.has(d.id))[0]
-        ?? dems[Math.floor(Math.random() * dems.length)]
-        ?? dems[0];
+        ?? eligibleForTag('lunatic', dems).filter(d => !roleIdsInPlay.has(d.id))[0]
+        ?? eligibleForTag('lunatic', dems)[Math.floor(Math.random() * eligibleForTag('lunatic', dems).length)]
+        ?? eligibleForTag('lunatic', dems)[0];
       roleId = matchedDemon.id;
     } else if (roleId === 'lilmonsta') {
       isTheLilMonsta = true;
       const matchedMinion = lilMonstaFakeRole
-        ?? mins.filter(m => !roleIdsInPlay.has(m.id))[0]
-        ?? mins[0];
+        ?? eligibleForLilMonstaTag(mins).filter(m => !roleIdsInPlay.has(m.id))[0]
+        ?? eligibleForLilMonstaTag(mins)[0];
       roleId = matchedMinion.id;
     }
 

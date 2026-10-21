@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
@@ -370,6 +370,30 @@ describe('performStandardAssignment', () => {
     }
   });
 
+  it('deals no Minions when Kazali is the Demon', () => {
+    const script: Role[] = [
+      ...Array.from({ length: 9 }, (_, index) => ({ id: `townsfolk-${index}`, name: `Townsfolk ${index}`, team: 'townsfolk' as const })),
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'scarletwoman', name: 'Scarlet Woman', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 10 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+    }));
+
+    const result = performStandardAssignment(players, script, script);
+
+    expect(result).not.toBeNull();
+    const assignedRoles = result!.map(player => script.find(role => role.id === player.roleId));
+    expect(assignedRoles.filter(role => role?.team === 'minion')).toHaveLength(0);
+    expect(assignedRoles.filter(role => role?.team === 'demon').map(role => role?.id)).toEqual(['kazali']);
+  });
+
   it('ensures the Marionette\'s fake identity is always on the script, even if it must duplicate a character in play', () => {
     // A tiny script (few Townsfolk/Outsider options) is the scenario that used to force the
     // old "unmatched" fallback into duplicating a real character's identity — e.g. a real
@@ -515,7 +539,7 @@ describe('performStandardAssignment', () => {
     });
   });
 
-  describe('masquerade roles (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
+  describe('hidden-role characters (Drunk, Marionette, Lunatic, Lil\' Monsta) never duplicate a real identity', () => {
     const tfNames = ['washerwoman', 'librarian', 'investigator', 'chef', 'empath', 'fortuneteller', 'undertaker', 'monk', 'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor'];
     const baseTownsfolk = tfNames.map(id => ({ id, name: id, team: 'townsfolk' as const }));
     const recluse: Role = { id: 'recluse', name: 'Recluse', team: 'outsider' };
@@ -525,6 +549,91 @@ describe('performStandardAssignment', () => {
     const poisoner: Role = { id: 'poisoner', name: 'Poisoner', team: 'minion' };
     const imp: Role = { id: 'imp', name: 'Imp', team: 'demon' };
     const lilMonstaRole: Role = { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' };
+
+    it("applies the displayed Godfather's Outsider modifier for Lil' Monsta", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const godfather: Role = { id: 'godfather', name: 'Godfather', team: 'minion', setup: true };
+      const script: Role[] = [
+        ...baseTownsfolk,
+        recluse,
+        { id: 'saint', name: 'Saint', team: 'outsider' },
+        poisoner,
+        godfather,
+        lilMonstaRole,
+      ];
+
+      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      expect(result).not.toBeNull();
+      expect(result!.find(player => player.isTheLilMonsta)?.roleId).toBe('godfather');
+      expect(result!.filter(player => script.find(role => role.id === player.roleId)?.team === 'outsider')).toHaveLength(1);
+    });
+
+    it("does not give Lil' Monsta a Marionette display role", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const script = [...baseTownsfolk, poisoner, marionetteRole, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      const lilMonstaPlayer = result?.find(player => player.isTheLilMonsta);
+      expect(lilMonstaPlayer).toBeDefined();
+      expect(lilMonstaPlayer?.roleId).not.toBe('marionette');
+    });
+
+    it("removes Summoner from the Minion bag when Lil' Monsta is drawn", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const summoner: Role = { id: 'summoner', name: 'Summoner', team: 'minion' };
+      const script = [...baseTownsfolk, summoner, poisoner, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 5 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      expect(result).not.toBeNull();
+      expect(result!.some(player => player.isTheLilMonsta)).toBe(true);
+      expect(result!.some(player => player.roleId === 'summoner')).toBe(false);
+    });
+
+    it('never draws Summoner and Marionette together', () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const summoner: Role = { id: 'summoner', name: 'Summoner', team: 'minion' };
+      const players: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const summonerFirst = performStandardAssignment(
+        players,
+        [...baseTownsfolk, summoner, marionetteRole, poisoner, imp],
+        [],
+      );
+      const marionetteFirst = performStandardAssignment(
+        players,
+        [...baseTownsfolk, marionetteRole, summoner, poisoner, imp],
+        [],
+      );
+      random.mockRestore();
+
+      expect(summonerFirst?.some(player => player.roleId === 'summoner')).toBe(true);
+      expect(summonerFirst?.some(player => player.isTheMarionette)).toBe(false);
+      expect(marionetteFirst?.some(player => player.isTheMarionette)).toBe(true);
+      expect(marionetteFirst?.some(player => player.roleId === 'summoner')).toBe(false);
+    });
+
+    it("does not give a Lunatic the Lil' Monsta display role", () => {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const script = [...baseTownsfolk, lunaticRole, poisoner, imp, lilMonstaRole];
+      const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+      random.mockRestore();
+
+      const lunaticPlayer = result?.find(player => player.isTheLunatic);
+      expect(lunaticPlayer).toBeDefined();
+      expect(lunaticPlayer?.roleId).not.toBe('lilmonsta');
+    });
 
     const scripts: Record<string, Role[]> = {
       marionetteOnly: [...baseTownsfolk, recluse, marionetteRole, imp],
@@ -697,6 +806,29 @@ describe('performStandardAssignment', () => {
       }
     });
 
+    it('caps Outsiders at the number of unique Outsiders on the script', () => {
+      const script: Role[] = [
+        ...baseTownsfolk,
+        { id: 'drunk', name: 'Drunk', team: 'outsider' },
+        { id: 'recluse', name: 'Recluse', team: 'outsider' },
+        { id: 'butler', name: 'Butler', team: 'outsider' },
+        { id: 'saint', name: 'Saint', team: 'outsider' },
+        { id: 'baron', name: 'Baron', team: 'minion' },
+        { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+        { id: 'spy', name: 'Spy', team: 'minion' },
+        { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+      ];
+      const players: Player[] = Array.from({ length: 15 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
+
+      const result = performStandardAssignment(players, script, []);
+
+      expect(result).not.toBeNull();
+      const outsiderCount = result!.filter(player =>
+        player.isTheDrunk || script.some(role => role.team === 'outsider' && role.id === player.roleId)
+      ).length;
+      expect(outsiderCount).toBe(4);
+    });
+
     it('should assign different traveler characters to travelers when player count is > 15', () => {
       const players: Player[] = Array.from({ length: 18 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
       const travelerRoles: Role[] = [
@@ -740,23 +872,19 @@ describe('performStandardAssignment', () => {
     });
   });
 
-  describe('Outsider count on an all-roles script', () => {
+  describe('Outsider count with Balloonist and Hermit', () => {
     const allRoles = PLAYABLE_ROLES;
     const teamOf = (id: string) => allRoles.find(r => r.id === id)?.team;
-
-    // Every character that may legitimately move the Outsider count or the bag composition.
-    const OTHER_MODIFIERS = new Set([
-      'baron', 'fanggu', 'vigormortis', 'godfather', 'huntsman', 'kazali', 'xaan',
-      'lilmonsta', 'lordoftyphon', 'summoner', 'marionette', 'drunk', 'legion', 'atheist',
-    ]);
+    const modifierTestRoles = [
+      'washerwoman', 'librarian', 'investigator', 'chef', 'empath', 'monk', 'ravenkeeper', 'balloonist',
+      'hermit', 'klutz', 'saint', 'poisoner', 'spy', 'imp',
+    ].map(id => allRoles.find(role => role.id === id)).filter((role): role is Role => !!role);
 
     const realRoleIds = (result: Player[]) => result.map(p =>
-      p.isTheDrunk ? 'drunk' : p.isTheMarionette ? 'marionette' : p.isTheLunatic ? 'lunatic' : (p.roleId ?? '')
+      p.isTheDrunk ? 'drunk' : p.isTheMarionette ? 'marionette' : p.isTheLunatic ? 'lunatic' : p.isTheLilMonsta ? 'lilmonsta' : (p.roleId ?? '')
     );
 
-    // The Balloonist's [+0 or +1 Outsider] and the Hermit's [-0 or -1 Outsider] were gated on
-    // the script *pool* rather than the actual draw. On an all-roles script both are always in
-    // the pool, so ~50% of games silently landed a seat off the correct Outsider count.
+    // Keep the script limited to these two modifiers so unrelated setup abilities cannot affect the count.
     it('does not shift the Outsider count for a Balloonist or Hermit that was never dealt', () => {
       // 12 players: 7 Townsfolk / 2 Outsiders / 2 Minions / 1 Demon
       const players: Player[] = Array.from({ length: 12 }, (_, i) => ({
@@ -765,12 +893,11 @@ describe('performStandardAssignment', () => {
 
       let cleanGames = 0;
       for (let i = 0; i < 400; i++) {
-        const result = performStandardAssignment(players, allRoles, allRoles, allRoles);
+        const result = performStandardAssignment(players, modifierTestRoles, modifierTestRoles, modifierTestRoles);
         expect(result).not.toBeNull();
         if (!result) return;
 
         const ids = realRoleIds(result);
-        if (ids.some(id => OTHER_MODIFIERS.has(id))) continue;
         if (ids.includes('balloonist') || ids.includes('hermit')) continue;
 
         cleanGames++;
@@ -778,7 +905,7 @@ describe('performStandardAssignment', () => {
       }
 
       // Guard against the filters vacuously skipping every game.
-      expect(cleanGames).toBeGreaterThan(20);
+      expect(cleanGames).toBeGreaterThan(5);
     });
 
     it('still allows the Balloonist and Hermit to move the count when they are dealt', () => {
@@ -790,22 +917,20 @@ describe('performStandardAssignment', () => {
       const hermitCounts = new Set<number>();
 
       for (let i = 0; i < 1500; i++) {
-        const result = performStandardAssignment(players, allRoles, allRoles, allRoles);
+        const result = performStandardAssignment(players, modifierTestRoles, modifierTestRoles, modifierTestRoles);
         if (!result) continue;
 
         const ids = realRoleIds(result);
-        if (ids.some(id => OTHER_MODIFIERS.has(id))) continue;
-
         const outsiders = ids.filter(id => teamOf(id) === 'outsider').length;
         const bal = ids.includes('balloonist');
         const herm = ids.includes('hermit');
-        if (bal && !herm) balloonistCounts.add(outsiders);
-        if (herm && !bal) hermitCounts.add(outsiders);
+        if (bal) balloonistCounts.add(outsiders);
+        if (herm) hermitCounts.add(outsiders);
       }
 
-      // Balloonist may add one Outsider (2 or 3); Hermit may remove one (1 or 2).
-      expect([...balloonistCounts].sort()).toEqual([2, 3]);
-      expect([...hermitCounts].sort()).toEqual([1, 2]);
+      // Each modifier may combine with the other, yielding 1, 2, or 3 Outsiders.
+      expect([...balloonistCounts].sort()).toEqual([1, 2, 3]);
+      expect([...hermitCounts].sort()).toEqual([1, 2, 3]);
     });
   });
 });

@@ -2,6 +2,7 @@ import type { Player, Role } from '../types';
 import { getDistribution } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
+import { hasActualDemonNeighbor, isActualDemon } from './marionetteEligibility';
 
 const OFFICIAL_ROLE_IDS = new Set((ALL_ROLES as Role[]).map(r => r.id));
 
@@ -21,13 +22,15 @@ export interface ValidationSummary {
   isValid: boolean;
   expectedOutsiderLabel: string;
   expectedTownsfolkLabel: string;
+  expectedDemonLabel: string;
 }
 
 export function getValidationSummary(
   players: Player[],
   allRoles: Role[] = ALL_ROLES as Role[],
   selectedCharacterIds?: Set<string>,
-  sentinelOutsiderDelta: number = 0
+  sentinelOutsiderDelta: number = 0,
+  popeEnabled: boolean = false
 ): ValidationSummary | null {
   if (players.length === 0) return null;
 
@@ -49,6 +52,9 @@ export function getValidationSummary(
   }).length;
   const baseCount = Math.min(15, N - travelerCount);
   const base = getDistribution(baseCount);
+  const maxScriptOutsiders = new Set(allRoles
+    .filter(r => r.team === 'outsider' && (!selectedCharacterIds?.size || selectedCharacterIds.has(r.id)))
+    .map(r => r.id)).size;
   
   const counts = players.reduce((acc, p) => {
     if (p.roleId) {
@@ -103,14 +109,14 @@ export function getValidationSummary(
   const modifications: string[] = [];
   
   if (hasLegion) {
-    const L = Math.round(baseCount * 0.6);
-    expectedDemon = L;
+    expectedDemon = Math.ceil(baseCount / 2);
     expectedMinion = 0;
-    modifications.push(`Legion active (${L} Demons, 0 Minions/Outsiders)`);
+    modifications.push(`Legion active (${expectedDemon}–${baseCount - 1} Demons, 0 Minions, any Townsfolk/Outsiders)`);
   } else if (hasAtheist) {
     expectedDemon = 0;
     expectedMinion = 0;
     modifications.push("Atheist (No Evil players)");
+    modifications.push("Atheist (Any Townsfolk/Outsider count)");
     if (hasBaron) modifications.push("Baron (+2 Outsiders)");
     if (hasFangGu) modifications.push("Fang Gu (+1 Outsider)");
     if (hasVigormortis) modifications.push("Vigormortis (-1 Outsider)");
@@ -125,7 +131,7 @@ export function getValidationSummary(
     }
     if (hasLordOfTyphon) {
       expectedMinion += 1;
-      modifications.push("Lord of Typhon (+1 Minion)");
+      modifications.push("Lord of Typhon (+1 Minion, any Townsfolk/Outsider count)");
     }
     if (hasSummoner) {
       expectedDemon -= 1;
@@ -160,6 +166,10 @@ export function getValidationSummary(
     }
   }
 
+  if (popeEnabled) {
+    modifications.push('Pope (duplicate good characters allowed)');
+  }
+
   if (hasKazali) {
     expectedMinion = 0;
     modifications.push("Kazali (0 Minions)");
@@ -170,6 +180,7 @@ export function getValidationSummary(
   }
   
   expectedDemon = Math.max(0, expectedDemon);
+  const hasFlexibleGoodCounts = hasLegion || hasAtheist || hasKazali || hasXaan || hasLordOfTyphon;
 
   const gfMods = (hasGodfather && !hasLegion) ? [-1, 1] : [0];
   const balMods = (hasBalloonist && !hasLegion) ? [0, 1] : [0];
@@ -179,8 +190,8 @@ export function getValidationSummary(
 
   const possibleOutsiderCounts = new Set<number>();
   if (hasLegion) {
-    possibleOutsiderCounts.add(0);
-  } else if (hasKazali || hasXaan) {
+    for (let i = 0; i <= baseCount; i++) possibleOutsiderCounts.add(i);
+  } else if (hasFlexibleGoodCounts) {
     const maxOutsiders = Math.max(0, baseCount - expectedDemon - expectedMinion);
     for (let i = 0; i <= maxOutsiders; i++) {
       possibleOutsiderCounts.add(i);
@@ -191,7 +202,7 @@ export function getValidationSummary(
         for (const hunt of huntMods) {
           for (const herm of hermMods) {
             const total = base.outsider + fixedOutsiderDelta + gf + bal + hunt + herm;
-            possibleOutsiderCounts.add(Math.max(0, total));
+            possibleOutsiderCounts.add(Math.min(maxScriptOutsiders, Math.max(0, total)));
           }
         }
       }
@@ -202,17 +213,25 @@ export function getValidationSummary(
   const validTownsfolk = validOutsiders.map(out => Math.max(0, baseCount - expectedDemon - expectedMinion - out));
   const uniqueTownsfolk = Array.from(new Set(validTownsfolk)).sort((a, b) => a - b);
 
+  const roleIdFreq: Record<string, number> = {};
+  for (const p of players) {
+    if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;
+    roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
+  }
   const isOutsiderValid = validOutsiders.includes(counts.outsider);
-  const isTownsfolkValid = isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider;
-  const isDemonValid = counts.demon === expectedDemon;
+  const isTownsfolkValid = hasLegion || (isOutsiderValid && counts.townsfolk === baseCount - expectedDemon - expectedMinion - counts.outsider);
+  const isDemonValid = hasLegion
+    ? counts.demon >= expectedDemon && counts.demon <= baseCount - 1
+    : counts.demon === expectedDemon;
   const isMinionValid = counts.minion === expectedMinion;
 
-  const expectedOutsiderLabel = (hasKazali || hasXaan) ? 'any' : validOutsiders.join(' or ');
-  const expectedTownsfolkLabel = (hasKazali || hasXaan) ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedOutsiderLabel = hasFlexibleGoodCounts ? 'any' : validOutsiders.join(' or ');
+  const expectedTownsfolkLabel = hasFlexibleGoodCounts ? 'any' : uniqueTownsfolk.join(' or ');
+  const expectedDemonLabel = hasLegion ? `${expectedDemon} - ${baseCount - 1}` : String(expectedDemon);
 
   // For backward compatibility / display fallback
-  const expectedOutsider = Math.max(0, base.outsider + fixedOutsiderDelta);
-  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - (base.outsider + fixedOutsiderDelta);
+  const expectedOutsider = Math.min(maxScriptOutsiders, Math.max(0, base.outsider + fixedOutsiderDelta));
+  const expectedTownsfolk = baseCount - expectedDemon - expectedMinion - expectedOutsider;
   
   // Jinx checks
   const hasChoirboy = players.some(p => p.roleId === 'choirboy');
@@ -223,10 +242,11 @@ export function getValidationSummary(
   const failures: string[] = [];
   if (hasChoirboy && !hasKing) failures.push("Choirboy in play, but no King assigned.");
   if (hasHuntsman && !hasDamsel) failures.push("Huntsman in play, but no Damsel assigned.");
+  if (hasSummoner && hasLilMonsta) failures.push("Summoner and Lil' Monsta cannot both be in play.");
   if (hasAlchemist) warnings.push("Alchemist in play — ability may affect setup.");
 
   // Setup validation failures for Outsiders/Townsfolk
-  if (!isOutsiderValid && !(hasKazali || hasXaan)) {
+  if (!isOutsiderValid && !hasFlexibleGoodCounts) {
     const minExpected = Math.min(...validOutsiders);
     const maxExpected = Math.max(...validOutsiders);
     if (counts.outsider < minExpected) {
@@ -238,7 +258,7 @@ export function getValidationSummary(
     }
   }
 
-  if (!(hasKazali || hasXaan)) {
+  if (!hasFlexibleGoodCounts) {
     if (!isOutsiderValid) {
       const minExpectedTF = Math.min(...uniqueTownsfolk);
       const maxExpectedTF = Math.max(...uniqueTownsfolk);
@@ -268,9 +288,9 @@ export function getValidationSummary(
 
   if (!isDemonValid) {
     if (counts.demon < expectedDemon) {
-      failures.push(`Too few Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+      failures.push(`Too few Demons: expected ${expectedDemonLabel}, but got ${counts.demon}.`);
     } else if (counts.demon > expectedDemon) {
-      failures.push(`Too many Demons: expected ${expectedDemon}, but got ${counts.demon}.`);
+      failures.push(`Too many Demons: expected ${expectedDemonLabel}, but got ${counts.demon}.`);
     }
   }
 
@@ -313,26 +333,22 @@ export function getValidationSummary(
   }
 
   // Drunk/Marionette/Lunatic must display as a different fake character; showing the role itself exposes their true identity.
-  const revealingMasqueradeIds = new Set(['drunk', 'marionette', 'lunatic']);
+  const revealingHiddenRoleIds = new Set(['drunk', 'marionette', 'lunatic']);
   for (const p of players) {
-    if (p.roleId && revealingMasqueradeIds.has(p.roleId)) {
+    if (p.roleId && revealingHiddenRoleIds.has(p.roleId)) {
       const role = allRoles.find(r => r.id === p.roleId);
       failures.push(`${p.name} is displayed as ${role?.name ?? p.roleId} itself, revealing their true identity.`);
     }
   }
 
-  const roleIdFreq: Record<string, number> = {};
-  for (const p of players) {
-    if (!p.roleId || p.isTheLunatic || p.isTheDrunk || p.isTheMarionette) continue;
-    roleIdFreq[p.roleId] = (roleIdFreq[p.roleId] || 0) + 1;
-  }
   for (const [roleId, count] of Object.entries(roleIdFreq)) {
     if (count <= 1 || roleId === 'legion') continue;
     if (roleId === 'villageidiot' && count <= VILLAGE_IDIOT_MAX) {
       modifications.push(`${count} Village Idiots in play.`);
       continue;
     }
-    const role = allRoles.find(r => r.id === roleId);
+    const role = findRole(roleId);
+    if (popeEnabled && (role?.team === 'townsfolk' || role?.team === 'outsider')) continue;
     failures.push(`${role?.name ?? roleId} is assigned to ${count} players.`);
   }
 
@@ -343,24 +359,14 @@ export function getValidationSummary(
     return r?.team !== 'traveler';
   });
   const marionettePlayers = basePlayersInOrder.filter(p => p.isTheMarionette);
-  const demonPlayers = basePlayersInOrder.filter(p => {
-    if (!p.roleId || p.isTheMarionette || p.isTheDrunk || p.isTheLunatic) return false;
-    const r = allRoles.find(role => role.id === p.roleId);
-    return r?.team === 'demon';
-  });
+  const demonPlayers = basePlayersInOrder.filter(p => isActualDemon(p, findRole));
 
   if (marionettePlayers.length > 0) {
     if (demonPlayers.length === 0) {
       failures.push("A Marionette is in play, but there is no Demon assigned.");
     } else {
-      const K = basePlayersInOrder.length;
       for (const mp of marionettePlayers) {
-        const m_idx = basePlayersInOrder.findIndex(p => p.id === mp.id);
-        const isNeighboringDemon = demonPlayers.some(dp => {
-          const d_idx = basePlayersInOrder.findIndex(p => p.id === dp.id);
-          return (d_idx - 1 + K) % K === m_idx || (d_idx + 1) % K === m_idx;
-        });
-        if (!isNeighboringDemon) {
+        if (!hasActualDemonNeighbor(basePlayersInOrder, mp.id, findRole)) {
           failures.push(`Marionette (${mp.name}) must be sitting next to the Demon.`);
         }
       }
@@ -414,6 +420,7 @@ export function getValidationSummary(
     failures,
     isValid,
     expectedOutsiderLabel,
-    expectedTownsfolkLabel
+    expectedTownsfolkLabel,
+    expectedDemonLabel
   };
 }

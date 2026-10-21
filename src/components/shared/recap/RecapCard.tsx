@@ -13,13 +13,16 @@ import {
   SEAT_PRONOUN_COLOR,
 } from '../../../utils/playerSeat';
 import { roleIconFallback } from '../../../utils/roleIcon';
+import { getValidationSummary } from '../../../utils/validationSummary';
 import CharacterToken from '../tokens/CharacterToken';
+import VoteToken from '../tokens/VoteToken';
 import { ALL_ROLES } from '../../../utils/roleData';
 
 const BOARD_WIDTH = 900;
 const BOARD_HEIGHT = 680;
 const CARD_PADDING = 40;
 const REMINDER_SIZE_PCT = 26;
+const REMINDER_LABEL_MAX_LENGTH = 7;
 // The shared grimoire layout sizes tokens for the on-screen board, which leaves big gaps
 // in the recap export; scale tokens (and their names) up to fill the ring.
 const RECAP_TOKEN_SCALE = 1.28;
@@ -33,6 +36,12 @@ const scalePx = (value: unknown, factor: number): string | undefined => {
 };
 
 const DISPLAY_FONT = 'Georgia, "Times New Roman", serif';
+const PLAYER_TAGS = [
+  { field: 'isTheDrunk', label: 'DRUNK', background: '#ca8a04', color: '#000', border: '#a16207' },
+  { field: 'isTheMarionette', label: 'MARIONETTE', background: '#9f1239', color: '#fff', border: '#be123c' },
+  { field: 'isTheLunatic', label: 'LUNATIC', background: '#2563eb', color: '#fff', border: '#3b82f6' },
+  { field: 'isTheLilMonsta', label: "LIL' MONSTA", background: '#8b0000', color: '#fff', border: '#dc2626' },
+] as const;
 
 interface RecapCardProps {
   players: Player[];
@@ -87,8 +96,10 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
   const winner = deriveWinner(gameLog);
   const outcome = winner === 'good' ? '🌟 Good wins' : winner === 'evil' ? '😈 Evil wins' : null;
   const alive = players.filter(p => !p.isDead).length;
-  const phase = `${timeOfDay === 'night' ? 'Night' : 'Day'} ${dayNumber}`;
-  const when = date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const phase = `${timeOfDay} ${dayNumber}`;
+  const when = date.toLocaleString(undefined, { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const distribution = getValidationSummary(players, rolesData)?.counts ?? { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveler: 0 };
+  const distributionLabel = [distribution.townsfolk, distribution.outsider, distribution.minion, distribution.demon, distribution.traveler].join('/');
 
   return (
     <div
@@ -106,7 +117,7 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
             {scriptName}
           </div>
           <div style={{ fontSize: 17, color: theme.subtitle, marginTop: 8, letterSpacing: '0.02em' }}>
-            {players.length} players · {alive} alive · ended {phase} · {when}
+            {players.length} players ({distributionLabel}) - ended {phase} with {alive} alive - {when}
           </div>
         </div>
         {outcome && (
@@ -159,6 +170,9 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
             >
               {playerReminders.map((reminder, ri) => {
                 const { left, top } = reminderArcOffset(ri, playerReminders.length, inward);
+                const labelText = reminder.text.slice(0, REMINDER_LABEL_MAX_LENGTH);
+                const labelFontSize = Math.min(42, 132 / Math.max(3, labelText.length + 0.5));
+                const labelPathId = `recap-reminder-arc-${reminder.id}`;
 
                 return (
                   <div
@@ -187,6 +201,35 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                       style={{ width: '80%', height: '80%', objectFit: 'contain', opacity: 0.75 }}
                       onError={roleIconFallback(rolesData.find(r => r.id === reminder.sourceCharId))}
                     />
+                    {labelText && (
+                      <svg
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="xMidYMid meet"
+                        aria-hidden="true"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}
+                      >
+                        <defs>
+                          <path id={labelPathId} d="M6.3 56.2 A46 46 0 0 0 93.7 56.2" fill="none" />
+                        </defs>
+                        <text
+                          textAnchor="middle"
+                          style={{
+                            fontFamily: DISPLAY_FONT,
+                            fontSize: `${labelFontSize.toFixed(2)}px`,
+                            fontWeight: 900,
+                            fill: '#111827',
+                            paintOrder: 'stroke',
+                            stroke: 'rgba(255,255,255,0.92)',
+                            strokeWidth: `${(labelFontSize * 0.13).toFixed(2)}px`,
+                            strokeLinejoin: 'round',
+                          }}
+                        >
+                          <textPath href={`#${labelPathId}`} startOffset="50%">
+                            {labelText}
+                          </textPath>
+                        </text>
+                      </svg>
+                    )}
                   </div>
                 );
               })}
@@ -255,6 +298,44 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
                     {p.pronouns}
                   </span>
                 )}
+
+                {PLAYER_TAGS.filter(tag => p[tag.field]).map(tag => (
+                  <span
+                    key={tag.field}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      transform: 'translateY(50%)',
+                      zIndex: 30,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      border: `1px solid ${tag.border}`,
+                      background: tag.background,
+                      color: tag.color,
+                      fontSize: 10,
+                      fontWeight: 900,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tag.label}
+                  </span>
+                ))}
+
+                {p.isDrunkOrPoisoned && (
+                  <span
+                    title="Drunk/Poisoned"
+                    style={{ position: 'absolute', top: '12%', right: '12%', zIndex: 30, fontSize: 24, lineHeight: 1 }}
+                  >
+                    🤢
+                  </span>
+                )}
+
+                {p.isDead && p.hasDeadVote && (
+                  <span style={{ position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
+                    <VoteToken size="44px" title="Vote Token Active" />
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -273,7 +354,7 @@ const RecapCard = forwardRef<HTMLDivElement, RecapCardProps>(function RecapCard(
           textTransform: 'uppercase',
         }}
       >
-        <span style={{ fontFamily: DISPLAY_FONT, color: '#7a6028', fontWeight: 700 }}>Tiny Grimoire</span>
+        <span style={{ fontFamily: DISPLAY_FONT, color: '#7a6028', fontWeight: 700 }}>TINYGRIMOIRE.COM</span>
         <span>Blood on the Clocktower</span>
       </div>
     </div>

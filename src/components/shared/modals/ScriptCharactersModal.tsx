@@ -208,11 +208,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   const handleClose = () => { onClose(); setSearchTerm(''); };
 
-  const gridClass = cn(
-    "grid gap-2",
-    showDetail ? "grid-cols-1" : "grid-cols-2",
-    doubleColumn ? "sm:grid-cols-2" : "sm:grid-cols-1"
-  );
+  const roleLayoutClass = doubleColumn
+    ? cn("gap-2 sm:columns-2", showDetail ? "columns-1" : "columns-2")
+    : cn("grid gap-2 sm:grid-cols-1", showDetail ? "grid-cols-1" : "grid-cols-2");
 
   const renderRoleIcon = (role: Role, alt: string) => (
     <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
@@ -230,6 +228,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
         onClick={() => setSelectedRole(role)}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all duration-200 w-full hover:scale-[1.01] cursor-pointer focus:outline-none",
+          doubleColumn && "mb-2 break-inside-avoid",
           isLightModeActive
             ? `bg-white/80 border-gray-200/60 hover:bg-white ${hover} hover:shadow-sm`
             : `bg-gray-955/65 border-gray-850/45 hover:bg-gray-850/80 ${hover}`
@@ -425,14 +424,14 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                     <h4 className={cn("text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5", color, border)}>
                       {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({teamRoles.length})</span>
                     </h4>
-                    <div className={gridClass}>
+                    <div className={roleLayoutClass} data-testid="script-role-layout">
                       {teamRoles.map(renderRoleCard)}
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className={gridClass}>
+              <div className={roleLayoutClass} data-testid="script-role-layout">
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}

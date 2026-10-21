@@ -44,12 +44,16 @@ export default function WhaleBucketPreferenceCircle({
   handleTouchEnd,
   remotePlayerIds,
 }: WhaleBucketPreferenceCircleProps) {
-  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(players.length);
+  const { boardRef, boardClass, btnStyle, nameStyle, positions, getDynamicFontSize } = useGrimoireLayout(
+    players.length,
+    { fluidDesktop: true },
+  );
   const totalTeams = allowTravelers ? 5 : 4;
 
   return (
     <div className="w-full flex flex-col items-center">
       <div
+        id="whalebucket-preference-board"
         ref={boardRef}
         className={cn(
           "relative border shadow-inner overflow-visible mx-auto",

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { X, Shuffle, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
@@ -14,7 +14,6 @@ interface Props {
   roles: Role[];
   playerCount: number;
   isLightModeActive: boolean;
-  onAssign: (selectedRoles: Role[]) => void;
   selectedIds: Set<string>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   villageIdiotCount: number;
@@ -28,7 +27,7 @@ const TEAMS = [
   { key: 'demon',     label: '🔴 Demons',    color: 'text-clocktower-demon',     border: 'border-clocktower-demon/20'     },
 ] as const;
 
-export default function SelectCharactersModal({ isOpen, onClose, roles, playerCount, isLightModeActive, onAssign, selectedIds, setSelectedIds, villageIdiotCount, setVillageIdiotCount }: Props) {
+export default function SelectCharactersModal({ isOpen, onClose, roles, playerCount, isLightModeActive, selectedIds, setSelectedIds, villageIdiotCount, setVillageIdiotCount }: Props) {
   const assignableRoles = useMemo(() => roles.filter(r => r.team !== 'traveler'), [roles]);
 
   useScrollLock(isOpen);
@@ -86,10 +85,6 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
   const selectAll   = () => setSelectedIds(new Set(assignableRoles.map(r => r.id)));
   const deselectAll = () => setSelectedIds(new Set());
 
-  const canAssign = playerCount >= 5 && selectedIds.size >= playerCount;
-
-  const handleAssign = () => { onAssign(selectedRoles); onClose(); };
-
   if (!isOpen) return null;
 
   return (
@@ -107,7 +102,7 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
         {/* Header */}
         <div className="flex justify-between items-center gap-4 px-5 pt-5 pb-4 shrink-0">
           <h3 className={cn("font-display font-bold text-xl tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
-            Select Characters to Assign
+            Setup Bag
           </h3>
           <button
             type="button"
@@ -288,11 +283,10 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
           )}
           <button
             type="button"
-            onClick={handleAssign}
-            disabled={!canAssign}
-            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-2.5 rounded text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="w-full bg-clocktower-blood hover:bg-red-800 text-white py-2.5 rounded text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md"
           >
-            <Shuffle size={14} /> Randomly Assign
+            Close
           </button>
         </div>
       </div>

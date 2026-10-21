@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Player, Role } from '../types';
+import { isMarionetteEligible } from '../utils/marionetteEligibility';
 
 interface UsePlayerRosterArgs<P extends Player> {
   players: P[];
@@ -43,12 +44,12 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
   const updatePlayerRole = (id: string, roleId: string) => {
     const player = players.find(p => p.id === id);
     const currentAlignment = player ? alignmentOf(player, findRole(player.roleId)) : undefined;
+    const selectedRole = findRole(roleId);
 
     if (phase === 'game' && player && player.roleId !== (roleId || undefined)) {
       const oldRole = findRole(player.roleId);
-      const newRole = findRole(roleId);
-      if (oldRole && newRole) onLog(`${player.name} changed from ${oldRole.name} to ${newRole.name}`);
-      else if (newRole) onLog(`${player.name} assigned ${newRole.name}`);
+      if (oldRole && selectedRole) onLog(`${player.name} changed from ${oldRole.name} to ${selectedRole.name}`);
+      else if (selectedRole) onLog(`${player.name} assigned ${selectedRole.name}`);
     }
 
     let newPlayers = players.map(p => {
@@ -57,10 +58,10 @@ export function usePlayerRoster<P extends Player>({ players, setPlayers, findRol
         ...p,
         roleId: roleId || undefined,
         isEvil: phase === 'game' ? currentAlignment : undefined,
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
+        isTheDrunk: !!p.isTheDrunk && selectedRole?.team === 'townsfolk',
+        isTheMarionette: !!p.isTheMarionette && isMarionetteEligible(players, id, roleId, findRole),
+        isTheLunatic: !!p.isTheLunatic && selectedRole?.team === 'demon',
+        isTheLilMonsta: !!p.isTheLilMonsta && selectedRole?.team === 'minion',
       };
       if (resolveAssignedFromPref) assigned.assignedFromPref = resolveAssignedFromPref(p, roleId);
       return assigned;

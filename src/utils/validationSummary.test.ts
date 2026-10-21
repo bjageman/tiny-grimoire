@@ -59,6 +59,41 @@ describe('validationSummary utility', () => {
     }
   });
 
+  it('allows any Townsfolk and Outsider split with Lord of Typhon', () => {
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'recluse', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'saint', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'butler', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'poisoner', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'spy', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'lordoftyphon', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+
+    expect(summary?.expected.minion).toBe(2);
+    expect(summary?.expectedOutsiderLabel).toBe('any');
+    expect(summary?.expectedTownsfolkLabel).toBe('any');
+    expect(summary?.isOutsiderValid).toBe(true);
+    expect(summary?.isTownsfolkValid).toBe(true);
+    expect(summary?.isValid).toBe(true);
+  });
+
+  it("accepts a Marionette beside a Lil' Monsta player displaying a Minion", () => {
+    const players: Player[] = [
+      { id: '1', name: 'Marionette', roleId: 'washerwoman', isTheMarionette: true, isDead: false },
+      { id: '2', name: "Lil' Monsta", roleId: 'poisoner', isTheLilMonsta: true, isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'librarian', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'investigator', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'chef', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'recluse', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players);
+    expect(summary?.failures).not.toContain('A Marionette is in play, but there is no Demon assigned.');
+    expect(summary?.failures).not.toContain('Marionette (Marionette) must be sitting next to the Demon.');
+  });
+
   it('should handle Atheist setups correctly', () => {
     // Atheist setup with no evil players
     const players: Player[] = [
@@ -67,7 +102,7 @@ describe('validationSummary utility', () => {
       { id: '3', name: 'Player 3', roleId: 'investigator', isDead: false },
       { id: '4', name: 'Player 4', roleId: 'chef', isDead: false },
       { id: '5', name: 'Player 5', roleId: 'empath', isDead: false },
-      { id: '6', name: 'Player 6', roleId: 'drunk', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'monk', isTheDrunk: true, isDead: false },
       { id: '7', name: 'Player 7', roleId: 'butler', isDead: false },
       { id: '8', name: 'Player 8', roleId: 'atheist', isDead: false },
     ];
@@ -77,7 +112,13 @@ describe('validationSummary utility', () => {
     if (summary) {
       expect(summary.expected.demon).toBe(0);
       expect(summary.expected.minion).toBe(0);
+      expect(summary.expectedOutsiderLabel).toBe('any');
+      expect(summary.expectedTownsfolkLabel).toBe('any');
+      expect(summary.isOutsiderValid).toBe(true);
+      expect(summary.isTownsfolkValid).toBe(true);
+      expect(summary.isValid).toBe(true);
       expect(summary.modifications).toContain("Atheist (No Evil players)");
+      expect(summary.modifications).toContain("Atheist (Any Townsfolk/Outsider count)");
     }
   });
 
@@ -218,7 +259,7 @@ describe('validationSummary utility', () => {
     });
   });
 
-  describe('masquerade identity exposure', () => {
+  describe('hidden role exposure', () => {
     const basePlayers: Player[] = [
       { id: '1', name: 'Player 1', roleId: 'washerwoman', isDead: false },
       { id: '2', name: 'Player 2', roleId: 'librarian', isDead: false },
@@ -660,6 +701,60 @@ describe('validationSummary utility', () => {
     });
   });
 
+  describe('Legion', () => {
+    it('allows any Townsfolk/Outsider split, no Minions, and Demon counts from half to total minus one', () => {
+      const players: Player[] = [
+        { id: '1', name: 'Player 1', roleId: 'legion', isDead: false },
+        { id: '2', name: 'Player 2', roleId: 'legion', isDead: false },
+        { id: '3', name: 'Player 3', roleId: 'legion', isDead: false },
+        { id: '4', name: 'Player 4', roleId: 'legion', isDead: false },
+        { id: '5', name: 'Player 5', roleId: 'chef', isDead: false },
+        { id: '6', name: 'Player 6', roleId: 'librarian', isDead: false },
+        { id: '7', name: 'Player 7', roleId: 'washerwoman', isDead: false },
+        { id: '8', name: 'Player 8', roleId: 'butler', isDead: false },
+      ];
+
+      const summary = getValidationSummary(players);
+      expect(summary).not.toBeNull();
+      if (summary) {
+        expect(summary.expected.townsfolk).toBe(3);
+        expect(summary.expected.outsider).toBe(1);
+        expect(summary.expected.minion).toBe(0);
+        expect(summary.expected.demon).toBe(4);
+        expect(summary.expectedDemonLabel).toBe('4 - 7');
+        expect(summary.expectedTownsfolkLabel).toBe('any');
+        expect(summary.expectedOutsiderLabel).toBe('any');
+        expect(summary.isValid).toBe(true);
+      }
+    });
+
+    it('rejects Demon counts below the minimum or equal to the total player count', () => {
+      for (const demonCount of [3, 8]) {
+        const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+          id: String(index + 1),
+          name: `Player ${index + 1}`,
+          roleId: index < demonCount ? 'legion' : 'chef',
+          isDead: false,
+        }));
+
+        const summary = getValidationSummary(players);
+        expect(summary?.isValid).toBe(false);
+        expect(summary?.expectedDemonLabel).toBe('4 - 7');
+      }
+    });
+
+    it('does not require a fixed Townsfolk count when the Demon count is above its minimum', () => {
+      const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+        id: String(index + 1),
+        name: `Player ${index + 1}`,
+        roleId: index < 5 ? 'legion' : index === 5 ? 'chef' : index === 6 ? 'librarian' : 'butler',
+        isDead: false,
+      }));
+
+      expect(getValidationSummary(players)?.isValid).toBe(true);
+    });
+  });
+
   it('accepts up to three Village Idiots but still flags other duplicates', () => {
     const roles: Role[] = [
       { id: 'villageidiot', name: 'Village Idiot', team: 'townsfolk' },
@@ -688,6 +783,92 @@ describe('validationSummary utility', () => {
     const withDuplicateChef = players.map(p => p.id === '5' ? { ...p, roleId: 'chef' } : p);
     const dupeSummary = getValidationSummary(withDuplicateChef, roles);
     expect(dupeSummary!.failures.some(f => f.includes('Chef'))).toBe(true);
+
+    const popeSummary = getValidationSummary(withDuplicateChef, roles, undefined, 0, true);
+    expect(popeSummary!.failures.some(f => f.includes('Chef'))).toBe(false);
+    expect(popeSummary!.modifications).toContain('Pope (duplicate good characters allowed)');
+    expect(popeSummary!.isValid).toBe(true);
+  });
+
+  it('does not let Pope change Townsfolk and Outsider counts', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'chef', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'empath', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'monk', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'butler', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'butler', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'butler', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const popeSummary = getValidationSummary(players, roles, undefined, 0, true);
+    expect(popeSummary!.isOutsiderValid).toBe(false);
+    expect(popeSummary!.isTownsfolkValid).toBe(false);
+    expect(popeSummary!.failures.some(f => f.includes('Butler'))).toBe(false);
+    expect(popeSummary!.failures.some(f => f.includes('Outsiders'))).toBe(true);
+  });
+
+  it('caps expected Outsiders at the number available on the script', () => {
+    const roles: Role[] = [
+      ...['chef', 'empath', 'monk', 'virgin', 'washerwoman', 'librarian', 'investigator'].map(id => ({ id, name: id, team: 'townsfolk' as const })),
+      ...['recluse', 'saint', 'butler', 'mutant'].map(id => ({ id, name: id, team: 'outsider' as const })),
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+    ];
+    const players: Player[] = roles.map((role, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      roleId: role.id,
+      isDead: false,
+    }));
+
+    const summary = getValidationSummary(players, roles);
+
+    expect(summary!.expected.outsider).toBe(4);
+    expect(summary!.expected.townsfolk).toBe(7);
+    expect(summary!.expectedOutsiderLabel).toBe('4');
+    expect(summary!.expectedTownsfolkLabel).toBe('7');
+    expect(summary!.isOutsiderValid).toBe(true);
+    expect(summary!.isTownsfolkValid).toBe(true);
+    expect(summary!.failures).not.toContain('Too few Outsiders: expected 5, but got 4.');
+    expect(summary!.failures).not.toContain('Too many Townsfolk: expected 6, but got 7.');
+  });
+
+  it('still rejects duplicate evil characters while Pope is enabled', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = [
+      { id: '1', name: 'Player 1', roleId: 'chef', isDead: false },
+      { id: '2', name: 'Player 2', roleId: 'empath', isDead: false },
+      { id: '3', name: 'Player 3', roleId: 'monk', isDead: false },
+      { id: '4', name: 'Player 4', roleId: 'virgin', isDead: false },
+      { id: '5', name: 'Player 5', roleId: 'butler', isDead: false },
+      { id: '6', name: 'Player 6', roleId: 'poisoner', isDead: false },
+      { id: '7', name: 'Player 7', roleId: 'poisoner', isDead: false },
+      { id: '8', name: 'Player 8', roleId: 'imp', isDead: false },
+    ];
+
+    const summary = getValidationSummary(players, roles, undefined, 0, true);
+    expect(summary!.failures.some(f => f.includes('Poisoner is assigned to 2 players'))).toBe(true);
   });
 });
 

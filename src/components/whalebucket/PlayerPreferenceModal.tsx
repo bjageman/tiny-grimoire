@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Shuffle, Trash2 } from 'lucide-react';
+import { Search, Dices, Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { ALL_ROLES } from '../../utils/roleData';
+import { getWhaleBucketPreferenceTeam } from '../../utils/whaleBucketPreferences';
 import PronounSelect from '../shared/ui/PronounSelect';
 
 interface WhaleBucketPlayerPreferenceModalProps {
@@ -84,7 +85,7 @@ export default function WhaleBucketPlayerPreferenceModal({
   if (pickingTeam) {
     const filteredRoles = (ALL_ROLES as Role[])
       .filter(r =>
-        r.team === pickingTeam &&
+        getWhaleBucketPreferenceTeam(r) === pickingTeam &&
         !excludedRoleIds.includes(r.id) &&
         r.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -182,7 +183,7 @@ export default function WhaleBucketPlayerPreferenceModal({
             </button>
             <button
               onClick={() => {
-                const available = (ALL_ROLES as Role[]).filter(r => r.team === pickingTeam && !excludedRoleIds.includes(r.id));
+                const available = (ALL_ROLES as Role[]).filter(r => getWhaleBucketPreferenceTeam(r) === pickingTeam && !excludedRoleIds.includes(r.id));
                 if (available.length > 0) {
                   const r = available[Math.floor(Math.random() * available.length)];
                   setPlayers(prev => prev.map(x => x.id === player.id ? {
@@ -270,7 +271,7 @@ export default function WhaleBucketPlayerPreferenceModal({
             className="shrink-0 p-2 rounded border border-gray-855 text-gray-500 hover:text-clocktower-townsfolk hover:border-clocktower-townsfolk/40 transition-colors"
             title="Auto-fill remaining preferences"
           >
-            <Shuffle size={16} />
+            <Dices size={16} />
           </button>
         </div>
 

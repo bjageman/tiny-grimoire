@@ -15,6 +15,22 @@ interface SocketSubscription {
 const activeSubscriptions: SocketSubscription[] = [];
 const sentPayloads: Array<{ gameCode: string; payload: unknown }> = [];
 
+function enableSetupModifiers(container: HTMLElement) {
+  const view = within(container);
+  fireEvent.click(view.getByRole('button', { name: /setup modifiers/i }));
+  fireEvent.click(view.getByRole('button', { name: '+1' }));
+  fireEvent.click(view.getByLabelText(/Pope/));
+  expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'true');
+  expect(view.getByLabelText(/Pope/)).toBeChecked();
+}
+
+function expectSetupModifiersReset(container: HTMLElement) {
+  const view = within(container);
+  expect(view.getByRole('button', { name: '0' })).toHaveAttribute('aria-pressed', 'true');
+  expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'false');
+  expect(view.getByLabelText(/Pope/)).not.toBeChecked();
+}
+
 // Mock useGameSocket to route messages between components sharing the same game code
 vi.mock('./hooks/useGameSocket', () => {
   return {
@@ -172,6 +188,62 @@ describe('Storyteller Reset Integration', () => {
 
     unmountStoryteller();
     unmountJoinPage();
+  });
+
+  it('resets all Standard setup modifiers', async () => {
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+    enableSetupModifiers(storyteller.container);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+    });
+
+    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    storyteller.unmount();
+  });
+
+  it('resets all Whale Bucket setup modifiers', async () => {
+    window.location.hash = '#/whale-bucket';
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    const pageTitle = storyteller.container.querySelector('#whale-bucket-page-title')!;
+    expect(pageTitle.className).toContain('text-sm');
+    expect(pageTitle.className).toContain('sm:text-xl');
+    enableSetupModifiers(storyteller.container);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#reset-game-button')!);
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+    });
+
+    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    storyteller.unmount();
+  });
+
+  it('adds the complete prohibited-character defaults to existing Whale Bucket games', async () => {
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: [],
+      phase: 'setup',
+      excludedRoleIds: ['drunk', 'marionette', 'lunatic', 'atheist'],
+    }));
+    window.location.hash = '#/whale-bucket';
+
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    expect(storyteller.getByText('Engineer')).toBeInTheDocument();
+    expect(storyteller.getByText('Pit-Hag')).toBeInTheDocument();
+    expect(storyteller.getByText('Psychopath')).toBeInTheDocument();
+    expect(storyteller.getByText('Legion')).toBeInTheDocument();
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem('whale-bucket-game')!);
+      expect(saved.excludedRoleDefaultsVersion).toBe(1);
+      expect(saved.excludedRoleIds).toEqual(expect.arrayContaining(['engineer', 'pithag', 'psychopath', 'legion']));
+      expect(saved.excludedRoleIds).not.toContain('atheist');
+    });
+    storyteller.unmount();
   });
 
   // Renders a storyteller mid-game with one revealed remote player (Alice),
@@ -641,6 +713,167 @@ describe('Storyteller Reset Integration', () => {
 
     storyteller.unmount();
     joinPage.unmount();
+  });
+});
+
+describe('Standard and Game Notes transfers', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it('transfers Standard player identities and script into the Game Notes grimoire', async () => {
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{
+        id: 'alice-id',
+        name: 'Alice',
+        pronouns: 'she/her',
+        isDead: true,
+        roleId: 'imp',
+        notes: 'Storyteller secret',
+      }],
+      phase: 'game',
+      scriptName: 'Transfer Script',
+      scriptAuthor: 'Author',
+      customScriptRoles: [{ id: 'custom-role', name: 'Custom Role', team: 'townsfolk' }],
+      dayNumber: 4,
+      timeOfDay: 'day',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
+
+    await waitFor(() => expect(window.location.hash).toBe('#/tracker'));
+    const transferred = JSON.parse(localStorage.getItem('player-tracker-botc-game') || '{}');
+    expect(transferred.players).toEqual([
+      { id: 'alice-id', name: 'Alice', pronouns: 'she/her', isDead: false },
+    ]);
+    expect(transferred).toMatchObject({
+      phase: 'game',
+      scriptName: 'Transfer Script',
+      scriptAuthor: 'Author',
+      dayNumber: 1,
+      timeOfDay: 'night',
+    });
+    expect(transferred.players[0]).not.toHaveProperty('roleId');
+    expect(transferred.players[0]).not.toHaveProperty('notes');
+
+    storyteller.unmount();
+  });
+
+  it('confirms replacement and transfers Game Notes into a fresh Standard setup', () => {
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: [{
+        id: 'avery-id',
+        name: 'Avery',
+        pronouns: 'they/them',
+        isDead: true,
+        roleIds: ['empath', 'chef'],
+        notes: 'Player theory',
+      }],
+      phase: 'game',
+      scriptName: 'Notes Script',
+      scriptAuthor: 'Another Author',
+      customScriptRoles: null,
+      gameNotes: 'Do not copy this',
+      dayNumber: 3,
+      timeOfDay: 'day',
+    }));
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'old-id', name: 'Old Player', isDead: false }],
+      phase: 'game',
+    }));
+    localStorage.setItem('standard-botc-game-code', 'OLDG');
+    localStorage.setItem('standard-botc-sync-code', 'OLDS');
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(tracker.container.querySelector('#header-menu-button')!);
+    fireEvent.click(tracker.container.querySelector('#transfer-game-button')!);
+
+    expect(within(tracker.container).getByText('Transfer to Storyteller Setup')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/tracker');
+    fireEvent.click(tracker.container.querySelector('#dialog-confirm-button')!);
+
+    expect(window.location.hash).toBe('#/standard');
+    const transferred = JSON.parse(localStorage.getItem('standard-botc-game') || '{}');
+    expect(transferred.players).toEqual([
+      { id: 'avery-id', name: 'Avery', pronouns: 'they/them', isDead: false },
+    ]);
+    expect(transferred).toMatchObject({
+      phase: 'setup',
+      scriptName: 'Notes Script',
+      scriptAuthor: 'Another Author',
+      dayNumber: 1,
+      timeOfDay: 'night',
+    });
+    expect(transferred.players[0]).not.toHaveProperty('roleIds');
+    expect(transferred.players[0]).not.toHaveProperty('notes');
+    expect(localStorage.getItem('standard-botc-game-code')).toBeNull();
+    expect(localStorage.getItem('standard-botc-sync-code')).toBeNull();
+
+    tracker.unmount();
+  });
+
+  it('notifies connected players before transferring a live Standard game', async () => {
+    localStorage.setItem('standard-botc-game-code', 'LIVE');
+    localStorage.setItem('standard-botc-game', JSON.stringify({
+      players: [{ id: 'alice-id', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+    }));
+    window.location.hash = '#/standard';
+    const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
+
+    sessionStorage.setItem('joined-code', 'LIVE');
+    sessionStorage.setItem('joined-name', 'Alice');
+    const player = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
+
+    fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
+    fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
+    expect(within(storyteller.container).getByText(/1 connected player will be disconnected/i)).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+
+    expect(sentPayloads.some(item => (item.payload as { type?: string }).type === 'storyteller_quit')).toBe(true);
+    expect(window.location.hash).toBe('#/tracker');
+    expect(within(player.container).getByText('The Storyteller has quit the session.')).toBeInTheDocument();
+
+    storyteller.unmount();
+    player.unmount();
+  });
+
+  it('disconnects synced Game Notes before transferring to Standard setup', () => {
+    sessionStorage.setItem('joined-code', 'SYNC');
+    sessionStorage.setItem('joined-name', 'Avery');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      players: [{ id: 'avery-id', name: 'Avery', isDead: false }],
+      phase: 'game',
+      code: 'SYNC',
+    }));
+    window.location.hash = '#/tracker';
+    const tracker = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(tracker.container.querySelector('#header-menu-button')!);
+    fireEvent.click(tracker.container.querySelector('#transfer-game-button')!);
+    expect(within(tracker.container).getByText(/disconnect from the current Storyteller/i)).toBeInTheDocument();
+    fireEvent.click(tracker.container.querySelector('#dialog-confirm-button')!);
+
+    expect(sessionStorage.getItem('joined-code')).toBeNull();
+    expect(sessionStorage.getItem('joined-name')).toBeNull();
+    expect(window.location.hash).toBe('#/standard');
+    expect(JSON.parse(localStorage.getItem('standard-botc-game') || '{}')).not.toHaveProperty('code');
+
+    tracker.unmount();
   });
 });
 
@@ -1130,11 +1363,15 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(within(storyteller.container).getByText('Send character assignments?')).toBeInTheDocument();
 
     // Confirm → the game starts (leaves the draft phase).
+    const headerDivider = storyteller.container.querySelector('#page-header-divider')!;
+    const scrollIntoView = vi.spyOn(headerDivider, 'scrollIntoView');
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#confirm-open-grimoire-button-whale')!);
       await new Promise(r => setTimeout(r, 50));
     });
     expect(storyteller.container.querySelector('#open-grimoire-button')).toBeNull();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    scrollIntoView.mockRestore();
 
     storyteller.unmount();
   });
@@ -1173,15 +1410,47 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     expect(manualBtn).not.toBeDisabled();
 
     // Click "Manually Assign"
+    const headerDivider = storyteller.container.querySelector('#page-header-divider')!;
+    const scrollIntoView = vi.spyOn(headerDivider, 'scrollIntoView');
     fireEvent.click(manualBtn!);
 
     // Should transition to draft (Character Assignment) phase
-    expect(storyteller.getByText(/2. Character Assignment/i)).toBeInTheDocument();
+    expect(storyteller.getByText(/Character Assignment/i)).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    scrollIntoView.mockRestore();
 
     // Bob still has no character, so "Open Grimoire" is disabled
     const openGrimBtn = storyteller.container.querySelector('#open-grimoire-button');
     expect(openGrimBtn).toBeDisabled();
 
+    fireEvent.click(storyteller.container.querySelector('#clear-roles-button')!);
+    expect(storyteller.getByText('Are you sure you want to clear all assigned roles?')).toBeInTheDocument();
+    expect(storyteller.container.querySelector('#dialog-confirm-button')).toBeInTheDocument();
+    fireEvent.click(storyteller.container.querySelector('#dialog-cancel-button')!);
+    expect(storyteller.container.querySelector('#dialog-modal')).toBeNull();
+
+    storyteller.unmount();
+  });
+
+  it('Whale Bucket: reveals Atheist when random assignment activates Atheist mode', async () => {
+    const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
+    localStorage.setItem('whale-bucket-game', JSON.stringify({
+      players: Array.from({ length: 5 }, (_, index) => ({
+        id: `p${index + 1}`,
+        name: `Player ${index + 1}`,
+        isDead: false,
+        preferences,
+      })),
+      phase: 'draft',
+    }));
+    window.location.hash = '#/whale-bucket';
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+
+    fireEvent.click(storyteller.container.querySelector('#reassign-characters-button')!);
+
+    expect(storyteller.container.querySelector('img[alt="Atheist"]')).toBeInTheDocument();
+    randomSpy.mockRestore();
     storyteller.unmount();
   });
 
@@ -1543,6 +1812,43 @@ describe('Storyteller Notes Privacy', () => {
 
     storyteller.unmount();
     tracker.unmount();
+  });
+});
+
+describe('Storyteller Game Notes', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    activeSubscriptions.length = 0;
+    sentPayloads.length = 0;
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ['Standard', 'standard-botc-game', '#/standard', StandardSetup],
+    ['Whale Bucket', 'whale-bucket-game', '#/whale-bucket', WhaleBucket],
+  ] as const)('shows and persists the Notes widget in %s Storyteller games', async (_name, storageKey, hash, Page) => {
+    window.location.hash = hash;
+    localStorage.setItem(storageKey, JSON.stringify({
+      players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
+      phase: 'game',
+      timeOfDay: 'night',
+      dayNumber: 1,
+      gameNotes: 'Remember this',
+    }));
+
+    const storyteller = render(<Page theme="dark" toggleTheme={vi.fn()} />);
+    const desktopNotes = storyteller.container.querySelector('#game-notes-desktop textarea') as HTMLTextAreaElement;
+    const mobileNotes = storyteller.container.querySelector('#game-notes-mobile textarea') as HTMLTextAreaElement;
+
+    expect(desktopNotes).toHaveValue('Remember this');
+    expect(mobileNotes).toHaveValue('Remember this');
+    fireEvent.change(desktopNotes, { target: { value: 'Updated note' } });
+
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem(storageKey) || '{}').gameNotes).toBe('Updated note');
+    });
+    storyteller.unmount();
   });
 });
 

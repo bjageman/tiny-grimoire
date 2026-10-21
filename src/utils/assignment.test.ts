@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { assignCharacters } from './assignment';
 import type { Player, Role } from '../types';
 
@@ -57,6 +57,107 @@ describe('assignCharacters', () => {
     // Check that Legion was assigned to the majority (4 out of 6 players)
     const legionAssignments = result.filter(r => r.role.id === 'legion');
     expect(legionAssignments.length).toBe(4);
+  });
+
+  it.each([
+    [1, 2],
+    [-1, 0],
+  ])('applies a Sentinel outsider delta of %i in Whale Bucket assignments', (delta, expectedOutsiders) => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 8 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles, false, delta);
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(expectedOutsiders);
+  });
+
+  it('caps Outsiders at the number of unique assignable Outsiders on the script', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
+      { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'fortune_teller', name: 'Fortune Teller', team: 'townsfolk' },
+      { id: 'undertaker', name: 'Undertaker', team: 'townsfolk' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'mutant', name: 'Mutant', team: 'outsider' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 15 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(4);
+    expect(new Set(result!.map(assignment => assignment.role.id)).size).toBe(15);
+  });
+
+  it('does not assign excluded characters from base or Traveler preferences', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'fanggu', name: 'Fang Gu', team: 'demon' },
+      { id: 'beggar', name: 'Beggar', team: 'traveler' },
+      { id: 'thief', name: 'Thief', team: 'traveler' },
+    ];
+    const excludedRoleIds = ['chef', 'poisoner', 'imp', 'beggar'];
+    const players: Player[] = Array.from({ length: 6 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: ['chef'],
+        outsider: [],
+        minion: ['poisoner'],
+        demon: ['imp'],
+        traveler: index === 0 ? ['beggar'] : [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles, true, 0, excludedRoleIds);
+
+    expect(result).not.toBeNull();
+    expect(result!.map(assignment => assignment.role.id)).not.toEqual(
+      expect.arrayContaining(excludedRoleIds),
+    );
+    expect(result!.find(assignment => assignment.player.id === '1')?.role.id).toBe('thief');
   });
 
   it('should assign a Damsel when a Huntsman is in play', () => {
@@ -281,12 +382,14 @@ describe('assignCharacters', () => {
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
       { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
       { id: 'investigator', name: 'Investigator', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
       { id: 'poisoner', name: 'Poisoner', team: 'minion' },
       { id: 'imp', name: 'Imp', team: 'demon' },
     ];
 
     const players: Player[] = [
-      { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: ['atheist'], outsider: [], minion: [], demon: [], traveler: [] } },
+      { id: '1', name: 'Alice', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: ['atheist'], traveler: [] } },
       { id: '2', name: 'Bob', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
       { id: '3', name: 'Charlie', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
       { id: '4', name: 'David', isDead: false, preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] } },
@@ -304,6 +407,209 @@ describe('assignCharacters', () => {
         expect(evilPlayers.length).toBe(0);
       }
     }
+  });
+
+  it('caps flexible outsider assignments at five', () => {
+    const roles: Role[] = [
+      ...Array.from({ length: 6 }, (_, index) => ({ id: `townsfolk-${index}`, name: `Townsfolk ${index}`, team: 'townsfolk' as const })),
+      ...Array.from({ length: 6 }, (_, index) => ({ id: `outsider-${index}`, name: `Outsider ${index}`, team: 'outsider' as const })),
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 12 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: roles.filter(role => role.team === 'outsider').map(role => role.id), minion: [], demon: ['kazali'], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(5);
+    expect(result!.some(assignment => assignment.role.id === 'kazali')).toBe(true);
+  });
+
+  it('assigns at least one Outsider for flexible Kazali counts', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'kazali', name: 'Kazali', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: ['kazali'], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
+  });
+
+  it('assigns at least one Outsider in Atheist mode when the base count is zero', () => {
+    const roles: Role[] = [
+      { id: 'atheist', name: 'Atheist', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.some(assignment => assignment.role.id === 'atheist')).toBe(true);
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
+  });
+
+  it('honors a Summoner preference submitted in the Demon slot', () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'summoner', name: 'Summoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: ['summoner'], traveler: [] },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.find(assignment => assignment.role.id === 'summoner')?.fromPref).toBe(true);
+  });
+
+  it("reserves the Lil' Monsta player's Minion preference", () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'widow', name: 'Widow', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: ['poisoner'],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    expect(result!.some(assignment => assignment.role.id === 'lilmonsta')).toBe(true);
+    expect(result!.filter(assignment => assignment.role.team === 'minion')).toHaveLength(1);
+    expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(false);
+  });
+
+  it("removes Summoner from the bag when Lil' Monsta is drawn", () => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'baron', name: 'Baron', team: 'minion' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'summoner', name: 'Summoner', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: index === 0 ? ['baron'] : ['summoner'],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+
+    try {
+      const result = assignCharacters(players, roles);
+
+      expect(result).not.toBeNull();
+      expect(result!.some(assignment => assignment.role.id === 'summoner')).toBe(false);
+      expect(result!.find(assignment => assignment.role.id === 'lilmonsta')?.displayRole?.id).toBe('baron');
+      expect(result!.some(assignment => assignment.role.id === 'poisoner')).toBe(true);
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+
+  it.each([
+    ['godfather', 'adds an Outsider', 5, 1],
+    ['godfather', 'subtracts an Outsider', 6, 0],
+    ['baron', 'adds two Outsiders', 6, 3],
+  ] as const)("applies a Lil' Monsta holder's %s modifier when it %s", (minionId, _description, playerCount, expectedOutsiders) => {
+    const roles: Role[] = [
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'virgin', name: 'Virgin', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'saint', name: 'Saint', team: 'outsider' },
+      { id: minionId, name: minionId, team: 'minion', setup: true },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'lilmonsta', name: "Lil' Monsta", team: 'demon', setup: true },
+    ];
+    const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: {
+        townsfolk: [],
+        outsider: [],
+        minion: [minionId],
+        demon: ['lilmonsta'],
+        traveler: [],
+      },
+    }));
+
+    const result = assignCharacters(players, roles);
+
+    expect(result).not.toBeNull();
+    const lilMonsta = result!.find(assignment => assignment.role.id === 'lilmonsta');
+    expect(lilMonsta?.displayRole?.id).toBe(minionId);
+    expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(expectedOutsiders);
+    expect(result!.filter(assignment => assignment.role.id === minionId)).toHaveLength(0);
   });
 
   describe('Village Idiot preferences', () => {

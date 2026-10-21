@@ -2,14 +2,26 @@ import type { Role, Player, AssignmentResult } from '../types';
 import { DISTRIBUTION } from '../constants';
 import { ALL_ROLES } from './roleData';
 import { VILLAGE_IDIOT_MAX } from './standardAssignmentHelpers';
+import { chooseLilMonstaMinion, getWhaleBucketPreferenceIds } from './whaleBucketPreferences';
+
+function getActiveRoles(assignments: AssignmentResult[]): Role[] {
+  return assignments.flatMap(assignment => assignment.displayRole
+    ? [assignment.role, assignment.displayRole]
+    : [assignment.role]);
+}
 
 export function assignCharacters(
   players: Player[],
   allRoles: Role[],
-  allowTravelers: boolean = false
+  allowTravelers: boolean = false,
+  sentinelOutsiderDelta: number = 0,
+  excludedRoleIds: string[] = []
 ): AssignmentResult[] | null {
   const N = players.length;
   if (N < 5) return null;
+
+  const excludedRoles = new Set(excludedRoleIds);
+  const availableRoles = allRoles.filter(role => !excludedRoles.has(role.id));
 
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
@@ -39,11 +51,13 @@ export function assignCharacters(
   const basePlayers = players.filter(p => !travelerIds.has(p.id));
 
   // 2. Assign traveler roles
-  const travelerRoles = allRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller');
+  const travelerRoles = availableRoles.filter(r => r.team === 'traveler' || (r.team as string) === 'traveller');
   const masterTravelers = (ALL_ROLES as Role[])
-    .filter(r => r.team === 'traveler' || (r.team as string) === 'traveller')
+    .filter(r => (r.team === 'traveler' || (r.team as string) === 'traveller') && !excludedRoles.has(r.id))
     .map(r => ({ ...r, team: (r.team as string) === 'traveller' ? 'traveler' : r.team }));
   const availableTravelers = travelerRoles.length > 0 ? travelerRoles : masterTravelers;
+
+  if (travelerPlayers.length > 0 && availableTravelers.length === 0) return null;
 
   const usedTravelerIds = new Set<string>();
   const travelerAssignments: AssignmentResult[] = [];
@@ -57,7 +71,7 @@ export function assignCharacters(
 
     if (availablePrefs.length > 0) {
       const id = randomChoice(availablePrefs);
-      const role = allRoles.find(r => r.id === id) || masterTravelers.find(r => r.id === id);
+      const role = availableRoles.find(r => r.id === id) || masterTravelers.find(r => r.id === id);
       if (role) {
         chosenRole = role;
         fromPref = true;
@@ -83,7 +97,7 @@ export function assignCharacters(
   if (baseCount < 5) return null;
 
   const baseDist = DISTRIBUTION[baseCount] || { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
-  const baseAssignments = assignBaseCharacters(basePlayers, allRoles, baseDist);
+  const baseAssignments = assignBaseCharacters(basePlayers, availableRoles, baseDist, sentinelOutsiderDelta);
   if (!baseAssignments) return null;
 
   const finalAssignments = [...baseAssignments, ...travelerAssignments];
@@ -112,7 +126,8 @@ export function assignCharacters(
 function assignBaseCharacters(
   players: Player[],
   allRoles: Role[],
-  base: { townsfolk: number; outsider: number; minion: number; demon: number }
+  base: { townsfolk: number; outsider: number; minion: number; demon: number },
+  sentinelOutsiderDelta: number
 ): AssignmentResult[] | null {
   const N = players.length;
   const hasPref = (roleId: string) => players.some(p => 
@@ -124,18 +139,23 @@ function assignBaseCharacters(
 
   const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+  const maxScriptOutsiders = new Set(allRoles
+    .filter(r => r.team === 'outsider' && r.id !== 'drunk' && r.id !== 'marionette')
+    .map(r => r.id)).size;
 
   const selectRoleForPlayer = (
     player: Player,
     team: Role['team'],
     usedRoleIds: Set<string>,
-    villageIdiotSlots?: { remaining: number }
+    villageIdiotSlots?: { remaining: number },
+    excludedRoleIds: Set<string> = new Set()
   ): { role: Role; fromPref: boolean } => {
-    const prefs = player.preferences?.[team] || [];
+    const prefs = getWhaleBucketPreferenceIds(player.preferences, team);
     // Village Idiot is the one role a second player may still be given, and only if they asked for it.
     const canRepeatVillageIdiot = !!villageIdiotSlots && villageIdiotSlots.remaining > 0;
     const availablePrefs = prefs.filter(id =>
       (!usedRoleIds.has(id) || (id === 'villageidiot' && canRepeatVillageIdiot)) &&
+      !excludedRoleIds.has(id) &&
       id !== 'legion' &&
       id !== 'atheist' &&
       id !== 'drunk' &&
@@ -154,6 +174,7 @@ function assignBaseCharacters(
     const teamRoles = allRoles.filter(r =>
       r.team === team &&
       !usedRoleIds.has(r.id) &&
+      !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
@@ -166,6 +187,7 @@ function assignBaseCharacters(
     
     const fallbackRoles = allRoles.filter(r =>
       r.team === team &&
+      !excludedRoleIds.has(r.id) &&
       r.id !== 'legion' &&
       r.id !== 'atheist' &&
       r.id !== 'drunk' &&
@@ -245,7 +267,9 @@ function assignBaseCharacters(
 
   if (mode === 'atheist') {
     const includeBalloonist = hasPref('balloonist') && Math.random() < 0.7;
-    const O = base.outsider + (includeBalloonist ? 1 : 0);
+    const maxAtheistOutsiders = Math.min(maxScriptOutsiders, 5, N - 1);
+    if (maxAtheistOutsiders < 1) return null;
+    const O = Math.max(1, Math.min(base.outsider + (includeBalloonist ? 1 : 0), maxAtheistOutsiders));
     const T = N - O;
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
@@ -254,7 +278,7 @@ function assignBaseCharacters(
     assignment.push({
       player: { ...initialShuffledPlayers[0], isEvil: undefined },
       role: atheistRole,
-      fromPref: !!initialShuffledPlayers[0].preferences?.townsfolk.includes('atheist')
+      fromPref: getWhaleBucketPreferenceIds(initialShuffledPlayers[0].preferences, 'townsfolk').includes('atheist')
     });
     let assignedT = 1;
     for (let i = 1; i < N; i++) {
@@ -296,9 +320,14 @@ function assignBaseCharacters(
     const demonPlayer = shuffledPlayers[0];
     const { role: demonRole, fromPref: demonFromPref } = selectRoleForPlayer(demonPlayer, 'demon', usedRoleIds);
     usedRoleIds.add(demonRole.id);
+    const lilMonstaMinionPreference = demonRole.id === 'lilmonsta'
+      ? demonPlayer.preferences?.minion.find(id => allRoles.some(role => role.id === id && role.team === 'minion'))
+      : undefined;
+    if (lilMonstaMinionPreference) usedRoleIds.add(lilMonstaMinionPreference);
     assignment.push({ player: { ...demonPlayer, isEvil: undefined }, role: demonRole, fromPref: demonFromPref });
+    const excludedMinionRoleIds = demonRole.id === 'lilmonsta' ? new Set(['summoner']) : new Set<string>();
     
-    const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lilmonsta' || demonRole.id === 'lordoftyphon' ? 1 : 0));
+    const numMinions = demonRole.id === 'kazali' ? 0 : (base.minion + (demonRole.id === 'lordoftyphon' ? 1 : 0));
     const minionPlayers: Player[] = [];
     if (demonRole.id === 'lordoftyphon') {
       const d_idx = players.findIndex(p => p.id === demonPlayer.id);
@@ -322,9 +351,26 @@ function assignBaseCharacters(
     }
 
     for (const minionPlayer of minionPlayers) {
-      const { role: minionRole, fromPref: minionFromPref } = selectRoleForPlayer(minionPlayer, 'minion', usedRoleIds);
+      const { role: minionRole, fromPref: minionFromPref } = selectRoleForPlayer(
+        minionPlayer,
+        'minion',
+        usedRoleIds,
+        undefined,
+        excludedMinionRoleIds,
+      );
       usedRoleIds.add(minionRole.id);
       assignment.push({ player: { ...minionPlayer, isEvil: undefined }, role: minionRole, fromPref: minionFromPref });
+    }
+
+    const lilMonstaAssignment = assignment.find(a => a.role.id === 'lilmonsta');
+    if (lilMonstaAssignment) {
+      const assignedMinionIds = new Set(assignment.filter(a => a.role.team === 'minion').map(a => a.role.id));
+      lilMonstaAssignment.displayRole = chooseLilMonstaMinion(
+        lilMonstaAssignment.player.preferences,
+        assignedMinionIds,
+        allRoles,
+        [...excludedMinionRoleIds],
+      );
     }
 
     const hasSummoner = assignment.some(a => a.role.id === 'summoner');
@@ -342,8 +388,13 @@ function assignBaseCharacters(
     
     const minionPlayerIds = new Set(minionPlayers.map(mp => mp.id));
     const remainingPlayers = shuffledPlayers.filter(p => p.id !== demonPlayer.id && !minionPlayerIds.has(p.id));
-    const hasXaan = assignment.some(a => a.role.id === 'xaan');
-    const targetOutsiders = (demonRole.id === 'kazali' || hasXaan) ? Math.floor(Math.random() * (remainingPlayers.length + 1)) : base.outsider;
+    const hasXaan = getActiveRoles(assignment).some(role => role.id === 'xaan');
+    const hasFlexibleOutsiderCount = demonRole.id === 'kazali' || hasXaan;
+    const maxRandomOutsiders = Math.min(remainingPlayers.length, maxScriptOutsiders, 5);
+    if (hasFlexibleOutsiderCount && maxRandomOutsiders < 1) return null;
+    const targetOutsiders = hasFlexibleOutsiderCount
+      ? 1 + Math.floor(Math.random() * maxRandomOutsiders)
+      : Math.min(base.outsider, maxScriptOutsiders);
     const tempAssignment: { player: Player; team: 'townsfolk' | 'outsider' }[] = [];
     for (let i = 0; i < remainingPlayers.length; i++) {
       const team = (i < targetOutsiders) ? 'outsider' : 'townsfolk';
@@ -370,29 +421,32 @@ function assignBaseCharacters(
     let valid = false;
     
     for (let adj = 0; adj < 10; adj++) {
-      const hasBaron = fullAssignment.some(a => a.role.id === 'baron');
-      const hasFangGu = fullAssignment.some(a => a.role.id === 'fanggu');
-      const hasVigormortis = fullAssignment.some(a => a.role.id === 'vigormortis');
-      const hasBalloonist = fullAssignment.some(a => a.role.id === 'balloonist');
-      const hasGodfather = fullAssignment.some(a => a.role.id === 'godfather');
-      const hasHermit = fullAssignment.some(a => a.role.id === 'hermit');
+      const activeRoles = getActiveRoles(fullAssignment);
+      const hasBaron = activeRoles.some(role => role.id === 'baron');
+      const hasFangGu = activeRoles.some(role => role.id === 'fanggu');
+      const hasVigormortis = activeRoles.some(role => role.id === 'vigormortis');
+      const hasBalloonist = activeRoles.some(role => role.id === 'balloonist');
+      const hasGodfather = activeRoles.some(role => role.id === 'godfather');
+      const hasHermit = activeRoles.some(role => role.id === 'hermit');
+      const hasXaan = activeRoles.some(role => role.id === 'xaan');
       
-      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0);
+      const ignoresSentinel = demonRole.id === 'kazali' || hasXaan;
+      const fixedDeltaOut = (hasBaron ? 2 : 0) + (hasFangGu ? 1 : 0) - (hasVigormortis ? 1 : 0) + (ignoresSentinel ? 0 : sentinelOutsiderDelta);
       const currentOutsiders = fullAssignment.filter(a => a.role.team === 'outsider');
       
-      const gfMods = hasGodfather ? [-1, 1] : [0];
+      const outsidersBeforeGodfather = Math.max(0, base.outsider + fixedDeltaOut);
+      const gfMods = hasGodfather ? [outsidersBeforeGodfather === 0 ? 1 : -1] : [0];
       const balMods = hasBalloonist ? [0, 1] : [0];
       const hermMods = hasHermit ? [-1, 0] : [0];
       
       const possibleCounts = new Set<number>();
       const hasKazali = demonRole.id === 'kazali';
-      const hasXaan = fullAssignment.some(a => a.role.id === 'xaan');
       if (hasKazali || hasXaan) {
         let expectedDemon = base.demon;
         let expectedMinion = base.minion;
-        const hasLilMonsta = fullAssignment.some(a => a.role.id === 'lilmonsta');
-        const hasLordOfTyphon = fullAssignment.some(a => a.role.id === 'lordoftyphon');
-        const hasSummoner = fullAssignment.some(a => a.role.id === 'summoner');
+        const hasLilMonsta = activeRoles.some(role => role.id === 'lilmonsta');
+        const hasLordOfTyphon = activeRoles.some(role => role.id === 'lordoftyphon');
+        const hasSummoner = activeRoles.some(role => role.id === 'summoner');
         if (hasLilMonsta) {
           expectedMinion += 1;
           expectedDemon -= 1;
@@ -407,15 +461,15 @@ function assignBaseCharacters(
           expectedMinion = 0;
         }
         expectedDemon = Math.max(0, expectedDemon);
-        const maxOutsiders = Math.max(0, N - expectedDemon - expectedMinion);
-        for (let i = 0; i <= maxOutsiders; i++) {
+        const maxOutsiders = Math.min(maxScriptOutsiders, Math.max(0, N - expectedDemon - expectedMinion), 5);
+        for (let i = 1; i <= maxOutsiders; i++) {
           possibleCounts.add(i);
         }
       } else {
         for (const gf of gfMods) {
           for (const bal of balMods) {
             for (const herm of hermMods) {
-              possibleCounts.add(Math.max(0, base.outsider + fixedDeltaOut + gf + bal + herm));
+              possibleCounts.add(Math.min(maxScriptOutsiders, Math.max(0, base.outsider + fixedDeltaOut + gf + bal + herm)));
             }
           }
         }
@@ -434,7 +488,7 @@ function assignBaseCharacters(
         }
       }
       
-      chosenTargetOut = Math.max(0, Math.min(remainingPlayers.length, chosenTargetOut));
+      chosenTargetOut = Math.max(0, Math.min(remainingPlayers.length, maxScriptOutsiders, chosenTargetOut));
       
       if (currentOutsiders.length === chosenTargetOut) {
         const hasChoirboy = fullAssignment.some(a => a.role.id === 'choirboy');

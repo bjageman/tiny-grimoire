@@ -26,21 +26,25 @@ describe('WhaleBucketDraftEditModal', () => {
 
   it('picking the character the player already has clears it', () => {
     const updatePlayerRole = vi.fn();
+    const onClose = vi.fn();
     const aliceWithRole: Player = { ...alice, roleId: 'washerwoman' };
     const { container } = render(
       <WhaleBucketDraftEditModal
         {...defaultProps}
         players={[aliceWithRole]}
         updatePlayerRole={updatePlayerRole}
+        onClose={onClose}
         isLightModeActive={false}
       />
     );
 
     fireEvent.click(container.querySelector('#role-option-washerwoman')!);
     expect(updatePlayerRole).toHaveBeenCalledWith('p1', '');
+    expect(onClose).toHaveBeenCalledOnce();
 
     fireEvent.click(container.querySelector('#role-option-chef')!);
     expect(updatePlayerRole).toHaveBeenCalledWith('p1', 'chef');
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 
   it('never renders a solid-dark background class while in light mode', () => {
@@ -54,6 +58,27 @@ describe('WhaleBucketDraftEditModal', () => {
     const { container } = render(<WhaleBucketDraftEditModal {...defaultProps} isLightModeActive={false} />);
     const modal = container.querySelector('#whalebucket-draft-edit-modal')!;
     expect(modal.className).toContain('bg-gray-900');
+  });
+
+  it('closes from the icon-only close button', () => {
+    const onClose = vi.fn();
+    const { getByRole } = render(
+      <WhaleBucketDraftEditModal {...defaultProps} onClose={onClose} isLightModeActive={false} />
+    );
+
+    fireEvent.click(getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('places the pronoun control before the player name in the header', () => {
+    const { container } = render(
+      <WhaleBucketDraftEditModal {...defaultProps} onUpdatePronouns={vi.fn()} isLightModeActive={false} />
+    );
+    const pronounButton = container.querySelector('#draft-player-pronouns-select');
+    const playerName = container.querySelector('#whalebucket-draft-edit-modal h3');
+
+    expect(pronounButton?.parentElement?.parentElement).toBe(playerName?.parentElement);
+    expect(pronounButton?.parentElement?.nextElementSibling).toBe(playerName);
   });
 
   it('enables character selection and special role toggles when isSecondary is true', () => {
@@ -83,5 +108,6 @@ describe('WhaleBucketDraftEditModal', () => {
     const drunkButton = Array.from(container.querySelectorAll('button')).find(el => el.textContent?.includes('Drunk'));
     expect(drunkButton).toBeDefined();
     expect(drunkButton).not.toBeDisabled();
+    expect(drunkButton?.className).toContain('text-sm');
   });
 });

@@ -8,7 +8,7 @@ interface TransferSource {
   scriptName: string;
   scriptAuthor: string;
   customScriptRoles: Role[] | null;
-  scriptLoreRoles?: LoreRole[];
+  scriptLoricRoles?: LoreRole[];
 }
 
 function transferPlayers(players: Player[]): Player[] {
@@ -27,7 +27,7 @@ export function buildPlayerTrackerTransfer(source: TransferSource) {
     timeOfDay: 'night' as const,
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
-    scriptLoreRoles: source.scriptLoreRoles ?? [],
+    scriptLoricRoles: source.scriptLoricRoles ?? [],
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     gameNotes: '',
@@ -44,7 +44,7 @@ export function buildStandardTransfer(source: TransferSource) {
     timeOfDay: 'night' as const,
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
-    scriptLoreRoles: source.scriptLoreRoles ?? [],
+    scriptLoricRoles: source.scriptLoricRoles ?? [],
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     isLilMonstaGame: false,

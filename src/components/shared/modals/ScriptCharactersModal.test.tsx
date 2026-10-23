@@ -132,7 +132,7 @@ describe('ScriptCharactersModal role ordering', () => {
 
 describe('ScriptCharactersModal Fabled and Lorics', () => {
   const loreRoles = parseScriptJson(['chef', 'angel', 'bigwig', 'bootlegger'], 'Test').loreRoles;
-  const loreProps = { ...baseProps, scriptLoreRoles: loreRoles };
+  const loreProps = { ...baseProps, scriptLoricRoles: loreRoles };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -177,7 +177,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     const script = parseScriptJson([{ id: '_meta', name: 'Rules', bootlegger: [customRules] }, 'chef', 'bootlegger'], 'Rules');
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     localStorage.setItem('botc-script-show-detail', 'true');
-    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoreRoles={script.loreRoles} />);
+    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loreRoles} />);
     expect(document.getElementById('script-loric-section')).toHaveTextContent(customRules);
     fireEvent.click(screen.getByText('Bootlegger'));
     expect(within(document.getElementById('script-character-details-modal')!).getByText(customRules)).toBeInTheDocument();

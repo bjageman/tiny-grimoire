@@ -58,7 +58,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
-  const [scriptLoreRoles, setScriptLoreRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoreRoles', []);
+  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
@@ -124,7 +124,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
-      scriptLoreRoles?: LoreRole[];
+      scriptLoricRoles?: LoreRole[];
       playerId?: string;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
@@ -177,7 +177,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
-        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
     } else if (payload.type === 'game_winner') {
       const team = (payload as { type: string; team: string }).team;
@@ -232,7 +232,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoreRoles,
+        scriptLoricRoles,
       });
     }
   };
@@ -266,7 +266,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
-      scriptLoreRoles?: LoreRole[];
+      scriptLoricRoles?: LoreRole[];
     };
     if (payload.type === 'notes_share_state' && !hasAppliedIncomingShare.current) {
       hasAppliedIncomingShare.current = true;
@@ -278,7 +278,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       if (payload.scriptAuthor !== undefined) setScriptAuthor(payload.scriptAuthor);
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
-        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
       window.history.replaceState(null, '', '#/tracker');
       setIncomingShareCode(null);
@@ -358,7 +358,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName,
       scriptAuthor,
       customScriptRoles,
-      scriptLoreRoles,
+      scriptLoricRoles,
     })));
     localStorage.removeItem('standard-botc-game-code');
     localStorage.removeItem('standard-botc-sync-code');
@@ -418,7 +418,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       timeOfDay,
       dayNumber,
       customScriptRoles,
-      scriptLoreRoles,
+      scriptLoricRoles,
       scriptName,
       scriptAuthor,
       gameNotes,
@@ -427,7 +427,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoreRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -559,7 +559,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
-    setCustomScriptRoles, setScriptLoreRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+    setCustomScriptRoles, setScriptLoricRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
   const isLightModeActive = theme === 'light';
@@ -649,7 +649,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={theme === 'light'}
           players={players}
           customScriptRoles={customScriptRoles}
-          scriptLoreRoles={scriptLoreRoles}
+          scriptLoricRoles={scriptLoricRoles}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           newPlayerName={newPlayerName}
@@ -723,7 +723,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
-          scriptLoreRoles={scriptLoreRoles}
+          scriptLoricRoles={scriptLoricRoles}
           isSynced={isSynced}
           enableReminders={enableReminders}
           includeAllScriptReminders={true}

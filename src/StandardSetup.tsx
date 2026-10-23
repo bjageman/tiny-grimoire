@@ -104,7 +104,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
-  const [scriptLoreRoles, setScriptLoreRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoreRoles', []);
+  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
   const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
   const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);
@@ -160,11 +160,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoreRoles
+          scriptLoricRoles
         });
       }
     }, 1000);
-  }, [scriptName, scriptAuthor, customScriptRoles, scriptLoreRoles]);
+  }, [scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -245,7 +245,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoreRoles,
+        scriptLoricRoles,
       });
     }
   };
@@ -329,7 +329,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoreRoles
+          scriptLoricRoles
         });
       }
 
@@ -386,7 +386,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoreRoles
+          scriptLoricRoles
         });
       }
     }
@@ -409,10 +409,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoreRoles
+        scriptLoricRoles
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, scriptLoreRoles, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
@@ -432,7 +432,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     timeOfDay,
     dayNumber,
     customScriptRoles,
-    scriptLoreRoles,
+    scriptLoricRoles,
     scriptName,
     scriptAuthor,
     isLilMonstaGame,
@@ -442,7 +442,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     rotationOffset,
     popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoreRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -455,7 +455,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setTimeOfDay(incoming.timeOfDay || 'night');
       setDayNumber(incoming.dayNumber || 1);
       setCustomScriptRoles(incoming.customScriptRoles ?? null);
-      setScriptLoreRoles(incoming.scriptLoreRoles ?? []);
+      setScriptLoricRoles(incoming.scriptLoricRoles ?? []);
       setScriptName(incoming.scriptName || "All Roles");
       setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
@@ -466,7 +466,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
-    syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoreRoles,
+    syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
     setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
@@ -494,7 +494,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       timeOfDay,
       dayNumber,
       customScriptRoles,
-      scriptLoreRoles,
+      scriptLoricRoles,
       scriptName,
       scriptAuthor,
       isLilMonstaGame,
@@ -511,7 +511,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoreRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -691,7 +691,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       scriptName,
       scriptAuthor,
       customScriptRoles,
-      scriptLoreRoles,
+      scriptLoricRoles,
     })));
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
@@ -717,7 +717,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
-    setCustomScriptRoles, setScriptLoreRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+    setCustomScriptRoles, setScriptLoricRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
   const confirmDisconnect = useCallback(() => {
@@ -858,7 +858,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             setPhase(p);
           }}
           customScriptRoles={customScriptRoles}
-          scriptLoreRoles={scriptLoreRoles}
+          scriptLoricRoles={scriptLoricRoles}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           selectedCharacterIds={selectedCharacterIds}
@@ -940,7 +940,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
-          scriptLoreRoles={scriptLoreRoles}
+          scriptLoricRoles={scriptLoricRoles}
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {
             setDemonBluffs(bluffs);

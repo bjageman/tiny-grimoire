@@ -978,10 +978,10 @@ describe('Storyteller Device Sync', () => {
     seedPrimary();
     const saved = JSON.parse(localStorage.getItem('standard-botc-game')!);
     const lore = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
-    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoreRoles: lore }));
+    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoricRoles: lore }));
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     const { primary, secondary } = await renderSyncedPair();
-    expect(lastSyncState()?.scriptLoreRoles).toEqual(lore);
+    expect(lastSyncState()?.scriptLoricRoles).toEqual(lore);
     fireEvent.click(secondary.container.querySelector('#game-script-button')!);
     const section = within(document.getElementById('script-loric-section')!);
     fireEvent.click(section.getByText('Bootlegger'));

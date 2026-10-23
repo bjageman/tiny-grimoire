@@ -20,7 +20,7 @@ interface StandardSetupPhaseProps {
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
   customScriptRoles: Role[] | null;
-  scriptLoreRoles?: LoreRole[];
+  scriptLoricRoles?: LoreRole[];
   scriptName: string;
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;
@@ -73,7 +73,7 @@ export default function StandardSetupPhase({
   rotationOffset,
   onRotationChange,
   customScriptRoles,
-  scriptLoreRoles,
+  scriptLoricRoles,
   scriptName,
   scriptAuthor,
   selectedCharacterIds,
@@ -464,7 +464,7 @@ export default function StandardSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
-      scriptLoreRoles={scriptLoreRoles}
+      scriptLoricRoles={scriptLoricRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
       isStoryteller

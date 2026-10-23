@@ -55,7 +55,7 @@ interface Props {
   scriptName?: string;
   scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
-  scriptLoreRoles?: LoreRole[];
+  scriptLoricRoles?: LoreRole[];
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;
@@ -94,7 +94,7 @@ export default function GamePhase({
   scriptName = 'All Roles',
   scriptAuthor = '',
   customScriptRoles = null,
-  scriptLoreRoles,
+  scriptLoricRoles,
   isSynced = false,
   isSecondary = false,
   enableReminders = true,
@@ -430,7 +430,7 @@ export default function GamePhase({
         onClose={() => setIsScriptModalOpen(false)}
         scriptName={scriptName}
         roles={sortedRoles}
-        scriptLoreRoles={scriptLoreRoles}
+        scriptLoricRoles={scriptLoricRoles}
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
         isStoryteller={isStoryteller}

@@ -27,7 +27,7 @@ const source = {
   scriptName: 'A Custom Script',
   scriptAuthor: 'Script Author',
   customScriptRoles: customRoles,
-  scriptLoreRoles: [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule.' }] as LoreRole[],
+  scriptLoricRoles: [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule.' }] as LoreRole[],
 };
 
 describe('game transfers', () => {
@@ -45,7 +45,7 @@ describe('game transfers', () => {
       scriptName: 'A Custom Script',
       scriptAuthor: 'Script Author',
       customScriptRoles: customRoles,
-      scriptLoreRoles: source.scriptLoreRoles,
+      scriptLoricRoles: source.scriptLoricRoles,
       gameNotes: '',
       reminderTokens: [],
     });
@@ -65,7 +65,7 @@ describe('game transfers', () => {
       scriptName: 'A Custom Script',
       scriptAuthor: 'Script Author',
       customScriptRoles: customRoles,
-      scriptLoreRoles: source.scriptLoreRoles,
+      scriptLoricRoles: source.scriptLoricRoles,
       selectedCharacterIds: ['homebrew'],
       gameLog: [],
       reminderTokens: [],

@@ -13,7 +13,7 @@ import type { PresetScript } from '../../utils/presetScripts';
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];
   customScriptRoles: Role[] | null;
-  scriptLoreRoles?: LoreRole[];
+  scriptLoricRoles?: LoreRole[];
   scriptName: string;
   scriptAuthor: string;
   newPlayerName: string;
@@ -45,7 +45,7 @@ interface PlayerTrackerSetupPhaseProps {
 export default function PlayerTrackerSetupPhase({
   players,
   customScriptRoles,
-  scriptLoreRoles,
+  scriptLoricRoles,
   scriptName,
   scriptAuthor,
   newPlayerName,
@@ -300,7 +300,7 @@ export default function PlayerTrackerSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
-      scriptLoreRoles={scriptLoreRoles}
+      scriptLoricRoles={scriptLoricRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />

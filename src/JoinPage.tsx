@@ -89,7 +89,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [scriptAuthor, setScriptAuthor] = useState("");
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
-  const [scriptLoreRoles, setScriptLoreRoles] = useState<LoreRole[]>([]);
+  const [scriptLoricRoles, setScriptLoricRoles] = useState<LoreRole[]>([]);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
@@ -133,7 +133,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptName?: string;
     scriptAuthor?: string;
     customScriptRoles?: Role[];
-    scriptLoreRoles?: LoreRole[];
+    scriptLoricRoles?: LoreRole[];
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
@@ -187,7 +187,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
-        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
 
       if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
@@ -226,7 +226,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
-        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.scriptName) {
@@ -237,7 +237,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
-        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
       if (payload.players) {
         setPlayers(payload.players);
@@ -382,7 +382,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       dayNumber,
       scriptName,
       customScriptRoles,
-      scriptLoreRoles,
+      scriptLoricRoles,
       code
     }));
     window.location.hash = '#/tracker';
@@ -572,7 +572,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
-      scriptLoreRoles={scriptLoreRoles}
+      scriptLoricRoles={scriptLoricRoles}
       scriptAuthor={scriptAuthor}
       isLightModeActive={isLight}
     />

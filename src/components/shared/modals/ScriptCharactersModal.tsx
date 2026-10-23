@@ -23,7 +23,7 @@ interface Props {
   onClose: () => void;
   scriptName: string;
   roles: Role[];
-  scriptLoreRoles?: LoreRole[];
+  scriptLoricRoles?: LoreRole[];
   scriptAuthor?: string;
   isLightModeActive: boolean;
   /** Storyteller-only features (Notes prompts, the in-play filter). Omitted in player game notes. */
@@ -47,7 +47,7 @@ const LORE_TEAMS = [
 
 const TEAM_HOVER: Record<string, string> = Object.fromEntries(TEAMS.map(t => [t.key, t.hover]));
 
-export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoreRoles = NO_LORE_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
+export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoricRoles = NO_LORE_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<AnyRole | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
@@ -215,10 +215,10 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const filteredLoreRoles = useMemo(() => {
     if (!showFabledLorics) return [];
     const term = searchTerm.trim().toLowerCase();
-    const list = scriptLoreRoles.filter(role => role.name.toLowerCase().includes(term) || role.team.includes(term));
+    const list = scriptLoricRoles.filter(role => role.name.toLowerCase().includes(term) || role.team.includes(term));
     if (sortAlphabetically) list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [scriptLoreRoles, showFabledLorics, searchTerm, sortAlphabetically]);
+  }, [scriptLoricRoles, showFabledLorics, searchTerm, sortAlphabetically]);
 
   const isEmpty = filteredRoles.length === 0 && filteredLoreRoles.length === 0;
 

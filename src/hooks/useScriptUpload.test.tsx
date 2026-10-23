@@ -7,7 +7,7 @@ import { PRESET_SCRIPTS } from '../utils/presetScripts';
 function setup() {
   const args = {
     setCustomScriptRoles: vi.fn(),
-    setScriptLoreRoles: vi.fn(),
+    setScriptLoricRoles: vi.fn(),
     setScriptName: vi.fn(),
     setScriptAuthor: vi.fn(),
     showAlert: vi.fn(),
@@ -24,7 +24,7 @@ describe('useScriptUpload lore', () => {
       'chef', 'angel', 'bootlegger',
     ])], 'lore.json', { type: 'application/json' });
     act(() => result.current.handleScriptUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>));
-    await waitFor(() => expect(args.setScriptLoreRoles).toHaveBeenCalledWith([
+    await waitFor(() => expect(args.setScriptLoricRoles).toHaveBeenCalledWith([
       expect.objectContaining({ id: 'angel', team: 'fabled' }),
       expect.objectContaining({ id: 'bootlegger', team: 'loric', ability: 'A custom rule.' }),
     ]));
@@ -36,16 +36,16 @@ describe('useScriptUpload lore', () => {
     const { args, result } = setup();
     const file = new File([JSON.stringify(['chef'])], 'plain.json', { type: 'application/json' });
     act(() => result.current.handleScriptUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>));
-    await waitFor(() => expect(args.setScriptLoreRoles).toHaveBeenCalledWith([]));
+    await waitFor(() => expect(args.setScriptLoricRoles).toHaveBeenCalledWith([]));
   });
 
   it('clears script lore when selecting a preset or clearing the script', () => {
     const { args, result } = setup();
     act(() => result.current.selectPresetScript(PRESET_SCRIPTS[0]));
-    expect(args.setScriptLoreRoles).toHaveBeenLastCalledWith([]);
-    args.setScriptLoreRoles.mockClear();
+    expect(args.setScriptLoricRoles).toHaveBeenLastCalledWith([]);
+    args.setScriptLoricRoles.mockClear();
     act(() => result.current.clearCustomScript());
     expect(args.setCustomScriptRoles).toHaveBeenCalledWith(null);
-    expect(args.setScriptLoreRoles).toHaveBeenCalledWith([]);
+    expect(args.setScriptLoricRoles).toHaveBeenCalledWith([]);
   });
 });

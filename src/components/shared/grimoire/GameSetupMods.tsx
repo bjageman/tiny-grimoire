@@ -153,7 +153,13 @@ export default function GameSetupMods({
               <div className={cn("text-[11px] font-bold", isLightModeActive ? "text-gray-800" : "text-gray-200")}>Tor</div>
               <div className="text-[9px] text-gray-500 leading-tight">Synced players will not be shown their character</div>
             </div>
-            <ToggleSwitch id="tor-mode-checkbox" checked={torEnabled} onChange={setTorEnabled} isLightModeActive={isLightModeActive} />
+            <ToggleSwitch
+              id="tor-mode-checkbox"
+              checked={torEnabled}
+              onChange={setTorEnabled}
+              isLightModeActive={isLightModeActive}
+              icon={<img src="/icons/tor.svg" alt="" className="w-3 h-3 object-contain brightness-[0.65] saturate-[0.85]" />}
+            />
           </label>
         </div>
       )}

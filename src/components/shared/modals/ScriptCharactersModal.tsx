@@ -60,7 +60,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return localStorage.getItem('botc-script-show-all-travelers') === 'true';
   });
   const [showFabledLorics, setShowFabledLorics] = useState(() => {
-    return localStorage.getItem('botc-script-show-fabled-lorics') === 'true';
+    return localStorage.getItem('botc-script-show-fabled-lorics') !== 'false';
   });
   const [bigFont, setBigFont] = useState(() => {
     return localStorage.getItem('botc-script-big-font') === 'true';
@@ -75,7 +75,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return localStorage.getItem('botc-script-in-play-only') === 'true';
   });
   const [listJinxes, setListJinxes] = useState(() => {
-    return localStorage.getItem('botc-script-list-jinxes') === 'true';
+    return localStorage.getItem('botc-script-list-jinxes') !== 'false';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);

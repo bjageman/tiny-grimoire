@@ -2,17 +2,18 @@ import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { ALL_ROLES } from '../../utils/roleData';
-import type { Role } from '../../types';
+import type { AnyRole } from '../../types';
 
 interface RevealedScreenProps {
   isLight: boolean;
-  assignedRole: Role;
+  assignedRole: AnyRole;
   revealed: boolean;
+  alignment?: 'good' | 'evil';
   onOpenTracker: () => void;
 }
 
 // The joined player's flip-to-reveal character token, leading into the player tracker.
-export default function RevealedScreen({ isLight, assignedRole, revealed, onOpenTracker }: RevealedScreenProps) {
+export default function RevealedScreen({ isLight, assignedRole, revealed, alignment, onOpenTracker }: RevealedScreenProps) {
   return (
     <div className="space-y-6 text-center">
       <div
@@ -46,7 +47,9 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             assignedRole.team === 'outsider' && "border-clocktower-outsider",
             assignedRole.team === 'minion' && "border-clocktower-minion",
             assignedRole.team === 'demon' && "border-clocktower-demon",
-            assignedRole.team === 'traveler' && "border-clocktower-traveler"
+            assignedRole.team === 'traveler' && "border-clocktower-traveler",
+            assignedRole.team === 'fabled' && "border-yellow-700",
+            assignedRole.team === 'loric' && "border-green-700"
           )}>
             <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
           </div>
@@ -58,7 +61,9 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
               assignedRole.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
               assignedRole.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
               assignedRole.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
-              assignedRole.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5"
+              assignedRole.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5",
+              assignedRole.team === 'fabled' && "text-yellow-700 border-yellow-700/40 bg-yellow-700/5",
+              assignedRole.team === 'loric' && "text-green-700 border-green-700/40 bg-green-700/5"
             )}>
               {assignedRole.team}
             </span>
@@ -70,10 +75,23 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             assignedRole.team === 'outsider' && "text-clocktower-outsider",
             assignedRole.team === 'minion' && "text-clocktower-minion",
             assignedRole.team === 'demon' && "text-clocktower-demon",
-            assignedRole.team === 'traveler' && "text-clocktower-traveler"
+            assignedRole.team === 'traveler' && "text-clocktower-traveler",
+            assignedRole.team === 'fabled' && "text-yellow-700",
+            assignedRole.team === 'loric' && "text-green-700"
           )}>
             {assignedRole.name}
           </h3>
+
+          {alignment && (
+            <span className={cn(
+              "mt-2 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded border",
+              alignment === 'evil'
+                ? "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5"
+                : "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5"
+            )}>
+              {alignment}
+            </span>
+          )}
 
           <p className="text-xs text-gray-400 mt-3 max-w-[90%] leading-relaxed">
             {assignedRole.ability ?? (ALL_ROLES as Array<{ id: string; ability?: string }>).find((r) => r.id === assignedRole.id)?.ability}

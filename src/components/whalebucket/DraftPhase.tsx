@@ -16,6 +16,8 @@ interface WhaleBucketDraftPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled?: boolean;
+  setTorEnabled?: (enabled: boolean) => void;
   isLightModeActive: boolean;
   onStartGame: () => void;
   runAssignment: () => void;
@@ -34,6 +36,8 @@ export default function WhaleBucketDraftPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled = false,
+  setTorEnabled = () => {},
   isLightModeActive,
   onStartGame,
   runAssignment,
@@ -128,6 +132,8 @@ export default function WhaleBucketDraftPhase({
               setSentinelOutsiderDelta={setSentinelOutsiderDelta}
               popeEnabled={popeEnabled}
               setPopeEnabled={setPopeEnabled}
+              torEnabled={torEnabled}
+              setTorEnabled={setTorEnabled}
               isLightModeActive={isLightModeActive}
               persistenceKey="whale-bucket-setup-modifiers-expanded"
             />

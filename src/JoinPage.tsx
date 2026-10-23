@@ -5,7 +5,7 @@ import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
-import type { LoricRole, Role, Player } from './types';
+import type { AnyRole, LoricRole, Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/modals/ScriptCharactersModal';
 import GrimoireBoard from './components/shared/grimoire/GrimoireBoard';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -17,6 +17,24 @@ import PreferencesScreen from './components/join/PreferencesScreen';
 import RevealedScreen from './components/join/RevealedScreen';
 import WaitingScreen from './components/join/WaitingScreen';
 import JoinForm from './components/join/JoinForm';
+
+function getAlignmentForTorReveal(player: Player, role: Role): 'good' | 'evil' {
+  if (player.isTheDrunk || player.isTheLunatic || role.id === 'atheist') return 'good';
+  if (player.isTheMarionette || player.isTheLilMonsta) return 'evil';
+  if (player.isEvil !== undefined) return player.isEvil ? 'evil' : 'good';
+  return role.team === 'minion' || role.team === 'demon' ? 'evil' : 'good';
+}
+
+function getTorCharacter(player: Player, role: Role): AnyRole {
+  const trueRoleId = player.isTheDrunk
+    ? 'drunk'
+    : player.isTheMarionette
+      ? 'marionette'
+      : player.isTheLunatic
+        ? 'lunatic'
+        : role.id;
+  return (ALL_ROLES as AnyRole[]).find(candidate => candidate.id === trueRoleId) ?? role;
+}
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -68,11 +86,13 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const [gameType, setGameType] = useState<'standard' | 'whale-bucket'>(() => returnToPrefs ? 'whale-bucket' : 'standard');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [assignedRole, setAssignedRole] = useState<Role | null>(null);
+  const [assignedRole, setAssignedRole] = useState<AnyRole | null>(null);
+  const [torAlignment, setTorAlignment] = useState<'good' | 'evil' | null>(null);
   const [revealed, setRevealed] = useState(false);
 
   // Dynamic game state synced from Storyteller for the player tracker
   const [players, setPlayers] = useState<Player[]>([]);
+  const [torEnabled, setTorEnabled] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>('night');
   const [dayNumber, setDayNumber] = useState(1);
 
@@ -134,11 +154,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptAuthor?: string;
     customScriptRoles?: Role[];
     scriptLoricRoles?: LoricRole[];
+    torEnabled?: boolean;
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
   const returnToLobby = (resetGameType: 'standard' | 'whale-bucket' = 'standard') => {
     setAssignedRole(null);
+    setTorAlignment(null);
+    setTorEnabled(false);
     setRevealed(false);
     sessionStorage.setItem('joined-code', code);
     sessionStorage.setItem('joined-name', name);
@@ -159,6 +182,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       return;
     }
     if (payload.type === 'setup_update') {
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       const me = payload.players?.find(
         (pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId
       );
@@ -203,6 +227,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setErrorMsg('The game room is full.');
       }
     } else if (payload.type === 'code_valid') {
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
@@ -229,6 +254,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
+      const torMode = payload.torEnabled ?? torEnabled;
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
@@ -252,9 +279,18 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             const rObj = effectiveRoles.find(r => r.id === me.roleId)
               ?? (ALL_ROLES as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
-              setAssignedRole(rObj);
+              const previousMe = players.find(pl => pl.id === me.id || pl.name.trim().toLowerCase() === me.name.trim().toLowerCase());
+              const displayedRole = torMode && !me.isDead
+                ? (ALL_ROLES as AnyRole[]).find(role => role.id === 'tor') ?? rObj
+                : torMode ? getTorCharacter(me, rObj) : rObj;
+              setAssignedRole(displayedRole);
+              setTorAlignment(torMode && me.isDead ? getAlignmentForTorReveal(me, rObj) : null);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
                 setState('revealed');
+                setRevealed(torMode && !me.isDead);
+              } else if (torMode && me.isDead && !previousMe?.isDead) {
+                setState('revealed');
+                setRevealed(true);
               }
             }
           }
@@ -360,6 +396,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setName(localStorage.getItem('botc-joined-name') || '');
     setState('join');
     setAssignedRole(null);
+    setTorAlignment(null);
+    setTorEnabled(false);
     setRevealed(false);
     setUserRotation(null);
   };
@@ -466,7 +504,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
         {/* 5. REVEALED TOKEN SCREEN */}
         {state === 'revealed' && assignedRole && (
-          <RevealedScreen isLight={isLight} assignedRole={assignedRole} revealed={revealed} onOpenTracker={goToTracker} />
+          <RevealedScreen isLight={isLight} assignedRole={assignedRole} revealed={revealed} alignment={torAlignment ?? undefined} onOpenTracker={goToTracker} />
         )}
 
         {/* 6. PLAYER SIMPLIFIED GAME TRACKER SCREEN */}

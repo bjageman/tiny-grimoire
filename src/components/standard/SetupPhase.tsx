@@ -64,6 +64,8 @@ interface StandardSetupPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled: boolean;
+  setTorEnabled: (enabled: boolean) => void;
   isLightModeActive: boolean;
   isSecondary?: boolean;
 }
@@ -113,6 +115,8 @@ export default function StandardSetupPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled,
+  setTorEnabled,
   isLightModeActive,
   isSecondary,
   remotePlayerCount = 0,
@@ -382,6 +386,8 @@ export default function StandardSetupPhase({
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           isLightModeActive={isLightModeActive}
           persistenceKey="standard-setup-modifiers-expanded"
         />

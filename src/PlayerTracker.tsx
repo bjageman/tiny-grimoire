@@ -40,6 +40,7 @@ interface SetupProps {
 export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [players, setPlayers] = usePersistedField<Player[]>(STORAGE_KEY, 'players', []);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
+  const [torEnabled, setTorEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'torEnabled', false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [timeOfDay, setTimeOfDay] = usePersistedField<'night' | 'day'>(STORAGE_KEY, 'timeOfDay', 'night');
   const [dayNumber, setDayNumber] = usePersistedField<number>(STORAGE_KEY, 'dayNumber', 1);
@@ -127,6 +128,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
       scriptLoricRoles?: LoricRole[];
+      torEnabled?: boolean;
       playerId?: string;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
@@ -138,6 +140,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       return;
     }
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
         setPlayers((currentPlayers) => {
           return payload.players!.map((sp) => {
@@ -361,6 +364,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptAuthor,
       customScriptRoles,
       scriptLoricRoles,
+      torEnabled,
     })));
     localStorage.removeItem('standard-botc-game-code');
     localStorage.removeItem('standard-botc-sync-code');
@@ -421,6 +425,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       dayNumber,
       customScriptRoles,
       scriptLoricRoles,
+      torEnabled,
       scriptName,
       scriptAuthor,
       gameNotes,
@@ -429,7 +434,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, torEnabled, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {

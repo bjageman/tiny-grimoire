@@ -75,6 +75,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const [players, setPlayers] = usePersistedField<Player[]>(STORAGE_KEY, 'players', []);
   const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
+  const [torEnabled, setTorEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'torEnabled', false);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [newPlayerName, setNewPlayerName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,6 +130,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
     setPopeEnabled(false);
+    setTorEnabled(false);
   };
 
   // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
@@ -162,11 +164,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles
+          scriptLoricRoles,
+          torEnabled
         });
       }
     }, 1000);
-  }, [scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles]);
+  }, [scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, torEnabled]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -188,6 +191,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
+    setTorEnabled(false);
     setDemonBluffs([]);
     setGameLog([]);
     setGameNotes('');
@@ -248,6 +252,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptAuthor,
         customScriptRoles,
         scriptLoricRoles,
+        torEnabled: false,
       });
     }
   };
@@ -331,7 +336,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles
+          scriptLoricRoles,
+          torEnabled
         });
       }
 
@@ -388,7 +394,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles
+          scriptLoricRoles,
+          torEnabled
         });
       }
     }
@@ -411,10 +418,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoricRoles
+        scriptLoricRoles,
+        torEnabled
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, torEnabled, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
@@ -438,13 +446,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     scriptName,
     scriptAuthor,
     isLilMonstaGame,
+    torEnabled,
     demonBluffs,
     reminderTokens,
     checkedItems,
     rotationOffset,
     popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -461,6 +470,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setScriptName(incoming.scriptName || "All Roles");
       setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
+      setTorEnabled(incoming.torEnabled || false);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
@@ -469,7 +479,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -500,6 +510,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       scriptName,
       scriptAuthor,
       isLilMonstaGame,
+      torEnabled,
       demonBluffs,
       gameLog,
       gameNotes,
@@ -513,7 +524,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -694,6 +705,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       scriptAuthor,
       customScriptRoles,
       scriptLoricRoles,
+      torEnabled,
     })));
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
@@ -884,6 +896,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           villageIdiotCount={villageIdiotCount}
           setVillageIdiotCount={setVillageIdiotCount}
           isLightModeActive={isLightModeActive}

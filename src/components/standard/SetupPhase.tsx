@@ -197,7 +197,7 @@ export default function StandardSetupPhase({
               )}>
                 📜 {scriptName}
               </span>
-              <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+              <span className={cn("text-[10px] font-medium flex items-center gap-1", isLightModeActive ? "text-black" : "text-white")}>
                 <Upload size={12} />
                 {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Click to upload .json"}
               </span>

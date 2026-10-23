@@ -108,7 +108,7 @@ export default function PlayerTrackerSetupPhase({
               )}>
                 {customScriptRoles ? "📜" : "🌐"} {scriptName}
               </span>
-              <span className="text-[10px] text-gray-500 font-medium">
+              <span className={cn("text-[10px] font-medium", isLightModeActive ? "text-black" : "text-white")}>
                 {scriptAuthor ? `by ${scriptAuthor} — Synced from Storyteller` : customScriptRoles ? "Custom script — Synced from Storyteller" : "Active Script (Synced from Storyteller)"}
               </span>
             </div>
@@ -134,7 +134,7 @@ export default function PlayerTrackerSetupPhase({
                   )}>
                     {customScriptRoles ? "📜" : "🌐"} {scriptName}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                  <span className={cn("text-[10px] font-medium flex items-center gap-1", isLightModeActive ? "text-black" : "text-white")}>
                     <Upload size={12} />
                     {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Upload Script (.json)"}
                   </span>

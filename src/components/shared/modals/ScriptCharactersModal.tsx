@@ -286,7 +286,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
               <h3 ref={titleRef} className={cn("font-display font-bold text-xl leading-tight tracking-wider whitespace-nowrap inline-block max-w-full", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
                 {scriptName}
               </h3>
-              {scriptAuthor && <p className="text-xs font-medium text-gray-500 mt-0.5">by {scriptAuthor}</p>}
+              {scriptAuthor && <p className={cn("text-xs font-medium mt-0.5", isLightModeActive ? "text-black" : "text-white")}>by {scriptAuthor}</p>}
             </div>
             <button
               type="button"

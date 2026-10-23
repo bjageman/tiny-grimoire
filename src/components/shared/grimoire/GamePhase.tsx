@@ -214,7 +214,7 @@ export default function GamePhase({
         📜 {scriptName}
       </span>
       {scriptAuthor && (
-        <span className="text-[10px] text-gray-500 font-medium">
+        <span className={cn("text-[10px] font-medium", isLightModeActive ? "text-black" : "text-white")}>
           by {scriptAuthor}
         </span>
       )}

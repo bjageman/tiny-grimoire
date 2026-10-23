@@ -43,7 +43,7 @@ export default function PresetScriptModal({ onSelect, onCancel, isLightModeActiv
               )}
             >
               <span className="block font-bold text-sm">{preset.name}</span>
-              <span className="block text-[10px] text-gray-500 font-medium mt-0.5">by {preset.author}</span>
+              <span className={cn("block text-[10px] font-medium mt-0.5", isLightModeActive ? "text-black" : "text-white")}>by {preset.author}</span>
             </button>
           ))}
           <button

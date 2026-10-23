@@ -196,30 +196,19 @@ function assignBaseCharacters(
     return { role: randomChoice(fallbackRoles), fromPref: false };
   };
 
-  const initialShuffledPlayers = shuffle(players);
-  const demonCandidate = initialShuffledPlayers[0];
-
+  const demonCandidate = randomChoice(players);
+  const initialShuffledPlayers = [demonCandidate, ...shuffle(players.filter(p => p.id !== demonCandidate.id))];
   const scriptDemons = allRoles.filter(r => r.team === 'demon');
-  const scriptTownsfolk = allRoles.filter(r => r.team === 'townsfolk');
-
-  // Only activate Atheist when an eligible player picked it.
-  const hasAtheist = scriptTownsfolk.some(t => t.id === 'atheist');
-  const atheistCandidates = initialShuffledPlayers.filter(p =>
-    getWhaleBucketPreferenceIds(p.preferences, 'townsfolk').includes('atheist')
-  );
-  const isAtheistActive = hasAtheist && atheistCandidates.length > 0 && Math.random() < 0.5;
-
-  let chosenDemon: Role | null = null;
-  if (!isAtheistActive && scriptDemons.length > 0) {
-    const demonPrefs = demonCandidate.preferences?.demon || [];
-    const availablePrefs = demonPrefs.filter(id => scriptDemons.some(d => d.id === id));
-    if (availablePrefs.length > 0) {
-      const id = randomChoice(availablePrefs);
-      chosenDemon = scriptDemons.find(d => d.id === id) || null;
-    } else {
-      chosenDemon = randomChoice(scriptDemons);
-    }
+  const atheistRole = allRoles.find(r => r.id === 'atheist' && r.team === 'townsfolk');
+  const demonPreferences = new Set(demonCandidate.preferences?.demon ?? []);
+  if (getWhaleBucketPreferenceIds(demonCandidate.preferences, 'townsfolk').includes('atheist')) {
+    demonPreferences.add('atheist');
   }
+  const preferredDemonRoles = [...scriptDemons, ...(atheistRole ? [atheistRole] : [])]
+    .filter(role => demonPreferences.has(role.id));
+  const demonOptions = preferredDemonRoles.length > 0 ? preferredDemonRoles : scriptDemons;
+  const chosenDemon = demonOptions.length > 0 ? randomChoice(demonOptions) : null;
+  const isAtheistActive = chosenDemon?.id === 'atheist';
 
   let mode: 'normal' | 'legion' | 'atheist' = 'normal';
   if (isAtheistActive) {
@@ -276,7 +265,7 @@ function assignBaseCharacters(
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
     const atheistRole = allRoles.find(r => r.id === 'atheist')!;
-    const atheistPlayer = randomChoice(atheistCandidates);
+    const atheistPlayer = demonCandidate;
     usedRoleIds.add('atheist');
     assignment.push({
       player: { ...atheistPlayer, isEvil: undefined },
@@ -321,7 +310,9 @@ function assignBaseCharacters(
     const assignment: AssignmentResult[] = [];
     
     const demonPlayer = shuffledPlayers[0];
-    const { role: demonRole, fromPref: demonFromPref } = selectRoleForPlayer(demonPlayer, 'demon', usedRoleIds);
+    const { role: demonRole, fromPref: demonFromPref } = attempt === 0 && chosenDemon
+      ? { role: chosenDemon, fromPref: preferredDemonRoles.length > 0 }
+      : selectRoleForPlayer(demonPlayer, 'demon', usedRoleIds);
     usedRoleIds.add(demonRole.id);
     const lilMonstaMinionPreference = demonRole.id === 'lilmonsta'
       ? demonPlayer.preferences?.minion.find(id => allRoles.some(role => role.id === id && role.team === 'minion'))

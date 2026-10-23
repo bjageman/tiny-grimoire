@@ -234,7 +234,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   const renderRoleIcon = (role: AnyRole, alt: string) => (
     <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className={cn("w-[92%] h-[92%] object-contain", (role.team === 'fabled' || role.team === 'loric') && "brightness-[0.65] saturate-[0.85]")}
+      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className={cn("w-[92%] h-[92%] object-contain", role.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : role.team === 'loric' && "brightness-[0.65] saturate-[0.85]")}
         onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
     </span>
   );

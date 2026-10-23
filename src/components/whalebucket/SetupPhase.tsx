@@ -41,6 +41,8 @@ interface WhaleBucketSetupPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled: boolean;
+  setTorEnabled: (enabled: boolean) => void;
   remotePlayerIds?: Set<string>;
   isSecondary?: boolean;
 }
@@ -75,6 +77,8 @@ export default function WhaleBucketSetupPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled,
+  setTorEnabled,
   remotePlayerIds,
   isSecondary,
 }: WhaleBucketSetupPhaseProps) {
@@ -199,6 +203,8 @@ export default function WhaleBucketSetupPhase({
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           isLightModeActive={isLightModeActive}
           persistenceKey="whale-bucket-setup-modifiers-expanded"
         />

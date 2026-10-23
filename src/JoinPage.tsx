@@ -5,7 +5,7 @@ import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
-import type { LoricRole, Role, Player } from './types';
+import type { AnyRole, LoricRole, Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/modals/ScriptCharactersModal';
 import GrimoireBoard from './components/shared/grimoire/GrimoireBoard';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -68,11 +68,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const [gameType, setGameType] = useState<'standard' | 'whale-bucket'>(() => returnToPrefs ? 'whale-bucket' : 'standard');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [assignedRole, setAssignedRole] = useState<Role | null>(null);
+  const [assignedRole, setAssignedRole] = useState<AnyRole | null>(null);
   const [revealed, setRevealed] = useState(false);
 
   // Dynamic game state synced from Storyteller for the player tracker
   const [players, setPlayers] = useState<Player[]>([]);
+  const [torEnabled, setTorEnabled] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<'night' | 'day'>('night');
   const [dayNumber, setDayNumber] = useState(1);
 
@@ -134,11 +135,13 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptAuthor?: string;
     customScriptRoles?: Role[];
     scriptLoricRoles?: LoricRole[];
+    torEnabled?: boolean;
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
   const returnToLobby = (resetGameType: 'standard' | 'whale-bucket' = 'standard') => {
     setAssignedRole(null);
+    setTorEnabled(false);
     setRevealed(false);
     sessionStorage.setItem('joined-code', code);
     sessionStorage.setItem('joined-name', name);
@@ -159,6 +162,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       return;
     }
     if (payload.type === 'setup_update') {
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       const me = payload.players?.find(
         (pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId
       );
@@ -203,6 +207,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setErrorMsg('The game room is full.');
       }
     } else if (payload.type === 'code_valid') {
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
@@ -229,6 +234,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
+      const torMode = payload.torEnabled ?? torEnabled;
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.scriptName) {
         setScriptName(payload.scriptName);
       }
@@ -252,9 +259,13 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             const rObj = effectiveRoles.find(r => r.id === me.roleId)
               ?? (ALL_ROLES as Role[]).find(r => r.id === me.roleId);
             if (rObj) {
-              setAssignedRole(rObj);
+              const displayedRole = torMode
+                ? (ALL_ROLES as AnyRole[]).find(role => role.id === 'tor') ?? rObj
+                : rObj;
+              setAssignedRole(displayedRole);
               if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
                 setState('revealed');
+                setRevealed(torMode);
               }
             }
           }
@@ -360,6 +371,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setName(localStorage.getItem('botc-joined-name') || '');
     setState('join');
     setAssignedRole(null);
+    setTorEnabled(false);
     setRevealed(false);
     setUserRotation(null);
   };

@@ -126,6 +126,20 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [gameLog, setGameLog] = usePersistedField<string[]>(STORAGE_KEY, 'gameLog', []);
   const [gameNotes, setGameNotes] = usePersistedField<string>(STORAGE_KEY, 'gameNotes', '');
+  const displayedScriptLoricRoles = useMemo(() => {
+    const requiredRoleIds = [
+      ...(sentinelOutsiderDelta !== 0 ? ['sentinel'] : []),
+      ...(popeEnabled ? ['pope'] : []),
+      ...(torEnabled ? ['tor'] : []),
+    ];
+    const existingRoleIds = new Set(scriptLoricRoles.map(role => role.id));
+    const additionalRoles = requiredRoleIds
+      .filter(roleId => !existingRoleIds.has(roleId))
+      .map(roleId => ALL_ROLES.find(role => role.id === roleId))
+      .filter((role): role is LoricRole => !!role)
+      .map(role => role as LoricRole);
+    return additionalRoles.length > 0 ? [...scriptLoricRoles, ...additionalRoles] : scriptLoricRoles;
+  }, [scriptLoricRoles, sentinelOutsiderDelta, popeEnabled, torEnabled]);
 
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
@@ -162,12 +176,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles,
+          scriptLoricRoles: displayedScriptLoricRoles,
           torEnabled
         });
       }
     }, 1000);
-  }, [scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, torEnabled]);
+  }, [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -248,8 +262,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoricRoles,
-        torEnabled: false,
+        scriptLoricRoles: displayedScriptLoricRoles,
+        torEnabled,
       });
     }
   };
@@ -333,7 +347,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles,
+          scriptLoricRoles: displayedScriptLoricRoles,
           torEnabled
         });
       }
@@ -391,7 +405,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName,
           scriptAuthor,
           customScriptRoles,
-          scriptLoricRoles,
+          scriptLoricRoles: displayedScriptLoricRoles,
           torEnabled
         });
       }
@@ -415,11 +429,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
-        scriptLoricRoles,
+        scriptLoricRoles: displayedScriptLoricRoles,
         torEnabled
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles, torEnabled, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup phase
   useEffect(() => {
@@ -444,13 +458,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     scriptAuthor,
     isLilMonstaGame,
     torEnabled,
+    sentinelOutsiderDelta,
     demonBluffs,
     reminderTokens,
     checkedItems,
     rotationOffset,
     popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -468,6 +483,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setScriptAuthor(incoming.scriptAuthor || "");
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
       setTorEnabled(incoming.torEnabled || false);
+      setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
       setCheckedItems(incoming.checkedItems || {});
@@ -476,7 +492,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -617,20 +633,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
-  const displayedScriptLoricRoles = useMemo(() => {
-    const requiredRoleIds = [
-      ...(sentinelOutsiderDelta !== 0 ? ['sentinel'] : []),
-      ...(popeEnabled ? ['pope'] : []),
-      ...(torEnabled ? ['tor'] : []),
-    ];
-    const existingRoleIds = new Set(scriptLoricRoles.map(role => role.id));
-    const additionalRoles = requiredRoleIds
-      .filter(roleId => !existingRoleIds.has(roleId))
-      .map(roleId => ALL_ROLES.find(role => role.id === roleId))
-      .filter((role): role is LoricRole => !!role)
-      .map(role => role as LoricRole);
-    return additionalRoles.length > 0 ? [...scriptLoricRoles, ...additionalRoles] : scriptLoricRoles;
-  }, [scriptLoricRoles, sentinelOutsiderDelta, popeEnabled, torEnabled]);
 
   const selectionRoles = useMemo(() => {
     const roles = [...currentScriptRoles];

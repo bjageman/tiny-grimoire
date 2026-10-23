@@ -8,12 +8,11 @@ interface RevealedScreenProps {
   isLight: boolean;
   assignedRole: AnyRole;
   revealed: boolean;
-  alignment?: 'good' | 'evil';
   onOpenTracker: () => void;
 }
 
 // The joined player's flip-to-reveal character token, leading into the player tracker.
-export default function RevealedScreen({ isLight, assignedRole, revealed, alignment, onOpenTracker }: RevealedScreenProps) {
+export default function RevealedScreen({ isLight, assignedRole, revealed, onOpenTracker }: RevealedScreenProps) {
   return (
     <div className="space-y-6 text-center">
       <div
@@ -81,17 +80,6 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, alignm
           )}>
             {assignedRole.name}
           </h3>
-
-          {alignment && (
-            <span className={cn(
-              "mt-2 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded border",
-              alignment === 'evil'
-                ? "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5"
-                : "text-clocktower-townsfolk border-clocktower-townsfolk/40 bg-clocktower-townsfolk/5"
-            )}>
-              {alignment}
-            </span>
-          )}
 
           <p className="text-xs text-gray-400 mt-3 max-w-[90%] leading-relaxed">
             {assignedRole.ability ?? (ALL_ROLES as Array<{ id: string; ability?: string }>).find((r) => r.id === assignedRole.id)?.ability}

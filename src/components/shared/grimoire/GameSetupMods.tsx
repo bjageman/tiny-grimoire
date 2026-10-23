@@ -158,7 +158,7 @@ export default function GameSetupMods({
               checked={torEnabled}
               onChange={setTorEnabled}
               isLightModeActive={isLightModeActive}
-              icon={<img src="/icons/tor.svg" alt="" className="w-3 h-3 object-contain brightness-[0.65] saturate-[0.85]" />}
+              icon={<img src="/icons/tor.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
             />
           </label>
         </div>

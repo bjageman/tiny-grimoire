@@ -163,8 +163,8 @@ export default function PlayerTrackerSetupPhase({
                   className={cn(
                     "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
                     isLightModeActive
-                      ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                      : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                      ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
+                      : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
                   )}
                 >
                   Select a Preset Script

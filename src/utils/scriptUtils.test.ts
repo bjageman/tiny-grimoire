@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseScriptFile, withInPlayTravelers } from './scriptUtils';
+import { parseScriptFile, parseScriptJson, withInPlayTravelers } from './scriptUtils';
 import type { Player, Role } from '../types';
 
 function makeFile(content: unknown, filename = 'script.json') {
@@ -169,6 +169,38 @@ describe('parseScriptFile', () => {
     expect(ww?.ability).toContain('Townsfolk');
     // Night order still comes from nightsheet.json, never from the role entry.
     expect(ww?.firstNight).toBeUndefined();
+  });
+});
+
+describe('script lore', () => {
+  it('preserves only listed Fabled and Lorics separately from playable roles', () => {
+    const script = parseScriptJson(['chef', 'angel', { id: 'Boot_legger' }, 'angel'], 'Test');
+    expect(script.roles.map(role => role.id)).toEqual(['chef']);
+    expect(script.loreRoles.map(role => role.id)).toEqual(['angel', 'bootlegger']);
+    expect(script.unknownRoles).toEqual([]);
+    expect(parseScriptJson(['chef'], 'Test').loreRoles).toEqual([]);
+  });
+
+  it('keeps homebrew lore ability text and images without making them playable', () => {
+    const script = parseScriptJson(['chef', { id: 'housefabled', name: 'House Rule', team: 'Fabled', ability: 'A special rule.', image: 'https://example.com/rule.png' }], 'Test');
+    expect(script.roles.map(role => role.id)).toEqual(['chef']);
+    expect(script.loreRoles).toEqual([{ id: 'housefabled', name: 'House Rule', team: 'fabled', ability: 'A special rule.', image: ['https://example.com/rule.png'] }]);
+  });
+
+  it('reads Bootlegger rules from script metadata', () => {
+    const script = parseScriptJson([{ id: '_meta', name: 'Test', bootlegger: ['Rule one.', '', 'Rule two.'] }, 'chef', 'bootlegger'], 'Test');
+    expect(script.loreRoles.find(role => role.id === 'bootlegger')?.ability).toBe('Rule one.\n\nRule two.');
+  });
+
+  it('reads a custom Bootlegger ability and uses official text when no override exists', () => {
+    const script = parseScriptJson(['chef', { id: 'bootlegger', ability: 'Use this house rule.' }], 'Test');
+    expect(script.loreRoles[0].ability).toBe('Use this house rule.');
+    expect(parseScriptJson(['chef', 'bootlegger'], 'Test').loreRoles[0].ability).toBe('This script has homebrew characters or rules.');
+  });
+
+  it('does not add Bootlegger unless it is listed as a character', () => {
+    const script = parseScriptJson([{ id: '_meta', name: 'Test', bootlegger: ['Rule one.'] }, 'chef'], 'Test');
+    expect(script.loreRoles).toEqual([]);
   });
 });
 

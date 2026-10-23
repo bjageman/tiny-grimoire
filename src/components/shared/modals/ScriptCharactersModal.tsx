@@ -10,9 +10,11 @@ import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import { ABILITY_BY_ID, PLAYABLE_ROLES } from '../../../utils/roleData';
-import type { Player, Role } from '../../../types';
+import type { AnyRole, LoreRole, Player, Role } from '../../../types';
 
-const abilityFor = (role: Role) => role.ability ?? ABILITY_BY_ID.get(role.id) ?? '';
+const abilityFor = (role: AnyRole) => role.ability ?? ABILITY_BY_ID.get(role.id) ?? '';
+
+const NO_LORE_ROLES: LoreRole[] = [];
 
 const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
 
@@ -21,6 +23,7 @@ interface Props {
   onClose: () => void;
   scriptName: string;
   roles: Role[];
+  scriptLoreRoles?: LoreRole[];
   scriptAuthor?: string;
   isLightModeActive: boolean;
   /** Storyteller-only features (Notes prompts, the in-play filter). Omitted in player game notes. */
@@ -37,11 +40,16 @@ const TEAMS = [
   { key: 'traveler',  label: '🟣 Travelers', color: 'text-clocktower-traveler',  border: 'border-clocktower-traveler/15',  hover: 'hover:border-clocktower-traveler/30'  },
 ] as const;
 
+const LORE_TEAMS = [
+  { key: 'fabled', label: 'Fabled', color: 'text-yellow-700', border: 'border-yellow-700/20', dot: 'bg-yellow-700' },
+  { key: 'loric', label: 'Lorics', color: 'text-green-700', border: 'border-green-700/20', dot: 'bg-green-700' },
+] as const;
+
 const TEAM_HOVER: Record<string, string> = Object.fromEntries(TEAMS.map(t => [t.key, t.hover]));
 
-export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
+export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoreRoles = NO_LORE_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRole, setSelectedRole] = useState<AnyRole | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
     return localStorage.getItem('botc-sort-alphabetically') === 'true';
   });
@@ -50,6 +58,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   });
   const [showAllTravelers, setShowAllTravelers] = useState(() => {
     return localStorage.getItem('botc-script-show-all-travelers') === 'true';
+  });
+  const [showFabledLorics, setShowFabledLorics] = useState(() => {
+    return localStorage.getItem('botc-script-show-fabled-lorics') === 'true';
   });
   const [bigFont, setBigFont] = useState(() => {
     return localStorage.getItem('botc-script-big-font') === 'true';
@@ -84,6 +95,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const handleToggleAllTravelers = (val: boolean) => {
     setShowAllTravelers(val);
     localStorage.setItem('botc-script-show-all-travelers', String(val));
+  };
+
+  const handleToggleFabledLorics = (val: boolean) => {
+    setShowFabledLorics(val);
+    localStorage.setItem('botc-script-show-fabled-lorics', String(val));
   };
 
   const handleToggleBigFont = (val: boolean) => {
@@ -169,8 +185,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     const withTravelers = showAllTravelers
       ? [...roles, ...allTravelers.filter(t => !roles.some(r => r.id === t.id))]
       : roles;
-    if (!showInPlayOnly) return withTravelers;
-    return withTravelers.filter(r => inPlayIds.has(r.id));
+    const playableRoles = withTravelers.filter(role => TEAMS.some(team => team.key === role.team));
+    if (!showInPlayOnly) return playableRoles;
+    return playableRoles.filter(r => inPlayIds.has(r.id));
   }, [roles, showAllTravelers, showInPlayOnly, inPlayIds]);
 
   const filteredRoles = useMemo(() => {
@@ -195,7 +212,15 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return list;
   }, [filteredRoles, sortAlphabetically]);
 
-  const isEmpty = filteredRoles.length === 0;
+  const filteredLoreRoles = useMemo(() => {
+    if (!showFabledLorics) return [];
+    const term = searchTerm.trim().toLowerCase();
+    const list = scriptLoreRoles.filter(role => role.name.toLowerCase().includes(term) || role.team.includes(term));
+    if (sortAlphabetically) list.sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [scriptLoreRoles, showFabledLorics, searchTerm, sortAlphabetically]);
+
+  const isEmpty = filteredRoles.length === 0 && filteredLoreRoles.length === 0;
 
   // Built off effectiveRoles so the traveler and in-play toggles carry over; search matches either side of a pair.
   const jinxes = useMemo(() => {
@@ -212,14 +237,14 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     ? cn("gap-2 sm:columns-2", showDetail ? "columns-1" : "columns-2")
     : cn("grid gap-2 sm:grid-cols-1", showDetail ? "grid-cols-1" : "grid-cols-2");
 
-  const renderRoleIcon = (role: Role, alt: string) => (
+  const renderRoleIcon = (role: AnyRole, alt: string) => (
     <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className="w-[92%] h-[92%] object-contain"
+      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className={cn("w-[92%] h-[92%] object-contain", (role.team === 'fabled' || role.team === 'loric') && "brightness-[0.65] saturate-[0.85]")}
         onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
     </span>
   );
 
-  const renderRoleCard = (role: Role) => {
+  const renderRoleCard = (role: AnyRole) => {
     const hover = TEAM_HOVER[role.team] ?? '';
     return (
       <button
@@ -238,7 +263,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
         <span className={cn("min-w-0 flex-1 leading-snug", bigFont ? "text-[13px]" : "text-[11px]", !showDetail && "truncate")}>
           <span className={cn("font-bold", bigFont ? "text-sm" : "text-xs", isLightModeActive ? "text-gray-900" : "text-gray-100")}>{role.name}</span>
           {showDetail && abilityFor(role) && (
-            <span className={cn(isLightModeActive ? "text-gray-600" : "text-gray-400")}> — {abilityFor(role)}</span>
+            <span className={cn("whitespace-pre-line", isLightModeActive ? "text-gray-600" : "text-gray-400")}> — {abilityFor(role)}</span>
           )}
         </span>
       </button>
@@ -315,7 +340,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
               {settingsOpen && (
                 <div
                   className={cn(
-                    "absolute right-0 top-full mt-2 z-10 w-44 rounded-lg border shadow-xl p-2 space-y-1",
+                    "absolute right-0 top-full mt-2 z-10 w-56 rounded-lg border shadow-xl p-2 space-y-1",
                     isLightModeActive ? "bg-[#fdfaf2] border-amber-900/15" : "bg-gray-900 border-gray-800"
                   )}
                 >
@@ -330,6 +355,55 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                       isLightModeActive={isLightModeActive}
                     />
                   </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Sort A-Z
+                    </span>
+                    <ToggleSwitch
+                      id="script-sort-alphabetically-checkbox"
+                      checked={sortAlphabetically}
+                      onChange={handleToggleSort}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Bigger Font
+                    </span>
+                    <ToggleSwitch
+                      id="script-big-font-checkbox"
+                      checked={bigFont}
+                      onChange={handleToggleBigFont}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="hidden sm:flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      2 Columns
+                    </span>
+                    <ToggleSwitch
+                      id="script-double-column-checkbox"
+                      checked={doubleColumn}
+                      onChange={handleToggleDoubleColumn}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      Group By Type
+                    </span>
+                    <ToggleSwitch
+                      id="script-group-by-type-checkbox"
+                      checked={groupByType}
+                      onChange={handleToggleGroupByType}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <div className={cn("flex items-center gap-2 px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider", isLightModeActive ? "text-gray-500" : "text-gray-400")}>
+                    <span className={cn("h-px flex-1", isLightModeActive ? "bg-gray-300" : "bg-gray-700")} />
+                    <span>Display</span>
+                    <span className={cn("h-px flex-1", isLightModeActive ? "bg-gray-300" : "bg-gray-700")} />
+                  </div>
                   {isStoryteller && (
                     <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                       <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
@@ -345,18 +419,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                   )}
                   <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      Sort A–Z
-                    </span>
-                    <ToggleSwitch
-                      id="script-sort-alphabetically-checkbox"
-                      checked={sortAlphabetically}
-                      onChange={handleToggleSort}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
-                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      Travelers
+                      All Travelers
                     </span>
                     <ToggleSwitch
                       id="script-show-all-travelers-checkbox"
@@ -367,45 +430,23 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                   </label>
                   <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      Bigger Font
+                      Fabled/Lorics
                     </span>
                     <ToggleSwitch
-                      id="script-big-font-checkbox"
-                      checked={bigFont}
-                      onChange={handleToggleBigFont}
+                      id="script-show-fabled-lorics-checkbox"
+                      checked={showFabledLorics}
+                      onChange={handleToggleFabledLorics}
                       isLightModeActive={isLightModeActive}
                     />
                   </label>
                   <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      Group by Type
-                    </span>
-                    <ToggleSwitch
-                      id="script-group-by-type-checkbox"
-                      checked={groupByType}
-                      onChange={handleToggleGroupByType}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
-                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      List Jinxes
+                      Jinxes
                     </span>
                     <ToggleSwitch
                       id="script-list-jinxes-checkbox"
                       checked={listJinxes}
                       onChange={handleToggleListJinxes}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
-                  <label className="hidden sm:flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
-                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      2 Columns
-                    </span>
-                    <ToggleSwitch
-                      id="script-double-column-checkbox"
-                      checked={doubleColumn}
-                      onChange={handleToggleDoubleColumn}
                       isLightModeActive={isLightModeActive}
                     />
                   </label>
@@ -435,6 +476,24 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}
+            {LORE_TEAMS.map(({ key, label, color, border, dot }) => {
+              const loreRoles = filteredLoreRoles.filter(role => role.team === key);
+              if (loreRoles.length === 0) return null;
+              return (
+                <div key={key} id={`script-${key}-section`} className="space-y-2">
+                  <h4 className={cn(
+                    "text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5",
+                    color, border
+                  )}>
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
+                    {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({loreRoles.length})</span>
+                  </h4>
+                  <div className={roleLayoutClass}>
+                    {loreRoles.map(renderRoleCard)}
+                  </div>
+                </div>
+              );
+            })}
             {jinxes.length > 0 && (
               <div id="script-jinxes-section" className="space-y-2">
                 <h4 className={cn(

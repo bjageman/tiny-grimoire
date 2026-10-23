@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Dices, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
-import type { Player, Role } from '../../types';
+import type { LoreRole, Player, Role } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
@@ -20,6 +20,7 @@ interface StandardSetupPhaseProps {
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
   customScriptRoles: Role[] | null;
+  scriptLoreRoles?: LoreRole[];
   scriptName: string;
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;
@@ -72,6 +73,7 @@ export default function StandardSetupPhase({
   rotationOffset,
   onRotationChange,
   customScriptRoles,
+  scriptLoreRoles,
   scriptName,
   scriptAuthor,
   selectedCharacterIds,
@@ -462,6 +464,7 @@ export default function StandardSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptLoreRoles={scriptLoreRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
       isStoryteller

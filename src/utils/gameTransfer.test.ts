@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Player, Role } from '../types';
+import type { LoreRole, Player, Role } from '../types';
 import { buildPlayerTrackerTransfer, buildStandardTransfer } from './gameTransfer';
 
 const customRoles: Role[] = [
@@ -27,6 +27,7 @@ const source = {
   scriptName: 'A Custom Script',
   scriptAuthor: 'Script Author',
   customScriptRoles: customRoles,
+  scriptLoreRoles: [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule.' }] as LoreRole[],
 };
 
 describe('game transfers', () => {
@@ -44,6 +45,7 @@ describe('game transfers', () => {
       scriptName: 'A Custom Script',
       scriptAuthor: 'Script Author',
       customScriptRoles: customRoles,
+      scriptLoreRoles: source.scriptLoreRoles,
       gameNotes: '',
       reminderTokens: [],
     });
@@ -63,6 +65,7 @@ describe('game transfers', () => {
       scriptName: 'A Custom Script',
       scriptAuthor: 'Script Author',
       customScriptRoles: customRoles,
+      scriptLoreRoles: source.scriptLoreRoles,
       selectedCharacterIds: ['homebrew'],
       gameLog: [],
       reminderTokens: [],

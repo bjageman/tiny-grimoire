@@ -1,4 +1,4 @@
-import type { Player, Role } from '../types';
+import type { AnyRole, LoreRole, Player, Role } from '../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
 
 /** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
@@ -72,13 +72,13 @@ export interface ParsedScript {
   name: string;
   author: string;
   roles: Role[];
+  loreRoles: LoreRole[];
   unknownRoles: { id: string; name: string }[];
 }
 
 /** Turn the contents of a script JSON into roles. Shared by uploads and the built-in preset scripts. */
 export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedScript {
-  const allRoles = PLAYABLE_ROLES;
-  const official = ALL_ROLES as { id: string; name: string; team: string }[];
+  const allRoles = ALL_ROLES;
 
   if (!Array.isArray(parsed)) {
     throw new Error('Invalid script format. Expected a JSON array of roles.');
@@ -94,7 +94,7 @@ export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedSc
 
   const unknownRoles: { id: string; name: string }[] = [];
 
-  const parsedRoles = parsed
+  const parsedRoles: AnyRole[] = parsed
     .map((item: unknown) => {
       if (typeof item === 'string') {
         return { id: item.replace(/_/g, '') };
@@ -110,30 +110,27 @@ export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedSc
     })
     .filter((item: { id: string } | null): item is { id: string } => {
       if (!item || item.id === '_meta' || item.id === 'meta') return false;
-      const officialMatch = official.find(
-        r => r.id.toLowerCase() === item.id.toLowerCase()
-      );
-      if (officialMatch && (officialMatch.team === 'fabled' || officialMatch.team === 'loric')) {
-        return false;
-      }
-      const itemObj = item as Record<string, unknown>;
-      if (typeof itemObj.team === 'string' &&
-          (itemObj.team.toLowerCase() === 'fabled' || itemObj.team.toLowerCase() === 'loric')) {
-        return false;
-      }
       return true;
     })
     .map((item: { id: string }) => {
       const matched = allRoles.find(
         r => r.id.toLowerCase() === item.id.toLowerCase()
       );
-      if (matched) return matched;
+      if (matched) {
+        if (matched.id === 'bootlegger') {
+          const customAbility = toOptionalString((item as Record<string, unknown>).ability);
+          const rules = toStringArray((metaObj as Record<string, unknown> | undefined)?.bootlegger);
+          const ability = rules?.join('\n\n') ?? customAbility;
+          if (ability) return { ...matched, ability };
+        }
+        return matched;
+      }
 
       // Custom character not in our list — synthesize from the script JSON's own fields instead of forcing Townsfolk (which corrupted evil-team distribution).
       const itemObj = item as Record<string, unknown>;
       const rawTeam = typeof itemObj.team === 'string' ? itemObj.team.toLowerCase() : '';
       const normalizedTeam = rawTeam === 'traveller' ? 'traveler' : rawTeam;
-      const team = (VALID_TEAMS.has(normalizedTeam) ? normalizedTeam : 'townsfolk') as Role['team'];
+      const team = (VALID_TEAMS.has(normalizedTeam) || normalizedTeam === 'fabled' || normalizedTeam === 'loric' ? normalizedTeam : 'townsfolk') as AnyRole['team'];
 
       const displayName = typeof itemObj.name === 'string' && itemObj.name.trim()
         ? itemObj.name
@@ -177,11 +174,16 @@ export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedSc
       };
     });
 
-  if (parsedRoles.length === 0) {
+  const roles = parsedRoles.filter((role): role is Role => role.team !== 'fabled' && role.team !== 'loric');
+  const loreRoles = [...new Map(parsedRoles
+    .filter((role): role is LoreRole => role.team === 'fabled' || role.team === 'loric')
+    .map(role => [role.id, role])).values()];
+
+  if (roles.length === 0) {
     throw new Error('No valid roles found in the uploaded script.');
   }
 
-  return { name, author, roles: parsedRoles, unknownRoles };
+  return { name, author, roles, loreRoles, unknownRoles };
 }
 
 export function parseScriptFile(file: File): Promise<ParsedScript> {

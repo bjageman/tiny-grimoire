@@ -3,7 +3,7 @@ import { cn } from '../../../utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
-import type { Player, Role, PlacedReminder } from '../../../types';
+import type { LoreRole, Player, Role, PlacedReminder } from '../../../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
@@ -55,6 +55,7 @@ interface Props {
   scriptName?: string;
   scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
+  scriptLoreRoles?: LoreRole[];
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;
@@ -93,6 +94,7 @@ export default function GamePhase({
   scriptName = 'All Roles',
   scriptAuthor = '',
   customScriptRoles = null,
+  scriptLoreRoles,
   isSynced = false,
   isSecondary = false,
   enableReminders = true,
@@ -428,6 +430,7 @@ export default function GamePhase({
         onClose={() => setIsScriptModalOpen(false)}
         scriptName={scriptName}
         roles={sortedRoles}
+        scriptLoreRoles={scriptLoreRoles}
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
         isStoryteller={isStoryteller}

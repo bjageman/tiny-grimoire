@@ -974,6 +974,22 @@ describe('Storyteller Device Sync', () => {
     vi.clearAllMocks();
   });
 
+  it('syncs script lore and custom Bootlegger rules to the secondary device', async () => {
+    seedPrimary();
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game')!);
+    const lore = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
+    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoreRoles: lore }));
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    const { primary, secondary } = await renderSyncedPair();
+    expect(lastSyncState()?.scriptLoreRoles).toEqual(lore);
+    fireEvent.click(secondary.container.querySelector('#game-script-button')!);
+    const section = within(document.getElementById('script-loric-section')!);
+    fireEvent.click(section.getByText('Bootlegger'));
+    expect(within(document.getElementById('script-character-details-modal')!).getByText(lore[0].ability)).toBeInTheDocument();
+    primary.unmount();
+    secondary.unmount();
+  });
+
   it('transfers all 10 reminder tokens to the secondary on initial sync', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();

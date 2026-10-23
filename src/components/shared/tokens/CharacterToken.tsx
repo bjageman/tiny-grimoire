@@ -1,10 +1,10 @@
 import { cn } from '../../../utils/cn';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { deadSeatStyle } from '../../../utils/playerSeat';
-import type { Role } from '../../../types';
+import type { AnyRole } from '../../../types';
 
 interface CharacterTokenProps {
-  role?: Role | null;
+  role?: AnyRole | null;
   isEvil?: boolean;
   size?: number;
   idPrefix: string;
@@ -22,15 +22,17 @@ interface CharacterTokenProps {
   solidIcon?: boolean;
 }
 
-const TEAM_COLOR: Record<Role['team'], string> = {
+const TEAM_COLOR: Record<AnyRole['team'], string> = {
   townsfolk: '#2563eb',
   outsider: '#10b981',
   minion: '#ef4444',
   demon: '#7f1d1d',
   traveler: '#a855f7',
+  fabled: '#a16207',
+  loric: '#15803d',
 };
 
-const teamFill = (team: Role['team']) => TEAM_COLOR[team] ?? '#6b7280';
+const teamFill = (team: AnyRole['team']) => TEAM_COLOR[team] ?? '#6b7280';
 
 export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, isLightModeActive = false, blankRing = false, neutralRing = false, solidIcon = false }: CharacterTokenProps) {
   const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
@@ -52,6 +54,9 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
 
   const evil = isEvil ?? (role ? (role.team === 'minion' || role.team === 'demon') : false);
   const dead = deadSeatStyle(isLightModeActive);
+  const ringColor = role?.team === 'fabled' || role?.team === 'loric'
+    ? teamFill(role.team)
+    : evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk;
 
   return (
     <div className={cn('relative shrink-0', size === undefined && 'w-full h-full', className)} style={sizeStyle}>
@@ -70,7 +75,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
           cy="100"
           r="90"
           fill={isDead ? dead.faceFill : '#ffffff'}
-          stroke={neutralRing ? '#d4d4d8' : (evil ? TEAM_COLOR.minion : TEAM_COLOR.townsfolk)}
+          stroke={neutralRing ? '#d4d4d8' : ringColor}
           strokeWidth={6}
         />
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
@@ -83,7 +88,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
               key={role.id}
               src={`/icons/${role.id}.svg`}
               alt={role.name}
-              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : 'opacity-35'), isDead && 'grayscale')}
+              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : 'opacity-35'), isDead && 'grayscale', (role.team === 'fabled' || role.team === 'loric') && 'brightness-[0.65] saturate-[0.85]')}
               onError={roleIconFallback(role, evil)}
             />
           </div>

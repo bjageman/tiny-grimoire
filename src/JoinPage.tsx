@@ -5,7 +5,7 @@ import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
-import type { Role, Player } from './types';
+import type { LoreRole, Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/modals/ScriptCharactersModal';
 import GrimoireBoard from './components/shared/grimoire/GrimoireBoard';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -89,6 +89,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [scriptAuthor, setScriptAuthor] = useState("");
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
+  const [scriptLoreRoles, setScriptLoreRoles] = useState<LoreRole[]>([]);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
@@ -132,6 +133,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptName?: string;
     scriptAuthor?: string;
     customScriptRoles?: Role[];
+    scriptLoreRoles?: LoreRole[];
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
@@ -185,6 +187,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
+        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
       }
 
       if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
@@ -223,6 +226,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
+        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
       }
     } else if (payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.scriptName) {
@@ -233,6 +237,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
+        setScriptLoreRoles(payload.scriptLoreRoles ?? []);
       }
       if (payload.players) {
         setPlayers(payload.players);
@@ -377,6 +382,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       dayNumber,
       scriptName,
       customScriptRoles,
+      scriptLoreRoles,
       code
     }));
     window.location.hash = '#/tracker';
@@ -566,6 +572,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptLoreRoles={scriptLoreRoles}
       scriptAuthor={scriptAuthor}
       isLightModeActive={isLight}
     />

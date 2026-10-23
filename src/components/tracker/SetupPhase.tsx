@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import type { Player, Role } from '../../types';
+import type { LoreRole, Player, Role } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
@@ -13,6 +13,7 @@ import type { PresetScript } from '../../utils/presetScripts';
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];
   customScriptRoles: Role[] | null;
+  scriptLoreRoles?: LoreRole[];
   scriptName: string;
   scriptAuthor: string;
   newPlayerName: string;
@@ -44,6 +45,7 @@ interface PlayerTrackerSetupPhaseProps {
 export default function PlayerTrackerSetupPhase({
   players,
   customScriptRoles,
+  scriptLoreRoles,
   scriptName,
   scriptAuthor,
   newPlayerName,
@@ -298,6 +300,7 @@ export default function PlayerTrackerSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptLoreRoles={scriptLoreRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />

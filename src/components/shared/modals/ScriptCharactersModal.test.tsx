@@ -131,32 +131,32 @@ describe('ScriptCharactersModal role ordering', () => {
 });
 
 describe('ScriptCharactersModal Fabled and Lorics', () => {
-  const loreRoles = parseScriptJson(['chef', 'angel', 'bigwig', 'bootlegger'], 'Test').loreRoles;
-  const loreProps = { ...baseProps, scriptLoricRoles: loreRoles };
+  const loricRoles = parseScriptJson(['chef', 'angel', 'bigwig', 'bootlegger'], 'Test').loricRoles;
+  const loricProps = { ...baseProps, scriptLoricRoles: loricRoles };
 
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
   });
 
-  const enableLore = () => {
+  const enableLoric = () => {
     fireEvent.click(screen.getByLabelText('View settings'));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Fabled/Lorics' }));
   };
 
-  it('shows only script lore when enabled and remembers the setting', () => {
-    const { unmount } = render(<ScriptCharactersModal {...loreProps} />);
+  it('shows only script Fabled and Lorics when enabled and remembers the setting', () => {
+    const { unmount } = render(<ScriptCharactersModal {...loricProps} />);
     expect(screen.queryByText('Angel')).not.toBeInTheDocument();
     expect(screen.queryByText('Bootlegger')).not.toBeInTheDocument();
-    enableLore();
-    for (const role of loreRoles) {
+    enableLoric();
+    for (const role of loricRoles) {
       expect(screen.getByText(role.name).closest('button')).toBeInTheDocument();
     }
     expect(screen.queryByText('Buddhist')).not.toBeInTheDocument();
     expect(screen.queryByText('Gardener')).not.toBeInTheDocument();
     expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBe('true');
     unmount();
-    render(<ScriptCharactersModal {...loreProps} />);
+    render(<ScriptCharactersModal {...loricProps} />);
     expect(screen.getByText('Angel')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('View settings'));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Fabled/Lorics' }));
@@ -165,7 +165,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBe('false');
   });
 
-  it('shows no lore for a script without Fabled or Lorics even when enabled', () => {
+  it('shows no Fabled or Lorics for a script without them even when enabled', () => {
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     render(<ScriptCharactersModal {...baseProps} />);
     expect(document.getElementById('script-fabled-section')).not.toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     const script = parseScriptJson([{ id: '_meta', name: 'Rules', bootlegger: [customRules] }, 'chef', 'bootlegger'], 'Rules');
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     localStorage.setItem('botc-script-show-detail', 'true');
-    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loreRoles} />);
+    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loricRoles} />);
     expect(document.getElementById('script-loric-section')).toHaveTextContent(customRules);
     fireEvent.click(screen.getByText('Bootlegger'));
     expect(within(document.getElementById('script-character-details-modal')!).getByText(customRules)).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     localStorage.setItem('botc-script-group-by-type', String(grouped));
     localStorage.setItem('botc-script-list-jinxes', 'true');
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
-    render(<ScriptCharactersModal {...loreProps} roles={[...roles, { id: 'beggar', name: 'Beggar', team: 'traveler' }]} />);
+    render(<ScriptCharactersModal {...loricProps} roles={[...roles, { id: 'beggar', name: 'Beggar', team: 'traveler' }]} />);
     const traveler = screen.getByText('Beggar');
     const fabled = document.getElementById('script-fabled-section')!;
     const lorics = document.getElementById('script-loric-section')!;
@@ -197,9 +197,9 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(lorics.compareDocumentPosition(jinxes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('searches lore by name and type without incorrectly showing the empty state', () => {
-    render(<ScriptCharactersModal {...loreProps} />);
-    enableLore();
+  it('searches Fabled and Lorics by name and type without incorrectly showing the empty state', () => {
+    render(<ScriptCharactersModal {...loricProps} />);
+    enableLoric();
     const search = screen.getByPlaceholderText('Search by name or type');
     fireEvent.change(search, { target: { value: 'angel' } });
     expect(screen.getByText('Angel')).toBeInTheDocument();
@@ -212,11 +212,11 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(screen.getByText('No matching characters found.')).toBeInTheDocument();
   });
 
-  it('sorts lore alphabetically and keeps it visible with the in-play filter', () => {
+  it('sorts Fabled and Lorics alphabetically and keeps them visible with the in-play filter', () => {
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     localStorage.setItem('botc-sort-alphabetically', 'true');
     localStorage.setItem('botc-script-in-play-only', 'true');
-    render(<ScriptCharactersModal {...loreProps} isStoryteller players={[]} />);
+    render(<ScriptCharactersModal {...loricProps} isStoryteller players={[]} />);
     const lorics = within(document.getElementById('script-loric-section')!);
     const names = lorics.getAllByRole('button').map(button => within(button).getByText(/.+/).textContent!);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
@@ -225,8 +225,8 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
   });
 
   it.each(['Angel', 'Bootlegger'])('opens ability details for %s', (name) => {
-    render(<ScriptCharactersModal {...loreProps} />);
-    enableLore();
+    render(<ScriptCharactersModal {...loricProps} />);
+    enableLoric();
     fireEvent.click(screen.getByText(name));
     const details = within(document.getElementById('script-character-details-modal')!);
     const role = ALL_ROLES.find(role => role.name === name)!;

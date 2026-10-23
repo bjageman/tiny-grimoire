@@ -3,7 +3,7 @@ import { cn } from '../../../utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
-import type { LoreRole, Player, Role, PlacedReminder } from '../../../types';
+import type { LoricRole, Player, Role, PlacedReminder } from '../../../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
@@ -55,7 +55,7 @@ interface Props {
   scriptName?: string;
   scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
-  scriptLoricRoles?: LoreRole[];
+  scriptLoricRoles?: LoricRole[];
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;

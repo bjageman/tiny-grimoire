@@ -25,11 +25,11 @@ export interface Role {
 }
 
 /** A Fabled or Loric: a real character in the data, but never dealt to a player. */
-export interface LoreRole extends Omit<Role, 'team'> {
+export interface LoricRole extends Omit<Role, 'team'> {
   team: 'fabled' | 'loric';
 }
 
-export type AnyRole = Role | LoreRole;
+export type AnyRole = Role | LoricRole;
 
 export interface PlayerPreferences {
   townsfolk: string[];

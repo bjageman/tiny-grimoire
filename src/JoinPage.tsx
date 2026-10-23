@@ -5,7 +5,7 @@ import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
-import type { LoreRole, Role, Player } from './types';
+import type { LoricRole, Role, Player } from './types';
 import ScriptCharactersModal from './components/shared/modals/ScriptCharactersModal';
 import GrimoireBoard from './components/shared/grimoire/GrimoireBoard';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -89,7 +89,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [scriptAuthor, setScriptAuthor] = useState("");
   const { dialogProps, showAlert } = useDialog();
   const [customScriptRoles, setCustomScriptRoles] = useState<Role[] | null>(null);
-  const [scriptLoricRoles, setScriptLoricRoles] = useState<LoreRole[]>([]);
+  const [scriptLoricRoles, setScriptLoricRoles] = useState<LoricRole[]>([]);
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
@@ -133,7 +133,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptName?: string;
     scriptAuthor?: string;
     customScriptRoles?: Role[];
-    scriptLoricRoles?: LoreRole[];
+    scriptLoricRoles?: LoricRole[];
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.

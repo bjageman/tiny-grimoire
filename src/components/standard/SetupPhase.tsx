@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Dices, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
-import type { LoreRole, Player, Role } from '../../types';
+import type { LoricRole, Player, Role } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
@@ -20,7 +20,7 @@ interface StandardSetupPhaseProps {
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
   customScriptRoles: Role[] | null;
-  scriptLoricRoles?: LoreRole[];
+  scriptLoricRoles?: LoricRole[];
   scriptName: string;
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;

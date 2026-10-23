@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { PLAYABLE_ROLES } from './utils/roleData';
-import type { LoreRole, Player, Role, PlacedReminder } from './types';
+import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
@@ -104,7 +104,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
-  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
+  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoricRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
   const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
   const [allReminders, setAllReminders] = usePersistedField<boolean>(STORAGE_KEY, 'allReminders', false);

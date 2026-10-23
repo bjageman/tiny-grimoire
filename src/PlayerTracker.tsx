@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { PLAYABLE_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
-import type { LoreRole, Player, Role, PlacedReminder } from './types';
+import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 import { withInPlayTravelers } from './utils/scriptUtils';
@@ -58,7 +58,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
-  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoreRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
+  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoricRole[]>(STORAGE_KEY, 'scriptLoricRoles', []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
@@ -124,7 +124,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
-      scriptLoricRoles?: LoreRole[];
+      scriptLoricRoles?: LoricRole[];
       playerId?: string;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
@@ -266,7 +266,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
-      scriptLoricRoles?: LoreRole[];
+      scriptLoricRoles?: LoricRole[];
     };
     if (payload.type === 'notes_share_state' && !hasAppliedIncomingShare.current) {
       hasAppliedIncomingShare.current = true;

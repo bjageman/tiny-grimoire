@@ -1,4 +1,4 @@
-import type { LoreRole, Player, Role } from '../types';
+import type { LoricRole, Player, Role } from '../types';
 
 export const STANDARD_GAME_STORAGE_KEY = 'standard-botc-game';
 export const PLAYER_TRACKER_STORAGE_KEY = 'player-tracker-botc-game';
@@ -8,7 +8,7 @@ interface TransferSource {
   scriptName: string;
   scriptAuthor: string;
   customScriptRoles: Role[] | null;
-  scriptLoricRoles?: LoreRole[];
+  scriptLoricRoles?: LoricRole[];
 }
 
 function transferPlayers(players: Player[]): Player[] {

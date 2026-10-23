@@ -10,11 +10,11 @@ import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import CharacterDetailModal from './CharacterDetailModal';
 import { ABILITY_BY_ID, PLAYABLE_ROLES } from '../../../utils/roleData';
-import type { AnyRole, LoreRole, Player, Role } from '../../../types';
+import type { AnyRole, LoricRole, Player, Role } from '../../../types';
 
 const abilityFor = (role: AnyRole) => role.ability ?? ABILITY_BY_ID.get(role.id) ?? '';
 
-const NO_LORE_ROLES: LoreRole[] = [];
+const NO_LORIC_ROLES: LoricRole[] = [];
 
 const allTravelers = PLAYABLE_ROLES.filter(r => r.team === 'traveler');
 
@@ -23,7 +23,7 @@ interface Props {
   onClose: () => void;
   scriptName: string;
   roles: Role[];
-  scriptLoricRoles?: LoreRole[];
+  scriptLoricRoles?: LoricRole[];
   scriptAuthor?: string;
   isLightModeActive: boolean;
   /** Storyteller-only features (Notes prompts, the in-play filter). Omitted in player game notes. */
@@ -40,14 +40,14 @@ const TEAMS = [
   { key: 'traveler',  label: '🟣 Travelers', color: 'text-clocktower-traveler',  border: 'border-clocktower-traveler/15',  hover: 'hover:border-clocktower-traveler/30'  },
 ] as const;
 
-const LORE_TEAMS = [
+const LORIC_TEAMS = [
   { key: 'fabled', label: 'Fabled', color: 'text-yellow-700', border: 'border-yellow-700/20', dot: 'bg-yellow-700' },
   { key: 'loric', label: 'Lorics', color: 'text-green-700', border: 'border-green-700/20', dot: 'bg-green-700' },
 ] as const;
 
 const TEAM_HOVER: Record<string, string> = Object.fromEntries(TEAMS.map(t => [t.key, t.hover]));
 
-export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoricRoles = NO_LORE_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
+export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoricRoles = NO_LORIC_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<AnyRole | null>(null);
   const [sortAlphabetically, setSortAlphabetically] = useState(() => {
@@ -212,7 +212,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return list;
   }, [filteredRoles, sortAlphabetically]);
 
-  const filteredLoreRoles = useMemo(() => {
+  const filteredLoricRoles = useMemo(() => {
     if (!showFabledLorics) return [];
     const term = searchTerm.trim().toLowerCase();
     const list = scriptLoricRoles.filter(role => role.name.toLowerCase().includes(term) || role.team.includes(term));
@@ -220,7 +220,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
     return list;
   }, [scriptLoricRoles, showFabledLorics, searchTerm, sortAlphabetically]);
 
-  const isEmpty = filteredRoles.length === 0 && filteredLoreRoles.length === 0;
+  const isEmpty = filteredRoles.length === 0 && filteredLoricRoles.length === 0;
 
   // Built off effectiveRoles so the traveler and in-play toggles carry over; search matches either side of a pair.
   const jinxes = useMemo(() => {
@@ -476,9 +476,9 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}
-            {LORE_TEAMS.map(({ key, label, color, border, dot }) => {
-              const loreRoles = filteredLoreRoles.filter(role => role.team === key);
-              if (loreRoles.length === 0) return null;
+            {LORIC_TEAMS.map(({ key, label, color, border, dot }) => {
+              const loricRoles = filteredLoricRoles.filter(role => role.team === key);
+              if (loricRoles.length === 0) return null;
               return (
                 <div key={key} id={`script-${key}-section`} className="space-y-2">
                   <h4 className={cn(
@@ -486,10 +486,10 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                     color, border
                   )}>
                     <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
-                    {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({loreRoles.length})</span>
+                    {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({loricRoles.length})</span>
                   </h4>
                   <div className={roleLayoutClass}>
-                    {loreRoles.map(renderRoleCard)}
+                    {loricRoles.map(renderRoleCard)}
                   </div>
                 </div>
               );

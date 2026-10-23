@@ -974,18 +974,18 @@ describe('Storyteller Device Sync', () => {
     vi.clearAllMocks();
   });
 
-  it('syncs script lore and custom Bootlegger rules to the secondary device', async () => {
+  it('syncs script Fabled and Lorics and custom Bootlegger rules to the secondary device', async () => {
     seedPrimary();
     const saved = JSON.parse(localStorage.getItem('standard-botc-game')!);
-    const lore = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
-    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoricRoles: lore }));
+    const loricRoles = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
+    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoricRoles: loricRoles }));
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     const { primary, secondary } = await renderSyncedPair();
-    expect(lastSyncState()?.scriptLoricRoles).toEqual(lore);
+    expect(lastSyncState()?.scriptLoricRoles).toEqual(loricRoles);
     fireEvent.click(secondary.container.querySelector('#game-script-button')!);
     const section = within(document.getElementById('script-loric-section')!);
     fireEvent.click(section.getByText('Bootlegger'));
-    expect(within(document.getElementById('script-character-details-modal')!).getByText(lore[0].ability)).toBeInTheDocument();
+    expect(within(document.getElementById('script-character-details-modal')!).getByText(loricRoles[0].ability)).toBeInTheDocument();
     primary.unmount();
     secondary.unmount();
   });

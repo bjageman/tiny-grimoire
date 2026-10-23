@@ -16,13 +16,13 @@ function setup() {
   return { args, ...renderHook(() => useScriptUpload(args)) };
 }
 
-describe('useScriptUpload lore', () => {
-  it('preserves JSON lore and custom Bootlegger rules separately from playable roles', async () => {
+describe('useScriptUpload Fabled and Lorics', () => {
+  it('preserves JSON Fabled and Lorics and custom Bootlegger rules separately from playable roles', async () => {
     const { args, result } = setup();
     const file = new File([JSON.stringify([
-      { id: '_meta', name: 'Lore Script', bootlegger: ['A custom rule.'] },
+      { id: '_meta', name: 'Loric Script', bootlegger: ['A custom rule.'] },
       'chef', 'angel', 'bootlegger',
-    ])], 'lore.json', { type: 'application/json' });
+    ])], 'loric.json', { type: 'application/json' });
     act(() => result.current.handleScriptUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>));
     await waitFor(() => expect(args.setScriptLoricRoles).toHaveBeenCalledWith([
       expect.objectContaining({ id: 'angel', team: 'fabled' }),
@@ -32,14 +32,14 @@ describe('useScriptUpload lore', () => {
     expect(args.showAlert).not.toHaveBeenCalled();
   });
 
-  it('replaces lore with an empty list when uploading a script without it', async () => {
+  it('replaces Fabled and Lorics with an empty list when uploading a script without it', async () => {
     const { args, result } = setup();
     const file = new File([JSON.stringify(['chef'])], 'plain.json', { type: 'application/json' });
     act(() => result.current.handleScriptUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>));
     await waitFor(() => expect(args.setScriptLoricRoles).toHaveBeenCalledWith([]));
   });
 
-  it('clears script lore when selecting a preset or clearing the script', () => {
+  it('clears script Fabled and Lorics when selecting a preset or clearing the script', () => {
     const { args, result } = setup();
     act(() => result.current.selectPresetScript(PRESET_SCRIPTS[0]));
     expect(args.setScriptLoricRoles).toHaveBeenLastCalledWith([]);

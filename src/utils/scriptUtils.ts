@@ -1,4 +1,4 @@
-import type { AnyRole, LoreRole, Player, Role } from '../types';
+import type { AnyRole, LoricRole, Player, Role } from '../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
 
 /** Comparator ordering roles by their position in `baseRoles` (the active script), unrecognized roles last. */
@@ -72,7 +72,7 @@ export interface ParsedScript {
   name: string;
   author: string;
   roles: Role[];
-  loreRoles: LoreRole[];
+  loricRoles: LoricRole[];
   unknownRoles: { id: string; name: string }[];
 }
 
@@ -175,15 +175,15 @@ export function parseScriptJson(parsed: unknown, fallbackName: string): ParsedSc
     });
 
   const roles = parsedRoles.filter((role): role is Role => role.team !== 'fabled' && role.team !== 'loric');
-  const loreRoles = [...new Map(parsedRoles
-    .filter((role): role is LoreRole => role.team === 'fabled' || role.team === 'loric')
+  const loricRoles = [...new Map(parsedRoles
+    .filter((role): role is LoricRole => role.team === 'fabled' || role.team === 'loric')
     .map(role => [role.id, role])).values()];
 
   if (roles.length === 0) {
     throw new Error('No valid roles found in the uploaded script.');
   }
 
-  return { name, author, roles, loreRoles, unknownRoles };
+  return { name, author, roles, loricRoles, unknownRoles };
 }
 
 export function parseScriptFile(file: File): Promise<ParsedScript> {

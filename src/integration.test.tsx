@@ -20,15 +20,18 @@ function enableSetupModifiers(container: HTMLElement) {
   fireEvent.click(view.getByRole('button', { name: /setup modifiers/i }));
   fireEvent.click(view.getByRole('button', { name: '+1' }));
   fireEvent.click(view.getByLabelText(/Pope/));
+  fireEvent.click(view.getByLabelText(/Tor/));
   expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'true');
   expect(view.getByLabelText(/Pope/)).toBeChecked();
+  expect(view.getByLabelText(/Tor/)).toBeChecked();
 }
 
-function expectSetupModifiersReset(container: HTMLElement) {
+function expectResetPreservesPopeAndTor(container: HTMLElement) {
   const view = within(container);
   expect(view.getByRole('button', { name: '0' })).toHaveAttribute('aria-pressed', 'true');
   expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'false');
-  expect(view.getByLabelText(/Pope/)).not.toBeChecked();
+  expect(view.getByLabelText(/Pope/)).toBeChecked();
+  expect(view.getByLabelText(/Tor/)).toBeChecked();
 }
 
 // Mock useGameSocket to route messages between components sharing the same game code
@@ -190,7 +193,7 @@ describe('Storyteller Reset Integration', () => {
     unmountJoinPage();
   });
 
-  it('resets all Standard setup modifiers', async () => {
+  it('resets Sentinel but preserves Pope and Tor in Standard mode', async () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
     enableSetupModifiers(storyteller.container);
@@ -201,11 +204,11 @@ describe('Storyteller Reset Integration', () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
     });
 
-    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    await waitFor(() => expectResetPreservesPopeAndTor(storyteller.container));
     storyteller.unmount();
   });
 
-  it('resets all Whale Bucket setup modifiers', async () => {
+  it('resets Sentinel but preserves Pope and Tor in Whale Bucket mode', async () => {
     window.location.hash = '#/whale-bucket';
     const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
     const pageTitle = storyteller.container.querySelector('#whale-bucket-page-title')!;
@@ -219,7 +222,7 @@ describe('Storyteller Reset Integration', () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
     });
 
-    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    await waitFor(() => expectResetPreservesPopeAndTor(storyteller.container));
     storyteller.unmount();
   });
 

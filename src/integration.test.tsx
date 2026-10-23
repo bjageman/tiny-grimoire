@@ -1432,14 +1432,14 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('Whale Bucket: reveals Atheist when random assignment activates Atheist mode', async () => {
+  it.each([true, false])('Whale Bucket: reveals Atheist only when picked (picked: %s)', async (picked) => {
     const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
     localStorage.setItem('whale-bucket-game', JSON.stringify({
       players: Array.from({ length: 5 }, (_, index) => ({
         id: `p${index + 1}`,
         name: `Player ${index + 1}`,
         isDead: false,
-        preferences,
+        preferences: { ...preferences, demon: picked && index === 0 ? ['atheist'] : [] },
       })),
       phase: 'draft',
     }));
@@ -1449,7 +1449,9 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     fireEvent.click(storyteller.container.querySelector('#reassign-characters-button')!);
 
-    expect(storyteller.container.querySelector('img[alt="Atheist"]')).toBeInTheDocument();
+    const atheist = storyteller.container.querySelector('img[alt="Atheist"]');
+    if (picked) expect(atheist).toBeInTheDocument();
+    else expect(atheist).not.toBeInTheDocument();
     randomSpy.mockRestore();
     storyteller.unmount();
   });

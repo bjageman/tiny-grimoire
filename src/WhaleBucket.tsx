@@ -165,8 +165,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
-    setPopeEnabled(false);
-    setTorEnabled(false);
   };
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -702,7 +700,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
-    setTorEnabled(false);
     setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});

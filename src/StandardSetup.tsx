@@ -129,8 +129,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
-    setPopeEnabled(false);
-    setTorEnabled(false);
   };
 
   // timeOfDay/dayNumber refs so log callbacks always see current values without stale closures
@@ -191,7 +189,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
-    setTorEnabled(false);
     setDemonBluffs([]);
     setGameLog([]);
     setGameNotes('');

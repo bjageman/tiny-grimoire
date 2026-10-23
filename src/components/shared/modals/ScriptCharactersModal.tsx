@@ -414,17 +414,6 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                   )}
                   <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
                     <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
-                      All Travelers
-                    </span>
-                    <ToggleSwitch
-                      id="script-show-all-travelers-checkbox"
-                      checked={showAllTravelers}
-                      onChange={handleToggleAllTravelers}
-                      isLightModeActive={isLightModeActive}
-                    />
-                  </label>
-                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
-                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
                       Fabled/Lorics
                     </span>
                     <ToggleSwitch
@@ -442,6 +431,17 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                       id="script-list-jinxes-checkbox"
                       checked={listJinxes}
                       onChange={handleToggleListJinxes}
+                      isLightModeActive={isLightModeActive}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md select-none cursor-pointer hover:bg-gray-500/10">
+                    <span className={cn("text-xs font-semibold", isLightModeActive ? "text-gray-700" : "text-gray-300")}>
+                      All Travelers
+                    </span>
+                    <ToggleSwitch
+                      id="script-show-all-travelers-checkbox"
+                      checked={showAllTravelers}
+                      onChange={handleToggleAllTravelers}
                       isLightModeActive={isLightModeActive}
                     />
                   </label>

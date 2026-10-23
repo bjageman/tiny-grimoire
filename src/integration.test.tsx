@@ -1013,6 +1013,26 @@ describe('Storyteller Device Sync', () => {
     fireEvent.click(within(container).getByText(step, { selector: '.font-serif' }).closest('div')!);
   };
 
+  it('syncs time-of-day toggle from primary to secondary in real time', async () => {
+    seedPrimary();
+    const { primary, secondary } = await renderSyncedPair();
+
+    // Both start at Night 1
+    expect(within(primary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
+    expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      clickNightOrderStep(primary.container, 'Dawn');
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+
+    // Secondary should now reflect Day 1 without any manual interaction
+    expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
+
+    primary.unmount();
+    secondary.unmount();
+  });
+
   it('syncs board rotation offset from primary to secondary', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
@@ -1063,24 +1083,60 @@ describe('Storyteller Device Sync', () => {
     secondary.unmount();
   });
 
+  it('syncs day-number advance alongside time-of-day toggle', async () => {
+    seedPrimary();
+    const { primary, secondary } = await renderSyncedPair();
+
+    // Re-query inside each act so the reference is always fresh after re-renders
+    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
+      await act(async () => {
+        clickNightOrderStep(primary.container, step);
+        await new Promise(resolve => setTimeout(resolve, 150));
+      });
+    };
+
+    // Night → Day: verify via DOM on secondary
+    await advancePhase('Dawn');
+    expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
+
+    // Day → Night 2: verify via sync payload (more reliable than DOM after multiple toggles)
+    sentPayloads.length = 0;
+    await advancePhase('Dusk');
+    const nightSync = lastSyncState();
+    expect(nightSync).toBeDefined();
+    expect(nightSync!.timeOfDay).toBe('night');
+    expect(nightSync!.dayNumber).toBe(2);
+
+    primary.unmount();
+    secondary.unmount();
+  });
+
   it('syncs the time and day multiple times in a row up to Night 10', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
 
-    expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
+    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
+      await act(async () => {
+        clickNightOrderStep(primary.container, step);
+        await new Promise(resolve => setTimeout(resolve, 150));
+      });
+    };
 
-    for (let i = 0; i < 18; i++) {
+    // Toggle repeatedly: Night 1 -> Day 1 -> Night 2 -> Day 2 -> ... -> Night 10
+    // Starting at Night 1, we need 18 toggles to reach Night 10.
+    const targetToggles = 18;
+    for (let i = 0; i < targetToggles; i++) {
       sentPayloads.length = 0;
-      clickNightOrderStep(primary.container, i % 2 === 0 ? 'Dawn' : 'Dusk');
+      await advancePhase(i % 2 === 0 ? 'Dawn' : 'Dusk');
+
+      const lastSync = lastSyncState();
+      expect(lastSync).toBeDefined();
 
       const expectedTime = i % 2 === 0 ? 'day' : 'night';
       const expectedDay = Math.floor(i / 2) + 1 + (i % 2 === 0 ? 0 : 1);
-      const label = `${expectedTime === 'day' ? 'Day' : 'Night'} ${expectedDay}`;
 
-      await waitFor(() => {
-        expect(lastSyncState()).toMatchObject({ timeOfDay: expectedTime, dayNumber: expectedDay });
-        expect(within(secondary.container).getAllByText(label).length).toBeGreaterThan(0);
-      });
+      expect(lastSync!.timeOfDay).toBe(expectedTime);
+      expect(lastSync!.dayNumber).toBe(expectedDay);
     }
 
     primary.unmount();

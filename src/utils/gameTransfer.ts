@@ -9,6 +9,7 @@ interface TransferSource {
   scriptAuthor: string;
   customScriptRoles: Role[] | null;
   scriptLoricRoles?: LoricRole[];
+  torEnabled?: boolean;
 }
 
 function transferPlayers(players: Player[]): Player[] {
@@ -28,6 +29,7 @@ export function buildPlayerTrackerTransfer(source: TransferSource) {
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
     scriptLoricRoles: source.scriptLoricRoles ?? [],
+    torEnabled: source.torEnabled ?? false,
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     gameNotes: '',
@@ -45,6 +47,7 @@ export function buildStandardTransfer(source: TransferSource) {
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
     scriptLoricRoles: source.scriptLoricRoles ?? [],
+    torEnabled: source.torEnabled ?? false,
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     isLilMonstaGame: false,

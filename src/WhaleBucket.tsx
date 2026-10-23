@@ -80,6 +80,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     }));
   });
   const [isLilMonstaGame, setIsLilMonstaGame] = usePersistedField<boolean>(STORAGE_KEY, 'isLilMonstaGame', false);
+  const [torEnabled, setTorEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'torEnabled', false);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
   const [fullNightOrder, setFullNightOrder] = usePersistedField<boolean>(STORAGE_KEY, 'fullNightOrder', false);
@@ -165,6 +166,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const resetSetupModifiers = () => {
     setSentinelOutsiderDelta(0);
     setPopeEnabled(false);
+    setTorEnabled(false);
   };
 
   const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -180,11 +182,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           type: 'setup_update',
           gameType: 'whale-bucket',
           players: listToBroadcast.map(({ notes, ...rest }) => rest),
-          excludedRoleIds
+          excludedRoleIds,
+          torEnabled
         });
       }
     }, 1000);
-  }, [excludedRoleIds]);
+  }, [excludedRoleIds, torEnabled]);
 
   // Preference modal states
   const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
@@ -252,7 +255,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           gameType: 'whale-bucket',
           playerId: payload.id,
           playerName: payload.name,
-          excludedRoleIds
+          excludedRoleIds,
+          torEnabled
         });
       }
 
@@ -339,7 +343,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           type: 'game_update',
           players: players.map(({ notes, ...rest }) => rest),
           timeOfDay,
-          dayNumber
+          dayNumber,
+          torEnabled
         });
       }
     }
@@ -358,10 +363,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         type: 'game_update',
         players: players.map(({ notes, ...rest }) => rest),
         timeOfDay,
-        dayNumber
+        dayNumber,
+        torEnabled
       });
     }
-  }, [phase, players, timeOfDay, dayNumber, sendMessage, isSecondary]);
+  }, [phase, players, timeOfDay, dayNumber, torEnabled, sendMessage, isSecondary]);
 
   // Broadcast player list to players during setup or draft phases
   useEffect(() => {
@@ -381,6 +387,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     dayNumber,
     allowTravelers,
     isLilMonstaGame,
+    torEnabled,
     excludedRoleIds,
     demonBluffs,
     reminderTokens,
@@ -389,7 +396,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     sentinelOutsiderDelta,
     popeEnabled,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -403,6 +410,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setDayNumber(incoming.dayNumber || 1);
       setAllowTravelers(incoming.allowTravelers ?? false);
       setIsLilMonstaGame(incoming.isLilMonstaGame || false);
+      setTorEnabled(incoming.torEnabled || false);
       setExcludedRoleIds(incoming.excludedRoleIds || DEFAULT_EXCLUDED_ROLE_IDS);
       setDemonBluffs(incoming.demonBluffs || []);
       setReminderTokens(incoming.reminderTokens || []);
@@ -412,7 +420,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setPopeEnabled(incoming.popeEnabled ?? false);
     }
   }, [
-    syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame,
+    syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame, setTorEnabled,
     setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled
   ]);
 
@@ -433,6 +441,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       dayNumber,
       allowTravelers,
       isLilMonstaGame,
+      torEnabled,
       excludedRoleIds,
       excludedRoleDefaultsVersion: EXCLUDED_ROLE_DEFAULTS_VERSION,
       gameLog,
@@ -447,7 +456,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       sentinelOutsiderDelta,
       popeEnabled,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
+  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -693,6 +702,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setTimeOfDay('night');
     setDayNumber(1);
     setIsLilMonstaGame(false);
+    setTorEnabled(false);
     setGameNotes('');
     setReminderTokens([]);
     setCheckedItems({});
@@ -752,6 +762,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
         gameType: 'whale-bucket',
         players: clearedPlayers.map(({ notes, ...rest }) => rest),
         excludedRoleIds,
+        torEnabled: false,
       });
     }
   };
@@ -931,6 +942,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           remotePlayerIds={remotePlayerIds}
         />
       )}
@@ -943,6 +956,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           isLightModeActive={isLightModeActive}
           onStartGame={handleStartGame}
           runAssignment={runAssignment}

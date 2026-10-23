@@ -8,6 +8,8 @@ interface GameSetupModsProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled?: boolean;
+  setTorEnabled?: (enabled: boolean) => void;
   isLightModeActive?: boolean;
   persistenceKey?: string;
 }
@@ -23,13 +25,15 @@ export default function GameSetupMods({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled = false,
+  setTorEnabled = () => {},
   isLightModeActive = false,
   persistenceKey,
 }: GameSetupModsProps) {
   const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
-  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
+  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0) + (torEnabled ? 1 : 0);
 
   return (
     <div
@@ -140,6 +144,16 @@ export default function GameSetupMods({
               isLightModeActive={isLightModeActive}
               icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
             />
+          </label>
+          <label htmlFor="tor-mode-checkbox" className={cn(
+            "flex items-center justify-between gap-3 border-t mt-2.5 pt-2.5 cursor-pointer",
+            isLightModeActive ? "border-gray-200" : "border-gray-800"
+          )}>
+            <div>
+              <div className={cn("text-[11px] font-bold", isLightModeActive ? "text-gray-800" : "text-gray-200")}>Tor</div>
+              <div className="text-[9px] text-gray-500 leading-tight">Synced players see Tor until death reveals their character and alignment</div>
+            </div>
+            <ToggleSwitch id="tor-mode-checkbox" checked={torEnabled} onChange={setTorEnabled} isLightModeActive={isLightModeActive} />
           </label>
         </div>
       )}

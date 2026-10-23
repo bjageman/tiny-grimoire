@@ -732,6 +732,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
     setCustomScriptRoles, setScriptLoricRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+    setPopeEnabled, setTorEnabled,
   });
 
   const confirmDisconnect = useCallback(() => {

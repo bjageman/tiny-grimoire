@@ -8,13 +8,15 @@ interface UseScriptUploadArgs {
   setCustomScriptRoles: (roles: Role[] | null) => void;
   setScriptName: (name: string) => void;
   setScriptAuthor: (author: string) => void;
+  setPopeEnabled?: (enabled: boolean) => void;
+  setTorEnabled?: (enabled: boolean) => void;
   showAlert: (message: string) => void;
   fileInputRef: RefObject<HTMLInputElement | null>;
 }
 
 // Parse an uploaded custom-script file into the current script, or clear back to the default set.
 // Shared by StandardSetup and PlayerTracker.
-export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef }: UseScriptUploadArgs) {
+export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, setScriptName, setScriptAuthor, setPopeEnabled, setTorEnabled, showAlert, fileInputRef }: UseScriptUploadArgs) {
   const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -22,6 +24,8 @@ export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, set
       .then(({ name, author, roles, loricRoles, unknownRoles }) => {
         setCustomScriptRoles(roles);
         setScriptLoricRoles(loricRoles);
+        setPopeEnabled?.(loricRoles.some(role => role.id === 'pope'));
+        setTorEnabled?.(loricRoles.some(role => role.id === 'tor'));
         setScriptName(name);
         setScriptAuthor(author);
         if (unknownRoles.length > 0) {
@@ -36,6 +40,8 @@ export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, set
   const selectPresetScript = (preset: PresetScript) => {
     setCustomScriptRoles(preset.roles);
     setScriptLoricRoles(preset.loricRoles ?? []);
+    setPopeEnabled?.((preset.loricRoles ?? []).some(role => role.id === 'pope'));
+    setTorEnabled?.((preset.loricRoles ?? []).some(role => role.id === 'tor'));
     setScriptName(preset.name);
     setScriptAuthor(preset.author);
     if (fileInputRef.current) {
@@ -46,6 +52,8 @@ export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, set
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
     setScriptLoricRoles([]);
+    setPopeEnabled?.(false);
+    setTorEnabled?.(false);
     setScriptName('All Roles');
     setScriptAuthor('');
     if (fileInputRef.current) {

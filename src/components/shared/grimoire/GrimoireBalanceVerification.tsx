@@ -14,7 +14,7 @@ export default function GrimoireBalanceVerification({
   isLightModeActive = false,
   persistenceKey,
 }: GrimoireBalanceVerificationProps) {
-  const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
+  const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey, true);
   const hasFailures = validationSummary.failures && validationSummary.failures.length > 0;
   const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
 

@@ -1,9 +1,10 @@
 import type { RefObject } from 'react';
 import { parseScriptFile } from '../utils/scriptUtils';
 import type { PresetScript } from '../utils/presetScripts';
-import type { Role } from '../types';
+import type { LoricRole, Role } from '../types';
 
 interface UseScriptUploadArgs {
+  setScriptLoricRoles: (roles: LoricRole[]) => void;
   setCustomScriptRoles: (roles: Role[] | null) => void;
   setScriptName: (name: string) => void;
   setScriptAuthor: (author: string) => void;
@@ -13,13 +14,14 @@ interface UseScriptUploadArgs {
 
 // Parse an uploaded custom-script file into the current script, or clear back to the default set.
 // Shared by StandardSetup and PlayerTracker.
-export function useScriptUpload({ setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef }: UseScriptUploadArgs) {
+export function useScriptUpload({ setScriptLoricRoles, setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef }: UseScriptUploadArgs) {
   const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     parseScriptFile(file)
-      .then(({ name, author, roles, unknownRoles }) => {
+      .then(({ name, author, roles, loricRoles, unknownRoles }) => {
         setCustomScriptRoles(roles);
+        setScriptLoricRoles(loricRoles);
         setScriptName(name);
         setScriptAuthor(author);
         if (unknownRoles.length > 0) {
@@ -33,6 +35,7 @@ export function useScriptUpload({ setCustomScriptRoles, setScriptName, setScript
   // Load a built-in base script. Clears any file selection so re-uploading the same file still fires a change event.
   const selectPresetScript = (preset: PresetScript) => {
     setCustomScriptRoles(preset.roles);
+    setScriptLoricRoles(preset.loricRoles ?? []);
     setScriptName(preset.name);
     setScriptAuthor(preset.author);
     if (fileInputRef.current) {
@@ -42,6 +45,7 @@ export function useScriptUpload({ setCustomScriptRoles, setScriptName, setScript
 
   const clearCustomScript = () => {
     setCustomScriptRoles(null);
+    setScriptLoricRoles([]);
     setScriptName('All Roles');
     setScriptAuthor('');
     if (fileInputRef.current) {

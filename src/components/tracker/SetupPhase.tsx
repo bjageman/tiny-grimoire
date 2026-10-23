@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Upload } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import type { Player, Role } from '../../types';
+import type { LoricRole, Player, Role } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import PlayerTrackerCircle from './PlayerCircle';
@@ -13,6 +13,7 @@ import type { PresetScript } from '../../utils/presetScripts';
 interface PlayerTrackerSetupPhaseProps {
   players: Player[];
   customScriptRoles: Role[] | null;
+  scriptLoricRoles?: LoricRole[];
   scriptName: string;
   scriptAuthor: string;
   newPlayerName: string;
@@ -44,6 +45,7 @@ interface PlayerTrackerSetupPhaseProps {
 export default function PlayerTrackerSetupPhase({
   players,
   customScriptRoles,
+  scriptLoricRoles,
   scriptName,
   scriptAuthor,
   newPlayerName,
@@ -106,7 +108,7 @@ export default function PlayerTrackerSetupPhase({
               )}>
                 {customScriptRoles ? "📜" : "🌐"} {scriptName}
               </span>
-              <span className="text-[10px] text-gray-500 font-medium">
+              <span className={cn("text-[10px] font-medium", isLightModeActive ? "text-black" : "text-white")}>
                 {scriptAuthor ? `by ${scriptAuthor} — Synced from Storyteller` : customScriptRoles ? "Custom script — Synced from Storyteller" : "Active Script (Synced from Storyteller)"}
               </span>
             </div>
@@ -132,7 +134,7 @@ export default function PlayerTrackerSetupPhase({
                   )}>
                     {customScriptRoles ? "📜" : "🌐"} {scriptName}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                  <span className={cn("text-[10px] font-medium flex items-center gap-1", isLightModeActive ? "text-black" : "text-white")}>
                     <Upload size={12} />
                     {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Upload Script (.json)"}
                   </span>
@@ -161,8 +163,8 @@ export default function PlayerTrackerSetupPhase({
                   className={cn(
                     "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
                     isLightModeActive
-                      ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                      : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                      ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
+                      : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
                   )}
                 >
                   Select a Preset Script
@@ -177,8 +179,8 @@ export default function PlayerTrackerSetupPhase({
             className={cn(
               "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
               isLightModeActive
-                ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
+                : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
             )}
           >
             {customScriptRoles ? 'View Script' : 'View All Roles'}
@@ -298,6 +300,7 @@ export default function PlayerTrackerSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptLoricRoles={scriptLoricRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
     />

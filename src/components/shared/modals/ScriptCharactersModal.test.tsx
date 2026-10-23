@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ScriptCharactersModal from './ScriptCharactersModal';
+import { ALL_ROLES } from '../../../utils/roleData';
+import { parseScriptJson } from '../../../utils/scriptUtils';
 import type { Player, Role } from '../../../types';
 
 const roles: Role[] = [
@@ -21,8 +23,10 @@ const baseProps = {
 const MAYOR_JINX = /no execution occurs, good wins/;
 const MONK_JINX = /executes the Monk-protected player/;
 
-const enableJinxes = () => {
-  fireEvent.click(screen.getByLabelText('View settings'));
+const toggleJinxes = () => {
+  if (screen.getByLabelText('View settings').getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(screen.getByLabelText('View settings'));
+  }
   fireEvent.click(document.getElementById('script-list-jinxes-checkbox')!);
 };
 
@@ -32,16 +36,17 @@ describe('ScriptCharactersModal jinxes', () => {
     localStorage.clear();
   });
 
-  it('lists no jinxes until the setting is switched on', () => {
+  it('lists jinxes by default and lets the setting hide them', () => {
     render(<ScriptCharactersModal {...baseProps} />);
+    expect(document.getElementById('script-jinxes-section')).toBeInTheDocument();
+    toggleJinxes();
     expect(document.getElementById('script-jinxes-section')).toBeNull();
-    enableJinxes();
+    toggleJinxes();
     expect(document.getElementById('script-jinxes-section')).toBeInTheDocument();
   });
 
   it('shows only the jinxes whose characters are both on the script', () => {
     render(<ScriptCharactersModal {...baseProps} />);
-    enableJinxes();
     expect(screen.getByText(MAYOR_JINX)).toBeInTheDocument();
     expect(screen.getByText(MONK_JINX)).toBeInTheDocument();
     expect(screen.queryByText(/executes the Soldier/)).toBeNull();
@@ -49,13 +54,11 @@ describe('ScriptCharactersModal jinxes', () => {
 
   it('leaves the section out for a script with no jinxes', () => {
     render(<ScriptCharactersModal {...baseProps} roles={[{ id: 'chef', name: 'Chef', team: 'townsfolk' }]} />);
-    enableJinxes();
     expect(document.getElementById('script-jinxes-section')).toBeNull();
   });
 
   it('remembers the setting across mounts', () => {
     const { unmount } = render(<ScriptCharactersModal {...baseProps} />);
-    enableJinxes();
     unmount();
     render(<ScriptCharactersModal {...baseProps} />);
     expect(document.getElementById('script-jinxes-section')).toBeInTheDocument();
@@ -63,7 +66,6 @@ describe('ScriptCharactersModal jinxes', () => {
 
   it('narrows jinxes to those naming a searched character', () => {
     render(<ScriptCharactersModal {...baseProps} />);
-    enableJinxes();
     fireEvent.change(screen.getByPlaceholderText('Search by name or type'), { target: { value: 'monk' } });
     expect(screen.getByText(MONK_JINX)).toBeInTheDocument();
     expect(screen.queryByText(MAYOR_JINX)).toBeNull();
@@ -76,7 +78,7 @@ describe('ScriptCharactersModal jinxes', () => {
       { id: 'p3', name: 'Cara', roleId: 'chef', isDead: false },
     ];
     render(<ScriptCharactersModal {...baseProps} isStoryteller players={players} />);
-    enableJinxes();
+    fireEvent.click(screen.getByLabelText('View settings'));
     fireEvent.click(document.getElementById('script-in-play-only-checkbox')!);
     expect(screen.getByText(MAYOR_JINX)).toBeInTheDocument();
     expect(screen.queryByText(MONK_JINX)).toBeNull();
@@ -103,7 +105,7 @@ describe('ScriptCharactersModal role ordering', () => {
 
     expect(townsfolkColumns).toHaveClass('columns-2');
     expect(townsfolkColumns).toHaveTextContent('MayorMonkChef');
-    expect(screen.getByText('Mayor').closest('button')).toHaveClass('break-inside-avoid');
+    expect(within(townsfolkColumns).getByText('Mayor').closest('button')).toHaveClass('break-inside-avoid');
   });
 
   it('uses the same column flow when characters are not grouped by type', () => {
@@ -124,6 +126,116 @@ describe('ScriptCharactersModal role ordering', () => {
 
     expect(townsfolkGrid).toHaveClass('grid', 'sm:grid-cols-1');
     expect(townsfolkGrid).not.toHaveClass('sm:columns-2');
-    expect(screen.getByText('Mayor').closest('button')).not.toHaveClass('break-inside-avoid');
+    expect(within(townsfolkGrid).getByText('Mayor').closest('button')).not.toHaveClass('break-inside-avoid');
+  });
+});
+
+describe('ScriptCharactersModal Fabled and Lorics', () => {
+  const loricRoles = parseScriptJson(['chef', 'angel', 'bigwig', 'bootlegger'], 'Test').loricRoles;
+  const loricProps = { ...baseProps, scriptLoricRoles: loricRoles };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  const toggleLoric = () => {
+    if (screen.getByLabelText('View settings').getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(screen.getByLabelText('View settings'));
+    }
+    fireEvent.click(document.getElementById('script-show-fabled-lorics-checkbox')!);
+  };
+
+  it('shows only script Fabled and Lorics by default and remembers the setting', () => {
+    const { unmount } = render(<ScriptCharactersModal {...loricProps} />);
+    for (const role of loricRoles) {
+      expect(screen.getByText(role.name).closest('button')).toBeInTheDocument();
+    }
+    expect(screen.queryByText('Buddhist')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gardener')).not.toBeInTheDocument();
+    expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBeNull();
+    toggleLoric();
+    expect(screen.queryByText('Angel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bootlegger')).not.toBeInTheDocument();
+    expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBe('false');
+    unmount();
+    render(<ScriptCharactersModal {...loricProps} />);
+    expect(screen.queryByText('Angel')).not.toBeInTheDocument();
+    toggleLoric();
+    expect(screen.getByText('Angel')).toBeInTheDocument();
+    expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBe('true');
+  });
+
+  it('shows no Fabled & Lorics category for a script without them even when enabled', () => {
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    render(<ScriptCharactersModal {...baseProps} />);
+    expect(document.getElementById('script-fabled-lorics-section')).not.toBeInTheDocument();
+  });
+
+  it('never lists Djinn in the script viewer', () => {
+    const script = parseScriptJson(['djinn', 'angel', 'chef'], 'Test');
+    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loricRoles} />);
+    expect(screen.queryByText('Djinn')).not.toBeInTheDocument();
+    expect(screen.getByText('Angel')).toBeInTheDocument();
+  });
+
+  it('displays the script author’s Bootlegger rules in the list and details', () => {
+    const customRules = 'Players may nominate twice per day.';
+    const script = parseScriptJson([{ id: '_meta', name: 'Rules', bootlegger: [customRules] }, 'chef', 'bootlegger'], 'Rules');
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    localStorage.setItem('botc-script-show-detail', 'true');
+    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loricRoles} />);
+    expect(document.getElementById('script-fabled-lorics-section')).toHaveTextContent(customRules);
+    fireEvent.click(screen.getByText('Bootlegger'));
+    expect(within(document.getElementById('script-character-details-modal')!).getByText(customRules)).toBeInTheDocument();
+  });
+
+  it.each([true, false])('places Fabled and Lorics between Travelers and Jinxes (grouped: %s)', (grouped) => {
+    localStorage.setItem('botc-script-group-by-type', String(grouped));
+    localStorage.setItem('botc-script-list-jinxes', 'true');
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    render(<ScriptCharactersModal {...loricProps} roles={[...roles, { id: 'beggar', name: 'Beggar', team: 'traveler' }]} />);
+    const traveler = screen.getByText('Beggar');
+    const category = document.getElementById('script-fabled-lorics-section')!;
+    const jinxes = document.getElementById('script-jinxes-section')!;
+    expect(traveler.compareDocumentPosition(category) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(category.compareDocumentPosition(jinxes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(category).getByText('Fabled')).toBeInTheDocument();
+    expect(within(category).getByText('Lorics')).toBeInTheDocument();
+  });
+
+  it('searches Fabled and Lorics by name and type without incorrectly showing the empty state', () => {
+    render(<ScriptCharactersModal {...loricProps} />);
+    const search = screen.getByPlaceholderText('Search by name or type');
+    fireEvent.change(search, { target: { value: 'angel' } });
+    expect(screen.getByText('Angel')).toBeInTheDocument();
+    expect(screen.queryByText('Bootlegger')).not.toBeInTheDocument();
+    expect(screen.queryByText('No matching characters found.')).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'loric' } });
+    expect(screen.getByText('Bootlegger')).toBeInTheDocument();
+    expect(document.getElementById('script-fabled-lorics-section')).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'no such character' } });
+    expect(screen.getByText('No matching characters found.')).toBeInTheDocument();
+  });
+
+  it('sorts Fabled and Lorics alphabetically and keeps them visible with the in-play filter', () => {
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    localStorage.setItem('botc-sort-alphabetically', 'true');
+    localStorage.setItem('botc-script-in-play-only', 'true');
+    render(<ScriptCharactersModal {...loricProps} isStoryteller players={[]} />);
+    const category = within(document.getElementById('script-fabled-lorics-section')!);
+    const names = category.getAllByRole('button').map(button => within(button).getByText(/.+/).textContent!);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+    expect(category.getByText('Bootlegger')).toBeInTheDocument();
+    expect(screen.queryByText('No matching characters found.')).not.toBeInTheDocument();
+  });
+
+  it.each(['Angel', 'Bootlegger'])('opens ability details for %s', (name) => {
+    render(<ScriptCharactersModal {...loricProps} />);
+    fireEvent.click(screen.getByText(name));
+    const details = within(document.getElementById('script-character-details-modal')!);
+    const role = ALL_ROLES.find(role => role.name === name)!;
+    expect(details.getByText(role.ability!)).toBeInTheDocument();
+    expect(details.getByText(role.team, { selector: 'span' })).toBeInTheDocument();
   });
 });

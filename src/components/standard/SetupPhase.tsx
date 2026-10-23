@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Dices, Upload, AlertTriangle, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
-import type { Player, Role } from '../../types';
+import type { LoricRole, Player, Role } from '../../types';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { sortByScriptOrder, withInPlayTravelers } from '../../utils/scriptUtils';
 import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
@@ -20,6 +20,7 @@ interface StandardSetupPhaseProps {
   rotationOffset?: number;
   onRotationChange?: (offset: number) => void;
   customScriptRoles: Role[] | null;
+  scriptLoricRoles?: LoricRole[];
   scriptName: string;
   scriptAuthor: string;
   selectedCharacterIds: Set<string>;
@@ -72,6 +73,7 @@ export default function StandardSetupPhase({
   rotationOffset,
   onRotationChange,
   customScriptRoles,
+  scriptLoricRoles,
   scriptName,
   scriptAuthor,
   selectedCharacterIds,
@@ -195,7 +197,7 @@ export default function StandardSetupPhase({
               )}>
                 📜 {scriptName}
               </span>
-              <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+              <span className={cn("text-[10px] font-medium flex items-center gap-1", isLightModeActive ? "text-black" : "text-white")}>
                 <Upload size={12} />
                 {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Click to upload .json"}
               </span>
@@ -223,8 +225,8 @@ export default function StandardSetupPhase({
               className={cn(
                 "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
                 isLightModeActive
-                  ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                  : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                  ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
+                  : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
               )}
             >
               Select a Preset Script
@@ -237,8 +239,8 @@ export default function StandardSetupPhase({
             className={cn(
               "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
               isLightModeActive
-                ? "hover:bg-gray-200/50 border-gray-300 text-gray-600 hover:text-gray-900"
-                : "hover:bg-gray-800 border-gray-800 text-gray-500 hover:text-gray-400"
+                ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
+                : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
             )}
           >
             {customScriptRoles ? 'View Script' : 'View All Roles'}
@@ -462,6 +464,7 @@ export default function StandardSetupPhase({
       onClose={() => setIsScriptModalOpen(false)}
       scriptName={scriptName}
       roles={sortedRoles}
+      scriptLoricRoles={scriptLoricRoles}
       scriptAuthor={scriptAuthor || undefined}
       isLightModeActive={isLightModeActive}
       isStoryteller

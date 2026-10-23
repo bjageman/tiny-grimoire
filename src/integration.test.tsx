@@ -725,7 +725,12 @@ describe('Standard and Game Notes transfers', () => {
     vi.clearAllMocks();
   });
 
-  it('transfers Standard player identities and script into the Game Notes grimoire', async () => {
+  const loricRoles = [
+    { id: 'angel', name: 'Angel', team: 'fabled' },
+    { id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A transferred custom rule.' },
+  ];
+
+  it.each(['scriptLoricRoles', 'scriptLoreRoles'])('transfers Standard identities and script into Game Notes from %s storage', async (field) => {
     localStorage.setItem('standard-botc-game', JSON.stringify({
       players: [{
         id: 'alice-id',
@@ -738,6 +743,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Transfer Script',
       scriptAuthor: 'Author',
+      [field]: loricRoles,
       customScriptRoles: [{ id: 'custom-role', name: 'Custom Role', team: 'townsfolk' }],
       dayNumber: 4,
       timeOfDay: 'day',
@@ -757,6 +763,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Transfer Script',
       scriptAuthor: 'Author',
+      scriptLoricRoles: loricRoles,
       dayNumber: 1,
       timeOfDay: 'night',
     });
@@ -766,7 +773,7 @@ describe('Standard and Game Notes transfers', () => {
     storyteller.unmount();
   });
 
-  it('confirms replacement and transfers Game Notes into a fresh Standard setup', () => {
+  it.each(['scriptLoricRoles', 'scriptLoreRoles'])('transfers Game Notes into Standard from %s storage', (field) => {
     localStorage.setItem('player-tracker-botc-game', JSON.stringify({
       players: [{
         id: 'avery-id',
@@ -779,6 +786,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Notes Script',
       scriptAuthor: 'Another Author',
+      [field]: loricRoles,
       customScriptRoles: null,
       gameNotes: 'Do not copy this',
       dayNumber: 3,
@@ -809,6 +817,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'setup',
       scriptName: 'Notes Script',
       scriptAuthor: 'Another Author',
+      scriptLoricRoles: loricRoles,
       dayNumber: 1,
       timeOfDay: 'night',
     });
@@ -972,6 +981,22 @@ describe('Storyteller Device Sync', () => {
     activeSubscriptions.length = 0;
     sentPayloads.length = 0;
     vi.clearAllMocks();
+  });
+
+  it('syncs script Fabled and Lorics and custom Bootlegger rules to the secondary device', async () => {
+    seedPrimary();
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game')!);
+    const loricRoles = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
+    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoricRoles: loricRoles }));
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    const { primary, secondary } = await renderSyncedPair();
+    expect(lastSyncState()?.scriptLoricRoles).toEqual(loricRoles);
+    fireEvent.click(secondary.container.querySelector('#game-script-button')!);
+    const section = within(document.getElementById('script-fabled-lorics-section')!);
+    fireEvent.click(section.getByText('Bootlegger'));
+    expect(within(document.getElementById('script-character-details-modal')!).getByText(loricRoles[0].ability)).toBeInTheDocument();
+    primary.unmount();
+    secondary.unmount();
   });
 
   it('transfers all 10 reminder tokens to the secondary on initial sync', async () => {

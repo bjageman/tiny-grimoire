@@ -162,14 +162,14 @@ describe('GamePhase - Script Modal Integration', () => {
     const modalContainer = screen.getByPlaceholderText('Search by name or type').closest('.max-w-2xl') as HTMLElement;
     const modal = within(modalContainer);
 
-    expect(modal.getByText(/Townsfolk/i)).toBeInTheDocument();
+    expect(modal.getByRole('heading', { name: /Townsfolk/i })).toBeInTheDocument();
     expect(modal.getByText('Washerwoman')).toBeInTheDocument();
 
-    expect(modal.getByText(/Minions/i)).toBeInTheDocument();
+    expect(modal.getByRole('heading', { name: /Minions/i })).toBeInTheDocument();
     expect(modal.getByText('Poisoner')).toBeInTheDocument();
 
-    expect(modal.getByText(/Demons/i)).toBeInTheDocument();
-    expect(modal.getByText(/Outsiders/i)).toBeInTheDocument();
+    expect(modal.getByRole('heading', { name: /Demons/i })).toBeInTheDocument();
+    expect(modal.getByRole('heading', { name: /Outsiders/i })).toBeInTheDocument();
   });
 
   it('opens character details modal when character is clicked', () => {

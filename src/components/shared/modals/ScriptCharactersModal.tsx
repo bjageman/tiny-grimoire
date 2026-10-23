@@ -424,14 +424,14 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                     <h4 className={cn("text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5", color, border)}>
                       {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({teamRoles.length})</span>
                     </h4>
-                    <div className={roleLayoutClass} data-testid="script-role-layout">
+                    <div className={roleLayoutClass}>
                       {teamRoles.map(renderRoleCard)}
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className={roleLayoutClass} data-testid="script-role-layout">
+              <div className={roleLayoutClass}>
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}

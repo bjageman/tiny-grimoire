@@ -151,7 +151,7 @@ export default function GameSetupMods({
           )}>
             <div>
               <div className={cn("text-[11px] font-bold", isLightModeActive ? "text-gray-800" : "text-gray-200")}>Tor</div>
-              <div className="text-[9px] text-gray-500 leading-tight">Synced players see Tor until death reveals their character and alignment</div>
+              <div className="text-[9px] text-gray-500 leading-tight">Synced players will not be shown their character</div>
             </div>
             <ToggleSwitch id="tor-mode-checkbox" checked={torEnabled} onChange={setTorEnabled} isLightModeActive={isLightModeActive} />
           </label>

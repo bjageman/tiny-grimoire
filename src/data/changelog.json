@@ -1,5 +1,15 @@
 [
   {
+    "date": "Week of October 19, 2026",
+    "dateTime": "2026-10-19",
+    "changes": [
+      {
+        "description": "Added Tor mode for synced players: they see Tor instead of their character, which the storyteller reveals manually.",
+        "pullRequests": [454]
+      }
+    ]
+  },
+  {
     "date": "Week of October 12, 2026",
     "dateTime": "2026-10-12",
     "changes": [

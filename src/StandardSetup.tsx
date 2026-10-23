@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { PLAYABLE_ROLES } from './utils/roleData';
+import { ALL_ROLES, PLAYABLE_ROLES } from './utils/roleData';
 import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
@@ -617,6 +617,13 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
+  const displayedScriptLoricRoles = useMemo(() => {
+    if (sentinelOutsiderDelta === 0 || scriptLoricRoles.some(role => role.id === 'sentinel')) {
+      return scriptLoricRoles;
+    }
+    const sentinel = ALL_ROLES.find(role => role.id === 'sentinel');
+    return sentinel ? [...scriptLoricRoles, sentinel as LoricRole] : scriptLoricRoles;
+  }, [scriptLoricRoles, sentinelOutsiderDelta]);
 
   const selectionRoles = useMemo(() => {
     const roles = [...currentScriptRoles];
@@ -870,7 +877,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             setPhase(p);
           }}
           customScriptRoles={customScriptRoles}
-          scriptLoricRoles={scriptLoricRoles}
+          scriptLoricRoles={displayedScriptLoricRoles}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           selectedCharacterIds={selectedCharacterIds}
@@ -954,7 +961,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
-          scriptLoricRoles={scriptLoricRoles}
+          scriptLoricRoles={displayedScriptLoricRoles}
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {
             setDemonBluffs(bluffs);

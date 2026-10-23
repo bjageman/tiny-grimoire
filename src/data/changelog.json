@@ -4,7 +4,15 @@
     "dateTime": "2026-10-19",
     "changes": [
       {
-        "description": "Added Tor mode for synced players: they see Tor instead of their character, which the storyteller reveals manually.",
+        "description": "Fixed Atheist preference handling and selection odds.",
+        "pullRequests": [451]
+      },
+      {
+        "description": "Added a script-viewer category for Fabled and Lorics, with readable Bootlegger rules.",
+        "pullRequests": [453]
+      },
+      {
+        "description": "Added Tor mode for synced players: they see Tor while the storyteller reveals their character manually. Pope and Tor settings persist through resets.",
         "pullRequests": [454]
       }
     ]
@@ -22,7 +30,7 @@
         "pullRequests": [401, 402]
       },
       {
-        "description": "Added Pope, Sentinel, and other setup modifier controls, which now clear when the game is reset.",
+        "description": "Added Pope, Sentinel, and other setup modifier controls for customizing game setup.",
         "pullRequests": [405, 409]
       },
       {
@@ -52,6 +60,18 @@
       {
         "description": "Simplified Whale Bucket assignment with clearer Auto-Assign and Clear Roles actions.",
         "pullRequests": [433]
+      },
+      {
+        "description": "Made the grimoire ledger collapsible on desktop and clarified hidden-role terminology.",
+        "pullRequests": [436, 438]
+      },
+      {
+        "description": "Improved Whale Bucket's mobile setup and Setup Bag flow, and fixed Atheist counts plus Legion and Kazali assignment edge cases.",
+        "pullRequests": [439, 443, 446]
+      },
+      {
+        "description": "Fixed flexible-count assignments and followed BOTC ordering in two-column script views.",
+        "pullRequests": [441, 447]
       }
     ]
   },

@@ -173,6 +173,13 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(document.getElementById('script-loric-section')).not.toBeInTheDocument();
   });
 
+  it('never lists Djinn in the script viewer', () => {
+    const script = parseScriptJson(['djinn', 'angel', 'chef'], 'Test');
+    render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loricRoles} />);
+    expect(screen.queryByText('Djinn')).not.toBeInTheDocument();
+    expect(screen.getByText('Angel')).toBeInTheDocument();
+  });
+
   it('displays the script author’s Bootlegger rules in the list and details', () => {
     const customRules = 'Players may nominate twice per day.';
     const script = parseScriptJson([{ id: '_meta', name: 'Rules', bootlegger: [customRules] }, 'chef', 'bootlegger'], 'Rules');

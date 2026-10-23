@@ -215,7 +215,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
   const filteredLoricRoles = useMemo(() => {
     if (!showFabledLorics) return [];
     const term = searchTerm.trim().toLowerCase();
-    const list = scriptLoricRoles.filter(role => role.name.toLowerCase().includes(term) || role.team.includes(term));
+    const list = scriptLoricRoles.filter(role => role.id !== 'djinn' && (role.name.toLowerCase().includes(term) || role.team.includes(term)));
     if (sortAlphabetically) list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
   }, [scriptLoricRoles, showFabledLorics, searchTerm, sortAlphabetically]);

@@ -88,7 +88,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
               key={role.id}
               src={`/icons/${role.id}.svg`}
               alt={role.name}
-              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : 'opacity-35'), isDead && 'grayscale', (role.team === 'fabled' || role.team === 'loric') && 'brightness-[0.65] saturate-[0.85]')}
+              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : role.team === 'fabled' ? 'opacity-50' : 'opacity-35'), isDead && 'grayscale', role.team === 'fabled' ? 'brightness-[0.45] saturate-[0.85]' : role.team === 'loric' && 'brightness-[0.65] saturate-[0.85]')}
               onError={roleIconFallback(role, evil)}
             />
           </div>

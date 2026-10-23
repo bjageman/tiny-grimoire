@@ -51,7 +51,7 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, alignm
             assignedRole.team === 'fabled' && "border-yellow-700",
             assignedRole.team === 'loric' && "border-green-700"
           )}>
-            <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className={cn("w-20 h-20 object-contain", (assignedRole.team === 'fabled' || assignedRole.team === 'loric') && "brightness-[0.65] saturate-[0.85]")} onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
+            <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className={cn("w-20 h-20 object-contain", assignedRole.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : assignedRole.team === 'loric' && "brightness-[0.65] saturate-[0.85]")} onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
           </div>
 
           <div className="flex gap-2 justify-center items-center mb-3">

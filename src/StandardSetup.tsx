@@ -618,12 +618,19 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
   const displayedScriptLoricRoles = useMemo(() => {
-    if (sentinelOutsiderDelta === 0 || scriptLoricRoles.some(role => role.id === 'sentinel')) {
-      return scriptLoricRoles;
-    }
-    const sentinel = ALL_ROLES.find(role => role.id === 'sentinel');
-    return sentinel ? [...scriptLoricRoles, sentinel as LoricRole] : scriptLoricRoles;
-  }, [scriptLoricRoles, sentinelOutsiderDelta]);
+    const requiredRoleIds = [
+      ...(sentinelOutsiderDelta !== 0 ? ['sentinel'] : []),
+      ...(popeEnabled ? ['pope'] : []),
+      ...(torEnabled ? ['tor'] : []),
+    ];
+    const existingRoleIds = new Set(scriptLoricRoles.map(role => role.id));
+    const additionalRoles = requiredRoleIds
+      .filter(roleId => !existingRoleIds.has(roleId))
+      .map(roleId => ALL_ROLES.find(role => role.id === roleId))
+      .filter((role): role is LoricRole => !!role)
+      .map(role => role as LoricRole);
+    return additionalRoles.length > 0 ? [...scriptLoricRoles, ...additionalRoles] : scriptLoricRoles;
+  }, [scriptLoricRoles, sentinelOutsiderDelta, popeEnabled, torEnabled]);
 
   const selectionRoles = useMemo(() => {
     const roles = [...currentScriptRoles];

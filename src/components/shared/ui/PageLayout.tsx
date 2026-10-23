@@ -138,7 +138,7 @@ export default function PageLayout({
       </div>
 
       <footer id="page-footer" className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 border-t py-4 px-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-x-3 md:px-8 lg:px-12",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 border-t py-4 px-4 min-[600px]:grid-cols-[auto_minmax(0,1fr)_auto] min-[600px]:items-center min-[600px]:gap-x-3 md:px-8 lg:px-12",
         isLight ? "border-clocktower-blood/20" : "border-clocktower-gold/20"
       )}>
         <a
@@ -156,12 +156,12 @@ export default function PageLayout({
           />
         </a>
         <p className={cn(
-          "col-span-2 row-start-2 min-w-0 text-left text-xs sm:col-span-1 sm:col-start-2 sm:row-start-1",
+          "col-span-2 row-start-2 min-w-0 text-left text-xs min-[600px]:col-span-1 min-[600px]:col-start-2 min-[600px]:row-start-1",
           isLight ? "text-gray-400" : "text-gray-600"
         )}>
           Unofficial fan-made tool. Not affiliated with or endorsed by The Pandemonium Institute.
         </p>
-        <div id="page-footer-links" className="col-start-2 row-start-1 flex items-center gap-1 sm:col-start-3">
+        <div id="page-footer-links" className="col-start-2 row-start-1 flex items-center gap-1 min-[600px]:col-start-3">
           <a
             id="footer-changelog-link"
             href="#/changelog"

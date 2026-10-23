@@ -1,9 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { performStandardAssignment } from './standardAssignment';
 import type { Player, Role } from '../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from './roleData';
 
 describe('performStandardAssignment', () => {
+  beforeEach(() => {
+    let seed = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(() => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    });
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
   const mockScriptRoles: Role[] = [
     { id: 'washerwoman', name: 'Washerwoman', team: 'townsfolk' },
     { id: 'librarian', name: 'Librarian', team: 'townsfolk' },
@@ -626,7 +636,8 @@ describe('performStandardAssignment', () => {
           for (let trial = 0; trial < 40; trial++) {
             const players: Player[] = Array.from({ length: n }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
             const result = performStandardAssignment(players, script, []);
-            if (!result) continue;
+            expect(result).not.toBeNull();
+            if (!result) throw new Error('Expected a successful assignment');
             expect(result.length).toBe(n);
             const roleIds = result.map(p => p.roleId);
             expect(roleIds.every(Boolean)).toBe(true);
@@ -645,7 +656,8 @@ describe('performStandardAssignment', () => {
       for (let trial = 0; trial < 100; trial++) {
         const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
         const result = performStandardAssignment(players, script, []);
-        if (!result) continue;
+        expect(result).not.toBeNull();
+        if (!result) throw new Error('Expected a successful assignment');
 
         const marionettePlayer = result.find(p => p.isTheMarionette);
         expect(marionettePlayer).toBeDefined();
@@ -698,7 +710,8 @@ describe('performStandardAssignment', () => {
         const players: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
         // Pass selectedRoles as the active roles to assign, and fullScript as the fallback pool
         const result = performStandardAssignment(players, selectedRoles, [], fullScript);
-        if (!result) continue;
+        expect(result).not.toBeNull();
+        if (!result) throw new Error('Expected a successful assignment');
 
         expect(result).toHaveLength(10);
         
@@ -732,7 +745,8 @@ describe('performStandardAssignment', () => {
       for (let trial = 0; trial < 100; trial++) {
         const players: Player[] = Array.from({ length: 10 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
         const result = performStandardAssignment(players, selectedRoles, []);
-        if (!result) continue;
+        expect(result).not.toBeNull();
+        if (!result) throw new Error('Expected a successful assignment');
 
         expect(result).toHaveLength(10);
 
@@ -767,7 +781,8 @@ describe('performStandardAssignment', () => {
       for (let trial = 0; trial < 100; trial++) {
         const players: Player[] = Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: `P${i}`, isDead: false }));
         const result = performStandardAssignment(players, selectedRoles, []);
-        if (!result) continue;
+        expect(result).not.toBeNull();
+        if (!result) throw new Error('Expected a successful assignment');
 
         expect(result).toHaveLength(6);
 
@@ -894,7 +909,8 @@ describe('performStandardAssignment', () => {
 
       for (let i = 0; i < 1500; i++) {
         const result = performStandardAssignment(players, modifierTestRoles, modifierTestRoles, modifierTestRoles);
-        if (!result) continue;
+        expect(result).not.toBeNull();
+        if (!result) throw new Error('Expected a successful assignment');
 
         const ids = realRoleIds(result);
         const outsiders = ids.filter(id => teamOf(id) === 'outsider').length;

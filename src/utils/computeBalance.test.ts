@@ -16,7 +16,7 @@ const dem = (id: string) => r(id, 'demon');
 // 12 players: 7 TF / 2 Out / 2 Minion / 1 Demon
 
 describe('computeBalance — Drunk', () => {
-  it('counts Drunk in the outsider column, not townsfolk', () => {
+  it('validates the Drunk with an extra Townsfolk identity', () => {
     // 6-player game: base 3/1/1/1. Drunk fills the 1 outsider slot.
     // Selecting Drunk + 4 TF (3 real + 1 fake for Drunk) + 1 minion + 1 demon.
     const roles = [out('drunk'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), min('poisoner'), dem('imp')];
@@ -24,13 +24,9 @@ describe('computeBalance — Drunk', () => {
 
     expect(b.counts.outsider).toBe(1); // Drunk counts as outsider
     expect(b.counts.townsfolk).toBe(4); // 4 actual TF characters selected
-  });
-
-  it('isOutsiderValid is true when Drunk fills the outsider slot', () => {
-    // 6-player base has 1 outsider slot; Drunk occupies it.
-    const roles = [out('drunk'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), min('poisoner'), dem('imp')];
-    const b = computeBalance(roles, 6);
     expect(b.isOutsiderValid).toBe(true);
+    expect(b.isValid).toBe(true);
+    expect(b.modifications).toContain('Drunk (+1 Townsfolk)');
   });
 
   it('requires +1 TF for Drunk fake identity (tfDelta = 1)', () => {
@@ -41,13 +37,6 @@ describe('computeBalance — Drunk', () => {
 
     expect(computeBalance(threeAndDrunk, 6).isTownsfolkValid).toBe(false);
     expect(computeBalance(fourAndDrunk,  6).isTownsfolkValid).toBe(true);
-  });
-
-  it('is fully valid with Drunk + correct TF count', () => {
-    // 6 players, Drunk + 4 TF + 1 minion + 1 demon = 7 characters for 6 players.
-    const roles = [out('drunk'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), min('poisoner'), dem('imp')];
-    const b = computeBalance(roles, 6);
-    expect(b.isValid).toBe(true);
   });
 
   it('is invalid when Drunk is selected but no outsider slot exists', () => {
@@ -75,12 +64,6 @@ describe('computeBalance — Drunk', () => {
     expect(b.isOutsiderValid).toBe(true);
     expect(b.isTownsfolkValid).toBe(true);
     expect(b.isValid).toBe(true);
-  });
-
-  it('shows "Drunk (+1 Townsfolk)" in modifications', () => {
-    const roles = [out('drunk'), tf('washerwoman'), tf('empath'), tf('chef'), tf('monk'), min('poisoner'), dem('imp')];
-    const b = computeBalance(roles, 6);
-    expect(b.modifications).toContain('Drunk (+1 Townsfolk)');
   });
 });
 
@@ -300,7 +283,7 @@ describe('computeBalance — basic distribution', () => {
 });
 
 describe('computeBalance — large player counts (>15)', () => {
-  it('expects 9 Townsfolk for a 15-player game', () => {
+  it.each([15, 17, 20])('caps the base distribution at 15 for %i players', (playerCount) => {
     // 15 players base: 9 TF, 2 Out, 3 Minion, 1 Demon
     const roles = [
       tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
@@ -309,36 +292,9 @@ describe('computeBalance — large player counts (>15)', () => {
       min('poisoner'), min('spy'), min('scarletwoman'),
       dem('imp'),
     ];
-    const b = computeBalance(roles, 15);
+    const b = computeBalance(roles, playerCount);
     expect(b.isValid).toBe(true);
     expect(b.expectedTownsfolkLabel).toBe('9');
   });
 
-  it('expects 9 Townsfolk for a 17-player game', () => {
-    // 17 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
-    const roles = [
-      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
-      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
-      out('butler'), out('saint'),
-      min('poisoner'), min('spy'), min('scarletwoman'),
-      dem('imp'),
-    ];
-    const b = computeBalance(roles, 17);
-    expect(b.isValid).toBe(true);
-    expect(b.expectedTownsfolkLabel).toBe('9');
-  });
-
-  it('expects 9 Townsfolk for a 20-player game', () => {
-    // 20 players: base caps at 15 (9 TF, 2 Out, 3 Minion, 1 Demon)
-    const roles = [
-      tf('washerwoman'), tf('librarian'), tf('investigator'), tf('chef'), tf('empath'),
-      tf('fortuneteller'), tf('undertaker'), tf('monk'), tf('slayer'),
-      out('butler'), out('saint'),
-      min('poisoner'), min('spy'), min('scarletwoman'),
-      dem('imp'),
-    ];
-    const b = computeBalance(roles, 20);
-    expect(b.isValid).toBe(true);
-    expect(b.expectedTownsfolkLabel).toBe('9');
-  });
 });

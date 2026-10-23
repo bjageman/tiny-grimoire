@@ -1013,26 +1013,6 @@ describe('Storyteller Device Sync', () => {
     fireEvent.click(within(container).getByText(step, { selector: '.font-serif' }).closest('div')!);
   };
 
-  it('syncs time-of-day toggle from primary to secondary in real time', async () => {
-    seedPrimary();
-    const { primary, secondary } = await renderSyncedPair();
-
-    // Both start at Night 1
-    expect(within(primary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
-    expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
-
-    await act(async () => {
-      clickNightOrderStep(primary.container, 'Dawn');
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // Secondary should now reflect Day 1 without any manual interaction
-    expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
-
-    primary.unmount();
-    secondary.unmount();
-  });
-
   it('syncs board rotation offset from primary to secondary', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
@@ -1083,60 +1063,24 @@ describe('Storyteller Device Sync', () => {
     secondary.unmount();
   });
 
-  it('syncs day-number advance alongside time-of-day toggle', async () => {
-    seedPrimary();
-    const { primary, secondary } = await renderSyncedPair();
-
-    // Re-query inside each act so the reference is always fresh after re-renders
-    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
-      await act(async () => {
-        clickNightOrderStep(primary.container, step);
-        await new Promise(resolve => setTimeout(resolve, 150));
-      });
-    };
-
-    // Night → Day: verify via DOM on secondary
-    await advancePhase('Dawn');
-    expect(within(secondary.container).getAllByText('Day 1').length).toBeGreaterThan(0);
-
-    // Day → Night 2: verify via sync payload (more reliable than DOM after multiple toggles)
-    sentPayloads.length = 0;
-    await advancePhase('Dusk');
-    const nightSync = lastSyncState();
-    expect(nightSync).toBeDefined();
-    expect(nightSync!.timeOfDay).toBe('night');
-    expect(nightSync!.dayNumber).toBe(2);
-
-    primary.unmount();
-    secondary.unmount();
-  });
-
   it('syncs the time and day multiple times in a row up to Night 10', async () => {
     seedPrimary();
     const { primary, secondary } = await renderSyncedPair();
 
-    const advancePhase = async (step: 'Dawn' | 'Dusk') => {
-      await act(async () => {
-        clickNightOrderStep(primary.container, step);
-        await new Promise(resolve => setTimeout(resolve, 150));
-      });
-    };
+    expect(within(secondary.container).getAllByText('Night 1').length).toBeGreaterThan(0);
 
-    // Toggle repeatedly: Night 1 -> Day 1 -> Night 2 -> Day 2 -> ... -> Night 10
-    // Starting at Night 1, we need 18 toggles to reach Night 10.
-    const targetToggles = 18;
-    for (let i = 0; i < targetToggles; i++) {
+    for (let i = 0; i < 18; i++) {
       sentPayloads.length = 0;
-      await advancePhase(i % 2 === 0 ? 'Dawn' : 'Dusk');
-
-      const lastSync = lastSyncState();
-      expect(lastSync).toBeDefined();
+      clickNightOrderStep(primary.container, i % 2 === 0 ? 'Dawn' : 'Dusk');
 
       const expectedTime = i % 2 === 0 ? 'day' : 'night';
       const expectedDay = Math.floor(i / 2) + 1 + (i % 2 === 0 ? 0 : 1);
+      const label = `${expectedTime === 'day' ? 'Day' : 'Night'} ${expectedDay}`;
 
-      expect(lastSync!.timeOfDay).toBe(expectedTime);
-      expect(lastSync!.dayNumber).toBe(expectedDay);
+      await waitFor(() => {
+        expect(lastSyncState()).toMatchObject({ timeOfDay: expectedTime, dayNumber: expectedDay });
+        expect(within(secondary.container).getAllByText(label).length).toBeGreaterThan(0);
+      });
     }
 
     primary.unmount();
@@ -1432,14 +1376,14 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('Whale Bucket: reveals Atheist when random assignment activates Atheist mode', async () => {
+  it.each([true, false])('Whale Bucket: reveals Atheist only when picked (picked: %s)', async (picked) => {
     const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
     localStorage.setItem('whale-bucket-game', JSON.stringify({
       players: Array.from({ length: 5 }, (_, index) => ({
         id: `p${index + 1}`,
         name: `Player ${index + 1}`,
         isDead: false,
-        preferences,
+        preferences: { ...preferences, demon: picked && index === 0 ? ['atheist'] : [] },
       })),
       phase: 'draft',
     }));
@@ -1449,7 +1393,9 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     fireEvent.click(storyteller.container.querySelector('#reassign-characters-button')!);
 
-    expect(storyteller.container.querySelector('img[alt="Atheist"]')).toBeInTheDocument();
+    const atheist = storyteller.container.querySelector('img[alt="Atheist"]');
+    if (picked) expect(atheist).toBeInTheDocument();
+    else expect(atheist).not.toBeInTheDocument();
     randomSpy.mockRestore();
     storyteller.unmount();
   });

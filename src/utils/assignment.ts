@@ -202,10 +202,12 @@ function assignBaseCharacters(
   const scriptDemons = allRoles.filter(r => r.team === 'demon');
   const scriptTownsfolk = allRoles.filter(r => r.team === 'townsfolk');
 
-  // Decide if Atheist is active (if atheist is in script and either preferred or randomly chosen)
+  // Only activate Atheist when an eligible player picked it.
   const hasAtheist = scriptTownsfolk.some(t => t.id === 'atheist');
-  const preferAtheist = hasPref('atheist');
-  const isAtheistActive = hasAtheist && (preferAtheist ? Math.random() < 0.5 : Math.random() < 1 / Math.max(1, scriptDemons.length + 1));
+  const atheistCandidates = initialShuffledPlayers.filter(p =>
+    getWhaleBucketPreferenceIds(p.preferences, 'townsfolk').includes('atheist')
+  );
+  const isAtheistActive = hasAtheist && atheistCandidates.length > 0 && Math.random() < 0.5;
 
   let chosenDemon: Role | null = null;
   if (!isAtheistActive && scriptDemons.length > 0) {
@@ -274,15 +276,16 @@ function assignBaseCharacters(
     const usedRoleIds = new Set<string>();
     const assignment: AssignmentResult[] = [];
     const atheistRole = allRoles.find(r => r.id === 'atheist')!;
+    const atheistPlayer = randomChoice(atheistCandidates);
     usedRoleIds.add('atheist');
     assignment.push({
-      player: { ...initialShuffledPlayers[0], isEvil: undefined },
+      player: { ...atheistPlayer, isEvil: undefined },
       role: atheistRole,
-      fromPref: getWhaleBucketPreferenceIds(initialShuffledPlayers[0].preferences, 'townsfolk').includes('atheist')
+      fromPref: true
     });
     let assignedT = 1;
-    for (let i = 1; i < N; i++) {
-      const p = initialShuffledPlayers[i];
+    for (const p of initialShuffledPlayers) {
+      if (p.id === atheistPlayer.id) continue;
       if (assignedT < T) {
         let roleInfo;
         if (includeBalloonist && !usedRoleIds.has('balloonist') && (assignedT === T - 1 || Math.random() < 0.3)) {

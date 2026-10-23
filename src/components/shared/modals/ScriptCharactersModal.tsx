@@ -40,11 +40,6 @@ const TEAMS = [
   { key: 'traveler',  label: '🟣 Travelers', color: 'text-clocktower-traveler',  border: 'border-clocktower-traveler/15',  hover: 'hover:border-clocktower-traveler/30'  },
 ] as const;
 
-const LORIC_TEAMS = [
-  { key: 'fabled', label: 'Fabled', color: 'text-yellow-700', border: 'border-yellow-700/20', dot: 'bg-yellow-700' },
-  { key: 'loric', label: 'Lorics', color: 'text-green-700', border: 'border-green-700/20', dot: 'bg-green-700' },
-] as const;
-
 const TEAM_HOVER: Record<string, string> = Object.fromEntries(TEAMS.map(t => [t.key, t.hover]));
 
 export default function ScriptCharactersModal({ isOpen, onClose, scriptName, roles, scriptLoricRoles = NO_LORIC_ROLES, scriptAuthor, isLightModeActive, isStoryteller = false, players = [] }: Props) {
@@ -476,24 +471,20 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
                 {flatRoles.map(renderRoleCard)}
               </div>
             )}
-            {LORIC_TEAMS.map(({ key, label, color, border, dot }) => {
-              const loricRoles = filteredLoricRoles.filter(role => role.team === key);
-              if (loricRoles.length === 0) return null;
-              return (
-                <div key={key} id={`script-${key}-section`} className="space-y-2">
-                  <h4 className={cn(
-                    "text-xs uppercase font-bold tracking-wider border-b pb-1 flex items-center gap-1.5",
-                    color, border
-                  )}>
-                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
-                    {label} <span className="text-[10px] text-gray-500 font-normal font-mono">({loricRoles.length})</span>
-                  </h4>
-                  <div className={roleLayoutClass}>
-                    {loricRoles.map(renderRoleCard)}
-                  </div>
+            {filteredLoricRoles.length > 0 && (
+              <div id="script-fabled-lorics-section" className="space-y-2">
+                <h4 className="text-xs uppercase font-bold tracking-wider border-b border-yellow-700/20 pb-1 flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-700" />
+                  <span className="text-yellow-700">Fabled</span>
+                  <span className="text-gray-500">&amp;</span>
+                  <span className="text-green-700">Lorics</span>
+                  <span className="text-[10px] text-gray-500 font-normal font-mono">({filteredLoricRoles.length})</span>
+                </h4>
+                <div className={roleLayoutClass}>
+                  {filteredLoricRoles.map(renderRoleCard)}
                 </div>
-              );
-            })}
+              </div>
+            )}
             {jinxes.length > 0 && (
               <div id="script-jinxes-section" className="space-y-2">
                 <h4 className={cn(

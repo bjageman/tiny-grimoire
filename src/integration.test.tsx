@@ -992,7 +992,7 @@ describe('Storyteller Device Sync', () => {
     const { primary, secondary } = await renderSyncedPair();
     expect(lastSyncState()?.scriptLoricRoles).toEqual(loricRoles);
     fireEvent.click(secondary.container.querySelector('#game-script-button')!);
-    const section = within(document.getElementById('script-loric-section')!);
+    const section = within(document.getElementById('script-fabled-lorics-section')!);
     fireEvent.click(section.getByText('Bootlegger'));
     expect(within(document.getElementById('script-character-details-modal')!).getByText(loricRoles[0].ability)).toBeInTheDocument();
     primary.unmount();

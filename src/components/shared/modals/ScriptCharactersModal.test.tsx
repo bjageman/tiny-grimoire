@@ -166,11 +166,10 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(localStorage.getItem('botc-script-show-fabled-lorics')).toBe('true');
   });
 
-  it('shows no Fabled or Lorics for a script without them even when enabled', () => {
+  it('shows no Fabled & Lorics category for a script without them even when enabled', () => {
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     render(<ScriptCharactersModal {...baseProps} />);
-    expect(document.getElementById('script-fabled-section')).not.toBeInTheDocument();
-    expect(document.getElementById('script-loric-section')).not.toBeInTheDocument();
+    expect(document.getElementById('script-fabled-lorics-section')).not.toBeInTheDocument();
   });
 
   it('never lists Djinn in the script viewer', () => {
@@ -186,7 +185,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     localStorage.setItem('botc-script-show-detail', 'true');
     render(<ScriptCharactersModal {...baseProps} roles={script.roles} scriptLoricRoles={script.loricRoles} />);
-    expect(document.getElementById('script-loric-section')).toHaveTextContent(customRules);
+    expect(document.getElementById('script-fabled-lorics-section')).toHaveTextContent(customRules);
     fireEvent.click(screen.getByText('Bootlegger'));
     expect(within(document.getElementById('script-character-details-modal')!).getByText(customRules)).toBeInTheDocument();
   });
@@ -197,12 +196,12 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     localStorage.setItem('botc-script-show-fabled-lorics', 'true');
     render(<ScriptCharactersModal {...loricProps} roles={[...roles, { id: 'beggar', name: 'Beggar', team: 'traveler' }]} />);
     const traveler = screen.getByText('Beggar');
-    const fabled = document.getElementById('script-fabled-section')!;
-    const lorics = document.getElementById('script-loric-section')!;
+    const category = document.getElementById('script-fabled-lorics-section')!;
     const jinxes = document.getElementById('script-jinxes-section')!;
-    expect(traveler.compareDocumentPosition(fabled) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(fabled.compareDocumentPosition(lorics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(lorics.compareDocumentPosition(jinxes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(traveler.compareDocumentPosition(category) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(category.compareDocumentPosition(jinxes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(category).getByText('Fabled')).toBeInTheDocument();
+    expect(within(category).getByText('Lorics')).toBeInTheDocument();
   });
 
   it('searches Fabled and Lorics by name and type without incorrectly showing the empty state', () => {
@@ -214,7 +213,7 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     expect(screen.queryByText('No matching characters found.')).not.toBeInTheDocument();
     fireEvent.change(search, { target: { value: 'loric' } });
     expect(screen.getByText('Bootlegger')).toBeInTheDocument();
-    expect(document.getElementById('script-fabled-section')).not.toBeInTheDocument();
+    expect(document.getElementById('script-fabled-lorics-section')).toBeInTheDocument();
     fireEvent.change(search, { target: { value: 'no such character' } });
     expect(screen.getByText('No matching characters found.')).toBeInTheDocument();
   });
@@ -224,10 +223,10 @@ describe('ScriptCharactersModal Fabled and Lorics', () => {
     localStorage.setItem('botc-sort-alphabetically', 'true');
     localStorage.setItem('botc-script-in-play-only', 'true');
     render(<ScriptCharactersModal {...loricProps} isStoryteller players={[]} />);
-    const lorics = within(document.getElementById('script-loric-section')!);
-    const names = lorics.getAllByRole('button').map(button => within(button).getByText(/.+/).textContent!);
+    const category = within(document.getElementById('script-fabled-lorics-section')!);
+    const names = category.getAllByRole('button').map(button => within(button).getByText(/.+/).textContent!);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
-    expect(lorics.getByText('Bootlegger')).toBeInTheDocument();
+    expect(category.getByText('Bootlegger')).toBeInTheDocument();
     expect(screen.queryByText('No matching characters found.')).not.toBeInTheDocument();
   });
 

@@ -300,27 +300,52 @@ describe('GamePhase - Reset Reminders confirmation', () => {
   });
 
   it('asks for confirmation before clearing reminders, and only clears them once confirmed', () => {
-    render(<GamePhase {...defaultProps} />);
+    const onResetDroison = vi.fn();
+    render(<GamePhase {...defaultProps} onResetDroison={onResetDroison} />);
 
     fireEvent.click(screen.getByText('Reminders'));
 
     // Not cleared yet — waiting on confirmation
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
+    expect(onResetDroison).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Reset Reminders' })).toBeInTheDocument();
     expect(screen.getByText('Remove all reminder tokens?')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Confirm'));
 
     expect(defaultProps.onSetReminderTokens).toHaveBeenCalledWith([]);
+    expect(onResetDroison).toHaveBeenCalledOnce();
+  });
+
+  it('clears and logs Droison even when there are no reminder tokens', () => {
+    const onResetDroison = vi.fn();
+    const onLogEvent = vi.fn();
+    render(
+      <GamePhase
+        {...defaultProps}
+        players={[{ ...mockPlayers[0], isDrunkOrPoisoned: true }]}
+        reminderTokens={[]}
+        onResetDroison={onResetDroison}
+        onLogEvent={onLogEvent}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Reminders'));
+    fireEvent.click(screen.getByText('Confirm'));
+
+    expect(onResetDroison).toHaveBeenCalledOnce();
+    expect(onLogEvent).toHaveBeenCalledWith('All reminders cleared');
   });
 
   it('does not clear reminders when the confirmation is cancelled', () => {
-    render(<GamePhase {...defaultProps} />);
+    const onResetDroison = vi.fn();
+    render(<GamePhase {...defaultProps} onResetDroison={onResetDroison} />);
 
     fireEvent.click(screen.getByText('Reminders'));
     fireEvent.click(screen.getByText('Cancel'));
 
     expect(defaultProps.onSetReminderTokens).not.toHaveBeenCalled();
+    expect(onResetDroison).not.toHaveBeenCalled();
   });
 
   it('greys out and disables declare winner buttons when isSecondary is true', () => {

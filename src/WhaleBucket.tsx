@@ -969,6 +969,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
       {phase === 'game' && (
         <GamePhase
+          onResetDroison={() => setPlayers(prev => prev.map(p => ({ ...p, isDrunkOrPoisoned: false })))}
           players={players}
           isSynced={false}
           isStoryteller

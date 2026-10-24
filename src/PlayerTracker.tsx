@@ -700,6 +700,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
       {phase === 'game' && (
         <GamePhase
+          onResetDroison={() => setPlayers(prev => prev.map(p => ({ ...p, isDrunkOrPoisoned: false })))}
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}

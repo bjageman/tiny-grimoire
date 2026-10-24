@@ -349,7 +349,7 @@ export default function GrimoireBoard({
         ) : <div />}
 
         <div className="flex justify-center items-center gap-2">
-          {onRemoveAllReminders && reminderTokens.length > 0 && (
+          {onRemoveAllReminders && (reminderTokens.length > 0 || players.some(p => p.isDrunkOrPoisoned)) && (
             <button
               id="grimoire-reset-reminders-button"
               onClick={onRemoveAllReminders}

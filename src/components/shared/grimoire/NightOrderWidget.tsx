@@ -22,6 +22,7 @@ interface NightOrderWidgetProps {
   scriptRoles?: Role[];
   /** List every character in the script in night order, not just the ones in play. */
   fullNightOrder?: boolean;
+  hermitOutsiders?: Role[];
 }
 
 interface NightOrderItem {
@@ -45,6 +46,7 @@ export default function NightOrderWidget({
   onSetCheckedItems,
   scriptRoles,
   fullNightOrder = false,
+  hermitOutsiders = [],
 }: NightOrderWidgetProps) {
   const { isExpanded, toggleExpanded } = usePersistedDisclosure(NIGHT_ORDER_DISCLOSURE_KEY, true);
   const [activeTab, setActiveTab] = useState<'first' | 'other'>(
@@ -108,6 +110,12 @@ export default function NightOrderWidget({
       list.push(p);
       playersByRole.set(p.roleId, list);
     }
+  });
+
+  const hermitPlayers = players.filter(p => p.roleId === 'hermit' || p.roleIds?.includes('hermit'));
+  hermitOutsiders.forEach(role => {
+    const assigned = playersByRole.get(role.id) || [];
+    playersByRole.set(role.id, [...assigned, ...hermitPlayers.filter(p => !assigned.some(a => a.id === p.id))]);
   });
 
   const nightList = activeTab === 'first' ? nightSheet.firstNight : nightSheet.otherNight;
@@ -243,6 +251,17 @@ export default function NightOrderWidget({
       if (order === undefined) return;
       actingRoleIds.add(role.id);
       customActors.push({ role, player, order });
+    });
+    hermitOutsiders.forEach(role => {
+      if (nightList.includes(role.id)) return;
+      const order = activeTab === 'first' ? role.firstNight : role.otherNight;
+      if (order === undefined) return;
+      actingRoleIds.add(role.id);
+      hermitPlayers.forEach(player => {
+        if (!customActors.some(actor => actor.role.id === role.id && actor.player?.id === player.id)) {
+          customActors.push({ role, player, order });
+        }
+      });
     });
 
     if (fullNightOrder) {

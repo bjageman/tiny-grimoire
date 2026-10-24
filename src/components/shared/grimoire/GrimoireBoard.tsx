@@ -83,6 +83,7 @@ interface GrimoireBoardProps {
   onRotationChange?: (offset: number) => void;
   remotePlayerIds?: Set<string>;
   includeAllScriptReminders?: boolean;
+  hermitOutsiders?: Role[];
   alwaysShowNotes?: boolean;
 }
 
@@ -105,6 +106,7 @@ export default function GrimoireBoard({
   onRotationChange,
   remotePlayerIds,
   includeAllScriptReminders = false,
+  hermitOutsiders = [],
   alwaysShowNotes = false,
 }: GrimoireBoardProps) {
   const [internalRotation, setInternalRotation] = useState(0);
@@ -196,8 +198,9 @@ export default function GrimoireBoard({
         if (p.isTheLilMonsta) ids.add('lilmonsta');
       });
     }
+    hermitOutsiders.forEach(role => ids.add(role.id));
     return [...ids];
-  }, [players, rolesData, includeAllScriptReminders]);
+  }, [players, rolesData, includeAllScriptReminders, hermitOutsiders]);
 
   // Living players who count toward the game's end conditions — travelers are excluded.
   const finalCount = useMemo(() => players.filter(p => {

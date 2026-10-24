@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import GamePhase from './GamePhase';
+import { PLAYABLE_ROLES } from '../../../utils/roleData';
 import type { Player } from '../../../types';
 
 describe('GamePhase - Script Modal Integration', () => {
@@ -390,6 +391,31 @@ describe('GamePhase - Reset Reminders confirmation', () => {
       expect(picker.getAllByText('Washerwoman').length).toBeGreaterThan(0);
       expect(picker.getByText('Poisoner')).toBeInTheDocument();
       expect(picker.queryByText('Butler')).toBeNull();
+    });
+
+    const hermitScript = PLAYABLE_ROLES.filter(role => ['hermit', 'butler', 'washerwoman', 'poisoner'].includes(role.id));
+
+    it('includes script Outsider reminders and night actions for the Hermit', () => {
+      render(<GamePhase {...reminderProps} players={[{ ...inPlay[0], roleId: 'hermit' }]} customScriptRoles={hermitScript} selectionRoles={hermitScript} />);
+      expect(screen.getByText('Butler', { selector: '.font-serif' })).toBeInTheDocument();
+      expect(screen.queryByText('Poisoner', { selector: '.font-serif' })).toBeNull();
+      expect(screen.queryByText('Washerwoman', { selector: '.font-serif' })).toBeNull();
+      const picker = openPicker();
+      expect(picker.getByText('Butler')).toBeInTheDocument();
+      expect(picker.queryByText('Poisoner')).toBeNull();
+      expect(picker.queryByText('Lunatic')).toBeNull();
+    });
+
+    it('does not inherit Outsider abilities in All Roles mode', () => {
+      render(<GamePhase {...reminderProps} players={[{ ...inPlay[0], roleId: 'hermit' }]} />);
+      expect(screen.queryByText('Butler', { selector: '.font-serif' })).toBeNull();
+      expect(openPicker().queryByText('Butler')).toBeNull();
+    });
+
+    it('does not inherit Outsider abilities without an assigned Hermit', () => {
+      render(<GamePhase {...reminderProps} customScriptRoles={hermitScript} selectionRoles={hermitScript} />);
+      expect(screen.queryByText('Butler', { selector: '.font-serif' })).toBeNull();
+      expect(openPicker().queryByText('Butler')).toBeNull();
     });
 
     it('offers every character on the script when enabled', () => {

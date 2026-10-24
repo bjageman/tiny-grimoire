@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '../../../utils/cn';
-import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
+import { inPlayRoleIds, sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
 import type { LoricRole, Player, Role, PlacedReminder } from '../../../types';
@@ -160,6 +160,11 @@ export default function GamePhase({
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
   }, [customScriptRoles, players]);
 
+  const hermitOutsiders = useMemo(() => {
+    if (!customScriptRoles || !inPlayRoleIds(players).has('hermit')) return [];
+    return customScriptRoles.filter(role => role.team === 'outsider' && role.id !== 'hermit');
+  }, [customScriptRoles, players]);
+
   const grimoireRolesData = selectionRoles ?? (ALL_ROLES as Role[]);
   const currentDistribution = useMemo(() => {
     if (!isStoryteller) return undefined;
@@ -230,6 +235,7 @@ export default function GamePhase({
         <div id="grimoire-board-container" className="space-y-4">
           <GrimoireBoard
             players={players}
+            hermitOutsiders={hermitOutsiders}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
             toggleTimeOfDay={!isSynced && !showNightOrder ? toggleTimeOfDay : undefined}
@@ -254,6 +260,7 @@ export default function GamePhase({
         {showNightOrder && (
           <NightOrderWidget
             players={players}
+            hermitOutsiders={hermitOutsiders}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
             isLightModeActive={isLightModeActive}

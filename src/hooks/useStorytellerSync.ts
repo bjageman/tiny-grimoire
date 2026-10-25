@@ -34,6 +34,7 @@ export function useStorytellerSync<T>({
   }
   const sendSyncRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
   const lastAppliedSyncRef = useRef<string | null>(null);
+  const syncRequestIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const onApplySyncRef = useRef(onApplySync);
   useEffect(() => {
@@ -59,6 +60,7 @@ export function useStorytellerSync<T>({
         });
       }
     } else if (payload.type === 'storyteller_state_sync' && payload.state) {
+      if (syncRequestIntervalRef.current) clearInterval(syncRequestIntervalRef.current);
       const incomingStr = JSON.stringify(payload.state);
       lastAppliedSyncRef.current = incomingStr;
       onApplySyncRef.current(payload.state);
@@ -66,20 +68,20 @@ export function useStorytellerSync<T>({
     }
   }, [isSecondary]);
 
-  const { sendMessage: sendSyncMessage } = useGameSocket(syncCode, handleIncomingSyncMessage);
+  const { isConnected, sendMessage: sendSyncMessage } = useGameSocket(syncCode, handleIncomingSyncMessage);
 
   useEffect(() => {
     sendSyncRef.current = sendSyncMessage;
   }, [sendSyncMessage]);
 
   useEffect(() => {
-    if (isSecondary && sendSyncMessage) {
-      const timer = setTimeout(() => {
-        sendSyncMessage({ type: 'storyteller_sync_request' });
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isSecondary, sendSyncMessage]);
+    if (!isSecondary || !isConnected) return;
+    const requestState = () => sendSyncRef.current?.({ type: 'storyteller_sync_request' });
+    requestState();
+    const interval = setInterval(requestState, 2000);
+    syncRequestIntervalRef.current = interval;
+    return () => clearInterval(interval);
+  }, [isSecondary, isConnected, syncCode]);
 
   const localStateStr = JSON.stringify(localState);
 

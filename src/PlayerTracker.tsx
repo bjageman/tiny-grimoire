@@ -5,6 +5,7 @@ import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 import { withInPlayTravelers } from './utils/scriptUtils';
+import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
 
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import GamePhase from './components/shared/grimoire/GamePhase';
@@ -142,31 +143,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
-        setPlayers((currentPlayers) => {
-          return payload.players!.map((sp) => {
-            const lp = currentPlayers.find(
-              (p) => p.id === sp.id || p.name.trim().toLowerCase() === sp.name.trim().toLowerCase()
-            );
-            if (lp) {
-              return {
-                ...sp,
-                // Preserve local guesses
-                roleId: lp.roleId,
-                roleIds: lp.roleIds,
-                isEvil: lp.isEvil,
-                isDrunkOrPoisoned: lp.isDrunkOrPoisoned,
-                isTheDrunk: lp.isTheDrunk,
-                isTheMarionette: lp.isTheMarionette,
-                isTheLunatic: lp.isTheLunatic,
-                isTheLilMonsta: lp.isTheLilMonsta,
-              };
-            }
-            return {
-              ...sp,
-              roleId: sp.roleId || '',
-            };
-          });
-        });
+        setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers));
       }
       if (payload.timeOfDay) {
         setTimeOfDay(payload.timeOfDay);

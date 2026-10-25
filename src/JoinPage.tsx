@@ -3,6 +3,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useIsMobile } from './hooks/useIsMobile';
 import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
+import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
 import type { AnyRole, LoricRole, Role, Player } from './types';
@@ -386,16 +387,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   };
 
   const goToTracker = () => {
-    const clearedPlayers = players.map(p => ({
-      ...p,
-      roleId: '',
-      roleIds: undefined,
-      isTheDrunk: false,
-      isTheMarionette: false,
-      isTheLunatic: false,
-      isTheLilMonsta: false,
-      isEvil: undefined
-    }));
+    const clearedPlayers = syncTrackerPlayers(players);
     localStorage.setItem('player-tracker-botc-game', JSON.stringify({
       players: clearedPlayers,
       phase: 'game',

@@ -204,10 +204,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         }
       }
       setGameCode(null);
-    } else if (payload.type === 'booted') {
+    } else if (payload.type === 'booted' || payload.type === 'banned') {
       const myPlayerId = sessionStorage.getItem('botc-player-id');
       if (payload.playerId === myPlayerId) {
-        showAlert('You have been booted from the game room. Reverting to local tracker.');
+        showAlert('You have been removed from the game by the storyteller');
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
         sessionStorage.removeItem('joined-spectator');

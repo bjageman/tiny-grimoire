@@ -169,7 +169,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
 
   const setupDetails = useMemo(() => ({ excludedRoleIds, torEnabled }), [excludedRoleIds, torEnabled]);
   const gameDetails = useMemo(() => ({ torEnabled }), [torEnabled]);
-  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, bannedPlayers, setBannedPlayers, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
     storageKey: STORAGE_KEY, gameCode, gameType: 'whale-bucket', isSecondary, phase, players, setPlayers, maxPlayers: 15,
     timeOfDay, dayNumber, setupDetails, gameDetails,
     createPlayer: payload => ({
@@ -234,8 +234,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     popeEnabled,
     remotePlayerIds: [...remotePlayerIds],
     spectators,
+    bannedPlayers,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, remotePlayerIds, spectators
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, remotePlayerIds, spectators, bannedPlayers
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -259,10 +260,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setPopeEnabled(incoming.popeEnabled ?? false);
       setRemotePlayerIds(new Set(incoming.remotePlayerIds || []));
       setSpectators(incoming.spectators || []);
+      setBannedPlayers(incoming.bannedPlayers || []);
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame, setTorEnabled,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setRemotePlayerIds, setSpectators
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setRemotePlayerIds, setSpectators, setBannedPlayers
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -279,6 +281,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       players,
       remotePlayerIds: [...remotePlayerIds],
       spectators,
+      bannedPlayers,
       phase,
       timeOfDay,
       dayNumber,
@@ -299,7 +302,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       sentinelOutsiderDelta,
       popeEnabled,
     }));
-  }, [remotePlayerIds, spectators, players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
+  }, [remotePlayerIds, spectators, bannedPlayers, players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -363,12 +366,14 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     if (!player) return;
 
     if (remotePlayerIds.has(id)) {
-      showConfirm(
-        `Remove "${player.name}" from the player roster? Keep them connected as a spectator, or kick them from the room.`,
-        () => removeSyncedPlayer(id, false),
-        'Remove Player',
-        'Kick',
-        { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, true) }
+      showChoice(
+        <>Remove <strong className="text-base font-bold">{player.name}</strong> from the player roster?</>,
+        [
+          { label: 'Ban', destructive: true, onClick: () => removeSyncedPlayer(id, 'ban') },
+          { label: 'Kick', onClick: () => removeSyncedPlayer(id, 'kick') },
+          { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, 'spectator') },
+        ],
+        'Remove Player'
       );
     } else {
       setPlayers(current => current.filter(player => player.id !== id));
@@ -550,6 +555,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setCheckedItems({});
     setRemotePlayerIds(new Set());
     setSpectators([]);
+    setBannedPlayers([]);
     resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
@@ -626,7 +632,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   }, [players, sentinelOutsiderDelta, popeEnabled]);
 
   const isLightModeActive = theme === 'light';
-  const { dialogProps, showAlert, showConfirm } = useDialog();
+  const { dialogProps, showAlert, showConfirm, showChoice } = useDialog();
 
   const confirmDisconnect = useCallback(() => {
     showConfirm(

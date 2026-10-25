@@ -1,14 +1,21 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
+
+export interface DialogChoice {
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+}
 
 interface DialogState {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   type: 'alert' | 'confirm';
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
-  secondaryAction?: { label: string; onClick: () => void };
+  choices?: DialogChoice[];
 }
 
 const CLOSED: DialogState = {
@@ -30,13 +37,19 @@ export function useDialog() {
     setState({ isOpen: true, title, message, type: 'alert', confirmLabel: 'OK', cancelLabel: 'Cancel', onConfirm: close });
   };
 
-  const showConfirm = (message: string, onConfirm: () => void, title = '', confirmLabel = 'Confirm', secondaryAction?: DialogState['secondaryAction']) => {
+  const showConfirm = (message: string, onConfirm: () => void, title = '', confirmLabel = 'Confirm') => {
     setState({
       isOpen: true, title, message, type: 'confirm', confirmLabel, cancelLabel: 'Cancel',
       onConfirm: () => { close(); onConfirm(); },
-      secondaryAction: secondaryAction && { label: secondaryAction.label, onClick: () => { close(); secondaryAction.onClick(); } },
     });
   };
 
-  return { dialogProps: { ...state, onCancel: close }, showAlert, showConfirm };
+  const showChoice = (message: ReactNode, choices: DialogChoice[], title = '') => {
+    setState({
+      ...CLOSED, isOpen: true, title, message, type: 'confirm', onConfirm: close,
+      choices: choices.map(choice => ({ ...choice, onClick: () => { close(); choice.onClick(); } })),
+    });
+  };
+
+  return { dialogProps: { ...state, onCancel: close }, showAlert, showConfirm, showChoice };
 }

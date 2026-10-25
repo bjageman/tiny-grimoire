@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { X } from 'lucide-react';
+import type { DialogChoice } from '../../../hooks/useDialog';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
@@ -14,7 +16,7 @@ interface DialogModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   isLightModeActive: boolean;
-  secondaryAction?: { label: string; onClick: () => void };
+  choices?: DialogChoice[];
 }
 
 export default function DialogModal({
@@ -27,7 +29,7 @@ export default function DialogModal({
   onConfirm,
   onCancel,
   isLightModeActive,
-  secondaryAction,
+  choices,
 }: DialogModalProps) {
   useScrollLock(isOpen);
 
@@ -37,19 +39,20 @@ export default function DialogModal({
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
+      if (choices) return;
       if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [contenteditable="true"]')) return;
       onConfirm();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onConfirm]);
+  }, [isOpen, onConfirm, choices]);
 
   if (!isOpen) return null;
 
   const confirmAction = { id: 'dialog-confirm-button', label: confirmLabel, onClick: onConfirm, primary: true };
   const cancelAction = { id: 'dialog-cancel-button', label: cancelLabel, onClick: onCancel, primary: false };
-  const actions = secondaryAction
-    ? [confirmAction, { id: 'dialog-secondary-button', ...secondaryAction, primary: false }, cancelAction]
+  const actions = choices
+    ? choices.map((choice, index) => ({ id: `dialog-choice-${index}`, ...choice, primary: choice.destructive ?? false }))
     : type === 'confirm' ? [cancelAction, confirmAction] : [confirmAction];
 
   return (
@@ -61,20 +64,30 @@ export default function DialogModal({
       <div
         id="dialog-modal"
         className={cn(
-          'w-full max-w-sm rounded-lg p-5 space-y-4 shadow-2xl',
+          'relative w-full max-w-sm rounded-lg p-5 space-y-4 shadow-2xl',
           isLightModeActive
             ? 'bg-white border border-clocktower-blood/20'
             : 'bg-gray-900 border border-gray-800'
         )}
         onClick={e => e.stopPropagation()}
       >
+        {choices && (
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onCancel}
+            className="absolute right-2 top-2 rounded p-1 text-gray-500 hover:text-gray-400"
+          >
+            <X size={18} />
+          </button>
+        )}
         {title && (
-          <h3 className="font-display font-bold text-base text-clocktower-blood text-center tracking-wider uppercase">{title}</h3>
+          <h3 className={cn('font-display font-bold text-base text-clocktower-blood text-center tracking-wider uppercase', choices && 'px-5')}>{title}</h3>
         )}
         <div className={cn('text-sm leading-relaxed text-center', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
           {message}
         </div>
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div id="dialog-modal-actions" className="flex flex-wrap gap-2 justify-center">
           {actions.map(action => (
             <button
               key={action.id}

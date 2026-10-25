@@ -40,6 +40,8 @@ export function useStorytellerRoom<P extends Player>({
     readPersistedField<string[]>(storageKey, 'remotePlayerIds', [])
   ));
   const [spectators, setSpectators] = useState<Spectator[]>(() => readPersistedField(storageKey, 'spectators', []));
+  const [bannedPlayers, setBannedPlayers] = useState<Pick<Player, 'id' | 'name'>[]>(() => readPersistedField(storageKey, 'bannedPlayers', []));
+  const bannedPlayersRef = useRef(bannedPlayers);
   const spectatorsRef = useRef(spectators);
   const playersRef = useRef(players);
   const remotePlayerIdsRef = useRef(remotePlayerIds);
@@ -49,6 +51,7 @@ export function useStorytellerRoom<P extends Player>({
   useEffect(() => { playersRef.current = players; }, [players]);
   useEffect(() => { remotePlayerIdsRef.current = remotePlayerIds; }, [remotePlayerIds]);
   useEffect(() => { spectatorsRef.current = spectators; }, [spectators]);
+  useEffect(() => { bannedPlayersRef.current = bannedPlayers; }, [bannedPlayers]);
 
   const gameState = useMemo(() => ({
     ...gameDetails,
@@ -84,6 +87,10 @@ export function useStorytellerRoom<P extends Player>({
     const roster = playersRef.current;
     const claimedIds = remotePlayerIdsRef.current;
     const normalizedName = payload.name.trim().toLowerCase();
+    if (bannedPlayersRef.current.some(player => player.id === payload.id || player.name.trim().toLowerCase() === normalizedName)) {
+      sendMessageRef.current?.({ type: 'banned', playerId: payload.id });
+      return;
+    }
     const sameName = (player: Pick<Player, 'name'>) => player.name.trim().toLowerCase() === normalizedName;
     if (roster.some(player => sameName(player) && player.id !== payload.id && claimedIds.has(player.id))
       || spectatorsRef.current.some(spectator => sameName(spectator) && spectator.id !== payload.id)) {
@@ -147,15 +154,19 @@ export function useStorytellerRoom<P extends Player>({
     return true;
   };
 
-  const removeSyncedPlayer = (id: string, makeSpectator: boolean) => {
+  const removeSyncedPlayer = (id: string, action: 'ban' | 'kick' | 'spectator') => {
     const player = playersRef.current.find(candidate => candidate.id === id);
     if (!player || !remotePlayerIdsRef.current.has(id)) return;
+    if (action === 'ban') {
+      bannedPlayersRef.current = [...bannedPlayersRef.current.filter(candidate => candidate.id !== id), { id, name: player.name }];
+      setBannedPlayers(bannedPlayersRef.current);
+    }
     if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
     playersRef.current = playersRef.current.filter(candidate => candidate.id !== id);
     setPlayers(playersRef.current);
     remotePlayerIdsRef.current = new Set([...remotePlayerIdsRef.current].filter(candidate => candidate !== id));
     setRemotePlayerIds(remotePlayerIdsRef.current);
-    if (makeSpectator) {
+    if (action === 'spectator') {
       const spectator = { id: player.id, name: player.name, pronouns: player.pronouns };
       spectatorsRef.current = [...spectatorsRef.current.filter(candidate => candidate.id !== id), spectator];
       setSpectators(spectatorsRef.current);
@@ -165,7 +176,7 @@ export function useStorytellerRoom<P extends Player>({
         playerId: id, playerName: player.name, spectator: true,
       });
     } else {
-      sendMessageRef.current?.({ type: 'booted', playerId: id });
+      sendMessageRef.current?.({ type: action === 'ban' ? 'banned' : 'booted', playerId: id });
     }
   };
 
@@ -188,5 +199,5 @@ export function useStorytellerRoom<P extends Player>({
     if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
   }, [phase, isSecondary]);
 
-  return { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, removeSyncedPlayer, broadcastReset };
+  return { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, bannedPlayers, setBannedPlayers, promoteSpectator, removeSyncedPlayer, broadcastReset };
 }

@@ -343,14 +343,20 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       setIsSpectator(false);
       setState('join');
       setUserRotation(null);
-    } else if (payload.type === 'booted') {
+    } else if (payload.type === 'booted' || payload.type === 'banned') {
       if (payload.playerId === playerId) {
-        showAlert('You have been booted from the game room.');
+        if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
+        if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+        const message = 'You have been removed from the game by the storyteller';
+        showAlert(message);
+        setErrorMsg(message);
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
         sessionStorage.removeItem('joined-spectator');
         sessionStorage.removeItem('joined-spectator-pending');
         setIsSpectator(false);
+        setAssignedRole(null);
+        setRevealed(false);
         window.location.hash = '#/join';
         setState('join');
         setUserRotation(null);

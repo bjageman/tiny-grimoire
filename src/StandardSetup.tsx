@@ -163,7 +163,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const roomDetails = useMemo(() => ({
     scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles: displayedScriptLoricRoles, torEnabled,
   }), [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
-  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, bannedPlayers, setBannedPlayers, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
     storageKey: STORAGE_KEY, gameCode, gameType: 'standard', isSecondary, phase, players, setPlayers, maxPlayers: 20,
     timeOfDay, dayNumber, setupDetails: roomDetails, gameDetails: roomDetails,
     createPlayer: payload => ({
@@ -201,6 +201,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setCheckedItems({});
     setRemotePlayerIds(new Set());
     setSpectators([]);
+    setBannedPlayers([]);
     resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
@@ -310,8 +311,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     popeEnabled,
     remotePlayerIds: [...remotePlayerIds],
     spectators,
+    bannedPlayers,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, remotePlayerIds, spectators
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, remotePlayerIds, spectators, bannedPlayers
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -337,10 +339,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setPopeEnabled(incoming.popeEnabled ?? false);
       setRemotePlayerIds(new Set(incoming.remotePlayerIds || []));
       setSpectators(incoming.spectators || []);
+      setBannedPlayers(incoming.bannedPlayers || []);
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setRemotePlayerIds, setSpectators
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setRemotePlayerIds, setSpectators, setBannedPlayers
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -365,6 +368,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       players,
       remotePlayerIds: [...remotePlayerIds],
       spectators,
+      bannedPlayers,
       phase,
       timeOfDay,
       dayNumber,
@@ -387,7 +391,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [remotePlayerIds, spectators, players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [remotePlayerIds, spectators, bannedPlayers, players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -459,12 +463,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     if (!player) return;
 
     if (remotePlayerIds.has(id)) {
-      showConfirm(
-        `Remove "${player.name}" from the player roster? Keep them connected as a spectator, or kick them from the room.`,
-        () => removeSyncedPlayer(id, false),
-        'Remove Player',
-        'Kick',
-        { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, true) }
+      showChoice(
+        <>Remove <strong className="text-base font-bold">{player.name}</strong> from the player roster?</>,
+        [
+          { label: 'Ban', destructive: true, onClick: () => removeSyncedPlayer(id, 'ban') },
+          { label: 'Kick', onClick: () => removeSyncedPlayer(id, 'kick') },
+          { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, 'spectator') },
+        ],
+        'Remove Player'
       );
     } else {
       setPlayers(current => current.filter(player => player.id !== id));
@@ -552,7 +558,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
-  const { dialogProps, showAlert, showConfirm } = useDialog();
+  const { dialogProps, showAlert, showConfirm, showChoice } = useDialog();
 
   const performTransferToGameNotes = async () => {
     if (connectedCount > 0 && sendMessageRef.current) {

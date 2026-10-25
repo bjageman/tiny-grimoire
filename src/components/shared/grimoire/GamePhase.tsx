@@ -48,6 +48,7 @@ interface Props {
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
+  onResetDroison?: () => void;
   remotePlayerIds?: Set<string>;
   // Optional / mode-specific
   selectionRoles?: Role[];
@@ -87,7 +88,7 @@ export default function GamePhase({
   setNewTravelerName, setNewTravelerRoleId,
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   handleTouchStart, handleTouchMove, handleTouchEnd,
-  onResetDead, onResetTime,
+  onResetDead, onResetTime, onResetDroison,
   remotePlayerIds,
   selectionRoles,
   showNightOrder = true,
@@ -150,8 +151,9 @@ export default function GamePhase({
 
   const handleRemoveAllReminders = () => {
     showConfirm('Remove all reminder tokens?', () => {
-      if (reminderTokens.length > 0) onLogEvent?.(`All reminders cleared`);
+      if (reminderTokens.length > 0 || players.some(p => p.isDrunkOrPoisoned)) onLogEvent?.(`All reminders cleared`);
       setReminderTokens([]);
+      onResetDroison?.();
     }, 'Reset Reminders');
   };
 

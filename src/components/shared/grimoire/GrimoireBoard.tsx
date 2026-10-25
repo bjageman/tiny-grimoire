@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { superellipseSeatAngles, superellipsePosition } from '../../../utils/superellipse';
 import { createPortal } from 'react-dom';
-import { ChevronRight, Maximize, Minimize, RotateCcw, RotateCw, Wifi } from 'lucide-react';
+import { ChevronRight, Maximize, Minimize, RotateCcw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../../types';
 import { cn } from '../../../utils/cn';
@@ -22,6 +22,7 @@ import ReminderTokenModal from '../modals/ReminderTokenModal';
 import DayNightLabel from '../ui/DayNightLabel';
 import CharacterToken from '../tokens/CharacterToken';
 import VoteToken from '../tokens/VoteToken';
+import GrimoireBoardControls from './GrimoireBoardControls';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useGrimoireFullscreen } from '../../../hooks/useGrimoireFullscreen';
 
@@ -87,6 +88,7 @@ interface GrimoireBoardProps {
   hermitOutsiders?: Role[];
   alwaysShowNotes?: boolean;
   allowFullscreen?: boolean;
+  joinCode?: string;
 }
 
 export default function GrimoireBoard({
@@ -111,6 +113,7 @@ export default function GrimoireBoard({
   hermitOutsiders = [],
   alwaysShowNotes = false,
   allowFullscreen = false,
+  joinCode,
 }: GrimoireBoardProps) {
   const { isFullscreen, fullscreenButtonRef, toggleFullscreen, handleFullscreenKeyDown } = useGrimoireFullscreen();
 
@@ -519,41 +522,14 @@ export default function GrimoireBoard({
           <span>Final {finalCount}</span>
         </div>
 
-        {/* Rotate buttons — center of board */}
-        {players.length > 1 && (
-          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-            <div className={cn('flex items-center pointer-events-auto', isFullscreen ? 'gap-6' : 'gap-3')}>
-              <button
-                type="button"
-                onClick={() => handleRotate(1)}
-                className={cn(
-                  "rounded-full border transition-all shadow-sm active:scale-95",
-                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
-                  isLightModeActive
-                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
-                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
-                )}
-                title="Rotate counter-clockwise"
-              >
-                <RotateCcw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRotate(-1)}
-                className={cn(
-                  "rounded-full border transition-all shadow-sm active:scale-95",
-                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
-                  isLightModeActive
-                    ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
-                    : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
-                )}
-                title="Rotate clockwise"
-              >
-                <RotateCw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
-              </button>
-            </div>
-          </div>
-        )}
+        <GrimoireBoardControls
+          key={`${isFullscreen}-${joinCode ?? ''}`}
+          isFullscreen={isFullscreen}
+          isLightModeActive={isLightModeActive}
+          canRotate={players.length > 1}
+          onRotate={handleRotate}
+          joinCode={joinCode}
+        />
 
         {players.map((p, playerIndex) => {
           const seat = seatOf(playerIndex);

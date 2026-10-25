@@ -267,6 +267,7 @@ describe('Storyteller Reset Integration', () => {
 
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'p1');
     const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
 
     // Let the join round-trip complete: Alice announces herself, the
@@ -843,6 +844,7 @@ describe('Standard and Game Notes transfers', () => {
 
     sessionStorage.setItem('joined-code', 'LIVE');
     sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'alice-id');
     const player = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 200));

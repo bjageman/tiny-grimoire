@@ -252,7 +252,8 @@ describe('Game sync regressions', () => {
     expect(saved().spectators).toHaveLength(1);
     receive({ type: 'player_join', id: 'impostor', name: ' VERA ' });
     expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'duplicate_name' }));
-    fireEvent.change(within(screen.container).getByLabelText('Connected spectator'), { target: { value: 'viewer' } });
+    fireEvent.focus(within(screen.container).getByRole('combobox', { name: 'Traveler name' }));
+    fireEvent.click(within(screen.container).getByRole('option', { name: /Vera/ }));
     fireEvent.click(screen.container.querySelector('#game-add-traveler-button')!);
     expect(saved().players[0]).toMatchObject({ id: 'viewer', name: 'Vera', roleId: 'beggar', pronouns: 'she/her' });
     expect(saved().spectators).toEqual([]);
@@ -293,7 +294,8 @@ describe('Game sync regressions', () => {
     expect(JSON.parse(localStorage.getItem(storageKey)!).spectators).toEqual([]);
     act(() => transport.callbacks.get('REVW')!({ type: 'player_join', id: 'viewer', name: 'Vera' }));
     expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'code_valid', spectator: true }));
-    fireEvent.change(within(screen.container).getByLabelText('Connected spectator'), { target: { value: 'viewer' } });
+    fireEvent.focus(within(screen.container).getByRole('combobox', { name: 'Traveler name' }));
+    fireEvent.click(within(screen.container).getByRole('option', { name: /Vera/ }));
     expect(screen.container.querySelector('#game-add-traveler-button')).toBeDisabled();
     act(() => transport.callbacks.get('REVW')!({ type: 'player_join', id: 'impostor', name: 'Player 0' }));
     expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'duplicate_name' }));
@@ -312,11 +314,13 @@ describe('Game sync regressions', () => {
     window.location.hash = `${standard ? '#/standard' : '#/whale-bucket'}?syncCode=SYNC&gameCode=REVW`;
     const secondary = render(<Component theme="dark" toggleTheme={vi.fn()} />);
     act(() => transport.callbacks.get('SYNC')!(initial));
-    fireEvent.change(within(secondary.container).getByLabelText('Connected spectator'), { target: { value: 'viewer' } });
+    fireEvent.focus(within(secondary.container).getByRole('combobox', { name: 'Traveler name' }));
+    fireEvent.click(within(secondary.container).getByRole('option', { name: /Vera/ }));
     fireEvent.click(secondary.container.querySelector('#game-add-traveler-button')!);
     const promoted = transport.senders.get('SYNC')!.mock.lastCall![0];
     act(() => primarySync(promoted));
-    expect(within(primary.container).queryByLabelText('Connected spectator')).toBeNull();
+    fireEvent.focus(within(primary.container).getByRole('combobox', { name: 'Traveler name' }));
+    expect(within(primary.container).queryByRole('option', { name: /Vera/ })).toBeNull();
     expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({
       type: 'game_update', players: [expect.objectContaining({ id: 'viewer', name: 'Vera', roleId: 'beggar' })],
     }));

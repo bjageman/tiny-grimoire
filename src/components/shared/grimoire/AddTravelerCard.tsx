@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Player } from '../../../types';
 import { cn } from '../../../utils/cn';
 import { PLAYABLE_ROLES } from '../../../utils/roleData';
+import SearchSuggestionInput from '../ui/SearchSuggestionInput';
 
 interface AddTravelerCardProps {
   isLightModeActive: boolean;
@@ -18,6 +19,9 @@ interface AddTravelerCardProps {
 // Traveler name + role picker shown to the storyteller during a game.
 export default function AddTravelerCard({ isLightModeActive, title, name, onNameChange, roleId, onRoleIdChange, disabled, spectators = [], onAdd }: AddTravelerCardProps) {
   const [selectedSpectatorId, setSelectedSpectatorId] = useState('');
+  const [roleSearch, setRoleSearch] = useState<string | null>(null);
+  const travelerRoles = PLAYABLE_ROLES.filter(role => role.team === 'traveler');
+  const selectedRole = travelerRoles.find(role => role.id === roleId);
   const selectedSpectator = spectators.find(spectator => spectator.id === selectedSpectatorId && spectator.name === name);
 
   return (
@@ -32,56 +36,40 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
         isLightModeActive ? 'text-gray-600' : 'text-gray-500'
       )}>{title}</h4>
       <div className="flex flex-col gap-2">
-        {spectators.length > 0 && (
-          <select
-            aria-label="Connected spectator"
-            value={selectedSpectator?.id || ''}
-            onChange={event => {
-              const spectator = spectators.find(candidate => candidate.id === event.target.value);
-              setSelectedSpectatorId(spectator?.id || '');
-              onNameChange(spectator?.name || '');
-            }}
-            className={cn('w-full rounded border px-2.5 py-1.5 text-xs', isLightModeActive ? 'bg-white border-gray-300' : 'bg-gray-955 border-gray-800')}
-          >
-            <option value="">Add a new Traveler or select a spectator</option>
-            {spectators.map(spectator => <option key={spectator.id} value={spectator.id}>{spectator.name}</option>)}
-          </select>
-        )}
-        <input
+        <SearchSuggestionInput
           id="game-traveler-name-input"
-          type="text"
+          label="Traveler name"
           placeholder="Traveler name..."
           value={name}
-          onChange={event => {
-            onNameChange(event.target.value);
+          options={spectators.map(spectator => ({ id: spectator.id, label: spectator.name, description: 'Spectator' }))}
+          emptyMessage={spectators.length ? 'No matching spectators' : 'No connected spectators'}
+          isLightModeActive={isLightModeActive}
+          onChange={value => {
+            onNameChange(value);
             setSelectedSpectatorId('');
           }}
-          autoCapitalize="words"
-          className={cn(
-            'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
-            isLightModeActive
-              ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-              : 'bg-gray-955 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-          )}
+          onSelect={id => {
+            const spectator = spectators.find(candidate => candidate.id === id);
+            setSelectedSpectatorId(spectator?.id || '');
+            onNameChange(spectator?.name || '');
+          }}
         />
         <div className="flex gap-2">
-          <select
-            id="game-traveler-role-select"
-            value={roleId}
-            onChange={(e) => onRoleIdChange(e.target.value)}
-            className={cn(
-              'flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-                : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-            )}
-          >
-            {PLAYABLE_ROLES.filter(r => r.team === 'traveler').map(r => (
-              <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+          <SearchSuggestionInput
+            id="game-traveler-role-input"
+            label="Traveler character"
+            placeholder="Search Travelers..."
+            value={roleSearch ?? selectedRole?.name ?? ''}
+            options={travelerRoles.map(role => ({ id: role.id, label: role.name, description: 'Traveler' }))}
+            emptyMessage="No matching Travelers"
+            isLightModeActive={isLightModeActive}
+            onChange={setRoleSearch}
+            onSelect={id => {
+              onRoleIdChange(id);
+              setRoleSearch(null);
+            }}
+            onDismiss={() => setRoleSearch(null)}
+          />
           <button
             id="game-add-traveler-button"
             onClick={() => onAdd(selectedSpectator?.id)}

@@ -46,10 +46,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     return params.get('returnTo') === 'preferences';
   });
 
-  const [state, setState] = useState<'join' | 'checking' | 'preferences' | 'waiting' | 'revealed' | 'tracker'>(() => {
+  const [state, setState] = useState<'join' | 'checking' | 'in-session' | 'preferences' | 'waiting' | 'revealed' | 'tracker'>(() => {
     const savedCode = sessionStorage.getItem('joined-code');
     const savedName = sessionStorage.getItem('joined-name');
-    if (savedCode && savedName) return returnToPrefs ? 'preferences' : 'waiting';
+    if (savedCode && savedName) {
+      if (sessionStorage.getItem('joined-spectator-pending') === 'true') return 'in-session';
+      if (sessionStorage.getItem('joined-spectator') === 'true') return 'tracker';
+      return returnToPrefs ? 'preferences' : 'waiting';
+    }
     return 'join';
   });
 
@@ -94,6 +98,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
+  const [isSpectator, setIsSpectator] = useState(() => sessionStorage.getItem('joined-spectator') === 'true' || sessionStorage.getItem('joined-spectator-pending') === 'true');
+  const [showSpectatorReset, setShowSpectatorReset] = useState(false);
+
+  useEffect(() => {
+    if (isSpectator && state === 'tracker') {
+      window.location.hash = '#/tracker';
+    }
+  }, [isSpectator, state]);
 
   const [userRotation, setUserRotation] = useState<number | null>(null);
 
@@ -136,6 +148,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     customScriptRoles?: Role[];
     scriptLoricRoles?: LoricRole[];
     torEnabled?: boolean;
+    spectator?: boolean;
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
@@ -158,6 +171,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     const payload = data as GamePayload;
     if (payload.type === 'game_reset') {
       // Explicit "storyteller reset, stay connected" signal — always obey it regardless of current screen.
+      if (isSpectator) {
+        if (payload.gameType) setGameType(payload.gameType);
+        setShowSpectatorReset(true);
+        setPlayers([]);
+        setTimeOfDay('night');
+        setDayNumber(1);
+        return;
+      }
       returnToLobby(payload.gameType);
       return;
     }
@@ -194,7 +215,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
 
-      if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking') {
+      if (stateRef.current === 'waiting' || stateRef.current === 'preferences' || stateRef.current === 'checking' || stateRef.current === 'in-session') {
         setPlayers(payload.players || []);
       }
     } else if (payload.type === 'room_full') {
@@ -203,6 +224,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
         setState('join');
         setErrorMsg('The game room is full.');
       }
@@ -216,7 +239,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         if (stateRef.current === 'checking') {
           sessionStorage.setItem('joined-code', code);
           sessionStorage.setItem('joined-name', name);
-          setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
+          if (payload.spectator) {
+            sessionStorage.setItem('joined-spectator-pending', 'true');
+            setIsSpectator(true);
+            if (payload.players) setPlayers(payload.players);
+            if (payload.timeOfDay) setTimeOfDay(payload.timeOfDay);
+            if (payload.dayNumber !== undefined) setDayNumber(payload.dayNumber);
+            setState('in-session');
+          } else {
+            setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
+          }
         }
       }
 
@@ -251,7 +283,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setTimeOfDay(payload.timeOfDay || 'night');
         setDayNumber(payload.dayNumber || 1);
 
-        const me = payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
+        const me = isSpectator
+          ? undefined
+          : payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
         if (me) {
           if (me.roleId) {
             const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (ALL_ROLES as Role[]);
@@ -275,6 +309,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       showAlert('The Storyteller has quit the session.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
+      setIsSpectator(false);
       setState('join');
       setUserRotation(null);
     } else if (payload.type === 'booted') {
@@ -282,6 +319,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         showAlert('You have been booted from the game room.');
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
+        setIsSpectator(false);
         window.location.hash = '#/join';
         setState('join');
         setUserRotation(null);
@@ -294,16 +334,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   // Keep this player synced in the storyteller list on connect/reconnect; 'preferences' included so a reset Whale Bucket player re-announces and gets current excludedRoleIds/script.
   useEffect(() => {
     if (isConnected && code && name) {
-      if (state === 'waiting' || state === 'revealed' || state === 'tracker' || state === 'preferences') {
+      if (state === 'waiting' || state === 'revealed' || state === 'tracker' || state === 'preferences' || state === 'in-session') {
         sendMessage({
-          type: 'player_join',
+          type: isSpectator ? 'spectator_join' : 'player_join',
           name: name,
           id: playerId,
           pronouns: pronouns || undefined,
         });
       }
     }
-  }, [isConnected, code, name, state, playerId, pronouns, sendMessage]);
+  }, [isConnected, code, name, state, playerId, pronouns, sendMessage, isSpectator]);
 
   const handleJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,6 +407,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const handleLeaveGame = () => {
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
     setCode('');
     setName(localStorage.getItem('botc-joined-name') || '');
     setState('join');
@@ -374,9 +416,37 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     setTorEnabled(false);
     setRevealed(false);
     setUserRotation(null);
+    setIsSpectator(false);
   };
 
-  const goToTracker = () => {
+  const openSpectatorNotes = () => {
+    sessionStorage.removeItem('joined-spectator-pending');
+    sessionStorage.setItem('joined-spectator', 'true');
+    goToTracker();
+  };
+
+  const keepWatching = () => {
+    sessionStorage.removeItem('joined-spectator-pending');
+    sessionStorage.setItem('joined-spectator', 'true');
+    setShowSpectatorReset(false);
+    goToTracker();
+  };
+
+  const joinNextSession = () => {
+    setShowSpectatorReset(false);
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
+    setIsSpectator(false);
+    if (gameType === 'whale-bucket') {
+      setPrefs({ townsfolk: [], outsider: [], minion: [], demon: [] });
+      setState('preferences');
+    } else {
+      setState('waiting');
+      sendMessage({ type: 'player_join', name, id: playerId, pronouns: pronouns || undefined });
+    }
+  };
+
+  function goToTracker() {
     const clearedPlayers = players.map(p => ({
       ...p,
       roleId: '',
@@ -393,12 +463,14 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       timeOfDay,
       dayNumber,
       scriptName,
+      scriptAuthor,
       customScriptRoles,
       scriptLoricRoles,
+      torEnabled,
       code
     }));
     window.location.hash = '#/tracker';
-  };
+  }
 
   // Helper to toggle a single preference selection (max 1 character per type)
   const togglePreference = (team: 'townsfolk' | 'outsider' | 'minion' | 'demon', roleId: string) => {
@@ -447,6 +519,23 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           </div>
         )}
 
+        {state === 'in-session' && (
+          <div className={cn(
+            'space-y-4 rounded-lg border p-8 text-center shadow-xl',
+            isLight ? 'border-gray-200 bg-white' : 'border-gray-800 bg-gray-900/60'
+          )}>
+            <h3 className="font-display text-base font-bold uppercase tracking-wider">Game in Session</h3>
+            <p className="text-sm text-gray-500">This game is already underway. You can view the synced game notes as a spectator.</p>
+            <button
+              type="button"
+              onClick={openSpectatorNotes}
+              className="w-full rounded-md bg-clocktower-blood px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-800"
+            >
+              View Game Notes
+            </button>
+          </div>
+        )}
+
         {/* 3. PREFERENCES SCREEN (Whale Bucket only) */}
         {state === 'preferences' && (
           <PreferencesScreen
@@ -489,19 +578,17 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               "border rounded-xl p-3 flex justify-between items-center text-xs shadow-sm font-semibold",
               isLight ? "bg-white border-gray-250" : "bg-gray-900/60 border-gray-800"
             )}>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span>Active Code: <span className="text-clocktower-blood font-bold">{code}</span></span>
-              </span>
               <span className="uppercase tracking-wider font-bold">
                 {timeOfDay === 'night' ? '🌙 Night' : '☀️ Day'} {dayNumber}
               </span>
-              <button
-                onClick={() => setState('revealed')}
-                className="text-clocktower-blood hover:underline text-xs flex items-center gap-1"
-              >
-                <span>Show Token</span>
-              </button>
+              {!isSpectator && (
+                <button
+                  onClick={() => setState('revealed')}
+                  className="text-clocktower-blood hover:underline text-xs flex items-center gap-1"
+                >
+                  <span>Show Token</span>
+                </button>
+              )}
             </div>
 
             {/* Circular Grimoire Board (without role tokens) */}
@@ -578,6 +665,21 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       </div>
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLight} />
+
+    {showSpectatorReset && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className={cn('w-full max-w-sm space-y-4 rounded-xl border p-5 shadow-2xl', isLight ? 'border-gray-200 bg-white text-gray-900' : 'border-gray-800 bg-gray-900 text-gray-100')}>
+          <div>
+            <h3 className="font-display text-base font-bold">Join the New Session?</h3>
+            <p className="mt-1 text-sm text-gray-500">You can join the player roster for the next game, or keep watching as a spectator.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={joinNextSession} className="rounded-md bg-clocktower-blood px-3 py-2.5 text-sm font-bold text-white">Join as a Player</button>
+            <button type="button" onClick={keepWatching} className={cn('rounded-md border px-3 py-2.5 text-sm font-semibold', isLight ? 'border-gray-300 text-gray-700' : 'border-gray-700 text-gray-300')}>Keep Watching</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     <ScriptCharactersModal
       isOpen={isScriptModalOpen}

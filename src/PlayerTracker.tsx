@@ -106,6 +106,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
+  const [showSpectatorReset, setShowSpectatorReset] = useState(false);
+  const [spectatorResetGameType, setSpectatorResetGameType] = useState<'standard' | 'whale-bucket'>('standard');
 
   const [userRotation, setUserRotation] = useState<number | null>(null);
 
@@ -135,7 +137,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
     if (payload.type === 'game_reset') {
       if (joinedFromLobby) {
-        window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        if (sessionStorage.getItem('joined-spectator') === 'true') {
+          setSpectatorResetGameType(payload.gameType || 'standard');
+          setShowSpectatorReset(true);
+        } else {
+          window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        }
       }
       return;
     }
@@ -191,6 +198,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
@@ -208,6 +217,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         showAlert('You have been booted from the game room. Reverting to local tracker.');
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
@@ -310,6 +321,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const clearSyncSession = () => {
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -327,6 +340,15 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const disconnectSync = () => {
     showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
   };
+
+  const joinNextSpectatorSession = () => {
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
+    setShowSpectatorReset(false);
+    window.location.hash = spectatorResetGameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+  };
+
+  const keepSpectating = () => setShowSpectatorReset(false);
 
   // Back-button guard: a synced player leaving to the main menu is asked to confirm first (cancel keeps them in the session).
   const confirmDisconnectAndLeave = () => {
@@ -347,6 +369,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       setGameNotes('');
       setGameCode(null);
       const newShareCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
@@ -778,6 +802,20 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    {showSpectatorReset && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className={cn('w-full max-w-sm space-y-4 rounded-xl border p-5 shadow-2xl', isLightModeActive ? 'border-gray-200 bg-white text-gray-900' : 'border-gray-800 bg-gray-900 text-gray-100')}>
+          <div>
+            <h3 className="font-display text-base font-bold">Join the New Session?</h3>
+            <p className="mt-1 text-sm text-gray-500">Join the player roster for the next game, or keep watching as a spectator.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={joinNextSpectatorSession} className="rounded-md bg-clocktower-blood px-3 py-2.5 text-sm font-bold text-white">Join as a Player</button>
+            <button type="button" onClick={keepSpectating} className={cn('rounded-md border px-3 py-2.5 text-sm font-semibold', isLightModeActive ? 'border-gray-300 text-gray-700' : 'border-gray-700 text-gray-300')}>Keep Watching</button>
+          </div>
+        </div>
+      </div>
+    )}
     {showShareModal && (
       <RoomCodeModal
         gameCode={shareCode}

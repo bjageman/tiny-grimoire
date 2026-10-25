@@ -34,7 +34,7 @@ interface Props {
   hoverSide: 'before' | 'after' | null;
   setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
-  addTravelerGamePhase: () => void;
+  addTravelerGamePhase: (spectatorId?: string) => void;
   setNewTravelerName: (v: string) => void;
   setNewTravelerRoleId: (v: string) => void;
   handleMouseDown: (e: React.MouseEvent) => void;
@@ -50,6 +50,7 @@ interface Props {
   onResetTime?: () => void;
   onResetDroison?: () => void;
   remotePlayerIds?: Set<string>;
+  spectatorPlayers?: Pick<Player, 'id' | 'name'>[];
   // Optional / mode-specific
   selectionRoles?: Role[];
   showNightOrder?: boolean;
@@ -90,6 +91,7 @@ export default function GamePhase({
   handleTouchStart, handleTouchMove, handleTouchEnd,
   onResetDead, onResetTime, onResetDroison,
   remotePlayerIds,
+  spectatorPlayers,
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
@@ -391,6 +393,7 @@ export default function GamePhase({
             onNameChange={setNewTravelerName}
             roleId={newTravelerRoleId}
             onRoleIdChange={setNewTravelerRoleId}
+            spectators={spectatorPlayers}
             disabled={players.length >= 20}
             onAdd={addTravelerGamePhase}
           />

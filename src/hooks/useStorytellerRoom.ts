@@ -92,15 +92,16 @@ export function useStorytellerRoom<P extends Player>({
       return;
     }
     const sameName = (player: Pick<Player, 'name'>) => player.name.trim().toLowerCase() === normalizedName;
-    if (roster.some(player => sameName(player) && player.id !== payload.id && claimedIds.has(player.id))
+    if (roster.some(player => sameName(player) && player.id !== payload.id && (claimedIds.has(player.id) || payload.type === 'spectator_join'))
       || spectatorsRef.current.some(spectator => sameName(spectator) && spectator.id !== payload.id)) {
       sendMessageRef.current?.({ type: 'duplicate_name', playerId: payload.id, playerName: payload.name });
       return;
     }
 
     const wasSpectator = spectatorsRef.current.some(spectator => spectator.id === payload.id);
-    const matches = (player: P) => player.id === payload.id || (!wasSpectator && payload.type === 'player_join' && sameName(player));
-    const isExistingPlayer = roster.some(matches);
+    const matchedPlayer = roster.find(player => player.id === payload.id)
+      ?? (!wasSpectator && payload.type === 'player_join' ? roster.find(player => sameName(player) && !claimedIds.has(player.id)) : undefined);
+    const isExistingPlayer = !!matchedPlayer;
     const isSpectator = !isExistingPlayer && (payload.type === 'spectator_join' || phase === 'game');
     if (isSpectator) {
       if (!payload.checkOnly) {
@@ -124,7 +125,7 @@ export function useStorytellerRoom<P extends Player>({
     });
 
     const updatedPlayers = payload.checkOnly ? roster : isExistingPlayer
-      ? roster.map(player => matches(player) ? updatePlayer(player, payload) : player)
+      ? roster.map(player => player === matchedPlayer ? updatePlayer(player, payload) : player)
       : [...roster, createPlayer(payload)];
 
     if (!payload.checkOnly) {
@@ -138,7 +139,7 @@ export function useStorytellerRoom<P extends Player>({
       setPlayers(updatedPlayers);
     }
     if (phase !== 'game') broadcastSetupUpdate(updatedPlayers);
-    if (phase === 'game') sendMessageRef.current?.({ type: 'game_update', ...gameState });
+    if (phase === 'game') sendMessageRef.current?.({ type: 'game_update', ...gameState, players: updatedPlayers.map(({ notes, ...rest }) => rest) });
   };
 
   const promoteSpectator = (id: string, roleId: string) => {

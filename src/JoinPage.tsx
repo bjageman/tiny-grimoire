@@ -114,11 +114,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
 
   const rotationOffset = useMemo(() => {
     if (userRotation !== null) return userRotation;
-    const myName = name;
-    if (!myName) return 0;
-    const idx = players.findIndex(p => p.name.trim().toLowerCase() === myName.trim().toLowerCase());
+    const idx = players.findIndex(p => p.id === playerId);
     return idx !== -1 ? idx : 0;
-  }, [players, name, userRotation]);
+  }, [players, playerId, userRotation]);
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || (ALL_ROLES as Role[]);
@@ -187,9 +185,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     }
     if (payload.type === 'setup_update') {
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
-      const me = payload.players?.find(
-        (pl) => pl.id === playerId || (!isSpectator && pl.name.trim().toLowerCase() === name.trim().toLowerCase())
-      );
+      const me = payload.players?.find(pl => pl.id === playerId);
       if (me) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
@@ -228,7 +224,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setPlayers(payload.players || []);
       }
     } else if (payload.type === 'room_full') {
-      if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
+      if (payload.playerId === playerId) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
         sessionStorage.removeItem('joined-code');
@@ -309,7 +305,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setTimeOfDay(payload.timeOfDay || 'night');
         setDayNumber(payload.dayNumber || 1);
 
-        const me = payload.players.find(pl => pl.id === playerId || (!isSpectator && pl.name.trim().toLowerCase() === name.trim().toLowerCase()));
+        const me = payload.players.find(pl => pl.id === playerId);
         if (isSpectator && me) {
           sessionStorage.removeItem('joined-spectator');
           sessionStorage.removeItem('joined-spectator-pending');
@@ -663,7 +659,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               <h4 className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-2">Players Status List</h4>
               <div className="divide-y divide-gray-800/40 space-y-1.5">
                 {players.map((p, index) => {
-                  const isMe = p.name.trim().toLowerCase() === name.trim().toLowerCase() || p.id === playerId;
+                  const isMe = p.id === playerId;
                   return (
                     <div key={p.id} className="flex justify-between items-center py-2 text-sm">
                       <span className="flex items-center gap-2">

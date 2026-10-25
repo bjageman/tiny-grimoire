@@ -231,7 +231,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     if (payload.type === 'player_join' && payload.name && payload.id) {
       const normalizedName = payload.name.trim().toLowerCase();
       const conflictingPlayer = players.find(
-        p => p.name.trim().toLowerCase() === normalizedName && p.id !== payload.id
+        p => p.name.trim().toLowerCase() === normalizedName && p.id !== payload.id && remotePlayerIds.has(p.id)
       );
       if (conflictingPlayer) {
         sendMessageRef.current?.({

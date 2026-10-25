@@ -746,6 +746,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onResetDead={isSynced ? undefined : resetDead}
           onResetTime={isSynced ? undefined : resetTime}
           showNightOrder={false}
+          allowFullscreen
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}

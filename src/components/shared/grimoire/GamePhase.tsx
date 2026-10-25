@@ -80,6 +80,7 @@ interface Props {
   isStoryteller?: boolean;
   alwaysShowNotes?: boolean;
   fullNightOrder?: boolean;
+  allowFullscreen?: boolean;
 }
 
 export default function GamePhase({
@@ -120,6 +121,7 @@ export default function GamePhase({
   isStoryteller = false,
   alwaysShowNotes = false,
   fullNightOrder = false,
+  allowFullscreen = false,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -258,6 +260,7 @@ export default function GamePhase({
             rotationOffset={rotationOffset}
             onRotationChange={onRotationChange}
             alwaysShowNotes={alwaysShowNotes}
+            allowFullscreen={allowFullscreen}
           />
         </div>
         {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}

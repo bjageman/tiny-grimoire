@@ -522,32 +522,34 @@ export default function GrimoireBoard({
         {/* Rotate buttons — center of board */}
         {players.length > 1 && (
           <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-            <div className="flex items-center gap-3 pointer-events-auto">
+            <div className={cn('flex items-center pointer-events-auto', isFullscreen ? 'gap-6' : 'gap-3')}>
               <button
                 type="button"
                 onClick={() => handleRotate(1)}
                 className={cn(
-                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  "rounded-full border transition-all shadow-sm active:scale-95",
+                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
                   isLightModeActive
                     ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
                     : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
                 )}
                 title="Rotate counter-clockwise"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
               </button>
               <button
                 type="button"
                 onClick={() => handleRotate(-1)}
                 className={cn(
-                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  "rounded-full border transition-all shadow-sm active:scale-95",
+                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
                   isLightModeActive
                     ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
                     : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
                 )}
                 title="Rotate clockwise"
               >
-                <RotateCw size={14} />
+                <RotateCw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
               </button>
             </div>
           </div>

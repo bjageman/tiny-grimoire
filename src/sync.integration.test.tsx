@@ -56,6 +56,13 @@ describe('Game sync regressions', () => {
       const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));
       const sender = transport.senders.get('REVW')!;
       sender.mockClear();
+      for (const checkOnly of [true, false]) {
+        receive({ type: 'spectator_join', id: 'spectator-mary', name: ' MARY ', checkOnly });
+        expect(sender).toHaveBeenLastCalledWith({ type: 'duplicate_name', playerId: 'spectator-mary', playerName: ' MARY ' });
+      }
+      expect(JSON.parse(localStorage.getItem(storageKey)!).players[0].id).toBe('manual-mary');
+      expect(JSON.parse(localStorage.getItem(storageKey)!).spectators).toEqual([]);
+      sender.mockClear();
       receive({ type: 'player_join', id: 'mary-device', name: ' MARY ' });
       const saved = () => JSON.parse(localStorage.getItem(storageKey)!);
       expect(saved().players).toHaveLength(2);
@@ -78,11 +85,12 @@ describe('Game sync regressions', () => {
     });
   }
 
-  it('does not accept another synced player\'s public updates as a same-name join', () => {
+  it.each([false, true])('does not accept another player\'s public updates as a same-name join (spectator: %s)', asSpectator => {
     vi.useFakeTimers();
     window.location.hash = '#/join?code=REVW';
     sessionStorage.setItem('botc-player-id', 'another-steve');
     const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    if (asSpectator) fireEvent.click(within(screen.container).getByRole('switch', { name: 'Join as a Spectator' }));
     fireEvent.change(within(screen.container).getByPlaceholderText('Enter your name...'), { target: { value: 'Steve' } });
     fireEvent.click(within(screen.container).getByRole('button', { name: 'Join Game Room' }));
     const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));

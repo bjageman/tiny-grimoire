@@ -92,7 +92,7 @@ export function useStorytellerRoom<P extends Player>({
       return;
     }
     const sameName = (player: Pick<Player, 'name'>) => player.name.trim().toLowerCase() === normalizedName;
-    if (roster.some(player => sameName(player) && player.id !== payload.id && claimedIds.has(player.id))
+    if (roster.some(player => sameName(player) && player.id !== payload.id && (claimedIds.has(player.id) || payload.type === 'spectator_join'))
       || spectatorsRef.current.some(spectator => sameName(spectator) && spectator.id !== payload.id)) {
       sendMessageRef.current?.({ type: 'duplicate_name', playerId: payload.id, playerName: payload.name });
       return;

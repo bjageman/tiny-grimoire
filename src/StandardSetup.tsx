@@ -12,7 +12,7 @@ import GamePhase from './components/shared/grimoire/GamePhase';
 import StandardSetupPhase from './components/standard/SetupPhase';
 import SetupPlayerEditModal from './components/standard/SetupPlayerEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
-import { useGameSocket } from './hooks/useGameSocket';
+import { useStorytellerRoom } from './hooks/useStorytellerRoom';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -64,7 +64,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     return newCode;
   });
 
-  const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
@@ -160,28 +159,17 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   }, [setGameLog]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
-  const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
-
-  const broadcastSetupUpdate = useCallback((listToBroadcast: Player[]) => {
-    if (broadcastTimeoutRef.current) {
-      clearTimeout(broadcastTimeoutRef.current);
-    }
-    broadcastTimeoutRef.current = setTimeout(() => {
-      if (sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'setup_update',
-          gameType: 'standard',
-          players: listToBroadcast.map(({ notes, ...rest }) => rest),
-          scriptName,
-          scriptAuthor,
-          customScriptRoles,
-          scriptLoricRoles: displayedScriptLoricRoles,
-          torEnabled
-        });
-      }
-    }, 1000);
-  }, [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
+  const roomDetails = useMemo(() => ({
+    scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles: displayedScriptLoricRoles, torEnabled,
+  }), [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, broadcastReset } = useStorytellerRoom({
+    storageKey: STORAGE_KEY, gameCode, gameType: 'standard', isSecondary, phase, players, setPlayers, maxPlayers: 20,
+    timeOfDay, dayNumber, setupDetails: roomDetails, gameDetails: roomDetails,
+    createPlayer: payload => ({
+      id: payload.id, name: payload.name, isDead: false, roleId: '', pronouns: payload.pronouns,
+    }),
+    updatePlayer: (player, payload) => ({ ...player, id: payload.id, pronouns: payload.pronouns }),
+  });
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -252,20 +240,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     resetSetupModifiers();
     setGrimoireConfirmed(false);
 
-    // Broadcast immediately (no debounce): the reset command (primary signal) then a setup_update with the cleared roster/script as backup.
-    if (sendMessageRef.current) {
-      sendMessageRef.current({ type: 'game_reset', gameType: 'standard' });
-      sendMessageRef.current({
-        type: 'setup_update',
-        gameType: 'standard',
-        players: clearedPlayers.map(({ notes, ...rest }) => rest),
-        scriptName,
-        scriptAuthor,
-        customScriptRoles,
-        scriptLoricRoles: displayedScriptLoricRoles,
-        torEnabled,
-      });
-    }
+    broadcastReset(clearedPlayers);
   };
 
   const resetGame = () => {
@@ -311,153 +286,6 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     handleTouchEnd,
   } = usePlayerDragAndDrop(players, setPlayers);
 
-  const handleIncomingMessage = (data: unknown) => {
-    const payload = data as {
-      type: string;
-      id: string;
-      name: string;
-      pronouns?: string;
-      checkOnly?: boolean;
-    };
-    if (payload.type === 'player_join' && payload.name && payload.id) {
-      const normalizedName = payload.name.trim().toLowerCase();
-      const conflictingPlayer = players.find(
-        p => p.name.trim().toLowerCase() === normalizedName && p.id !== payload.id && remotePlayerIds.has(p.id)
-      );
-      if (conflictingPlayer) {
-        sendMessageRef.current?.({
-          type: 'duplicate_name',
-          playerId: payload.id,
-          playerName: payload.name,
-        });
-        return;
-      }
-      const isExistingPlayer = players.some(
-        p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id
-      );
-      if (phase === 'game' && !isExistingPlayer) {
-        return;
-      }
-
-      if (!isExistingPlayer && players.length >= 20) {
-        if (sendMessageRef.current) {
-          sendMessageRef.current({
-            type: 'room_full',
-            playerId: payload.id,
-            playerName: payload.name,
-          });
-        }
-        return;
-      }
-
-      if (sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'code_valid',
-          gameType: 'standard',
-          playerId: payload.id,
-          playerName: payload.name,
-          scriptName,
-          scriptAuthor,
-          customScriptRoles,
-          scriptLoricRoles: displayedScriptLoricRoles,
-          torEnabled
-        });
-      }
-
-      if (!payload.checkOnly) {
-        setRemotePlayerIds(prev => new Set([...prev, payload.id]));
-        setPlayers(prev => {
-          const exists = prev.some(p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id);
-          if (exists) {
-            return prev.map(p =>
-              (p.name.trim().toLowerCase() === normalizedName || p.id === payload.id)
-                ? { ...p, id: payload.id, pronouns: payload.pronouns }
-                : p
-            );
-          }
-          return [
-            ...prev,
-            {
-              id: payload.id,
-              name: payload.name,
-              isDead: false,
-              roleId: '',
-              pronouns: payload.pronouns,
-            }
-          ];
-        });
-      }
-
-      if (phase === 'setup') {
-        const updatedPlayers = isExistingPlayer
-          ? players.map(p =>
-              (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
-                ? { ...p, id: payload.id, pronouns: payload.pronouns }
-                : p
-            )
-          : (payload.checkOnly ? players : [
-              ...players,
-              {
-                id: payload.id,
-                name: payload.name,
-                isDead: false,
-                roleId: '',
-                pronouns: payload.pronouns,
-              }
-            ]);
-        broadcastSetupUpdate(updatedPlayers);
-      }
-
-      if (phase === 'game' && sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'game_update',
-          players: players.map(({ notes, ...rest }) => rest),
-          timeOfDay,
-          dayNumber,
-          scriptName,
-          scriptAuthor,
-          customScriptRoles,
-          scriptLoricRoles: displayedScriptLoricRoles,
-          torEnabled
-        });
-      }
-    }
-  };
-
-  const { sendMessage } = useGameSocket(!isSecondary ? gameCode : '', handleIncomingMessage);
-
-  useEffect(() => {
-    sendMessageRef.current = sendMessage;
-  }, [sendMessage]);
-
-  // Sync game state to players when in game phase
-  useEffect(() => {
-    if (!isSecondary && phase === 'game' && sendMessage) {
-      sendMessage({
-        type: 'game_update',
-        players: players.map(({ notes, ...rest }) => rest),
-        timeOfDay,
-        dayNumber,
-        scriptName,
-        scriptAuthor,
-        customScriptRoles,
-        scriptLoricRoles: displayedScriptLoricRoles,
-        torEnabled
-      });
-    }
-  }, [phase, players, timeOfDay, dayNumber, scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled, sendMessage, isSecondary]);
-
-  // Broadcast player list to players during setup phase
-  useEffect(() => {
-    if (!isSecondary && phase === 'setup') {
-      // Only broadcast standard setup updates on mount or phase change, not every players change, to prevent a loop storm.
-      const initialTimer = setTimeout(() => {
-        broadcastSetupUpdate(players);
-      }, 500);
-      return () => clearTimeout(initialTimer);
-    }
-  }, [phase, players, broadcastSetupUpdate, isSecondary]);
-
   // Storyteller Sync channel (laptop <-> phone)
   const syncState = useMemo(() => ({
     players: phase === 'game' ? players.map(({ preferences, ...rest }) => rest) : players,
@@ -476,8 +304,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     checkedItems,
     rotationOffset,
     popeEnabled,
+    remotePlayerIds: [...remotePlayerIds],
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, remotePlayerIds
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -501,10 +330,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setCheckedItems(incoming.checkedItems || {});
       setRotationOffset(incoming.rotationOffset ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
+      setRemotePlayerIds(new Set(incoming.remotePlayerIds || []));
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setRemotePlayerIds
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -527,6 +357,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
+      remotePlayerIds: [...remotePlayerIds],
       phase,
       timeOfDay,
       dayNumber,
@@ -549,7 +380,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [remotePlayerIds, players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {

@@ -21,6 +21,7 @@ import DialogModal from './components/shared/modals/DialogModal';
 import { useDialog } from './hooks/useDialog';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import StorytellerSessionActions from './components/shared/ui/StorytellerSessionActions';
 import ResetGameModal from './components/shared/modals/ResetGameModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { buildPlayerTrackerTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
@@ -162,7 +163,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const roomDetails = useMemo(() => ({
     scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles: displayedScriptLoricRoles, torEnabled,
   }), [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
-  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, broadcastReset } = useStorytellerRoom({
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, bannedPlayers, setBannedPlayers, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
     storageKey: STORAGE_KEY, gameCode, gameType: 'standard', isSecondary, phase, players, setPlayers, maxPlayers: 20,
     timeOfDay, dayNumber, setupDetails: roomDetails, gameDetails: roomDetails,
     createPlayer: payload => ({
@@ -170,6 +171,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     }),
     updatePlayer: (player, payload) => ({ ...player, id: payload.id, pronouns: payload.pronouns }),
   });
+
+  const connectedCount = remotePlayerIds.size + spectators.length;
 
   const closeDetailsModal = () => {
     setSelectedPlayerId(null);
@@ -197,6 +200,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
+    setSpectators([]);
+    setBannedPlayers([]);
     resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
@@ -244,7 +249,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   };
 
   const resetGame = () => {
-    if (remotePlayerIds.size > 0) {
+    if (connectedCount > 0) {
       setShowResetModal(true);
     } else {
       showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
@@ -305,8 +310,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     rotationOffset,
     popeEnabled,
     remotePlayerIds: [...remotePlayerIds],
+    spectators,
+    bannedPlayers,
   }), [
-    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, remotePlayerIds
+    players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, sentinelOutsiderDelta, demonBluffs, reminderTokens, checkedItems, rotationOffset, popeEnabled, remotePlayerIds, spectators, bannedPlayers
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -331,10 +338,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       setRotationOffset(incoming.rotationOffset ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
       setRemotePlayerIds(new Set(incoming.remotePlayerIds || []));
+      setSpectators(incoming.spectators || []);
+      setBannedPlayers(incoming.bannedPlayers || []);
     }
   }, [
     syncState, setPlayers, setPhase, setTimeOfDay, setDayNumber, setCustomScriptRoles, setScriptLoricRoles,
-    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setRemotePlayerIds
+    setScriptName, setScriptAuthor, setIsLilMonstaGame, setTorEnabled, setSentinelOutsiderDelta, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setPopeEnabled, setRemotePlayerIds, setSpectators, setBannedPlayers
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -358,6 +367,8 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
       remotePlayerIds: [...remotePlayerIds],
+      spectators,
+      bannedPlayers,
       phase,
       timeOfDay,
       dayNumber,
@@ -380,7 +391,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       fullNightOrder,
       allReminders,
     }));
-  }, [remotePlayerIds, players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
+  }, [remotePlayerIds, spectators, bannedPlayers, players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, scriptName, scriptAuthor, isLilMonstaGame, torEnabled, demonBluffs, gameLog, gameNotes, reminderTokens, checkedItems, selectedCharacterIds, villageIdiotCount, popeEnabled, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -408,7 +419,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     setNewPlayerName('');
   };
 
-  const addTravelerGamePhase = () => {
+  const addTravelerGamePhase = (spectatorId?: string) => {
+    if (spectatorId) {
+      const spectator = spectators.find(candidate => candidate.id === spectatorId);
+      if (!newTravelerRoleId || !spectator || !promoteSpectator(spectatorId, newTravelerRoleId)) {
+        showAlert('Unable to add that spectator. Check the Traveler role and player limit.');
+        return;
+      }
+      const role = PLAYABLE_ROLES.find(candidate => candidate.id === newTravelerRoleId);
+      addLogEntry(`${spectator.name} joined as ${role?.name ?? newTravelerRoleId} (Traveler)`);
+      setNewTravelerName('');
+      return;
+    }
     if (!newTravelerName.trim()) {
       showAlert("Please enter a traveler name.");
       return;
@@ -440,27 +462,18 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const player = players.find(p => p.id === id);
     if (!player) return;
 
-    const performRemoval = () => {
-      setPlayers(players.filter(p => p.id !== id));
-      if (remotePlayerIds.has(id)) {
-        setRemotePlayerIds(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        if (sendMessageRef.current) {
-          sendMessageRef.current({
-            type: 'booted',
-            playerId: id,
-          });
-        }
-      }
-    };
-
     if (remotePlayerIds.has(id)) {
-      showConfirm(`Are you sure you want to remove the connected player "${player.name}"?`, performRemoval, 'Remove Player');
+      showChoice(
+        <>Remove <strong className="text-base font-bold">{player.name}</strong> from the player roster?</>,
+        [
+          { label: 'Ban', destructive: true, onClick: () => removeSyncedPlayer(id, 'ban') },
+          { label: 'Kick', onClick: () => removeSyncedPlayer(id, 'kick') },
+          { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, 'spectator') },
+        ],
+        'Remove Player'
+      );
     } else {
-      performRemoval();
+      setPlayers(current => current.filter(player => player.id !== id));
     }
   };
 
@@ -545,10 +558,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const allAssigned = players.length >= 5 && players.every(p => p.roleId);
   const isLightModeActive = theme === 'light';
-  const { dialogProps, showAlert, showConfirm } = useDialog();
+  const { dialogProps, showAlert, showConfirm, showChoice } = useDialog();
 
   const performTransferToGameNotes = async () => {
-    if (remotePlayerIds.size > 0 && sendMessageRef.current) {
+    if (connectedCount > 0 && sendMessageRef.current) {
       try {
         await sendMessageRef.current({ type: 'storyteller_quit' });
       } catch (e) {
@@ -570,12 +583,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
 
   const transferToGameNotes = () => {
     const replacingExisting = localStorage.getItem(PLAYER_TRACKER_STORAGE_KEY) !== null;
-    if (!replacingExisting && remotePlayerIds.size === 0) {
+    if (!replacingExisting && connectedCount === 0) {
       void performTransferToGameNotes();
       return;
     }
-    const liveSessionWarning = remotePlayerIds.size > 0
-      ? ` ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'} will be disconnected.`
+    const liveSessionWarning = connectedCount > 0
+      ? ` ${connectedCount} connected viewer${connectedCount === 1 ? '' : 's'} will be disconnected.`
       : '';
     const overwriteWarning = replacingExisting ? ' Existing Game Notes will be replaced.' : '';
     showConfirm(
@@ -610,14 +623,14 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 && !isSecondary ? "#/host" : undefined}
+      backHref={phase === 'setup' && connectedCount === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
             // Stepping back to setup keeps the one-time grimoire confirmation; only a Reset (Keep Players / Disconnect) re-arms it.
             ? () => setPhase('setup')
-            : remotePlayerIds.size > 0
+            : connectedCount > 0
               // Synced with players: surface the reset/disconnect choice first instead of silently abandoning them to the Host menu.
               ? () => setShowResetModal(true)
               : undefined
@@ -644,13 +657,11 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
             </HeaderCodeBadge>
           ) : (
-            <HeaderCodeBadge
-              onClick={() => setShowSyncModal(true)}
-              title="Sync other device as secondary controller"
+            <StorytellerSessionActions
               isLightModeActive={isLightModeActive}
-            >
-              Sync Other Device
-            </HeaderCodeBadge>
+              onSyncStoryteller={() => setShowSyncModal(true)}
+              onAddSpectator={() => setShowRoomCodeModal(true)}
+            />
           )}
         </div>
       }
@@ -690,14 +701,12 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
             Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
           </HeaderCodeBadge>
         ) : (
-          <HeaderCodeBadge
+          <StorytellerSessionActions
             mobile
-            onClick={() => setShowSyncModal(true)}
-            title="Sync other device as secondary controller"
             isLightModeActive={isLightModeActive}
-          >
-            Sync Other Device
-          </HeaderCodeBadge>
+            onSyncStoryteller={() => setShowSyncModal(true)}
+            onAddSpectator={() => setShowRoomCodeModal(true)}
+          />
         )
       }
       contentClassName="px-4 md:px-8 lg:px-12 pt-6 pb-4"
@@ -811,6 +820,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
           onResetDead={resetDead}
           onResetTime={resetTime}
           remotePlayerIds={remotePlayerIds}
+          spectatorPlayers={spectators}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
@@ -851,9 +861,9 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
                 sendMessageRef.current({ type: 'game_winner', team });
               }
             };
-            if (remotePlayerIds.size > 0) {
+            if (connectedCount > 0) {
               const teamLabel = team === 'good' ? 'Good' : 'Evil';
-              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${remotePlayerIds.size} connected player${remotePlayerIds.size === 1 ? '' : 's'}.`, broadcast);
+              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${connectedCount} connected viewer${connectedCount === 1 ? '' : 's'}.`, broadcast);
             } else {
               broadcast();
             }
@@ -946,7 +956,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     )}
     {showResetModal && (
       <ResetGameModal
-        remotePlayerCount={remotePlayerIds.size}
+        remotePlayerCount={connectedCount}
         isLightModeActive={isLightModeActive}
         onCancel={() => setShowResetModal(false)}
         onKeepPlayers={() => {

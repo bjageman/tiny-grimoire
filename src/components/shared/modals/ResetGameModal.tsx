@@ -37,8 +37,8 @@ export default function ResetGameModal({
           <h3 className="font-bold text-base mb-1">Reset Game?</h3>
           <p className={cn('text-sm leading-relaxed', isLightModeActive ? 'text-gray-600' : 'text-gray-300')}>
             {remotePlayerCount === 1
-              ? '1 player is connected.'
-              : `${remotePlayerCount} players are connected.`}
+              ? '1 person is connected.'
+              : `${remotePlayerCount} people are connected.`}
             {' '}Choose what happens to them.
           </p>
         </div>

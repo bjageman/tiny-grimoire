@@ -49,11 +49,13 @@ describe('PlayerTracker', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen grimoire' }));
     const fullscreen = screen.getByRole('dialog', { name: 'Fullscreen grimoire' });
+    expect(within(fullscreen).queryByRole('img', { name: 'Dead' })).toBeNull();
     act(() => mockOnMessageCallback({
       type: 'game_update', timeOfDay: 'day', dayNumber: 4,
       players: [{ id: 'alice', name: 'Alice', isDead: true, hasDeadVote: true, roleId: 'imp' }],
     }));
     expect(within(fullscreen).getByTitle('Vote Token Active')).toBeInTheDocument();
+    expect(within(fullscreen).getByRole('img', { name: 'Dead' })).toBeInTheDocument();
     expect(within(fullscreen).getAllByText('0/1 Alive').length).toBeGreaterThan(0);
     expect(JSON.parse(localStorage.getItem('player-tracker-botc-game')!).players[0].roleId).toBe('');
     fireEvent.keyDown(window, { key: 'Escape' });

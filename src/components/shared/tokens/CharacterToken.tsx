@@ -1,4 +1,5 @@
 import { cn } from '../../../utils/cn';
+import { Skull } from 'lucide-react';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { deadSeatStyle } from '../../../utils/playerSeat';
 import type { AnyRole } from '../../../types';
@@ -81,16 +82,24 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
         <circle cx="100" cy="100" r="58" fill="none" stroke="#e4e4e7" strokeWidth="1" strokeDasharray="3 3" />
       </svg>
       {/* Icon layer: clipped to the token circle so any image, whatever its shape, stays inside the ring */}
-      {role && (
+      {(role || isDead) && (
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none select-none">
           <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
-            <img
-              key={role.id}
-              src={`/icons/${role.id}.svg`}
-              alt={role.name}
-              className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : role.team === 'fabled' ? 'opacity-50' : 'opacity-35'), isDead && 'grayscale', role.team === 'fabled' ? 'brightness-[0.45] saturate-[0.85]' : role.team === 'loric' && 'brightness-[0.65] saturate-[0.85]')}
-              onError={roleIconFallback(role, evil)}
-            />
+            {role ? (
+              <img
+                key={role.id}
+                src={`/icons/${role.id}.svg`}
+                alt={role.name}
+                className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : role.team === 'fabled' ? 'opacity-50' : 'opacity-35'), isDead && 'grayscale', role.team === 'fabled' ? 'brightness-[0.45] saturate-[0.85]' : role.team === 'loric' && 'brightness-[0.65] saturate-[0.85]')}
+                onError={roleIconFallback(role, evil)}
+              />
+            ) : (
+              <Skull
+                role="img"
+                aria-label="Dead"
+                className={cn('w-full h-full text-gray-900 grayscale', !solidIcon && dead.iconOpacity)}
+              />
+            )}
           </div>
         </div>
       )}

@@ -100,7 +100,7 @@ export default function RoomCodeModal({ gameCode, joinUrl, onClose, isLightModeA
         ) : (
           <div className="text-center">
             <p className="text-sm font-display font-bold uppercase tracking-wider text-clocktower-blood">
-              Sync Other Device
+              Sync Co-Storyteller
             </p>
             <p className={cn('text-[11px] font-medium mt-0.5 leading-relaxed', isLightModeActive ? 'text-gray-500' : 'text-gray-450')}>
               Scan the QR code to sync with another device

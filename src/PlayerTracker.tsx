@@ -20,6 +20,7 @@ import DialogModal from './components/shared/modals/DialogModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
+import SpectatorResetModal from './components/shared/modals/SpectatorResetModal';
 import { useDialog } from './hooks/useDialog';
 import { buildStandardTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
@@ -107,6 +108,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
+  const [showSpectatorReset, setShowSpectatorReset] = useState(false);
+  const [spectatorResetGameType, setSpectatorResetGameType] = useState<'standard' | 'whale-bucket'>('standard');
 
   const [userRotation, setUserRotation] = useState<number | null>(null);
 
@@ -131,16 +134,36 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptLoricRoles?: LoricRole[];
       torEnabled?: boolean;
       playerId?: string;
+      spectator?: boolean;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
     const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
     if (payload.type === 'game_reset') {
       if (joinedFromLobby) {
-        window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        if (sessionStorage.getItem('joined-spectator') === 'true') {
+          setSpectatorResetGameType(payload.gameType || 'standard');
+          setShowSpectatorReset(true);
+        } else {
+          window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        }
       }
       return;
     }
-    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
+    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update' || payload.type === 'code_valid') {
+      if (payload.type === 'code_valid' && payload.playerId !== sessionStorage.getItem('botc-player-id')) return;
+      if (payload.type === 'code_valid' && payload.spectator) {
+        if (sessionStorage.getItem('joined-spectator') !== 'true') {
+          showAlert('The storyteller made you a spectator. You can keep following the game in Game Notes.', 'You Are Now a Spectator');
+        }
+        sessionStorage.setItem('joined-spectator', 'true');
+        sessionStorage.removeItem('joined-spectator-pending');
+      }
+      if (sessionStorage.getItem('joined-spectator') === 'true'
+        && payload.players?.some(player => player.id === sessionStorage.getItem('botc-player-id'))) {
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
+        window.location.hash = '#/join';
+      }
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
         setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers));
@@ -168,6 +191,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
@@ -179,12 +204,14 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         }
       }
       setGameCode(null);
-    } else if (payload.type === 'booted') {
+    } else if (payload.type === 'booted' || payload.type === 'banned') {
       const myPlayerId = sessionStorage.getItem('botc-player-id');
       if (payload.playerId === myPlayerId) {
-        showAlert('You have been booted from the game room. Reverting to local tracker.');
+        showAlert('You have been removed from the game by the storyteller');
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
@@ -200,7 +227,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  useGameSocket(gameCode || '', handleIncomingMessage);
+  const { isConnected, sendMessage } = useGameSocket(gameCode || '', handleIncomingMessage);
+  useEffect(() => {
+    const name = sessionStorage.getItem('joined-name');
+    const id = sessionStorage.getItem('botc-player-id');
+    if (!isConnected || !gameCode || !name || !id) return;
+    sendMessage({
+      type: sessionStorage.getItem('joined-spectator') === 'true' ? 'spectator_join' : 'player_join',
+      id, name, pronouns: localStorage.getItem('joined-pronouns') || undefined,
+    });
+  }, [gameCode, isConnected, sendMessage]);
 
   // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -287,6 +323,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const clearSyncSession = () => {
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -304,6 +342,15 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const disconnectSync = () => {
     showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
   };
+
+  const joinNextSpectatorSession = () => {
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
+    setShowSpectatorReset(false);
+    window.location.hash = spectatorResetGameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+  };
+
+  const keepSpectating = () => setShowSpectatorReset(false);
 
   // Back-button guard: a synced player leaving to the main menu is asked to confirm first (cancel keeps them in the session).
   const confirmDisconnectAndLeave = () => {
@@ -324,6 +371,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       setGameNotes('');
       setGameCode(null);
       const newShareCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
@@ -756,6 +805,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    <SpectatorResetModal
+      isOpen={showSpectatorReset}
+      isLightModeActive={isLightModeActive}
+      onJoin={joinNextSpectatorSession}
+      onKeepWatching={keepSpectating}
+    />
     {showShareModal && (
       <RoomCodeModal
         gameCode={shareCode}

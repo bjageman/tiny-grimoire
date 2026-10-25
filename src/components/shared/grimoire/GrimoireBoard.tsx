@@ -336,6 +336,10 @@ export default function GrimoireBoard({
     [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect],
   );
 
+  const infoBadgeSizeClass = isFullscreen
+    ? 'px-3 py-2 text-sm md:px-4 md:py-2.5 md:text-lg lg:text-xl'
+    : 'px-3 py-1.5 text-[10px]';
+
   const playerCount = players.length;
   const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
   const seatOf = (playerIndex: number) =>
@@ -411,12 +415,16 @@ export default function GrimoireBoard({
       </div>
 
       {/* Row 2: info badges (mobile only) — own flex row so label width fits its content, not the button row's columns. */}
-      <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
+      <div className={cn(
+        "md:hidden w-full mb-2 flex items-center justify-between",
+        isFullscreen ? "px-0 max-w-none flex-wrap gap-2" : "px-4 max-w-[450px] gap-3"
+      )}>
         <div
           id="grimoire-info-row"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border whitespace-nowrap",
+            "group flex items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border whitespace-nowrap",
+            infoBadgeSizeClass,
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
@@ -433,7 +441,8 @@ export default function GrimoireBoard({
           id="grimoire-alive-badge-mobile"
           onClick={onResetDead}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
+            "flex items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
+            infoBadgeSizeClass,
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
@@ -479,7 +488,8 @@ export default function GrimoireBoard({
           id="grimoire-time-badge"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
+            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
+            infoBadgeSizeClass,
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
@@ -497,7 +507,8 @@ export default function GrimoireBoard({
           id="grimoire-alive-badge"
           onClick={onResetDead}
           className={cn(
-            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 rounded-md font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
+            infoBadgeSizeClass,
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
@@ -511,32 +522,34 @@ export default function GrimoireBoard({
         {/* Rotate buttons — center of board */}
         {players.length > 1 && (
           <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-            <div className="flex items-center gap-3 pointer-events-auto">
+            <div className={cn('flex items-center pointer-events-auto', isFullscreen ? 'gap-6' : 'gap-3')}>
               <button
                 type="button"
                 onClick={() => handleRotate(1)}
                 className={cn(
-                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  "rounded-full border transition-all shadow-sm active:scale-95",
+                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
                   isLightModeActive
                     ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
                     : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
                 )}
                 title="Rotate counter-clockwise"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
               </button>
               <button
                 type="button"
                 onClick={() => handleRotate(-1)}
                 className={cn(
-                  "p-2 rounded-full border transition-all shadow-sm active:scale-95",
+                  "rounded-full border transition-all shadow-sm active:scale-95",
+                  isFullscreen ? 'p-3 md:p-4' : 'p-2',
                   isLightModeActive
                     ? "bg-white/80 border-gray-300 text-gray-500 hover:text-gray-800 hover:bg-white"
                     : "bg-gray-900/80 border-gray-700 text-gray-500 hover:text-gray-200 hover:bg-gray-800"
                 )}
                 title="Rotate clockwise"
               >
-                <RotateCw size={14} />
+                <RotateCw size={isFullscreen ? 24 : 14} className={isFullscreen ? 'md:w-7 md:h-7' : undefined} />
               </button>
             </div>
           </div>

@@ -320,8 +320,20 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       checkOnly?: boolean;
     };
     if (payload.type === 'player_join' && payload.name && payload.id) {
+      const normalizedName = payload.name.trim().toLowerCase();
+      const conflictingPlayer = players.find(
+        p => p.name.trim().toLowerCase() === normalizedName && p.id !== payload.id
+      );
+      if (conflictingPlayer) {
+        sendMessageRef.current?.({
+          type: 'duplicate_name',
+          playerId: payload.id,
+          playerName: payload.name,
+        });
+        return;
+      }
       const isExistingPlayer = players.some(
-        p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
+        p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id
       );
       if (phase === 'game' && !isExistingPlayer) {
         return;
@@ -355,10 +367,10 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
       if (!payload.checkOnly) {
         setRemotePlayerIds(prev => new Set([...prev, payload.id]));
         setPlayers(prev => {
-          const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
+          const exists = prev.some(p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id);
           if (exists) {
             return prev.map(p =>
-              (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id)
+              (p.name.trim().toLowerCase() === normalizedName || p.id === payload.id)
                 ? { ...p, id: payload.id, pronouns: payload.pronouns }
                 : p
             );

@@ -91,3 +91,73 @@ for (const support of ['unavailable', 'denied']) {
     await expect(page.getByRole('button', { name: 'Enter fullscreen grimoire' })).toBeFocused();
   });
 }
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+  { width: 768, height: 1024 },
+  { width: 1280, height: 800 },
+]) {
+  test(`fullscreen join QR fits ${viewport.width}x${viewport.height} alongside rotation`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => {
+      localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+        phase: 'game', code: 'JOIN', timeOfDay: 'day', dayNumber: 3,
+        players: Array.from({ length: 20 }, (_, index) => ({ id: `p${index}`, name: `Player ${index + 1}` })),
+      }));
+    });
+    await page.goto('/#/tracker');
+    await expect(page.getByRole('button', { name: 'Show join code' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Enter fullscreen grimoire' }).click();
+    const fullscreen = page.getByRole('dialog', { name: 'Fullscreen grimoire' });
+    const toggle = fullscreen.getByRole('button', { name: 'Show join code' });
+    const boardBounds = await fullscreen.locator('#grimoire-circle-board').boundingBox();
+    const toggleBounds = await toggle.boundingBox();
+    expect(toggleBounds!.x - boardBounds!.x).toBeLessThan(20);
+    expect(boardBounds!.y + boardBounds!.height - toggleBounds!.y - toggleBounds!.height).toBeLessThan(20);
+    const rotate = fullscreen.getByTitle('Rotate clockwise', { exact: true });
+    const initialRotateY = (await rotate.boundingBox())!.y;
+    await toggle.click();
+    const region = fullscreen.getByRole('region', { name: 'Join this game' });
+    await expect(region).toContainText('JOIN');
+    const qr = region.getByRole('img', { name: 'Join game JOIN' });
+    await expect(qr).toBeVisible();
+    const qrBounds = (await qr.boundingBox())!;
+    const pageUrl = new URL(page.url());
+    const joinUrl = region.getByText(`${pageUrl.origin}${pageUrl.pathname}#/join?code=JOIN`, { exact: true });
+    await expect(joinUrl).toBeVisible();
+    expect((await joinUrl.boundingBox())!.y).toBeGreaterThanOrEqual(qrBounds.y + qrBounds.height);
+    expect(qrBounds.width).toBeGreaterThan(50);
+    expect(qrBounds.x).toBeGreaterThanOrEqual(0);
+    expect(qrBounds.y).toBeGreaterThanOrEqual(0);
+    expect(qrBounds.x + qrBounds.width).toBeLessThanOrEqual(viewport.width);
+    expect(qrBounds.y + qrBounds.height).toBeLessThanOrEqual(viewport.height);
+    await expect.poll(async () => (await rotate.boundingBox())!.y).toBeGreaterThan(initialRotateY);
+    await expect.poll(() => fullscreen.evaluate(root => {
+      const joinElements = root.querySelectorAll('[aria-label="Join this game"] p, [aria-label="Join this game"] svg');
+      const players = Array.from(root.querySelectorAll('[id^="grimoire-player-"]'));
+      return Array.from(joinElements).every(element => {
+        const bounds = element.getBoundingClientRect();
+        return players.every(player => {
+          const rect = player.getBoundingClientRect();
+          return rect.right <= bounds.left || rect.left >= bounds.right || rect.bottom <= bounds.top || rect.top >= bounds.bottom;
+        });
+      });
+    })).toBe(true);
+    const seat = () => fullscreen.locator('#grimoire-player-p0').evaluate(button => button.closest('[style*="left"]')!.getAttribute('style'));
+    const initialSeat = await seat();
+    await rotate.click();
+    await expect.poll(seat).not.toBe(initialSeat);
+    await expect(region).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(region).toHaveCount(0);
+    await expect(fullscreen).toBeVisible();
+    await fullscreen.getByRole('button', { name: 'Show join code' }).click();
+    await fullscreen.getByRole('button', { name: 'Hide join code' }).click();
+    await expect(region).toHaveCount(0);
+    await fullscreen.getByRole('button', { name: 'Show join code' }).click();
+    await fullscreen.getByRole('button', { name: 'Exit fullscreen grimoire' }).click();
+    await page.getByRole('button', { name: 'Enter fullscreen grimoire' }).click();
+    await expect(page.getByRole('region', { name: 'Join this game' })).toHaveCount(0);
+  });
+}

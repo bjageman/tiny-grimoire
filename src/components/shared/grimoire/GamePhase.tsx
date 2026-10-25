@@ -81,6 +81,7 @@ interface Props {
   alwaysShowNotes?: boolean;
   fullNightOrder?: boolean;
   allowFullscreen?: boolean;
+  joinCode?: string;
 }
 
 export default function GamePhase({
@@ -122,6 +123,7 @@ export default function GamePhase({
   alwaysShowNotes = false,
   fullNightOrder = false,
   allowFullscreen = false,
+  joinCode,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -261,6 +263,7 @@ export default function GamePhase({
             onRotationChange={onRotationChange}
             alwaysShowNotes={alwaysShowNotes}
             allowFullscreen={allowFullscreen}
+            joinCode={joinCode}
           />
         </div>
         {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}

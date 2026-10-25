@@ -68,7 +68,7 @@ export default function WaitingScreen({ isLight, code, name, pronouns, onSelectP
         )}
       >
         <Scroll size={15} />
-        <span>View Script: {scriptName}</span>
+        <span>{scriptName}</span>
       </button>
       <div className={cn("p-4 rounded-xl border text-xs leading-relaxed", isLight ? "bg-gray-50 border-gray-200" : "bg-gray-950 border-gray-800")}>
         {gameType === 'whale-bucket' ? (

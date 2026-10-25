@@ -3,6 +3,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { useIsMobile } from './hooks/useIsMobile';
 import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
+import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
 import type { AnyRole, LoricRole, Role, Player } from './types';
@@ -17,6 +18,7 @@ import PreferencesScreen from './components/join/PreferencesScreen';
 import RevealedScreen from './components/join/RevealedScreen';
 import WaitingScreen from './components/join/WaitingScreen';
 import JoinForm from './components/join/JoinForm';
+import SpectatorResetModal from './components/shared/modals/SpectatorResetModal';
 
 export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [code, setCode] = useState(() => {
@@ -185,13 +187,19 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     if (payload.type === 'setup_update') {
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       const me = payload.players?.find(
-        (pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId
+        (pl) => pl.id === playerId || (!isSpectator && pl.name.trim().toLowerCase() === name.trim().toLowerCase())
       );
       if (me) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
         setGameType(payload.gameType);
 
+        if (isSpectator && !payload.spectator) {
+          sessionStorage.removeItem('joined-spectator');
+          sessionStorage.removeItem('joined-spectator-pending');
+          setIsSpectator(false);
+          setState('waiting');
+        }
         if (stateRef.current === 'checking') {
           // Persist the session as soon as we're in the room (both modes) so a later tracker/reset can resume the join.
           sessionStorage.setItem('joined-code', code);
@@ -229,26 +237,40 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setState('join');
         setErrorMsg('The game room is full.');
       }
-    } else if (payload.type === 'code_valid') {
-      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
-      if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {
+    } else if (payload.type === 'duplicate_name') {
+      if (payload.playerId === playerId) {
         if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
         if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
-        setGameType(payload.gameType);
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        setState('join');
+        setErrorMsg('That name is already in use in this room. Please choose another.');
+      }
+    } else if (payload.type === 'code_valid') {
+      if (payload.playerId !== playerId) return;
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
+      if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
+      if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+      setGameType(payload.gameType);
 
-        if (stateRef.current === 'checking') {
-          sessionStorage.setItem('joined-code', code);
-          sessionStorage.setItem('joined-name', name);
-          if (payload.spectator) {
-            sessionStorage.setItem('joined-spectator-pending', 'true');
-            setIsSpectator(true);
-            if (payload.players) setPlayers(payload.players);
-            if (payload.timeOfDay) setTimeOfDay(payload.timeOfDay);
-            if (payload.dayNumber !== undefined) setDayNumber(payload.dayNumber);
-            setState('in-session');
-          } else {
-            setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
-          }
+      if (isSpectator && !payload.spectator) {
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
+        setIsSpectator(false);
+        setState('waiting');
+      }
+      if (stateRef.current === 'checking') {
+        sessionStorage.setItem('joined-code', code);
+        sessionStorage.setItem('joined-name', name);
+        if (payload.spectator) {
+          sessionStorage.setItem('joined-spectator-pending', 'true');
+          setIsSpectator(true);
+          if (payload.players) setPlayers(payload.players);
+          if (payload.timeOfDay) setTimeOfDay(payload.timeOfDay);
+          if (payload.dayNumber !== undefined) setDayNumber(payload.dayNumber);
+          setState('in-session');
+        } else {
+          setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
         }
       }
 
@@ -283,9 +305,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setTimeOfDay(payload.timeOfDay || 'night');
         setDayNumber(payload.dayNumber || 1);
 
-        const me = isSpectator
-          ? undefined
-          : payload.players.find((pl) => pl.name.trim().toLowerCase() === name.trim().toLowerCase() || pl.id === playerId);
+        const me = payload.players.find(pl => pl.id === playerId || (!isSpectator && pl.name.trim().toLowerCase() === name.trim().toLowerCase()));
+        if (isSpectator && me) {
+          sessionStorage.removeItem('joined-spectator');
+          sessionStorage.removeItem('joined-spectator-pending');
+          setIsSpectator(false);
+        }
         if (me) {
           if (me.roleId) {
             const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (ALL_ROLES as Role[]);
@@ -297,7 +322,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
                 ? (ALL_ROLES as AnyRole[]).find(role => role.id === 'tor') ?? rObj
                 : rObj;
               setAssignedRole(displayedRole);
-              if (stateRef.current === 'waiting' || stateRef.current === 'preferences') {
+              if (isSpectator || stateRef.current === 'waiting' || stateRef.current === 'preferences') {
                 setState('revealed');
                 setRevealed(torMode);
               }
@@ -442,21 +467,11 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       setState('preferences');
     } else {
       setState('waiting');
-      sendMessage({ type: 'player_join', name, id: playerId, pronouns: pronouns || undefined });
     }
   };
 
   function goToTracker() {
-    const clearedPlayers = players.map(p => ({
-      ...p,
-      roleId: '',
-      roleIds: undefined,
-      isTheDrunk: false,
-      isTheMarionette: false,
-      isTheLunatic: false,
-      isTheLilMonsta: false,
-      isEvil: undefined
-    }));
+    const clearedPlayers = syncTrackerPlayers(players);
     localStorage.setItem('player-tracker-botc-game', JSON.stringify({
       players: clearedPlayers,
       phase: 'game',
@@ -578,6 +593,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
               "border rounded-xl p-3 flex justify-between items-center text-xs shadow-sm font-semibold",
               isLight ? "bg-white border-gray-250" : "bg-gray-900/60 border-gray-800"
             )}>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span>Active Code: <span className="text-clocktower-blood font-bold">{code}</span></span>
+              </span>
               <span className="uppercase tracking-wider font-bold">
                 {timeOfDay === 'night' ? '🌙 Night' : '☀️ Day'} {dayNumber}
               </span>
@@ -666,20 +685,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLight} />
 
-    {showSpectatorReset && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div className={cn('w-full max-w-sm space-y-4 rounded-xl border p-5 shadow-2xl', isLight ? 'border-gray-200 bg-white text-gray-900' : 'border-gray-800 bg-gray-900 text-gray-100')}>
-          <div>
-            <h3 className="font-display text-base font-bold">Join the New Session?</h3>
-            <p className="mt-1 text-sm text-gray-500">You can join the player roster for the next game, or keep watching as a spectator.</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button type="button" onClick={joinNextSession} className="rounded-md bg-clocktower-blood px-3 py-2.5 text-sm font-bold text-white">Join as a Player</button>
-            <button type="button" onClick={keepWatching} className={cn('rounded-md border px-3 py-2.5 text-sm font-semibold', isLight ? 'border-gray-300 text-gray-700' : 'border-gray-700 text-gray-300')}>Keep Watching</button>
-          </div>
-        </div>
-      </div>
-    )}
+    <SpectatorResetModal
+      isOpen={showSpectatorReset}
+      isLightModeActive={isLight}
+      onJoin={joinNextSession}
+      onKeepWatching={keepWatching}
+    />
 
     <ScriptCharactersModal
       isOpen={isScriptModalOpen}

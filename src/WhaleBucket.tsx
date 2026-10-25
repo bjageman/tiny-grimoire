@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ALL_ROLES, PLAYABLE_ROLES } from './utils/roleData';
+import { ALL_ROLES } from './utils/roleData';
 import type { Role, Player as BasePlayer, PlayerPreferences, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { usePlayerRoster } from './hooks/usePlayerRoster';
@@ -14,7 +14,7 @@ import GamePhase from './components/shared/grimoire/GamePhase';
 import WhaleBucketPlayerPreferenceModal from './components/whalebucket/PlayerPreferenceModal';
 import WhaleBucketDraftEditModal from './components/whalebucket/DraftEditModal';
 import { usePlayerDragAndDrop } from './hooks/usePlayerDragAndDrop';
-import { useGameSocket } from './hooks/useGameSocket';
+import { useStorytellerRoom } from './hooks/useStorytellerRoom';
 import { useStorytellerSync, getSyncParams } from './hooks/useStorytellerSync';
 import { usePersistedField, readPersistedField } from './hooks/usePersistedField';
 import PageLayout from './components/shared/ui/PageLayout';
@@ -22,6 +22,7 @@ import HeaderMenu from './components/shared/ui/HeaderMenu';
 import DialogModal from './components/shared/modals/DialogModal';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
+import StorytellerSessionActions from './components/shared/ui/StorytellerSessionActions';
 import ResetGameModal from './components/shared/modals/ResetGameModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
 import { useDialog } from './hooks/useDialog';
@@ -142,8 +143,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   const [demonBluffs, setDemonBluffs] = usePersistedField<string[]>(STORAGE_KEY, 'demonBluffs', []);
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [remotePlayerIds, setRemotePlayerIds] = useState<Set<string>>(new Set());
-  const [remoteSpectators, setRemoteSpectators] = useState<Map<string, { id: string; name: string }>>(new Map());
   const [grimoireConfirmed, setGrimoireConfirmed] = useState(false);
 
   const [reminderTokens, setReminderTokens] = usePersistedField<PlacedReminder[]>(STORAGE_KEY, 'reminderTokens', []);
@@ -168,25 +167,22 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setSentinelOutsiderDelta(0);
   };
 
-  const broadcastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sendMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
+  const setupDetails = useMemo(() => ({ excludedRoleIds, torEnabled }), [excludedRoleIds, torEnabled]);
+  const gameDetails = useMemo(() => ({ torEnabled }), [torEnabled]);
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, broadcastReset } = useStorytellerRoom({
+    storageKey: STORAGE_KEY, gameCode, gameType: 'whale-bucket', isSecondary, phase, players, setPlayers, maxPlayers: 15,
+    timeOfDay, dayNumber, setupDetails, gameDetails,
+    createPlayer: payload => ({
+      id: payload.id, name: payload.name, isDead: false, roleId: '', pronouns: payload.pronouns,
+      isTheDrunk: false, isTheMarionette: false, isTheLilMonsta: false,
+      preferences: payload.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
+    }),
+    updatePlayer: (player, payload) => ({
+      ...player, id: payload.id, pronouns: payload.pronouns, preferences: payload.preferences || player.preferences,
+    }),
+  });
 
-  const broadcastSetupUpdate = useCallback((listToBroadcast: Player[]) => {
-    if (broadcastTimeoutRef.current) {
-      clearTimeout(broadcastTimeoutRef.current);
-    }
-    broadcastTimeoutRef.current = setTimeout(() => {
-      if (sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'setup_update',
-          gameType: 'whale-bucket',
-          players: listToBroadcast.map(({ notes, ...rest }) => rest),
-          excludedRoleIds,
-          torEnabled
-        });
-      }
-    }, 1000);
-  }, [excludedRoleIds, torEnabled]);
+  const connectedCount = remotePlayerIds.size + spectators.length;
 
   // Preference modal states
   const [rotationOffset, setRotationOffset] = usePersistedField<number>(STORAGE_KEY, 'rotationOffset', 0);
@@ -220,225 +216,6 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     handleTouchEnd,
   } = usePlayerDragAndDrop(players, setPlayers);
 
-  const handleIncomingMessage = (data: unknown) => {
-    const payload = data as {
-      type: string;
-      id: string;
-      name: string;
-      checkOnly?: boolean;
-      preferences?: PlayerPreferences;
-      pronouns?: string;
-    };
-    if (payload.type === 'spectator_join' && payload.name && payload.id) {
-      const isPromoted = players.some(player => player.id === payload.id);
-      if (isPromoted) {
-        setRemotePlayerIds(prev => new Set([...prev, payload.id]));
-        setRemoteSpectators(prev => {
-          const next = new Map(prev);
-          next.delete(payload.id);
-          return next;
-        });
-      } else {
-        setRemoteSpectators(prev => new Map(prev).set(payload.id, { id: payload.id, name: payload.name }));
-      }
-      sendMessageRef.current?.({
-        type: 'code_valid',
-        gameType: 'whale-bucket',
-        playerId: payload.id,
-        playerName: payload.name,
-        spectator: !isPromoted,
-        players: players.map(({ notes, ...rest }) => rest),
-        timeOfDay,
-        dayNumber,
-        excludedRoleIds,
-        torEnabled,
-      });
-      if (phase === 'game') {
-        sendMessageRef.current?.({
-          type: 'game_update',
-          players: players.map(({ notes, ...rest }) => rest),
-          timeOfDay,
-          dayNumber,
-          torEnabled,
-        });
-      }
-      return;
-    }
-    if (payload.type === 'player_join' && payload.name && payload.id) {
-      setRemoteSpectators(prev => {
-        if (!prev.has(payload.id)) return prev;
-        const next = new Map(prev);
-        next.delete(payload.id);
-        return next;
-      });
-      const isExistingPlayer = players.some(
-        p => p.id === payload.id || (phase !== 'game' && p.name.trim().toLowerCase() === payload.name.trim().toLowerCase())
-      );
-      if (phase === 'game' && !isExistingPlayer) {
-        setRemoteSpectators(prev => new Map(prev).set(payload.id, { id: payload.id, name: payload.name }));
-        sendMessageRef.current?.({
-          type: 'code_valid',
-          gameType: 'whale-bucket',
-          playerId: payload.id,
-          playerName: payload.name,
-          spectator: true,
-          players: players.map(({ notes, ...rest }) => rest),
-          timeOfDay,
-          dayNumber,
-          excludedRoleIds,
-          torEnabled,
-        });
-        sendMessageRef.current?.({
-          type: 'game_update',
-          players: players.map(({ notes, ...rest }) => rest),
-          timeOfDay,
-          dayNumber,
-          torEnabled,
-        });
-        return;
-      }
-
-      if (!isExistingPlayer && players.length >= 15) {
-        if (sendMessageRef.current) {
-          sendMessageRef.current({
-            type: 'room_full',
-            playerId: payload.id,
-            playerName: payload.name,
-          });
-        }
-        return;
-      }
-
-      if (sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'code_valid',
-          gameType: 'whale-bucket',
-          playerId: payload.id,
-          playerName: payload.name,
-          excludedRoleIds,
-          torEnabled
-        });
-      }
-
-      if (!payload.checkOnly) {
-        setRemotePlayerIds(prev => new Set([...prev, payload.id]));
-        setPlayers(prev => {
-          const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
-          if (exists) {
-            return prev.map(p => {
-              if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
-                return {
-                  ...p,
-                  id: payload.id,
-                  preferences: payload.preferences || p.preferences,
-                  pronouns: payload.pronouns,
-                };
-              }
-              return p;
-            });
-          }
-          return [
-            ...prev,
-            {
-              id: payload.id,
-              name: payload.name,
-              isDead: false,
-              roleId: '',
-              isTheDrunk: false,
-              isTheMarionette: false,
-              isTheLilMonsta: false,
-              pronouns: payload.pronouns,
-              preferences: payload.preferences || {
-                townsfolk: [],
-                outsider: [],
-                minion: [],
-                demon: [],
-                traveler: []
-              }
-            }
-          ];
-        });
-      }
-
-      if (phase === 'setup' || phase === 'draft') {
-        const updatedPlayers = isExistingPlayer ? (
-          payload.checkOnly ? players : players.map(p => {
-            if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
-              return {
-                ...p,
-                id: payload.id,
-                preferences: payload.preferences || p.preferences,
-                pronouns: payload.pronouns,
-              };
-            }
-            return p;
-          })
-        ) : (
-          payload.checkOnly ? players : [
-            ...players,
-            {
-              id: payload.id,
-              name: payload.name,
-              isDead: false,
-              roleId: '',
-              isTheDrunk: false,
-              isTheMarionette: false,
-              isTheLilMonsta: false,
-              pronouns: payload.pronouns,
-              preferences: payload.preferences || {
-                townsfolk: [],
-                outsider: [],
-                minion: [],
-                demon: [],
-                traveler: []
-              }
-            }
-          ]
-        );
-        broadcastSetupUpdate(updatedPlayers);
-      }
-
-      if (phase === 'game' && sendMessageRef.current) {
-        sendMessageRef.current({
-          type: 'game_update',
-          players: players.map(({ notes, ...rest }) => rest),
-          timeOfDay,
-          dayNumber,
-          torEnabled
-        });
-      }
-    }
-  };
-
-  const { sendMessage } = useGameSocket(!isSecondary ? gameCode : '', handleIncomingMessage);
-  
-  useEffect(() => {
-    sendMessageRef.current = sendMessage;
-  }, [sendMessage]);
-
-  // Sync game state to players when in game phase
-  useEffect(() => {
-    if (!isSecondary && phase === 'game' && sendMessage) {
-      sendMessage({
-        type: 'game_update',
-        players: players.map(({ notes, ...rest }) => rest),
-        timeOfDay,
-        dayNumber,
-        torEnabled
-      });
-    }
-  }, [phase, players, timeOfDay, dayNumber, torEnabled, sendMessage, isSecondary]);
-
-  // Broadcast player list to players during setup or draft phases
-  useEffect(() => {
-    if (!isSecondary && (phase === 'setup' || phase === 'draft')) {
-      const initialTimer = setTimeout(() => {
-        broadcastSetupUpdate(players);
-      }, 500);
-      return () => clearTimeout(initialTimer);
-    }
-  }, [phase, players, broadcastSetupUpdate, isSecondary]);
-
   // Storyteller Sync channel (laptop <-> phone)
   const syncState = useMemo(() => ({
     players,
@@ -456,9 +233,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     sentinelOutsiderDelta,
     popeEnabled,
     remotePlayerIds: [...remotePlayerIds],
-    spectators: [...remoteSpectators.values()],
+    spectators,
   }), [
-    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, remotePlayerIds, remoteSpectators
+    players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, demonBluffs, reminderTokens, checkedItems, rotationOffset, sentinelOutsiderDelta, popeEnabled, remotePlayerIds, spectators
   ]);
 
   const handleApplySync = useCallback((incoming: typeof syncState) => {
@@ -481,11 +258,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       setSentinelOutsiderDelta(incoming.sentinelOutsiderDelta ?? 0);
       setPopeEnabled(incoming.popeEnabled ?? false);
       setRemotePlayerIds(new Set(incoming.remotePlayerIds || []));
-      setRemoteSpectators(new Map((incoming.spectators || []).map(spectator => [spectator.id, spectator])));
+      setSpectators(incoming.spectators || []);
     }
   }, [
     syncState, setPhase, setTimeOfDay, setDayNumber, setAllowTravelers, setIsLilMonstaGame, setTorEnabled,
-    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setRemotePlayerIds, setRemoteSpectators
+    setExcludedRoleIds, setDemonBluffs, setReminderTokens, setCheckedItems, setRotationOffset, setSentinelOutsiderDelta, setPopeEnabled, setRemotePlayerIds, setSpectators
   ]);
 
   const { hasReceivedSync } = useStorytellerSync({
@@ -500,6 +277,8 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players,
+      remotePlayerIds: [...remotePlayerIds],
+      spectators,
       phase,
       timeOfDay,
       dayNumber,
@@ -520,7 +299,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       sentinelOutsiderDelta,
       popeEnabled,
     }));
-  }, [players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
+  }, [remotePlayerIds, spectators, players, phase, timeOfDay, dayNumber, allowTravelers, isLilMonstaGame, torEnabled, excludedRoleIds, gameLog, gameNotes, demonBluffs, reminderTokens, checkedItems, rotationOffset, alwaysShowNotes, fullNightOrder, allReminders, sentinelOutsiderDelta, popeEnabled]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -551,62 +330,32 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setNewPlayerName('');
   };
 
-  const addTravelerGamePhase = (spectatorId?: string): boolean => {
+  const addTravelerGamePhase = (spectatorId?: string) => {
     if (spectatorId) {
-      const connectedSpectator = remoteSpectators.get(spectatorId);
-      if (!connectedSpectator) {
-        showAlert('That spectator is no longer available.');
-        return false;
+      const spectator = spectators.find(candidate => candidate.id === spectatorId);
+      if (!newTravelerRoleId || !spectator || !promoteSpectator(spectatorId, newTravelerRoleId)) {
+        showAlert('Unable to add that spectator. Check the Traveler role and player limit.');
+        return;
       }
-      if (!newTravelerRoleId) {
-        showAlert('Please select a Traveler role.');
-        return false;
-      }
-      if (players.length >= 20) {
-        showAlert('Maximum players reached (20).');
-        return false;
-      }
-      const newPlayer: Player = {
-        id: connectedSpectator.id,
-        name: connectedSpectator.name,
-        roleId: newTravelerRoleId,
-        isDead: false,
-        preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
-        isTheDrunk: false,
-        isTheMarionette: false,
-        isTheLunatic: false,
-        isTheLilMonsta: false,
-        assignedFromPref: false,
-      };
-      setPlayers(prev => [newPlayer, ...prev]);
-      setRemoteSpectators(prev => {
-        const next = new Map(prev);
-        next.delete(spectatorId);
-        return next;
-      });
-      setRemotePlayerIds(prev => new Set([...prev, spectatorId]));
+      const role = ALL_ROLES.find(candidate => candidate.id === newTravelerRoleId);
+      addLogEntry(`${spectator.name} joined as ${role?.name ?? newTravelerRoleId} (Traveler)`);
       setNewTravelerName('');
-      const travelerRole = PLAYABLE_ROLES.find(role => role.id === newTravelerRoleId);
-      addLogEntry(`${connectedSpectator.name} joined as ${travelerRole?.name ?? newTravelerRoleId} (Traveler)`);
-      return true;
+      return;
     }
     if (!newTravelerName.trim()) {
       showAlert("Please enter a traveler name.");
-      return false;
+      return;
     }
     if (!newTravelerRoleId) {
       showAlert("Please select a traveler role.");
-      return false;
+      return;
     }
     if (players.length >= 20) {
       showAlert("Maximum players reached (20).");
-      return false;
+      return;
     }
     setPlayers([createNewPlayer(newTravelerName, newTravelerRoleId), ...players]);
     setNewTravelerName('');
-    const travelerRole = PLAYABLE_ROLES.find(role => role.id === newTravelerRoleId);
-    addLogEntry(`${newTravelerName.trim()} joined as ${travelerRole?.name ?? newTravelerRoleId} (Traveler)`);
-    return true;
   };
 
   const removePlayer = (id: string) => {
@@ -811,7 +560,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     setReminderTokens([]);
     setCheckedItems({});
     setRemotePlayerIds(new Set());
-    setRemoteSpectators(new Map());
+    setSpectators([]);
     resetSetupModifiers();
     // A full reset starts a fresh session, so re-arm the one-time "Send character assignments?" warning (mirrors resetGameKeepConnected).
     setGrimoireConfirmed(false);
@@ -859,21 +608,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     // Re-arm the one-time "Send character assignments?" warning for the next round.
     setGrimoireConfirmed(false);
 
-    // Broadcast immediately (no debounce): the reset command first, then a setup_update with the cleared roster as backup to the preferences picker.
-    if (sendMessageRef.current) {
-      sendMessageRef.current({ type: 'game_reset', gameType: 'whale-bucket' });
-      sendMessageRef.current({
-        type: 'setup_update',
-        gameType: 'whale-bucket',
-        players: clearedPlayers.map(({ notes, ...rest }) => rest),
-        excludedRoleIds,
-        torEnabled: false,
-      });
-    }
+    broadcastReset(clearedPlayers);
   };
 
   const resetGame = () => {
-    if (remotePlayerIds.size > 0 || remoteSpectators.size > 0) {
+    if (connectedCount > 0) {
       setShowResetModal(true);
     } else {
       showConfirm('Are you sure you want to reset the game? This clears all players and settings.', performFullReset, 'Reset Game');
@@ -919,13 +658,13 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     <PageLayout
       theme={theme}
       toggleTheme={toggleTheme}
-      backHref={phase === 'setup' && remotePlayerIds.size === 0 && remoteSpectators.size === 0 && !isSecondary ? "#/host" : undefined}
+      backHref={phase === 'setup' && connectedCount === 0 && !isSecondary ? "#/host" : undefined}
       onBack={
         isSecondary
           ? confirmDisconnect
           : phase !== 'setup'
             ? () => { if (phase === 'game') setPhase('draft'); else setPhase('setup'); }
-            : remotePlayerIds.size > 0 || remoteSpectators.size > 0
+            : connectedCount > 0
               // Synced with players: surface the reset/disconnect choice instead of silently returning to the Host menu.
               ? () => setShowResetModal(true)
               : undefined
@@ -955,22 +694,11 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
               Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
             </HeaderCodeBadge>
           ) : (
-            <div className="flex items-center gap-2">
-              <HeaderCodeBadge
-                onClick={() => setShowSyncModal(true)}
-                title="Sync other device as secondary controller"
-                isLightModeActive={isLightModeActive}
-              >
-                Sync Other Device
-              </HeaderCodeBadge>
-              <HeaderCodeBadge
-                onClick={() => setShowRoomCodeModal(true)}
-                title="Share join code with a spectator"
-                isLightModeActive={isLightModeActive}
-              >
-                Add Spectator
-              </HeaderCodeBadge>
-            </div>
+            <StorytellerSessionActions
+              isLightModeActive={isLightModeActive}
+              onSyncStoryteller={() => setShowSyncModal(true)}
+              onAddSpectator={() => setShowRoomCodeModal(true)}
+            />
           )}
         </div>
       }
@@ -1008,24 +736,12 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
             Room: <span className="text-clocktower-blood font-mono uppercase tracking-wider">{gameCode}</span>
           </HeaderCodeBadge>
         ) : (
-          <div className="flex justify-center gap-2">
-            <HeaderCodeBadge
-              mobile
-              onClick={() => setShowSyncModal(true)}
-              title="Sync other device as secondary controller"
-              isLightModeActive={isLightModeActive}
-            >
-              Sync Other Device
-            </HeaderCodeBadge>
-            <HeaderCodeBadge
-              mobile
-              onClick={() => setShowRoomCodeModal(true)}
-              title="Share join code with a spectator"
-              isLightModeActive={isLightModeActive}
-            >
-              Add Spectator
-            </HeaderCodeBadge>
-          </div>
+          <StorytellerSessionActions
+            mobile
+            isLightModeActive={isLightModeActive}
+            onSyncStoryteller={() => setShowSyncModal(true)}
+            onAddSpectator={() => setShowRoomCodeModal(true)}
+          />
         )
       }
       contentClassName="px-4 md:px-8 lg:px-12 pt-3 pb-4"
@@ -1126,7 +842,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
           onResetDead={resetDead}
           onResetTime={resetTime}
           remotePlayerIds={remotePlayerIds}
-          spectatorPlayers={[...remoteSpectators.values()]}
+          spectatorPlayers={spectators}
           travelerCardTitle="Add Traveler (Late Arrival)"
           demonBluffs={demonBluffs}
           onUpdateDemonBluffs={(bluffs) => {
@@ -1163,10 +879,9 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
                 sendMessageRef.current({ type: 'game_winner', team });
               }
             };
-            if (remotePlayerIds.size + remoteSpectators.size > 0) {
+            if (connectedCount > 0) {
               const teamLabel = team === 'good' ? 'Good' : 'Evil';
-              const audienceCount = remotePlayerIds.size + remoteSpectators.size;
-              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${audienceCount} connected viewer${audienceCount === 1 ? '' : 's'}.`, broadcast);
+              showConfirm(`Declare ${teamLabel} the winner? This will notify all ${connectedCount} connected viewer${connectedCount === 1 ? '' : 's'}.`, broadcast);
             } else {
               broadcast();
             }
@@ -1269,7 +984,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
     )}
     {showResetModal && (
       <ResetGameModal
-        remotePlayerCount={remotePlayerIds.size + remoteSpectators.size}
+        remotePlayerCount={connectedCount}
         isLightModeActive={isLightModeActive}
         onCancel={() => setShowResetModal(false)}
         onKeepPlayers={() => {

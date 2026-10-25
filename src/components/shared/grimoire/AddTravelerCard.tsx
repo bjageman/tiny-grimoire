@@ -18,9 +18,7 @@ interface AddTravelerCardProps {
 // Traveler name + role picker shown to the storyteller during a game.
 export default function AddTravelerCard({ isLightModeActive, title, name, onNameChange, roleId, onRoleIdChange, disabled, spectators = [], onAdd }: AddTravelerCardProps) {
   const [selectedSpectatorId, setSelectedSpectatorId] = useState('');
-  const [isSpectatorSearchFocused, setIsSpectatorSearchFocused] = useState(false);
-  const selectedSpectator = spectators.find(spectator => spectator.id === selectedSpectatorId);
-  const spectatorSuggestions = spectators.filter(spectator => spectator.name.toLowerCase().includes(name.toLowerCase()));
+  const selectedSpectator = spectators.find(spectator => spectator.id === selectedSpectatorId && spectator.name === name);
 
   return (
     <div className={cn(
@@ -34,57 +32,38 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
         isLightModeActive ? 'text-gray-600' : 'text-gray-500'
       )}>{title}</h4>
       <div className="flex flex-col gap-2">
-        <div className="relative">
-          <input
-            id="game-traveler-name-input"
-            type="text"
-            placeholder="Traveler name..."
-            value={name}
-            onChange={(e) => {
-              onNameChange(e.target.value);
-              setSelectedSpectatorId('');
+        {spectators.length > 0 && (
+          <select
+            aria-label="Connected spectator"
+            value={selectedSpectator?.id || ''}
+            onChange={event => {
+              const spectator = spectators.find(candidate => candidate.id === event.target.value);
+              setSelectedSpectatorId(spectator?.id || '');
+              onNameChange(spectator?.name || '');
             }}
-            onFocus={() => setIsSpectatorSearchFocused(true)}
-            onBlur={() => setTimeout(() => setIsSpectatorSearchFocused(false), 200)}
-            autoCapitalize="words"
-            className={cn(
-              'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-clocktower-blood border transition-colors',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-clocktower-night'
-                : 'bg-gray-955 border-gray-800 text-gray-200'
-            )}
-          />
-          {isSpectatorSearchFocused && spectators.length > 0 && (
-            <div className={cn(
-              'absolute left-0 right-0 mt-1 border rounded-md shadow-xl z-20 max-h-48 overflow-y-auto',
-              isLightModeActive ? 'bg-white border-gray-200' : 'bg-gray-900 border-gray-800'
-            )}>
-              {spectatorSuggestions.length === 0 ? (
-                <div className="p-2 text-xs text-gray-500 italic">No matching spectators</div>
-              ) : (
-                spectatorSuggestions.map(spectator => (
-                  <button
-                    key={spectator.id}
-                    type="button"
-                    onClick={() => {
-                      onNameChange(spectator.name);
-                      setSelectedSpectatorId(spectator.id);
-                      setIsSpectatorSearchFocused(false);
-                    }}
-                    className={cn(
-                      'w-full text-left px-3 py-1.5 text-xs transition-colors',
-                      isLightModeActive
-                        ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-950'
-                        : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
-                    )}
-                  >
-                    {spectator.name}
-                  </button>
-                ))
-              )}
-            </div>
+            className={cn('w-full rounded border px-2.5 py-1.5 text-xs', isLightModeActive ? 'bg-white border-gray-300' : 'bg-gray-955 border-gray-800')}
+          >
+            <option value="">Add a new Traveler or select a spectator</option>
+            {spectators.map(spectator => <option key={spectator.id} value={spectator.id}>{spectator.name}</option>)}
+          </select>
+        )}
+        <input
+          id="game-traveler-name-input"
+          type="text"
+          placeholder="Traveler name..."
+          value={name}
+          onChange={event => {
+            onNameChange(event.target.value);
+            setSelectedSpectatorId('');
+          }}
+          autoCapitalize="words"
+          className={cn(
+            'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
+            isLightModeActive
+              ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
+              : 'bg-gray-955 border-gray-800 text-gray-200 focus:border-clocktower-blood'
           )}
-        </div>
+        />
         <div className="flex gap-2">
           <select
             id="game-traveler-role-select"
@@ -105,11 +84,8 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
           </select>
           <button
             id="game-add-traveler-button"
-            onClick={() => {
-              onAdd(selectedSpectator?.id);
-              setSelectedSpectatorId('');
-            }}
-            disabled={disabled && !selectedSpectator}
+            onClick={() => onAdd(selectedSpectator?.id)}
+            disabled={disabled}
             className={cn(
               'px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 text-white shadow-sm',
               isLightModeActive

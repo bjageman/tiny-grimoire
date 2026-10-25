@@ -5,6 +5,7 @@ import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 import { withInPlayTravelers } from './utils/scriptUtils';
+import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
 
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import GamePhase from './components/shared/grimoire/GamePhase';
@@ -19,6 +20,7 @@ import DialogModal from './components/shared/modals/DialogModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
+import SpectatorResetModal from './components/shared/modals/SpectatorResetModal';
 import { useDialog } from './hooks/useDialog';
 import { buildStandardTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
@@ -146,34 +148,17 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       return;
     }
-    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
+    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update' || payload.type === 'code_valid') {
+      if (payload.type === 'code_valid' && payload.playerId !== sessionStorage.getItem('botc-player-id')) return;
+      if (sessionStorage.getItem('joined-spectator') === 'true'
+        && payload.players?.some(player => player.id === sessionStorage.getItem('botc-player-id'))) {
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
+        window.location.hash = '#/join';
+      }
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
-        setPlayers((currentPlayers) => {
-          return payload.players!.map((sp) => {
-            const lp = currentPlayers.find(
-              (p) => p.id === sp.id || p.name.trim().toLowerCase() === sp.name.trim().toLowerCase()
-            );
-            if (lp) {
-              return {
-                ...sp,
-                // Preserve local guesses
-                roleId: lp.roleId,
-                roleIds: lp.roleIds,
-                isEvil: lp.isEvil,
-                isDrunkOrPoisoned: lp.isDrunkOrPoisoned,
-                isTheDrunk: lp.isTheDrunk,
-                isTheMarionette: lp.isTheMarionette,
-                isTheLunatic: lp.isTheLunatic,
-                isTheLilMonsta: lp.isTheLilMonsta,
-              };
-            }
-            return {
-              ...sp,
-              roleId: sp.roleId || '',
-            };
-          });
-        });
+        setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers));
       }
       if (payload.timeOfDay) {
         setTimeOfDay(payload.timeOfDay);
@@ -234,7 +219,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  useGameSocket(gameCode || '', handleIncomingMessage);
+  const { isConnected, sendMessage } = useGameSocket(gameCode || '', handleIncomingMessage);
+  useEffect(() => {
+    const name = sessionStorage.getItem('joined-name');
+    const id = sessionStorage.getItem('botc-player-id');
+    if (!isConnected || !gameCode || !name || !id) return;
+    sendMessage({
+      type: sessionStorage.getItem('joined-spectator') === 'true' ? 'spectator_join' : 'player_join',
+      id, name, pronouns: localStorage.getItem('joined-pronouns') || undefined,
+    });
+  }, [gameCode, isConnected, sendMessage]);
 
   // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -802,20 +796,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
-    {showSpectatorReset && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-        <div className={cn('w-full max-w-sm space-y-4 rounded-xl border p-5 shadow-2xl', isLightModeActive ? 'border-gray-200 bg-white text-gray-900' : 'border-gray-800 bg-gray-900 text-gray-100')}>
-          <div>
-            <h3 className="font-display text-base font-bold">Join the New Session?</h3>
-            <p className="mt-1 text-sm text-gray-500">Join the player roster for the next game, or keep watching as a spectator.</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button type="button" onClick={joinNextSpectatorSession} className="rounded-md bg-clocktower-blood px-3 py-2.5 text-sm font-bold text-white">Join as a Player</button>
-            <button type="button" onClick={keepSpectating} className={cn('rounded-md border px-3 py-2.5 text-sm font-semibold', isLightModeActive ? 'border-gray-300 text-gray-700' : 'border-gray-700 text-gray-300')}>Keep Watching</button>
-          </div>
-        </div>
-      </div>
-    )}
+    <SpectatorResetModal
+      isOpen={showSpectatorReset}
+      isLightModeActive={isLightModeActive}
+      onJoin={joinNextSpectatorSession}
+      onKeepWatching={keepSpectating}
+    />
     {showShareModal && (
       <RoomCodeModal
         gameCode={shareCode}

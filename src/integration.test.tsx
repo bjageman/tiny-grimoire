@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act, within, waitFor } from '@testing-library/react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import StandardSetup from './StandardSetup';
 import WhaleBucket from './WhaleBucket';
 import PlayerTracker from './PlayerTracker';
@@ -8,6 +8,7 @@ import JoinPage from './JoinPage';
 import type { PlacedReminder } from './types';
 
 interface SocketSubscription {
+  token: symbol;
   gameCode: string;
   onMessage: (data: unknown) => void;
 }
@@ -38,9 +39,10 @@ function expectResetPreservesPopeAndTor(container: HTMLElement) {
 vi.mock('./hooks/useGameSocket', () => {
   return {
     useGameSocket: vi.fn((gameCode: string, onMessage: (data: unknown) => void) => {
+      const token = useRef(Symbol());
       useEffect(() => {
         if (!gameCode) return;
-        const sub = { gameCode, onMessage };
+        const sub = { gameCode, onMessage, token: token.current };
         activeSubscriptions.push(sub);
         return () => {
           const idx = activeSubscriptions.indexOf(sub);
@@ -50,19 +52,19 @@ vi.mock('./hooks/useGameSocket', () => {
         };
       }, [gameCode, onMessage]);
 
-      const sendMessage = vi.fn(async (payload: unknown) => {
+      const sendMessage = useCallback(async (payload: unknown) => {
         sentPayloads.push({ gameCode, payload });
         // Simulate network latency
         await new Promise((resolve) => setTimeout(resolve, 10));
         // Run callbacks in act since they update component state
         act(() => {
           activeSubscriptions.forEach((sub) => {
-            if (sub.gameCode.toLowerCase() === gameCode.toLowerCase() && sub.onMessage !== onMessage) {
+            if (sub.gameCode.toLowerCase() === gameCode.toLowerCase() && sub.token !== token.current) {
               sub.onMessage(payload);
             }
           });
         });
-      });
+      }, [gameCode]);
 
       return {
         isConnected: !!gameCode,
@@ -852,7 +854,7 @@ describe('Standard and Game Notes transfers', () => {
 
     fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
     fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
-    expect(within(storyteller.container).getByText(/1 connected player will be disconnected/i)).toBeInTheDocument();
+    expect(within(storyteller.container).getByText(/1 connected viewer will be disconnected/i)).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
       await new Promise(resolve => setTimeout(resolve, 30));

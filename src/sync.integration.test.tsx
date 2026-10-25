@@ -56,6 +56,8 @@ describe('Game sync regressions', () => {
       expect(within(screen.container).getByRole('button', { name: 'Make Spectator' })).toBeInTheDocument();
       expect(within(screen.container).getByRole('button', { name: 'Kick' })).toBeInTheDocument();
       expect(Array.from(screen.container.querySelectorAll('#dialog-modal button')).map(button => button.textContent)).toEqual(['Kick', 'Make Spectator', 'Cancel']);
+      fireEvent.keyDown(within(screen.container).getByRole('button', { name: action }), { key: 'Enter' });
+      expect(sender).not.toHaveBeenCalled();
       fireEvent.click(within(screen.container).getByRole('button', { name: action }));
       const saved = () => JSON.parse(localStorage.getItem(storageKey)!);
       if (action === 'Cancel') {

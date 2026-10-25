@@ -36,7 +36,9 @@ export default function DialogModal({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') onConfirm();
+      if (e.key !== 'Enter') return;
+      if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [contenteditable="true"]')) return;
+      onConfirm();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

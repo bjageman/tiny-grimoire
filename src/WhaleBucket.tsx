@@ -229,8 +229,20 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       pronouns?: string;
     };
     if (payload.type === 'player_join' && payload.name && payload.id) {
+      const normalizedName = payload.name.trim().toLowerCase();
+      const conflictingPlayer = players.find(
+        p => p.name.trim().toLowerCase() === normalizedName && p.id !== payload.id && remotePlayerIds.has(p.id)
+      );
+      if (conflictingPlayer) {
+        sendMessageRef.current?.({
+          type: 'duplicate_name',
+          playerId: payload.id,
+          playerName: payload.name,
+        });
+        return;
+      }
       const isExistingPlayer = players.some(
-        p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id
+        p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id
       );
       if (phase === 'game' && !isExistingPlayer) {
         return;
@@ -261,10 +273,10 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       if (!payload.checkOnly) {
         setRemotePlayerIds(prev => new Set([...prev, payload.id]));
         setPlayers(prev => {
-          const exists = prev.some(p => p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id);
+          const exists = prev.some(p => p.name.trim().toLowerCase() === normalizedName || p.id === payload.id);
           if (exists) {
             return prev.map(p => {
-              if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
+              if (p.name.trim().toLowerCase() === normalizedName || p.id === payload.id) {
                 return {
                   ...p,
                   id: payload.id,
@@ -301,7 +313,7 @@ export default function WhaleBucket({ theme, toggleTheme }: SetupProps) {
       if (phase === 'setup' || phase === 'draft') {
         const updatedPlayers = isExistingPlayer ? (
           payload.checkOnly ? players : players.map(p => {
-            if (p.name.trim().toLowerCase() === payload.name.trim().toLowerCase() || p.id === payload.id) {
+            if (p.name.trim().toLowerCase() === normalizedName || p.id === payload.id) {
               return {
                 ...p,
                 id: payload.id,

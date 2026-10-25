@@ -206,6 +206,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setState('join');
         setErrorMsg('The game room is full.');
       }
+    } else if (payload.type === 'duplicate_name') {
+      if (payload.playerId === playerId) {
+        if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
+        if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
+        sessionStorage.removeItem('joined-code');
+        sessionStorage.removeItem('joined-name');
+        setState('join');
+        setErrorMsg('That name is already in use in this room. Please choose another.');
+      }
     } else if (payload.type === 'code_valid') {
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.playerId === playerId || payload.playerName?.trim().toLowerCase() === name.trim().toLowerCase()) {

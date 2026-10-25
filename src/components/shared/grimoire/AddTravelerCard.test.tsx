@@ -3,27 +3,25 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import AddTravelerCard from './AddTravelerCard';
 
-function Card({ onAdd }: { onAdd: (id?: string) => void }) {
+function Card({ onAdd, spectators = [{ id: 'viewer', name: 'Vera' }] }: { onAdd: (id?: string) => void; spectators?: { id: string; name: string }[] }) {
   const [name, setName] = useState('');
   const [roleId, setRoleId] = useState('beggar');
-  return <AddTravelerCard isLightModeActive={false} title="Add Traveler" name={name} onNameChange={setName} roleId={roleId} onRoleIdChange={setRoleId} disabled={false} spectators={[{ id: 'viewer', name: 'Vera' }]} onAdd={onAdd} />;
+  return <AddTravelerCard isLightModeActive={false} title="Add Traveler" name={name} onNameChange={setName} roleId={roleId} onRoleIdChange={setRoleId} disabled={false} spectators={spectators} onAdd={onAdd} />;
 }
 
 describe('AddTravelerCard search suggestions', () => {
-  it('selects a connected spectator and searches Traveler characters without native selects', () => {
+  it('searches connected spectators and uses a simple Traveler character dropdown', () => {
     const onAdd = vi.fn();
     const { container } = render(<Card onAdd={onAdd} />);
-    expect(container.querySelector('select')).toBeNull();
+    expect(container.querySelectorAll('select')).toHaveLength(1);
     const name = screen.getByRole('combobox', { name: 'Traveler name' });
     fireEvent.focus(name);
     fireEvent.change(name, { target: { value: 'ver' } });
     fireEvent.click(screen.getByRole('option', { name: /Vera/ }));
     expect(name).toHaveValue('Vera');
     const character = screen.getByRole('combobox', { name: 'Traveler character' });
-    fireEvent.focus(character);
-    fireEvent.change(character, { target: { value: 'guns' } });
-    fireEvent.keyDown(character, { key: 'Enter' });
-    expect(character).toHaveValue('Gunslinger');
+    fireEvent.change(character, { target: { value: 'gunslinger' } });
+    expect(character).toHaveValue('gunslinger');
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(onAdd).toHaveBeenCalledWith('viewer');
   });
@@ -40,18 +38,31 @@ describe('AddTravelerCard search suggestions', () => {
     expect(onAdd).toHaveBeenCalledWith(undefined);
   });
 
-  it('dismisses an unselected character search and keeps the selected character', () => {
+  it('dismisses spectator suggestions with Escape and when focus leaves', () => {
     render(<Card onAdd={vi.fn()} />);
-    const character = screen.getByRole('combobox', { name: 'Traveler character' });
-    fireEvent.focus(character);
-    fireEvent.change(character, { target: { value: 'no such traveler' } });
-    expect(screen.getByText('No matching Travelers')).toBeInTheDocument();
-    fireEvent.keyDown(character, { key: 'Escape' });
+    const name = screen.getByRole('combobox', { name: 'Traveler name' });
+    fireEvent.focus(name);
+    fireEvent.change(name, { target: { value: 'Unknown' } });
+    expect(screen.getByText('No matching spectators')).toBeInTheDocument();
+    fireEvent.keyDown(name, { key: 'Escape' });
     expect(screen.queryByRole('listbox')).toBeNull();
-    expect(character).toHaveValue('Beggar');
-    fireEvent.focus(character);
-    expect(screen.getByRole('option', { name: /Gunslinger/ })).toBeInTheDocument();
-    fireEvent.blur(character);
+    expect(name).toHaveValue('Unknown');
+    fireEvent.focus(name);
+    expect(screen.getByRole('option', { name: /Vera/ })).toBeInTheDocument();
+    fireEvent.blur(name);
     expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('keeps the name field plain when no spectators are connected', () => {
+    const onAdd = vi.fn();
+    render(<Card onAdd={onAdd} spectators={[]} />);
+    const name = screen.getByRole('textbox', { name: 'Traveler name' });
+    fireEvent.focus(name);
+    fireEvent.change(name, { target: { value: 'New Traveler' } });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByText('No connected spectators')).toBeNull();
+    expect(screen.queryByText('No matching spectators')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(onAdd).toHaveBeenCalledWith(undefined);
   });
 });

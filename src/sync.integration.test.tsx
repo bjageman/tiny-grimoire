@@ -40,6 +40,33 @@ afterEach(() => {
 });
 
 describe('Game sync regressions', () => {
+  it('keeps exclusion suggestions open for repeated selections and searches character teams', () => {
+    localStorage.setItem('whale-bucket-game', JSON.stringify({ phase: 'setup', players: [], excludedRoleIds: [], excludedRoleDefaultsVersion: 1 }));
+    const screen = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
+    const search = within(screen.container).getByRole('combobox', { name: 'Exclude characters' });
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'demon' } });
+    expect(within(screen.container).getByRole('option', { name: /^Imp demon$/i })).toBeInTheDocument();
+    expect(within(screen.container).queryByRole('option', { name: /^Chef / })).toBeNull();
+    fireEvent.click(within(screen.container).getByRole('option', { name: /^Imp demon$/i }));
+    expect(search).toHaveValue('');
+    expect(within(screen.container).getByRole('listbox', { name: 'Exclude characters' })).toBeInTheDocument();
+    expect(within(screen.container).queryByRole('option', { name: /^Imp demon$/i })).toBeNull();
+    fireEvent.click(within(screen.container).getByRole('option', { name: /^Poisoner minion$/i }));
+    expect(JSON.parse(localStorage.getItem('whale-bucket-game')!).excludedRoleIds).toEqual(['imp', 'poisoner']);
+    fireEvent.keyDown(search, { key: 'Escape' });
+    expect(within(screen.container).queryByRole('listbox')).toBeNull();
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'demon' } });
+    fireEvent.blur(search);
+    expect(within(screen.container).queryByRole('listbox')).toBeNull();
+    fireEvent.focus(search);
+    expect(within(screen.container).getByRole('option', { name: /^Fang Gu demon$/i })).toBeInTheDocument();
+    expect(within(screen.container).queryByRole('option', { name: /^Chef / })).toBeNull();
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'Stop excluding Imp' }));
+    expect(JSON.parse(localStorage.getItem('whale-bucket-game')!).excludedRoleIds).toEqual(['poisoner']);
+  });
+
   for (const action of ['Ban', 'Kick', 'Make Spectator', 'Close']) {
     it.each(modes)(`${action} when removing a connected player in %s`, (storageKey, Component) => {
       const standard = storageKey === 'standard-botc-game';
@@ -319,7 +346,7 @@ describe('Game sync regressions', () => {
     fireEvent.click(secondary.container.querySelector('#game-add-traveler-button')!);
     const promoted = transport.senders.get('SYNC')!.mock.lastCall![0];
     act(() => primarySync(promoted));
-    fireEvent.focus(within(primary.container).getByRole('combobox', { name: 'Traveler name' }));
+    fireEvent.focus(within(primary.container).getByRole('textbox', { name: 'Traveler name' }));
     expect(within(primary.container).queryByRole('option', { name: /Vera/ })).toBeNull();
     expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({
       type: 'game_update', players: [expect.objectContaining({ id: 'viewer', name: 'Vera', roleId: 'beggar' })],

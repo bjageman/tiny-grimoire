@@ -18,25 +18,29 @@ interface Props {
   isLightModeActive: boolean;
   onChange: (value: string) => void;
   onSelect: (id: string) => void;
-  onDismiss?: () => void;
+  closeOnSelect?: boolean;
+  showAllOnFocus?: boolean;
 }
 
-export default function SearchSuggestionInput({ id, label, placeholder, value, options, emptyMessage, isLightModeActive, onChange, onSelect, onDismiss }: Props) {
+export default function SearchSuggestionInput({ id, label, placeholder, value, options, emptyMessage, isLightModeActive, onChange, onSelect, closeOnSelect = true, showAllOnFocus = true }: Props) {
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const matches = options.filter(option => !searching || option.label.toLowerCase().includes(value.trim().toLowerCase()));
+  const isOpen = open && options.length > 0;
+  const query = value.trim().toLowerCase();
+  const matches = options.filter(option => !searching || option.label.toLowerCase().includes(query) || option.description?.toLowerCase().includes(query));
   const activeOption = matches[activeIndex];
   const dismiss = () => {
     setOpen(false);
-    onDismiss?.();
   };
   const select = (option: Suggestion) => {
     onSelect(option.id);
-    setOpen(false);
+    setOpen(!closeOnSelect);
+    setSearching(!showAllOnFocus);
+    setActiveIndex(0);
   };
-  useEscapeKey(dismiss, open);
+  useEscapeKey(dismiss, isOpen);
 
   return (
     <div className="relative flex-1 min-w-0" onBlur={event => {
@@ -45,25 +49,25 @@ export default function SearchSuggestionInput({ id, label, placeholder, value, o
       <input
         id={id}
         type="text"
-        role="combobox"
+        role={options.length ? 'combobox' : undefined}
         aria-label={label}
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={open ? listId : undefined}
-        aria-activedescendant={open && activeOption ? `${listId}-${activeOption.id}` : undefined}
+        aria-autocomplete={options.length ? 'list' : undefined}
+        aria-expanded={options.length ? isOpen : undefined}
+        aria-controls={isOpen ? listId : undefined}
+        aria-activedescendant={isOpen && activeOption ? `${listId}-${activeOption.id}` : undefined}
         placeholder={placeholder}
         value={value}
         autoComplete="off"
         onClick={() => {
           if (!open) {
             setOpen(true);
-            setSearching(false);
+            setSearching(!showAllOnFocus);
             setActiveIndex(0);
           }
         }}
         onFocus={event => {
           setOpen(true);
-          setSearching(false);
+          setSearching(!showAllOnFocus);
           setActiveIndex(0);
           event.currentTarget.select();
         }}
@@ -74,6 +78,7 @@ export default function SearchSuggestionInput({ id, label, placeholder, value, o
           setOpen(true);
         }}
         onKeyDown={event => {
+          if (!options.length) return;
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
             setOpen(true);
@@ -90,7 +95,7 @@ export default function SearchSuggestionInput({ id, label, placeholder, value, o
           isLightModeActive ? 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-gray-955 border-gray-800 text-white placeholder-gray-650'
         )}
       />
-      {open && (
+      {isOpen && (
         <div id={listId} role="listbox" aria-label={label} className={cn(
           'absolute left-0 right-0 mt-1 border rounded-md shadow-xl z-20 max-h-48 overflow-y-auto',
           isLightModeActive ? 'bg-white border-gray-200' : 'bg-gray-900 border-gray-800'
@@ -101,6 +106,7 @@ export default function SearchSuggestionInput({ id, label, placeholder, value, o
               id={`${listId}-${option.id}`}
               type="button"
               role="option"
+              aria-label={option.description ? `${option.label} ${option.description}` : option.label}
               aria-selected={index === activeIndex}
               tabIndex={-1}
               onMouseDown={event => event.preventDefault()}

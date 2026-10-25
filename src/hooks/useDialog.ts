@@ -8,6 +8,7 @@ interface DialogState {
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
+  secondaryAction?: { label: string; onClick: () => void };
 }
 
 const CLOSED: DialogState = {
@@ -29,10 +30,11 @@ export function useDialog() {
     setState({ isOpen: true, title, message, type: 'alert', confirmLabel: 'OK', cancelLabel: 'Cancel', onConfirm: close });
   };
 
-  const showConfirm = (message: string, onConfirm: () => void, title = '', confirmLabel = 'Confirm') => {
+  const showConfirm = (message: string, onConfirm: () => void, title = '', confirmLabel = 'Confirm', secondaryAction?: DialogState['secondaryAction']) => {
     setState({
       isOpen: true, title, message, type: 'confirm', confirmLabel, cancelLabel: 'Cancel',
       onConfirm: () => { close(); onConfirm(); },
+      secondaryAction: secondaryAction && { label: secondaryAction.label, onClick: () => { close(); secondaryAction.onClick(); } },
     });
   };
 

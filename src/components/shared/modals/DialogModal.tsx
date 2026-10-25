@@ -14,6 +14,7 @@ interface DialogModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   isLightModeActive: boolean;
+  secondaryAction?: { label: string; onClick: () => void };
 }
 
 export default function DialogModal({
@@ -26,6 +27,7 @@ export default function DialogModal({
   onConfirm,
   onCancel,
   isLightModeActive,
+  secondaryAction,
 }: DialogModalProps) {
   useScrollLock(isOpen);
 
@@ -41,6 +43,12 @@ export default function DialogModal({
   }, [isOpen, onConfirm]);
 
   if (!isOpen) return null;
+
+  const confirmAction = { id: 'dialog-confirm-button', label: confirmLabel, onClick: onConfirm, primary: true };
+  const cancelAction = { id: 'dialog-cancel-button', label: cancelLabel, onClick: onCancel, primary: false };
+  const actions = secondaryAction
+    ? [confirmAction, { id: 'dialog-secondary-button', ...secondaryAction, primary: false }, cancelAction]
+    : type === 'confirm' ? [cancelAction, confirmAction] : [confirmAction];
 
   return (
     <div
@@ -64,28 +72,23 @@ export default function DialogModal({
         <div className={cn('text-sm leading-relaxed text-center', isLightModeActive ? 'text-gray-700' : 'text-gray-300')}>
           {message}
         </div>
-        <div className="flex gap-2 justify-center">
-          {type === 'confirm' && (
+        <div className="flex flex-wrap gap-2 justify-center">
+          {actions.map(action => (
             <button
-              id="dialog-cancel-button"
-              onClick={onCancel}
+              key={action.id}
+              id={action.id}
+              type="button"
+              onClick={action.onClick}
               className={cn(
-                'px-4 py-2 rounded-md text-sm font-semibold transition-colors border',
-                isLightModeActive
-                  ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                'px-4 py-2 rounded-md text-sm font-semibold transition-colors',
+                action.primary
+                  ? 'bg-clocktower-blood text-white hover:bg-clocktower-blood/85 active:bg-clocktower-blood/70'
+                  : cn('border', isLightModeActive ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700')
               )}
             >
-              {cancelLabel}
+              {action.label}
             </button>
-          )}
-          <button
-            id="dialog-confirm-button"
-            onClick={onConfirm}
-            className="px-4 py-2 rounded-md text-sm font-semibold transition-colors bg-clocktower-blood text-white hover:bg-clocktower-blood/85 active:bg-clocktower-blood/70"
-          >
-            {confirmLabel}
-          </button>
+          ))}
         </div>
       </div>
     </div>

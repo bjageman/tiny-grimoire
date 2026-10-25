@@ -40,6 +40,108 @@ afterEach(() => {
 });
 
 describe('Game sync regressions', () => {
+  for (const action of ['Make Spectator', 'Kick', 'Cancel']) {
+    it.each(modes)(`${action} when removing a connected player in %s`, (storageKey, Component) => {
+      const standard = storageKey === 'standard-botc-game';
+      localStorage.setItem(standard ? 'standard-botc-game-code' : 'whale-bucket-game-code', 'REVW');
+      localStorage.setItem(storageKey, JSON.stringify({
+        phase: 'setup', players: [{ id: 'alice', name: 'Alice', pronouns: 'she/her', roleId: 'imp', notes: 'private' }],
+        remotePlayerIds: ['alice'],
+      }));
+      const screen = render(<Component theme="dark" toggleTheme={vi.fn()} />);
+      fireEvent.click(screen.container.querySelector(standard ? '#edit-player-button-alice' : '#edit-preferences-button-alice')!);
+      fireEvent.click(screen.container.querySelector(standard ? '#remove-player-button' : '#remove-preference-player-button')!);
+      const sender = transport.senders.get('REVW')!;
+      sender.mockClear();
+      expect(within(screen.container).getByRole('button', { name: 'Make Spectator' })).toBeInTheDocument();
+      expect(within(screen.container).getByRole('button', { name: 'Kick' })).toBeInTheDocument();
+      expect(Array.from(screen.container.querySelectorAll('#dialog-modal button')).map(button => button.textContent)).toEqual(['Kick', 'Make Spectator', 'Cancel']);
+      fireEvent.click(within(screen.container).getByRole('button', { name: action }));
+      const saved = () => JSON.parse(localStorage.getItem(storageKey)!);
+      if (action === 'Cancel') {
+        expect(saved().players).toHaveLength(1);
+        expect(saved().remotePlayerIds).toEqual(['alice']);
+        expect(sender).not.toHaveBeenCalled();
+      } else {
+        expect(saved().players).toEqual([]);
+        expect(saved().remotePlayerIds).toEqual([]);
+        if (action === 'Kick') {
+          expect(saved().spectators).toEqual([]);
+          expect(sender).toHaveBeenCalledWith({ type: 'booted', playerId: 'alice' });
+        } else {
+          expect(saved().spectators).toEqual([{ id: 'alice', name: 'Alice', pronouns: 'she/her' }]);
+          expect(sender).toHaveBeenCalledWith(expect.objectContaining({ type: 'code_valid', playerId: 'alice', spectator: true, players: [] }));
+          act(() => transport.callbacks.get('REVW')!({ type: 'spectator_join', id: 'alice', name: 'Alice', pronouns: 'she/her' }));
+          expect(saved().players).toEqual([]);
+          expect(saved().spectators).toHaveLength(1);
+        }
+      }
+    });
+  }
+
+  it.each(modes)('allows joining as a spectator before the game starts in %s', (storageKey, Component) => {
+    localStorage.setItem(storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code', 'REVW');
+    localStorage.setItem(storageKey, JSON.stringify({ phase: 'setup', players: [] }));
+    render(<Component theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({ type: 'spectator_join', id: 'viewer', name: 'Vera' }));
+    const saved = JSON.parse(localStorage.getItem(storageKey)!);
+    expect(saved.players).toEqual([]);
+    expect(saved.spectators).toEqual([{ id: 'viewer', name: 'Vera' }]);
+    expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'code_valid', spectator: true }));
+  });
+
+  it('keeps a player moved to spectators connected in Game Notes', () => {
+    sessionStorage.setItem('joined-code', 'REVW');
+    sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'alice');
+    const screen = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', playerId: 'other', spectator: true }));
+    expect(sessionStorage.getItem('joined-spectator')).toBeNull();
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', playerId: 'alice', spectator: true, players: [] }));
+    expect(sessionStorage.getItem('joined-spectator')).toBe('true');
+    expect(sessionStorage.getItem('joined-code')).toBe('REVW');
+    expect(within(screen.container).getByText('You Are Now a Spectator')).toBeInTheDocument();
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'OK' }));
+    act(() => transport.callbacks.get('REVW')!({ type: 'game_reset', gameType: 'standard' }));
+    expect(within(screen.container).getByText('Join the New Session?')).toBeInTheDocument();
+  });
+
+  it('sends spectator join requests and retries from the join form', () => {
+    vi.useFakeTimers();
+    window.location.hash = '#/join?code=REVW';
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    const spectatorSwitch = within(screen.container).getByRole('switch', { name: 'Join as a Spectator' });
+    expect(spectatorSwitch).not.toBeChecked();
+    fireEvent.click(spectatorSwitch);
+    fireEvent.change(within(screen.container).getByPlaceholderText('Enter your name...'), { target: { value: 'Vera' } });
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'Join Game Room' }));
+    const sender = transport.senders.get('REVW')!;
+    expect(sender).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'spectator_join', name: 'Vera' }));
+    act(() => vi.advanceTimersByTime(1500));
+    expect(sender).toHaveBeenCalledTimes(2);
+    expect(sender).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'spectator_join' }));
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', playerId: sessionStorage.getItem('botc-player-id'), gameType: 'standard', spectator: true, players: [] }));
+    expect(within(screen.container).getByText('Spectator View')).toBeInTheDocument();
+  });
+
+  it('moves an already joined player to spectator notes without leaving the room', () => {
+    window.location.hash = '#/join?code=REVW';
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    fireEvent.change(within(screen.container).getByPlaceholderText('Enter your name...'), { target: { value: 'Alice' } });
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'Join Game Room' }));
+    const playerId = sessionStorage.getItem('botc-player-id');
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', playerId, gameType: 'standard' }));
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', playerId, gameType: 'standard', spectator: true, players: [] }));
+    expect(within(screen.container).getByText('Spectator View')).toBeInTheDocument();
+    expect(within(screen.container).getByRole('status')).toHaveTextContent('The storyteller made you a spectator. You can keep following the game in Game Notes.');
+    expect(within(screen.container).queryByText(/Wait until everyone has joined/)).toBeNull();
+    expect(transport.senders.get('REVW')).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'spectator_join', id: playerId }));
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'View Game Notes' }));
+    expect(sessionStorage.getItem('joined-spectator')).toBe('true');
+    expect(sessionStorage.getItem('joined-code')).toBe('REVW');
+    expect(window.location.hash).toBe('#/tracker');
+  });
+
   it.each(modes)('supports the spectator lifecycle in %s', (storageKey, Component) => {
     const codeKey = storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code';
     localStorage.setItem(codeKey, 'REVW');
@@ -145,7 +247,7 @@ describe('Game sync regressions', () => {
       players: [{ id: 'alice', name: 'Alice', roleId: 'imp', notes: 'secret', isDead: true, isEvil: true }],
       timeOfDay: 'day', dayNumber: 3,
     }));
-    expect(within(screen.container).getByText('Game in Session')).toBeInTheDocument();
+    expect(within(screen.container).getByText('Spectator View')).toBeInTheDocument();
     fireEvent.click(within(screen.container).getByRole('button', { name: 'View Game Notes' }));
     expect(window.location.hash).toBe('#/tracker');
     expect(sessionStorage.getItem('joined-spectator')).toBe('true');

@@ -101,6 +101,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [pronouns, setPronouns] = useState(() => localStorage.getItem('joined-pronouns') || '');
   const [showRoomCodeModal, setShowRoomCodeModal] = useState(false);
   const [isSpectator, setIsSpectator] = useState(() => sessionStorage.getItem('joined-spectator') === 'true' || sessionStorage.getItem('joined-spectator-pending') === 'true');
+  const [wasMadeSpectator, setWasMadeSpectator] = useState(false);
   const [showSpectatorReset, setShowSpectatorReset] = useState(false);
 
   useEffect(() => {
@@ -259,12 +260,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
         setIsSpectator(false);
         setState('waiting');
       }
-      if (stateRef.current === 'checking') {
+      if (stateRef.current === 'checking' || (payload.spectator && !isSpectator)) {
         sessionStorage.setItem('joined-code', code);
         sessionStorage.setItem('joined-name', name);
         if (payload.spectator) {
+          setWasMadeSpectator(stateRef.current !== 'checking');
           sessionStorage.setItem('joined-spectator-pending', 'true');
           setIsSpectator(true);
+          setAssignedRole(null);
+          setRevealed(false);
           if (payload.players) setPlayers(payload.players);
           if (payload.timeOfDay) setTimeOfDay(payload.timeOfDay);
           if (payload.dayNumber !== undefined) setDayNumber(payload.dayNumber);
@@ -377,6 +381,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       return;
     }
     localStorage.setItem('botc-joined-name', name);
+    setWasMadeSpectator(false);
     setErrorMsg(null);
     setState('checking');
 
@@ -391,9 +396,10 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     const sendJoinMessage = () => {
       console.log(`[Join] Sending player_join attempt ${attempts + 1} for ${name} (ID: ${playerId})`);
       sendMessage({
-        type: 'player_join',
+        type: isSpectator ? 'spectator_join' : 'player_join',
         name: name,
-        id: playerId
+        id: playerId,
+        pronouns: pronouns || undefined,
       });
       attempts++;
       if (attempts >= 5) {
@@ -517,6 +523,8 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             onCodeChange={setCode}
             name={name}
             onNameChange={setName}
+            isSpectator={isSpectator}
+            onSpectatorChange={setIsSpectator}
             errorMsg={errorMsg}
             onSubmit={handleJoinSubmit}
           />
@@ -539,8 +547,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             'space-y-4 rounded-lg border p-8 text-center shadow-xl',
             isLight ? 'border-gray-200 bg-white' : 'border-gray-800 bg-gray-900/60'
           )}>
-            <h3 className="font-display text-base font-bold uppercase tracking-wider">Game in Session</h3>
-            <p className="text-sm text-gray-500">This game is already underway. You can view the synced game notes as a spectator.</p>
+            <h3 className="font-display text-base font-bold uppercase tracking-wider">Spectator View</h3>
+            <p role="status" className="text-sm text-gray-500">
+              {wasMadeSpectator
+                ? 'The storyteller made you a spectator. You can keep following the game in Game Notes.'
+                : 'View the synced game notes without taking a seat in the grimoire.'}
+            </p>
             <button
               type="button"
               onClick={openSpectatorNotes}

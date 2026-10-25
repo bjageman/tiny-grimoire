@@ -163,7 +163,7 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
   const roomDetails = useMemo(() => ({
     scriptName, scriptAuthor, customScriptRoles, scriptLoricRoles: displayedScriptLoricRoles, torEnabled,
   }), [scriptName, scriptAuthor, customScriptRoles, displayedScriptLoricRoles, torEnabled]);
-  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, broadcastReset } = useStorytellerRoom({
+  const { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, removeSyncedPlayer, broadcastReset } = useStorytellerRoom({
     storageKey: STORAGE_KEY, gameCode, gameType: 'standard', isSecondary, phase, players, setPlayers, maxPlayers: 20,
     timeOfDay, dayNumber, setupDetails: roomDetails, gameDetails: roomDetails,
     createPlayer: payload => ({
@@ -458,27 +458,16 @@ export default function StandardSetup({ theme, toggleTheme }: SetupProps) {
     const player = players.find(p => p.id === id);
     if (!player) return;
 
-    const performRemoval = () => {
-      setPlayers(players.filter(p => p.id !== id));
-      if (remotePlayerIds.has(id)) {
-        setRemotePlayerIds(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        if (sendMessageRef.current) {
-          sendMessageRef.current({
-            type: 'booted',
-            playerId: id,
-          });
-        }
-      }
-    };
-
     if (remotePlayerIds.has(id)) {
-      showConfirm(`Are you sure you want to remove the connected player "${player.name}"?`, performRemoval, 'Remove Player');
+      showConfirm(
+        `Remove "${player.name}" from the player roster? Keep them connected as a spectator, or kick them from the room.`,
+        () => removeSyncedPlayer(id, false),
+        'Remove Player',
+        'Kick',
+        { label: 'Make Spectator', onClick: () => removeSyncedPlayer(id, true) }
+      );
     } else {
-      performRemoval();
+      setPlayers(current => current.filter(player => player.id !== id));
     }
   };
 

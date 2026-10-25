@@ -134,6 +134,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptLoricRoles?: LoricRole[];
       torEnabled?: boolean;
       playerId?: string;
+      spectator?: boolean;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
     const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
@@ -150,6 +151,13 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
     if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update' || payload.type === 'code_valid') {
       if (payload.type === 'code_valid' && payload.playerId !== sessionStorage.getItem('botc-player-id')) return;
+      if (payload.type === 'code_valid' && payload.spectator) {
+        if (sessionStorage.getItem('joined-spectator') !== 'true') {
+          showAlert('The storyteller made you a spectator. You can keep following the game in Game Notes.', 'You Are Now a Spectator');
+        }
+        sessionStorage.setItem('joined-spectator', 'true');
+        sessionStorage.removeItem('joined-spectator-pending');
+      }
       if (sessionStorage.getItem('joined-spectator') === 'true'
         && payload.players?.some(player => player.id === sessionStorage.getItem('botc-player-id'))) {
         sessionStorage.removeItem('joined-spectator');

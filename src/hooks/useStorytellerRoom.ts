@@ -147,6 +147,28 @@ export function useStorytellerRoom<P extends Player>({
     return true;
   };
 
+  const removeSyncedPlayer = (id: string, makeSpectator: boolean) => {
+    const player = playersRef.current.find(candidate => candidate.id === id);
+    if (!player || !remotePlayerIdsRef.current.has(id)) return;
+    if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
+    playersRef.current = playersRef.current.filter(candidate => candidate.id !== id);
+    setPlayers(playersRef.current);
+    remotePlayerIdsRef.current = new Set([...remotePlayerIdsRef.current].filter(candidate => candidate !== id));
+    setRemotePlayerIds(remotePlayerIdsRef.current);
+    if (makeSpectator) {
+      const spectator = { id: player.id, name: player.name, pronouns: player.pronouns };
+      spectatorsRef.current = [...spectatorsRef.current.filter(candidate => candidate.id !== id), spectator];
+      setSpectators(spectatorsRef.current);
+      sendMessageRef.current?.({
+        type: 'code_valid', gameType, ...setupDetails, ...gameState,
+        players: playersRef.current.map(({ notes, ...rest }) => rest),
+        playerId: id, playerName: player.name, spectator: true,
+      });
+    } else {
+      sendMessageRef.current?.({ type: 'booted', playerId: id });
+    }
+  };
+
   const { sendMessage } = useGameSocket(isSecondary ? '' : gameCode, handleIncomingMessage);
 
   useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
@@ -166,5 +188,5 @@ export function useStorytellerRoom<P extends Player>({
     if (broadcastTimeoutRef.current) clearTimeout(broadcastTimeoutRef.current);
   }, [phase, isSecondary]);
 
-  return { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, broadcastReset };
+  return { sendMessageRef, remotePlayerIds, setRemotePlayerIds, spectators, setSpectators, promoteSpectator, removeSyncedPlayer, broadcastReset };
 }

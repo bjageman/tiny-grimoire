@@ -20,6 +20,7 @@ for (const viewport of [
     await page.getByRole('button', { name: 'Enter fullscreen grimoire' }).click();
     const fullscreen = page.getByRole('dialog', { name: 'Fullscreen grimoire' });
     await expect(fullscreen).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true);
     await expect(fullscreen).toHaveCSS('position', 'fixed');
     await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
     await expect(fullscreen.getByRole('img', { name: 'Vote Token Active' })).toBeVisible();
@@ -45,11 +46,48 @@ for (const viewport of [
     await expect(fullscreen.getByRole('img', { name: 'Vote Token Active' })).toHaveCount(0);
     await exit.click();
     await expect(fullscreen).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
     await expect(page.getByRole('button', { name: 'Enter fullscreen grimoire' })).toBeFocused();
     await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
     await page.getByRole('button', { name: 'Enter fullscreen grimoire' }).click();
     await page.keyboard.press('Escape');
     await expect(fullscreen).toHaveCount(0);
     await expect(page).toHaveURL(/#\/tracker$/);
+  });
+}
+
+test('browser fullscreen exit restores Game Notes', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      phase: 'game', players: [{ id: 'alice', name: 'Alice' }],
+    }));
+  });
+  await page.goto('/#/tracker');
+  const enter = page.getByRole('button', { name: 'Enter fullscreen grimoire' });
+  await enter.click();
+  await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+  await page.evaluate(() => document.exitFullscreen());
+  await expect(page.getByRole('dialog', { name: 'Fullscreen grimoire' })).toHaveCount(0);
+  await expect(enter).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
+});
+
+for (const support of ['unavailable', 'denied']) {
+  test(`same fullscreen button still works when browser fullscreen is ${support}`, async ({ page }) => {
+    await page.addInitScript(support => {
+      Object.defineProperty(Element.prototype, 'requestFullscreen', {
+        value: support === 'unavailable' ? undefined : () => Promise.reject(new Error('Denied')),
+      });
+      localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+        phase: 'game', players: [{ id: 'alice', name: 'Alice' }],
+      }));
+    }, support);
+    await page.goto('/#/tracker');
+    await page.getByRole('button', { name: 'Enter fullscreen grimoire' }).click();
+    await expect(page.getByRole('dialog', { name: 'Fullscreen grimoire' })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+    await page.getByRole('button', { name: 'Exit fullscreen grimoire' }).click();
+    await expect(page.getByRole('dialog', { name: 'Fullscreen grimoire' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Enter fullscreen grimoire' })).toBeFocused();
   });
 }

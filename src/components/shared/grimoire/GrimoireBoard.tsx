@@ -23,8 +23,7 @@ import DayNightLabel from '../ui/DayNightLabel';
 import CharacterToken from '../tokens/CharacterToken';
 import VoteToken from '../tokens/VoteToken';
 import { useIsMobile } from '../../../hooks/useIsMobile';
-import { useEscapeKey } from '../../../hooks/useEscapeKey';
-import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useGrimoireFullscreen } from '../../../hooks/useGrimoireFullscreen';
 
 // Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
 const REMINDER_LABEL_ARC_CQW = 95;
@@ -113,18 +112,7 @@ export default function GrimoireBoard({
   alwaysShowNotes = false,
   allowFullscreen = false,
 }: GrimoireBoardProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
-  const exitFullscreen = () => {
-    setIsFullscreen(false);
-    fullscreenButtonRef.current?.focus({ preventScroll: true });
-  };
-  useScrollLock(isFullscreen);
-  useEscapeKey(exitFullscreen, isFullscreen);
-
-  useEffect(() => {
-    if (isFullscreen) fullscreenButtonRef.current?.focus({ preventScroll: true });
-  }, [isFullscreen]);
+  const { isFullscreen, fullscreenButtonRef, toggleFullscreen, handleFullscreenKeyDown } = useGrimoireFullscreen();
 
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
@@ -368,16 +356,7 @@ export default function GrimoireBoard({
         paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
         paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
       } : undefined}
-      onKeyDown={event => {
-        if (!isFullscreen || event.key !== 'Tab') return;
-        const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'))
-          .filter(button => button.getClientRects().length > 0);
-        const target = event.shiftKey ? buttons[buttons.length - 1] : buttons[0];
-        if (event.target === (event.shiftKey ? buttons[0] : buttons[buttons.length - 1])) {
-          event.preventDefault();
-          target?.focus();
-        }
-      }}
+      onKeyDown={handleFullscreenKeyDown}
     >
       {/* Row 1: buttons, in their own fixed-proportion grid so their width never depends on badge content */}
       <div className="w-full px-4 mb-1.5 max-w-[450px] md:max-w-none grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3">
@@ -484,7 +463,7 @@ export default function GrimoireBoard({
             aria-label={isFullscreen ? 'Exit fullscreen grimoire' : 'Enter fullscreen grimoire'}
             aria-pressed={isFullscreen}
             title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen grimoire'}
-            onClick={() => isFullscreen ? exitFullscreen() : setIsFullscreen(true)}
+            onClick={toggleFullscreen}
             className={cn(
               'absolute bottom-3 right-3 z-[400] rounded-full border p-3 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
               isLightModeActive

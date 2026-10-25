@@ -336,6 +336,10 @@ export default function GrimoireBoard({
     [players.length, dynamicRadiusX, dynamicRadiusY, boardAspect],
   );
 
+  const infoBadgeSizeClass = isFullscreen
+    ? 'px-3 py-2 text-sm md:px-4 md:py-2.5 md:text-lg lg:text-xl'
+    : 'px-3 py-1.5 text-[10px]';
+
   const playerCount = players.length;
   const seatOffset = playerCount > 0 ? ((rotationOffset % playerCount) + playerCount) % playerCount : 0;
   const seatOf = (playerIndex: number) =>
@@ -411,12 +415,16 @@ export default function GrimoireBoard({
       </div>
 
       {/* Row 2: info badges (mobile only) — own flex row so label width fits its content, not the button row's columns. */}
-      <div className="md:hidden w-full px-4 mb-2 max-w-[450px] flex items-center justify-between gap-3">
+      <div className={cn(
+        "md:hidden w-full mb-2 flex items-center justify-between",
+        isFullscreen ? "px-0 max-w-none flex-wrap gap-2" : "px-4 max-w-[450px] gap-3"
+      )}>
         <div
           id="grimoire-info-row"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border whitespace-nowrap",
+            "group flex items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border whitespace-nowrap",
+            infoBadgeSizeClass,
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
@@ -433,7 +441,8 @@ export default function GrimoireBoard({
           id="grimoire-alive-badge-mobile"
           onClick={onResetDead}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
+            "flex items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border transition-opacity whitespace-nowrap",
+            infoBadgeSizeClass,
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"
@@ -479,7 +488,8 @@ export default function GrimoireBoard({
           id="grimoire-time-badge"
           onClick={!isSynced && toggleTimeOfDay ? toggleTimeOfDay : undefined}
           className={cn(
-            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
+            "group hidden md:flex absolute top-4 left-4 z-30 items-center gap-1.5 rounded-md font-bold tracking-wider uppercase select-none border min-w-[90px] justify-center whitespace-nowrap",
+            infoBadgeSizeClass,
             !isSynced && toggleTimeOfDay ? "cursor-pointer active:opacity-60" : "",
             timeOfDay === 'day'
               ? "bg-white border-[#d4d4d8] text-[#3f3f46]"
@@ -497,7 +507,8 @@ export default function GrimoireBoard({
           id="grimoire-alive-badge"
           onClick={onResetDead}
           className={cn(
-            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
+            "hidden md:flex absolute top-4 right-4 z-30 flex-col items-end gap-0.5 rounded-md font-bold tracking-wider uppercase select-none border transition-opacity text-right leading-tight",
+            infoBadgeSizeClass,
             onResetDead ? "cursor-pointer hover:opacity-70 active:opacity-50" : "",
             isLightModeActive
               ? "bg-[#ffffff]/80 border-[#d4d4d8] text-[#3f3f46]"

@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { superellipseSeatAngles, superellipsePosition } from '../../../utils/superellipse';
 import { createPortal } from 'react-dom';
-import { ChevronRight, RotateCcw, RotateCw, Wifi } from 'lucide-react';
+import { ChevronRight, Maximize, Minimize, RotateCcw, RotateCw, Wifi } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { Player, Role, PlacedReminder } from '../../../types';
 import { cn } from '../../../utils/cn';
@@ -23,6 +23,7 @@ import DayNightLabel from '../ui/DayNightLabel';
 import CharacterToken from '../tokens/CharacterToken';
 import VoteToken from '../tokens/VoteToken';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import { useGrimoireFullscreen } from '../../../hooks/useGrimoireFullscreen';
 
 // Measure a reminder label and scale its font (viewBox units) so every label fills the arc; capped for very short labels.
 const REMINDER_LABEL_ARC_CQW = 95;
@@ -85,6 +86,7 @@ interface GrimoireBoardProps {
   includeAllScriptReminders?: boolean;
   hermitOutsiders?: Role[];
   alwaysShowNotes?: boolean;
+  allowFullscreen?: boolean;
 }
 
 export default function GrimoireBoard({
@@ -108,7 +110,10 @@ export default function GrimoireBoard({
   includeAllScriptReminders = false,
   hermitOutsiders = [],
   alwaysShowNotes = false,
+  allowFullscreen = false,
 }: GrimoireBoardProps) {
+  const { isFullscreen, fullscreenButtonRef, toggleFullscreen, handleFullscreenKeyDown } = useGrimoireFullscreen();
+
   const [internalRotation, setInternalRotation] = useState(0);
   // Ref accumulates rapid clicks before the parent re-render delivers the new prop
   const rotationRef = useRef(controlledRotation ?? 0);
@@ -219,9 +224,11 @@ export default function GrimoireBoard({
     const count = players.length;
     const isDesktop = boardAspect < 1.15;
 
-    // Desktop board fills its wider column; scale px token sizes by board width vs baseline, floored at 1x so mobile/landscape never shrink.
+    // Scale wide boards by width; fullscreen also respects height so landscape tokens fit.
     const baseline = count <= 6 ? 560 : 680;
-    const s = Math.max(1, boardWidth / baseline);
+    const s = isFullscreen
+      ? Math.min(boardWidth / baseline, boardWidth * boardAspect / (count <= 6 ? 540 : 560))
+      : Math.max(1, boardWidth / baseline);
     const px = (v: number) => `${+(v * s).toFixed(2)}px`;
 
     if (count <= 6) {
@@ -306,11 +313,16 @@ export default function GrimoireBoard({
           : { fontSize: '2.5cqw', marginTop: '0.2cqw' } as CSSProperties,
       };
     }
-  }, [players.length, boardAspect, boardWidth]);
+  }, [players.length, boardAspect, boardWidth, isFullscreen]);
 
   const dynamicRadiusX = useMemo(() => {
+    if (isFullscreen && boardWidth > 0) {
+      const width = grimoireConfig.btnStyle.width as string;
+      const tokenWidthPct = width.endsWith('cqw') ? parseFloat(width) : parseFloat(width) / boardWidth * 100;
+      return Math.min(grimoireConfig.radiusX, 49 - tokenWidthPct / 2);
+    }
     return grimoireConfig.radiusX;
-  }, [grimoireConfig.radiusX]);
+  }, [grimoireConfig, isFullscreen, boardWidth]);
 
   const dynamicRadiusY = useMemo(() => {
     if (boardAspect < 1.15) {
@@ -332,7 +344,20 @@ export default function GrimoireBoard({
   return (
     <>
     {/* isolate keeps the board's internal z-indexes (seats, the label layer) from competing with portalled modals. */}
-    <div className="w-full flex flex-col items-center isolate">
+    <div
+      role={isFullscreen ? 'dialog' : undefined}
+      aria-modal={isFullscreen ? true : undefined}
+      aria-label={isFullscreen ? 'Fullscreen grimoire' : undefined}
+      className={cn('w-full flex flex-col items-center isolate', isFullscreen && 'fixed inset-0 z-40 h-[100dvh] gap-2')}
+      style={isFullscreen ? {
+        backgroundColor: isLightModeActive ? 'rgb(244 228 188)' : 'rgb(26 26 26)',
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+      } : undefined}
+      onKeyDown={handleFullscreenKeyDown}
+    >
       {/* Row 1: buttons, in their own fixed-proportion grid so their width never depends on badge content */}
       <div className="w-full px-4 mb-1.5 max-w-[450px] md:max-w-none grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3">
         {onResetTime ? (
@@ -423,14 +448,32 @@ export default function GrimoireBoard({
         id="grimoire-circle-board"
         ref={boardRef}
         className={cn(
-          "relative border shadow-inner flex items-center justify-center overflow-visible my-4 mx-auto",
+          "relative border shadow-inner flex items-center justify-center overflow-visible mx-auto",
           isLightModeActive
             ? "bg-[rgb(245_243_235)] border-[#d4d4d8] shadow-gray-200/50"
             : "bg-[#141416] border-[#27272a] shadow-black/45",
-          grimoireConfig.boardClass
+          isFullscreen ? 'w-full flex-1 min-h-0 rounded-[28px]' : cn('my-4', grimoireConfig.boardClass)
         )}
         style={{ containerType: 'size' }}
       >
+        {allowFullscreen && (
+          <button
+            ref={fullscreenButtonRef}
+            type="button"
+            aria-label={isFullscreen ? 'Exit fullscreen grimoire' : 'Enter fullscreen grimoire'}
+            aria-pressed={isFullscreen}
+            title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen grimoire'}
+            onClick={toggleFullscreen}
+            className={cn(
+              'absolute bottom-3 right-3 z-[400] rounded-full border p-3 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+              isLightModeActive
+                ? 'bg-white border-gray-300 text-gray-600 hover:text-gray-900'
+                : 'bg-gray-900 border-gray-700 text-gray-300 hover:text-white'
+            )}
+          >
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
+        )}
         {/* Night/Day count — upper left, desktop only */}
         <div
           id="grimoire-time-badge"
@@ -840,7 +883,11 @@ export default function GrimoireBoard({
                         zIndex: 30,
                       }}
                     >
-                      <VoteToken size="8cqw" title="Vote Token Active" />
+                      <VoteToken
+                        size="8cqw"
+                        style={isFullscreen ? { width: 'min(8cqw, 12cqh)', height: 'min(8cqw, 12cqh)' } : undefined}
+                        title="Vote Token Active"
+                      />
                     </div>
                   )}
                 </button>

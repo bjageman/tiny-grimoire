@@ -40,6 +40,70 @@ afterEach(() => {
 });
 
 describe('Game sync regressions', () => {
+  for (const phase of ['setup', 'game']) {
+    it.each(modes)(`claims manual seats and protects synced names during ${phase} in %s`, (storageKey, Component) => {
+      const codeKey = storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code';
+      localStorage.setItem(codeKey, 'REVW');
+      localStorage.setItem(storageKey, JSON.stringify({
+        phase,
+        players: [
+          { id: 'manual-mary', name: 'Mary', roleId: 'chef', notes: 'private note' },
+          { id: 'synced-steve', name: 'Steve', roleId: 'imp' },
+        ],
+        remotePlayerIds: ['synced-steve'],
+      }));
+      render(<Component theme="dark" toggleTheme={vi.fn()} />);
+      const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));
+      const sender = transport.senders.get('REVW')!;
+      sender.mockClear();
+      receive({ type: 'player_join', id: 'mary-device', name: ' MARY ' });
+      const saved = () => JSON.parse(localStorage.getItem(storageKey)!);
+      expect(saved().players).toHaveLength(2);
+      expect(saved().players[0]).toMatchObject({ id: 'mary-device', name: 'Mary', roleId: 'chef', notes: 'private note' });
+      expect(saved().remotePlayerIds).toEqual(['synced-steve', 'mary-device']);
+      expect(sender).toHaveBeenCalledWith(expect.objectContaining({ type: 'code_valid', playerId: 'mary-device' }));
+      if (phase === 'game') {
+        const firstGameUpdate = sender.mock.calls.find(([payload]) => payload.type === 'game_update')![0];
+        expect(firstGameUpdate.players[0]).toMatchObject({ id: 'mary-device', roleId: 'chef' });
+        expect(firstGameUpdate.players[0].notes).toBeUndefined();
+      }
+      receive({ type: 'player_join', id: 'another-steve', name: ' STEVE ' });
+      expect(sender).toHaveBeenLastCalledWith({ type: 'duplicate_name', playerId: 'another-steve', playerName: ' STEVE ' });
+      receive({ type: 'player_join', id: 'another-mary', name: 'Mary' });
+      expect(sender).toHaveBeenLastCalledWith({ type: 'duplicate_name', playerId: 'another-mary', playerName: 'Mary' });
+      receive({ type: 'player_join', id: 'synced-steve', name: 'Steve' });
+      expect(sender).toHaveBeenCalledWith(expect.objectContaining({ type: 'code_valid', playerId: 'synced-steve' }));
+      expect(saved().players).toHaveLength(2);
+      expect(saved().players[1].id).toBe('synced-steve');
+    });
+  }
+
+  it('does not accept another synced player\'s public updates as a same-name join', () => {
+    vi.useFakeTimers();
+    window.location.hash = '#/join?code=REVW';
+    sessionStorage.setItem('botc-player-id', 'another-steve');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    fireEvent.change(within(screen.container).getByPlaceholderText('Enter your name...'), { target: { value: 'Steve' } });
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'Join Game Room' }));
+    const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));
+    const players = [{ id: 'synced-steve', name: 'Steve', roleId: 'imp' }];
+    receive({ type: 'setup_update', gameType: 'standard', players });
+    expect(within(screen.container).getByText('Connecting to Room REVW')).toBeInTheDocument();
+    expect(sessionStorage.getItem('joined-code')).toBeNull();
+    receive({ type: 'game_update', gameType: 'standard', players });
+    expect(within(screen.container).getByText('Connecting to Room REVW')).toBeInTheDocument();
+    receive({ type: 'duplicate_name', playerId: 'another-steve', playerName: 'Steve' });
+    expect(within(screen.container).getByText('That name is already in use in this room. Please choose another.')).toBeInTheDocument();
+    expect(within(screen.container).getByPlaceholderText('Enter your name...')).toBeInTheDocument();
+    receive({ type: 'setup_update', gameType: 'standard', players });
+    receive({ type: 'game_update', gameType: 'standard', players });
+    expect(sessionStorage.getItem('joined-code')).toBeNull();
+    expect(within(screen.container).getByRole('button', { name: 'Join Game Room' })).toBeInTheDocument();
+    transport.senders.get('REVW')!.mockClear();
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(transport.senders.get('REVW')).not.toHaveBeenCalled();
+  });
+
   it('keeps exclusion suggestions open for repeated selections and searches character teams', () => {
     localStorage.setItem('whale-bucket-game', JSON.stringify({ phase: 'setup', players: [], excludedRoleIds: [], excludedRoleDefaultsVersion: 1 }));
     const screen = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);

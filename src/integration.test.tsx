@@ -487,6 +487,7 @@ describe('Storyteller Reset Integration', () => {
     // setup_update — e.g. the storyteller tapped back to setup to tweak
     // something — must stay on their character. Only game_reset moves them.
     const gameCode = 'SHLF';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
     window.location.hash = '#/join';
@@ -538,6 +539,7 @@ describe('Storyteller Reset Integration', () => {
     // A player assigned a traveler must still reveal, by falling back to the
     // full official role list rather than staying stuck in the waiting room.
     const gameCode = 'TRVL';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
     window.location.hash = '#/join';
@@ -631,6 +633,7 @@ describe('Storyteller Reset Integration', () => {
 
   it('Whale Bucket: game_reset sends a revealed player to the (empty) preferences picker', async () => {
     const gameCode = 'WBRS';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Zoe');
     window.location.hash = '#/join';

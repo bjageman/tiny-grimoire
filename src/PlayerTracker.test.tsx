@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import PlayerTracker from './PlayerTracker';
 
 let mockOnMessageCallback: (data: unknown) => void = () => {};
@@ -39,6 +39,26 @@ describe('PlayerTracker', () => {
     sessionStorage.clear();
     vi.clearAllMocks();
     useGameSocketCallCount = 0;
+  });
+
+  it('keeps receiving public game state while the board is fullscreen', () => {
+    sessionStorage.setItem('joined-code', 'LIVE');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({
+      phase: 'game', players: [{ id: 'alice', name: 'Alice', isDead: false }],
+    }));
+    render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Enter fullscreen grimoire' }));
+    const fullscreen = screen.getByRole('dialog', { name: 'Fullscreen grimoire' });
+    act(() => mockOnMessageCallback({
+      type: 'game_update', timeOfDay: 'day', dayNumber: 4,
+      players: [{ id: 'alice', name: 'Alice', isDead: true, hasDeadVote: true, roleId: 'imp' }],
+    }));
+    expect(within(fullscreen).getByTitle('Vote Token Active')).toBeInTheDocument();
+    expect(within(fullscreen).getAllByText('0/1 Alive').length).toBeGreaterThan(0);
+    expect(JSON.parse(localStorage.getItem('player-tracker-botc-game')!).players[0].roleId).toBe('');
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Fullscreen grimoire' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Enter fullscreen grimoire' })).toHaveFocus();
   });
 
   it('renders setup phase and allows adding players', () => {

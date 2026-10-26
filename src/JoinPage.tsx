@@ -103,6 +103,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   const [isSpectator, setIsSpectator] = useState(() => sessionStorage.getItem('joined-spectator') === 'true' || sessionStorage.getItem('joined-spectator-pending') === 'true');
   const [wasMadeSpectator, setWasMadeSpectator] = useState(false);
   const [showSpectatorReset, setShowSpectatorReset] = useState(false);
+  const admissionPhaseRef = useRef<'setup' | 'draft' | 'game' | null>(null);
 
   useEffect(() => {
     if (isSpectator && state === 'tracker') {
@@ -150,10 +151,12 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
     scriptLoricRoles?: LoricRole[];
     torEnabled?: boolean;
     spectator?: boolean;
+    phase?: 'setup' | 'draft' | 'game';
   }
 
   // Send this player back to the lobby after a reset-but-keep-connected: a direct command, not inferred from UI; Whale Bucket → preferences picker, Standard → waiting room.
   const returnToLobby = (resetGameType: 'standard' | 'whale-bucket' = 'standard') => {
+    admissionPhaseRef.current = 'setup';
     setAssignedRole(null);
     setTorEnabled(false);
     setRevealed(false);
@@ -245,6 +248,9 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       }
     } else if (payload.type === 'code_valid') {
       if (payload.playerId !== playerId) return;
+      if (!payload.spectator && admissionPhaseRef.current === null && payload.phase) {
+        admissionPhaseRef.current = payload.phase;
+      }
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (joinRetryIntervalRef.current) clearInterval(joinRetryIntervalRef.current);
       if (connectionTimeoutRef.current) clearTimeout(connectionTimeoutRef.current);
@@ -269,9 +275,16 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           if (payload.timeOfDay) setTimeOfDay(payload.timeOfDay);
           if (payload.dayNumber !== undefined) setDayNumber(payload.dayNumber);
           setState('in-session');
-        } else {
+        } else if (admissionPhaseRef.current !== 'game') {
           setState(payload.gameType === 'whale-bucket' ? 'preferences' : 'waiting');
         }
+      }
+      if (!payload.spectator && admissionPhaseRef.current === 'game') {
+        sessionStorage.setItem('joined-code', code);
+        sessionStorage.setItem('joined-name', name);
+        setAssignedRole(null);
+        setRevealed(false);
+        setState('in-session');
       }
 
       if (payload.excludedRoleIds) {
@@ -311,7 +324,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
           sessionStorage.removeItem('joined-spectator-pending');
           setIsSpectator(false);
         }
-        if (me) {
+        if (me && admissionPhaseRef.current !== null && admissionPhaseRef.current !== 'game') {
           if (me.roleId) {
             const effectiveRoles = (payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles) || (ALL_ROLES as Role[]);
             // Fall back to the full official role list: travelers under a custom script aren't in effectiveRoles, so without this the token never reveals.
@@ -383,6 +396,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
       return;
     }
     localStorage.setItem('botc-joined-name', name);
+    admissionPhaseRef.current = null;
     setWasMadeSpectator(false);
     setErrorMsg(null);
     setState('checking');
@@ -549,15 +563,15 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
             'space-y-4 rounded-lg border p-8 text-center shadow-xl',
             isLight ? 'border-gray-200 bg-white' : 'border-gray-800 bg-gray-900/60'
           )}>
-            <h3 className="font-display text-base font-bold uppercase tracking-wider">Spectator View</h3>
+            <h3 className="font-display text-base font-bold uppercase tracking-wider">{isSpectator ? 'Spectator View' : 'Game in Progress'}</h3>
             <p role="status" className="text-sm text-gray-500">
               {wasMadeSpectator
                 ? 'The storyteller made you a spectator. You can keep following the game in Game Notes.'
-                : 'View the synced game notes without taking a seat in the grimoire.'}
+                : isSpectator ? 'View the synced game notes without taking a seat in the grimoire.' : 'The game has already started. You can follow the game in Game Notes.'}
             </p>
             <button
               type="button"
-              onClick={openSpectatorNotes}
+              onClick={isSpectator ? openSpectatorNotes : goToTracker}
               className="w-full rounded-md bg-clocktower-blood px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-800"
             >
               View Game Notes

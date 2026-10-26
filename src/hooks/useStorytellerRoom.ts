@@ -121,7 +121,7 @@ export function useStorytellerRoom<P extends Player>({
     }
 
     sendMessageRef.current?.({
-      type: 'code_valid', gameType, ...setupDetails, playerId: payload.id, playerName: payload.name,
+      type: 'code_valid', gameType, ...setupDetails, phase, playerId: payload.id, playerName: payload.name,
     });
 
     const updatedPlayers = payload.checkOnly ? roster : isExistingPlayer

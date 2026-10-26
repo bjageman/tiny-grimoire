@@ -35,7 +35,11 @@ export function useStorytellerSync<T>({
   const sendSyncRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
   const lastAppliedSyncRef = useRef<string | null>(null);
   const syncRequestIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [senderId] = useState(() => crypto.randomUUID());
+  const [senderId] = useState(() =>
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).substring(2)
+  );
   const sequenceRef = useRef(0);
   const receivedSequencesRef = useRef(new Map<string, number>());
 

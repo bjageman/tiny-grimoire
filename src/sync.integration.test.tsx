@@ -37,9 +37,26 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('Game sync regressions', () => {
+  it('keeps a stable sender ID and ignores its echoes without crypto.randomUUID', () => {
+    vi.stubGlobal('crypto', {});
+    const onApplySync = vi.fn();
+    const { rerender } = renderHook(({ players }) => useStorytellerSync({
+      isSecondary: false, syncCode: 'SYNC', localState: { players }, onApplySync,
+    }), { initialProps: { players: [] as string[] } });
+    const sender = transport.senders.get('SYNC')!;
+    const first = sender.mock.calls.at(-1)![0];
+    expect(first.senderId).toEqual(expect.any(String));
+    expect(first.senderId.length).toBeGreaterThan(0);
+    rerender({ players: ['Alice'] });
+    expect(sender.mock.calls.at(-1)![0]).toMatchObject({ senderId: first.senderId, sequence: 2 });
+    act(() => transport.callbacks.get('SYNC')!(first));
+    expect(onApplySync).not.toHaveBeenCalled();
+  });
+
   it.each(modes)('keeps manually added players when delayed sync echoes arrive in %s', (storageKey, Component) => {
     const syncKey = storageKey === 'standard-botc-game' ? 'standard-botc-sync-code' : 'whale-bucket-sync-code';
     localStorage.setItem(syncKey, 'SYNC');

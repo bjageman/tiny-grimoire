@@ -40,6 +40,43 @@ afterEach(() => {
 });
 
 describe('Game sync regressions', () => {
+  it.each(modes)('keeps manually added players when delayed sync echoes arrive in %s', (storageKey, Component) => {
+    const syncKey = storageKey === 'standard-botc-game' ? 'standard-botc-sync-code' : 'whale-bucket-sync-code';
+    localStorage.setItem(syncKey, 'SYNC');
+    const screen = render(<Component theme="dark" toggleTheme={vi.fn()} />);
+    const sender = transport.senders.get('SYNC')!;
+    const input = screen.container.querySelector<HTMLInputElement>('#new-player-input')!;
+    const snapshots: unknown[] = [sender.mock.calls.at(-1)![0]];
+    for (const name of ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']) {
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.click(input.nextElementSibling!);
+      snapshots.push(sender.mock.calls.at(-1)![0]);
+    }
+    const publishedCount = sender.mock.calls.length;
+    for (const index of [4, 2, 3, 5, 3, 0]) {
+      act(() => transport.callbacks.get('SYNC')!(snapshots[index]));
+      expect(JSON.parse(localStorage.getItem(storageKey)!).players.map((player: { name: string }) => player.name))
+        .toEqual(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']);
+    }
+    expect(sender).toHaveBeenCalledTimes(publishedCount);
+  });
+
+  it('ignores duplicate and out-of-order snapshots from a synced storyteller', () => {
+    const onApplySync = vi.fn();
+    renderHook(() => useStorytellerSync({
+      isSecondary: false, syncCode: 'SYNC', localState: { players: [] }, onApplySync,
+    }));
+    const receive = (senderId: string, sequence: number) => act(() => transport.callbacks.get('SYNC')!({
+      type: 'storyteller_state_sync', senderId, sequence, state: { players: [sequence] },
+    }));
+    receive('phone', 4);
+    receive('phone', 2);
+    receive('phone', 4);
+    receive('phone', 5);
+    receive('laptop', 1);
+    expect(onApplySync.mock.calls.map(([state]) => state.players)).toEqual([[4], [5], [1]]);
+  });
+
   for (const phase of ['setup', 'game']) {
     it.each(modes)(`claims manual seats and protects synced names during ${phase} in %s`, (storageKey, Component) => {
       const codeKey = storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code';

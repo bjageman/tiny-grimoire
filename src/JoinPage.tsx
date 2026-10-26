@@ -493,7 +493,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   };
 
   function goToTracker() {
-    const clearedPlayers = syncTrackerPlayers(players);
+    const clearedPlayers = syncTrackerPlayers(players, [], customScriptRoles);
     localStorage.setItem('player-tracker-botc-game', JSON.stringify({
       players: clearedPlayers,
       phase: 'game',

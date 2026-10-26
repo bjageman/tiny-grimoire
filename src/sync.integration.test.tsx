@@ -606,6 +606,42 @@ describe('Game sync regressions', () => {
     expect(saved.players[0].isTheMarionette).not.toBe(true);
   });
 
+  it.each([false, true])('shows public Travelers in live Game Notes (spectator: %s)', spectator => {
+    sessionStorage.setItem('joined-code', 'REVW');
+    if (spectator) sessionStorage.setItem('joined-spectator', 'true');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({ phase: 'game', players: [] }));
+    const screen = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({
+      type: 'game_update', customScriptRoles: [{ id: 'chef', name: 'Chef', team: 'townsfolk' }],
+      players: [
+        { id: 'traveler', name: 'Terry', roleId: 'beggar', isDead: false, isEvil: true, notes: 'secret' },
+        { id: 'alice', name: 'Alice', roleId: 'imp', isDead: false },
+      ],
+    }));
+    expect(within(screen.container).getAllByText('Beggar').length).toBeGreaterThan(0);
+    const saved = JSON.parse(localStorage.getItem('player-tracker-botc-game')!);
+    expect(saved.players[0]).toMatchObject({ roleId: 'beggar', roleIds: ['beggar'] });
+    expect(saved.players[0].isEvil).toBeUndefined();
+    expect(saved.players[0].notes).toBeUndefined();
+    expect(saved.players[1].roleId).toBe('');
+  });
+
+  it('includes custom Travelers when first opening synced Game Notes', () => {
+    sessionStorage.setItem('botc-player-id', 'viewer');
+    sessionStorage.setItem('joined-code', 'REVW');
+    sessionStorage.setItem('joined-name', 'Vera');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({
+      type: 'code_valid', gameType: 'standard', playerId: 'viewer', spectator: true,
+      customScriptRoles: [{ id: 'wanderer', name: 'Wanderer', team: 'traveler' }],
+      players: [{ id: 'traveler', name: 'Terry', roleId: 'wanderer', isDead: false, isEvil: true }],
+    }));
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'View Game Notes' }));
+    const saved = JSON.parse(localStorage.getItem('player-tracker-botc-game')!);
+    expect(saved.players[0]).toMatchObject({ roleId: 'wanderer', roleIds: ['wanderer'] });
+    expect(saved.players[0].isEvil).toBeUndefined();
+  });
+
   it.each(modes)('keeps a claimed name protected after the %s storyteller refreshes', (storageKey, Component) => {
     const codeKey = storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code';
     localStorage.setItem(codeKey, 'REVW');

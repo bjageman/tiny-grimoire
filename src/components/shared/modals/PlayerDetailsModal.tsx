@@ -3,8 +3,9 @@ import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import SearchInput from '../ui/SearchInput';
 import CloseButton from '../ui/CloseButton';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
@@ -446,24 +447,16 @@ export default function PlayerDetailsModal({
             <div className="space-y-3 animate-fadeIn">
               {/* Search bar + cancel */}
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  'flex items-center border rounded px-2.5 py-1.5 text-sm flex-1',
-                  isLightModeActive ? 'bg-white border-gray-300' : 'bg-white border-gray-300'
-                )}>
-                  <Search size={14} className="text-gray-500 mr-2 shrink-0" />
-                  <input
-                    id="detail-role-search-input"
-                    type="text"
-                    placeholder="Search character name..."
-                    className={cn(
-                      'bg-transparent flex-1 outline-none text-sm',
-                      isLightModeActive ? 'text-clocktower-night' : 'text-gray-900'
-                    )}
-                    value={modalRoleSearch}
-                    onChange={(e) => onSetModalRoleSearch(e.target.value)}
-                    autoFocus={!isMobile}
-                  />
-                </div>
+                <SearchInput
+                  id="detail-role-search-input"
+                  label="Search characters"
+                  placeholder="Search character name..."
+                  value={modalRoleSearch}
+                  onChange={(e) => onSetModalRoleSearch(e.target.value)}
+                  autoFocus={!isMobile}
+                  containerClassName="px-2.5 py-1.5 flex-1"
+                  className={cn('text-sm', isLightModeActive && 'text-clocktower-night')}
+                />
                 {allowMultipleRoles ? (
                   <div className="relative shrink-0" ref={settingsRef}>
                     <button

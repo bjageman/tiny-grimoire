@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import SearchInput from '../ui/SearchInput';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
@@ -108,20 +109,20 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
               <div key={slot} className="relative">
                 {pickerSlot === slot ? (
                   <div className="rounded border p-2 space-y-1.5 bg-gray-950 border-gray-700">
-                    <div className="flex items-center gap-1.5">
-                      <Search size={11} className="text-gray-400 shrink-0" />
-                      <input
-                        ref={searchRef}
-                        type="text"
-                        placeholder="Search roles..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="flex-1 text-xs bg-transparent focus:outline-none text-white placeholder-gray-500"
-                      />
-                      <button type="button" onClick={() => { setPickerSlot(null); setSearch(''); }}>
+                    <SearchInput
+                      label="Search roles"
+                      placeholder="Search roles..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      ref={searchRef}
+                      iconSize={11}
+                      containerClassName="gap-1.5 border-0 bg-transparent p-0 focus-within:border-transparent"
+                      className="text-white placeholder-gray-500"
+                    >
+                      <button type="button" aria-label="Cancel bluff search" onClick={() => { setPickerSlot(null); setSearch(''); }}>
                         <X size={12} className="text-gray-400 hover:text-gray-200" />
                       </button>
-                    </div>
+                    </SearchInput>
                     <div className="max-h-32 overflow-y-auto space-y-0.5">
                       {filtered.map(r => (
                         <button

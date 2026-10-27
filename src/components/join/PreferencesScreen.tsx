@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Search, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import SearchInput from '../shared/ui/SearchInput';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
@@ -138,20 +139,15 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
               </button>
             </div>
 
-            <div className={cn(
-              "flex items-center border rounded-lg px-2.5 text-xs py-1",
-              isLight ? "bg-gray-50 border-gray-300 focus-within:border-clocktower-blood" : "bg-gray-950 border-gray-800 focus-within:border-clocktower-blood"
-            )}>
-              <Search size={14} className="text-gray-500 mr-2 flex-shrink-0" />
-              <input
-                type="text"
-                autoFocus={!isMobile}
-                placeholder="Search character name..."
-                className="bg-transparent flex-1 outline-none text-xs placeholder-gray-500 h-8 w-full"
-                value={prefSearchTerm}
-                onChange={(e) => setPrefSearchTerm(e.target.value)}
-              />
-            </div>
+            <SearchInput
+              label="Search characters"
+              placeholder="Search character name..."
+              value={prefSearchTerm}
+              onChange={(e) => setPrefSearchTerm(e.target.value)}
+              autoFocus={!isMobile}
+              containerClassName={cn('rounded-lg px-2.5 py-1 text-xs', isLight ? 'bg-gray-50 border-gray-300' : 'bg-gray-950 border-gray-800')}
+              className={cn('placeholder-gray-500 h-8 w-full', isLight ? 'text-gray-900' : 'text-gray-100')}
+            />
 
             <div className={cn(
               "overflow-y-auto overscroll-contain flex-1 border rounded bg-gray-955/20 divide-y pr-1",

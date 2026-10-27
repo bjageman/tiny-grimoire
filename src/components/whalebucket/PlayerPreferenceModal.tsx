@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Dices, Trash2 } from 'lucide-react';
+import { Dices } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
-import CloseButton from '../shared/ui/CloseButton';
+import SearchInput from '../shared/ui/SearchInput';
+import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { ALL_ROLES } from '../../utils/roleData';
@@ -114,17 +115,14 @@ export default function WhaleBucketPlayerPreferenceModal({
             <button onClick={onClose} className="text-xs text-gray-500 underline">Close</button>
           </div>
 
-          <div className="flex items-center bg-white border border-gray-300 rounded px-2.5 py-2 text-sm">
-            <Search size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-            <input
-              type="text"
-              autoFocus={!isMobile}
-              placeholder="Search character name..."
-              className="bg-transparent flex-1 outline-none text-gray-900 placeholder-gray-400 text-xs"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            label="Search characters"
+            placeholder="Search character name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus={!isMobile}
+            containerClassName="px-2.5"
+          />
 
           <div className="overflow-y-auto overscroll-contain flex-1 border border-gray-800 rounded bg-gray-955/40 divide-y divide-gray-800/60 pr-1">
             {filteredRoles.map(role => {
@@ -216,35 +214,14 @@ export default function WhaleBucketPlayerPreferenceModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-display font-bold text-lg text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
-            <button
-              id="remove-preference-player-button"
-              type="button"
-              disabled={!!isSecondary}
-              onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
-              className={cn(
-                "shrink-0 p-1.5 rounded border transition-colors",
-                isSecondary
-                  ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
-                  : isLightModeActive
-                    ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
-                    : "text-red-400 border-red-500/40 hover:text-red-300"
-              )}
-              title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-          <CloseButton
-            id="close-preference-modal-button"
-            onClick={onClose}
-            isLightModeActive={isLightModeActive}
-          />
-        </div>
+        <PlayerEditHeader
+          isLightModeActive={isLightModeActive}
+          isSecondary={isSecondary}
+          onRemove={() => removePlayer(player.id)}
+          onClose={onClose}
+          removeButtonId="remove-preference-player-button"
+          closeButtonId="close-preference-modal-button"
+        />
 
         <div className="flex items-center gap-2">
           {onUpdatePronouns && (

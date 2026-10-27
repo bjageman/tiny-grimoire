@@ -41,6 +41,40 @@ afterEach(() => {
 });
 
 describe('Game sync regressions', () => {
+  it('keeps a Whalebucket player in the picker until all four preferences are selected', () => {
+    window.location.hash = '#/join?code=PREF';
+    sessionStorage.setItem('botc-player-id', 'alice');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    const view = within(screen.container);
+    fireEvent.change(view.getByPlaceholderText('Enter your name...'), { target: { value: 'Alice' } });
+    fireEvent.click(view.getByRole('button', { name: 'Join Game Room' }));
+    act(() => transport.callbacks.get('PREF')!({ type: 'code_valid', gameType: 'whale-bucket', phase: 'setup', playerId: 'alice' }));
+    const sender = transport.senders.get('PREF')!;
+    const submit = view.getByRole('button', { name: 'Submit Character Preferences' });
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(sender.mock.calls.some(([payload]) => payload.preferences)).toBe(false);
+
+    for (const [team, character] of [['townsfolk', 'Chef'], ['outsider', 'Drunk'], ['minion', 'Poisoner']]) {
+      fireEvent.click(view.getByText(`Select ${team} preference...`));
+      fireEvent.click(view.getByText(character));
+    }
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(sender.mock.calls.some(([payload]) => payload.preferences)).toBe(false);
+    expect(view.getByText('Submit Your Preferences')).toBeInTheDocument();
+
+    fireEvent.click(view.getByText('Select demon preference...'));
+    fireEvent.click(view.getByText('Summoner'));
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+    expect(sender).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'player_join',
+      preferences: { townsfolk: ['chef'], outsider: ['drunk'], minion: ['poisoner'], demon: ['summoner'], traveler: [] },
+    }));
+    expect(screen.container.querySelector('#waiting-screen')).not.toBeNull();
+  });
+
   it('waits for admission before revealing and hides tokens when resuming an active game', () => {
     sessionStorage.setItem('joined-code', 'REVW');
     sessionStorage.setItem('joined-name', 'Alice');

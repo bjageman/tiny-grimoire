@@ -70,7 +70,7 @@ export default function PlayerTrackerNameEditModal({
               className={cn(
                 "shrink-0 p-1.5 rounded border transition-colors",
                 isLightModeActive
-                  ? "text-red-700 border-red-700/40 hover:text-red-800"
+                  ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
                   : "text-red-400 border-red-500/40 hover:text-red-300"
               )}
               title="Remove player"

@@ -1,6 +1,6 @@
 import { Check, Download, ImageDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import Card from '../ui/Card';
+import GrimoireCard from '../ui/GrimoireCard';
 import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import { DiscordIcon } from '../tokens/DiscordIcon';
@@ -28,7 +28,7 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
   const iconSize = isMobile ? 14 : 12;
 
   return (
-    <Card
+    <GrimoireCard
       id="game-log-card"
       isLightModeActive={isLightModeActive}
     >
@@ -91,6 +91,6 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
           : <p className={cn('italic', isLightModeActive ? 'text-gray-400' : 'text-gray-600')}>No entries yet.</p>
         }
       </div>}
-    </Card>
+    </GrimoireCard>
   );
 }

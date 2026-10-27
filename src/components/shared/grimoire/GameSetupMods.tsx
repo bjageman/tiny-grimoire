@@ -1,6 +1,6 @@
 import { Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import Card from '../ui/Card';
+import GrimoireCard from '../ui/GrimoireCard';
 import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import ToggleSwitch from '../ui/ToggleSwitch';
@@ -38,7 +38,7 @@ export default function GameSetupMods({
   const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0) + (torEnabled ? 1 : 0);
 
   return (
-    <Card
+    <GrimoireCard
       id="game-setup-mods"
       isLightModeActive={isLightModeActive}
       variant="solid"
@@ -151,6 +151,6 @@ export default function GameSetupMods({
           </label>
         </div>
       )}
-    </Card>
+    </GrimoireCard>
   );
 }

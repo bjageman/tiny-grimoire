@@ -1,6 +1,6 @@
 import { NotebookPen } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import Card from '../ui/Card';
+import GrimoireCard from '../ui/GrimoireCard';
 import DisclosureHeader from '../ui/DisclosureHeader';
 import AutoResizeTextarea from '../ui/AutoResizeTextarea';
 
@@ -15,7 +15,7 @@ interface NotesCardProps {
 
 export default function NotesCard({ id, notes, onNotesChange, isLightModeActive, isExpanded, onToggleExpanded }: NotesCardProps) {
   return (
-    <Card
+    <GrimoireCard
       id={id}
       isLightModeActive={isLightModeActive}
       className={cn('text-left', isLightModeActive && 'text-clocktower-night')}
@@ -40,6 +40,6 @@ export default function NotesCard({ id, notes, onNotesChange, isLightModeActive,
           />
         </div>
       )}
-    </Card>
+    </GrimoireCard>
   );
 }

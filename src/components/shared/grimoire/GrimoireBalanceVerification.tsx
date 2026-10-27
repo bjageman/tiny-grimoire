@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import Card from '../ui/Card';
+import GrimoireCard from '../ui/GrimoireCard';
 import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import type { ValidationSummary } from '../../../utils/validationSummary';
@@ -21,7 +21,7 @@ export default function GrimoireBalanceVerification({
   const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
 
   return (
-    <Card
+    <GrimoireCard
       id="grimoire-balance-verification"
       isLightModeActive={isLightModeActive}
       variant="solid"
@@ -126,6 +126,6 @@ export default function GrimoireBalanceVerification({
           ))}
         </div>
       )}
-    </Card>
+    </GrimoireCard>
   );
 }

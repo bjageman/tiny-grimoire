@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cn } from '../../../utils/cn';
-import Card from '../ui/Card';
+import GrimoireCard from '../ui/GrimoireCard';
 import type { RoleDistribution } from '../../../constants';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
@@ -23,7 +23,7 @@ export default function BaseDistributionCard({
   const displayedDist = showCurrent && currentDist ? currentDist : dist;
 
   return (
-    <Card
+    <GrimoireCard
       id={id}
       isLightModeActive={isLightModeActive}
       className={cn('text-left', isLightModeActive && 'text-clocktower-night')}
@@ -74,6 +74,6 @@ export default function BaseDistributionCard({
       ) : (
         <p className={cn("text-xs italic pt-1", isLightModeActive ? "text-gray-500" : "text-gray-500")}>Add at least 5 players to view distribution.</p>
       )}
-    </Card>
+    </GrimoireCard>
   );
 }

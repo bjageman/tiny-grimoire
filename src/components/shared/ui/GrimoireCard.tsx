@@ -1,12 +1,12 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import { cn } from '../../../utils/cn';
 
-type CardProps = ComponentPropsWithoutRef<'div'> & {
+type GrimoireCardProps = ComponentPropsWithoutRef<'div'> & {
   isLightModeActive: boolean;
   variant?: 'muted' | 'solid';
 };
 
-export default function Card({ isLightModeActive, variant = 'muted', className, ...props }: CardProps) {
+export default function GrimoireCard({ isLightModeActive, variant = 'muted', className, ...props }: GrimoireCardProps) {
   return (
     <div
       {...props}

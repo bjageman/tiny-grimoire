@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, CircleDashed, Wifi } from 'lucide-react';
+import { AlarmClock, Check, Wifi } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import CharacterToken from '../shared/tokens/CharacterToken';
@@ -188,7 +188,7 @@ export default function WhaleBucketPreferenceCircle({
                   emptyContent={isComplete ? (
                     <Check role="img" aria-label="Preferences complete" className="w-[80%] h-[80%] text-green-600" strokeWidth={3} />
                   ) : hasPreferences ? (
-                    <CircleDashed role="img" aria-label="Preferences incomplete" className="w-[80%] h-[80%] text-amber-600" strokeWidth={2.5} />
+                    <AlarmClock role="img" aria-label="Preferences incomplete" className="w-[80%] h-[80%] text-amber-600" strokeWidth={2.5} />
                   ) : (
                     <svg role="img" aria-label="No preferences selected" viewBox="0 0 100 100" className="w-[80%] h-[80%]">
                       <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fill="currentColor" fontSize="90" fontFamily="sans-serif">?</text>

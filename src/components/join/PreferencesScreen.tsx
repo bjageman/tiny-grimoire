@@ -5,7 +5,7 @@ import SearchInput from '../shared/ui/SearchInput';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { roleIconFallback } from '../../utils/roleIcon';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
-import { getWhaleBucketPreferenceTeam } from '../../utils/whaleBucketPreferences';
+import { getWhaleBucketPreferenceTeam, hasCompleteWhaleBucketPreferences, WHALE_BUCKET_PREFERENCE_TEAMS } from '../../utils/whaleBucketPreferences';
 
 type PrefTeam = 'townsfolk' | 'outsider' | 'minion' | 'demon';
 type Prefs = Record<PrefTeam, string[]>;
@@ -25,6 +25,8 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
   const [activePrefSelect, setActivePrefSelect] = useState<{ team: PrefTeam } | null>(null);
   useScrollLock(!!activePrefSelect);
   const [prefSearchTerm, setPrefSearchTerm] = useState('');
+  const isComplete = hasCompleteWhaleBucketPreferences(prefs);
+  const missingTeams = WHALE_BUCKET_PREFERENCE_TEAMS.filter(team => prefs[team].length !== 1 || !prefs[team][0]?.trim());
 
   return (
     <>
@@ -34,11 +36,11 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
       )}>
         <div>
           <h2 className="font-display text-base font-bold text-center tracking-wider uppercase">Submit Your Preferences</h2>
-          <p className="text-xs text-gray-500 text-center mt-0.5">Select one character in each category (optional)</p>
+          <p className="text-xs text-gray-500 text-center mt-0.5">Select one character in each category to submit</p>
         </div>
 
         <div className="space-y-3.5">
-          {(['townsfolk', 'outsider', 'minion', 'demon'] as const).map((team) => {
+          {WHALE_BUCKET_PREFERENCE_TEAMS.map((team) => {
             const selectedRoleId = prefs[team][0];
             const selectedRole = selectedRoleId ? PLAYABLE_ROLES.find(r => r.id === selectedRoleId) : null;
             return (
@@ -104,9 +106,17 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
           })}
         </div>
 
+        {!isComplete && (
+          <p id="preference-completion-hint" role="status" className="text-xs text-gray-500 text-center">
+            Choose a character for: {missingTeams.map(team => team[0].toUpperCase() + team.slice(1)).join(', ')}.
+          </p>
+        )}
         <button
-          onClick={onSubmit}
-          className="w-full bg-clocktower-blood text-white rounded-lg py-3 font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm"
+          type="button"
+          disabled={!isComplete}
+          aria-describedby={isComplete ? undefined : 'preference-completion-hint'}
+          onClick={() => { if (isComplete) onSubmit(); }}
+          className="w-full bg-clocktower-blood text-white rounded-lg py-3 font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Sparkles size={16} />
           <span>Submit Character Preferences</span>

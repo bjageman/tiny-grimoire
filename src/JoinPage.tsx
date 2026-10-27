@@ -4,6 +4,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { ALL_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
 import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
+import { hasCompleteWhaleBucketPreferences } from './utils/whaleBucketPreferences';
 import { sortByScriptOrder, withInPlayTravelers } from './utils/scriptUtils';
 import { RotateCcw } from 'lucide-react';
 import type { AnyRole, LoricRole, Role, Player } from './types';
@@ -432,6 +433,7 @@ export default function JoinPage({ theme, toggleTheme }: { theme: 'light' | 'dar
   };
 
   const handlePrefsSubmit = () => {
+    if (!hasCompleteWhaleBucketPreferences(prefs)) return;
     sendMessage({
       type: 'player_join',
       name: name,

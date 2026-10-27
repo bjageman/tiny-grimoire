@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import WhaleBucketPreferencePicker, { PreferenceSelectButton } from '../shared/ui/WhaleBucketPreferenceSelect';
 import { useScrollLock } from '../../hooks/useScrollLock';
@@ -57,7 +56,6 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
           onClick={() => { if (isComplete) onSubmit(); }}
           className="w-full bg-clocktower-blood text-white rounded-lg py-3 font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Sparkles size={16} />
           <span>Submit Character Preferences</span>
         </button>
       </div>

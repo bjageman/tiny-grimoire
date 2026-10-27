@@ -1,5 +1,7 @@
-import { Check, ChevronDown, Download, ImageDown } from 'lucide-react';
+import { Check, Download, ImageDown } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import GrimoireCard from '../ui/GrimoireCard';
+import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import { DiscordIcon } from '../tokens/DiscordIcon';
 
@@ -26,31 +28,21 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
   const iconSize = isMobile ? 14 : 12;
 
   return (
-    <div id="game-log-card" className={cn(
-      'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300',
-      isLightModeActive
-        ? 'bg-white/50 border-gray-300'
-        : 'bg-gray-900/40 border-gray-800/80'
-    )}>
+    <GrimoireCard
+      id="game-log-card"
+      isLightModeActive={isLightModeActive}
+    >
       <div className="flex items-center justify-between">
         <h4>
-          <button
-            type="button"
-            onClick={toggleExpanded}
-            aria-expanded={isExpanded}
-            aria-controls="game-log-entries"
-            aria-label="Game Log"
-            className={cn(
-              'flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider',
-              isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-            )}
-          >
-            <span>Game Log</span>
-            <ChevronDown
-              size={14}
-              className={cn('transition-transform duration-200', isExpanded && 'rotate-180')}
-            />
-          </button>
+          <DisclosureHeader
+            label="Game Log"
+            isExpanded={isExpanded}
+            onToggle={toggleExpanded}
+            controlsId="game-log-entries"
+            isLightModeActive={isLightModeActive}
+            className="w-auto"
+            chevronAtEnd={false}
+          />
         </h4>
         {gameLog && gameLog.length > 0 && (
           <div className="flex items-center gap-1.5">
@@ -99,6 +91,6 @@ export default function GameLogCard({ isLightModeActive, isMobile, gameLog, isSa
           : <p className={cn('italic', isLightModeActive ? 'text-gray-400' : 'text-gray-600')}>No entries yet.</p>
         }
       </div>}
-    </div>
+    </GrimoireCard>
   );
 }

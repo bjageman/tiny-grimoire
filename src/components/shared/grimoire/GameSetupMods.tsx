@@ -1,5 +1,7 @@
-import { Settings, ChevronDown } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import GrimoireCard from '../ui/GrimoireCard';
+import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
@@ -36,29 +38,22 @@ export default function GameSetupMods({
   const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0) + (torEnabled ? 1 : 0);
 
   return (
-    <div
+    <GrimoireCard
       id="game-setup-mods"
-      className={cn(
-        "border rounded-lg transition-colors duration-300 text-left",
-        isLightModeActive
-          ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-          : "bg-gray-900/90 border-gray-800"
-      )}
+      isLightModeActive={isLightModeActive}
+      variant="solid"
+      className="p-0 space-y-0 text-left"
     >
-      <button
-        type="button"
-        onClick={toggleExpanded}
-        aria-expanded={isExpanded}
-        aria-controls="game-setup-mods-body"
-        className="w-full flex items-center gap-1.5 p-3"
+      <DisclosureHeader
+        label="Setup Modifiers"
+        isExpanded={isExpanded}
+        onToggle={toggleExpanded}
+        controlsId="game-setup-mods-body"
+        isLightModeActive={isLightModeActive}
+        variant="prominent"
+        className="p-3"
+        icon={<Settings size={16} className="text-clocktower-traveler" />}
       >
-        <Settings size={16} className="text-clocktower-traveler" />
-        <span className={cn(
-          "font-semibold text-xs tracking-wide uppercase",
-          isLightModeActive ? "text-gray-700" : "text-gray-300"
-        )}>
-          Setup Modifiers
-        </span>
         {!isExpanded && activeCount > 0 && (
           <span className={cn(
             "text-[9px] border px-1.5 py-0.5 rounded font-medium",
@@ -69,14 +64,7 @@ export default function GameSetupMods({
             {activeCount} active
           </span>
         )}
-        <ChevronDown
-          size={16}
-          className={cn(
-            "ml-auto text-gray-500 transition-transform duration-200",
-            isExpanded && "rotate-180"
-          )}
-        />
-      </button>
+      </DisclosureHeader>
 
       {isExpanded && (
         <div id="game-setup-mods-body" className="px-3 pb-3">
@@ -163,6 +151,6 @@ export default function GameSetupMods({
           </label>
         </div>
       )}
-    </div>
+    </GrimoireCard>
   );
 }

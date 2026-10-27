@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Player } from '../../../types';
 import { cn } from '../../../utils/cn';
+import GrimoireCard from '../ui/GrimoireCard';
 import { PLAYABLE_ROLES } from '../../../utils/roleData';
 import SearchSuggestionInput from '../ui/SearchSuggestionInput';
 
@@ -23,12 +24,10 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
   const selectedSpectator = spectators.find(spectator => spectator.id === selectedSpectatorId && spectator.name === name);
 
   return (
-    <div className={cn(
-      'rounded-lg border p-3.5 space-y-3 transition-colors duration-300',
-      isLightModeActive
-        ? 'bg-white/50 border-gray-300 text-clocktower-night'
-        : 'bg-gray-900/40 border-gray-800/80'
-    )}>
+    <GrimoireCard
+      isLightModeActive={isLightModeActive}
+      className={cn('space-y-3', isLightModeActive && 'text-clocktower-night')}
+    >
       <h4 className={cn(
         'text-xs uppercase font-bold tracking-wider',
         isLightModeActive ? 'text-gray-600' : 'text-gray-500'
@@ -82,6 +81,6 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
           </button>
         </div>
       </div>
-    </div>
+    </GrimoireCard>
   );
 }

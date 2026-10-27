@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { cn } from '../../../utils/cn';
 import { Skull } from 'lucide-react';
 import { roleIconFallback } from '../../../utils/roleIcon';
@@ -10,6 +11,7 @@ interface CharacterTokenProps {
   size?: number;
   idPrefix: string;
   className?: string;
+  emptyContent?: ReactNode;
   /** Icon size as a percentage of the token, default 85 */
   iconSizePct?: number;
   /** Dims/grayscales the token to reflect a dead player */
@@ -35,7 +37,7 @@ const TEAM_COLOR: Record<AnyRole['team'], string> = {
 
 const teamFill = (team: AnyRole['team']) => TEAM_COLOR[team] ?? '#6b7280';
 
-export default function CharacterToken({ role, isEvil, size, idPrefix, className, iconSizePct = 85, isDead = false, isLightModeActive = false, blankRing = false, neutralRing = false, solidIcon = false }: CharacterTokenProps) {
+export default function CharacterToken({ role, isEvil, size, idPrefix, className, emptyContent, iconSizePct = 85, isDead = false, isLightModeActive = false, blankRing = false, neutralRing = false, solidIcon = false }: CharacterTokenProps) {
   const sizeStyle = size !== undefined ? { width: size, height: size } : undefined;
 
   if (!role && !blankRing) {
@@ -48,7 +50,7 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
         )}
         style={sizeStyle}
       >
-        ?
+        {emptyContent ?? '?'}
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
+import CloseButton from '../shared/ui/CloseButton';
 import SearchInput from '../shared/ui/SearchInput';
 import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
 import PlayerNameField from '../shared/ui/PlayerNameField';
@@ -113,7 +114,7 @@ export default function WhaleBucketPlayerPreferenceModal({
                 Select {TEAM_LABELS[pickingTeam]}
               </h3>
             </div>
-            <button onClick={onClose} className="text-xs text-gray-500 underline">Close</button>
+            <CloseButton onClick={onClose} isLightModeActive={isLightModeActive} />
           </div>
 
           <SearchInput

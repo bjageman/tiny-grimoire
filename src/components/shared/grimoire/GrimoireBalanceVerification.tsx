@@ -1,5 +1,7 @@
-import { AlertTriangle, CheckCircle, ChevronDown, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import Card from '../ui/Card';
+import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import type { ValidationSummary } from '../../../utils/validationSummary';
 
@@ -19,43 +21,27 @@ export default function GrimoireBalanceVerification({
   const hasWarnings = validationSummary.warnings && validationSummary.warnings.length > 0;
 
   return (
-    <div
+    <Card
       id="grimoire-balance-verification"
-      className={cn(
-        "border rounded-lg p-3 space-y-2.5 transition-colors duration-300 text-left",
-        isLightModeActive
-          ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-          : "bg-gray-900/90 border-gray-800"
-      )}
+      isLightModeActive={isLightModeActive}
+      variant="solid"
+      className="p-3 text-left"
     >
-      <button
-        type="button"
-        onClick={toggleExpanded}
-        aria-expanded={isExpanded}
-        aria-controls="grimoire-balance-character-counts"
-        className="w-full flex items-center gap-1.5"
-      >
-        {validationSummary.isValid ? (
+      <DisclosureHeader
+        label="Grimoire Balance Verification"
+        isExpanded={isExpanded}
+        onToggle={toggleExpanded}
+        controlsId="grimoire-balance-character-counts"
+        isLightModeActive={isLightModeActive}
+        variant="prominent"
+        icon={validationSummary.isValid ? (
           <CheckCircle size={16} className="text-clocktower-outsider" />
         ) : hasFailures ? (
           <XCircle size={16} className="text-red-500" />
         ) : (
           <AlertTriangle size={16} className="text-clocktower-minion" />
         )}
-        <span className={cn(
-          "font-semibold text-xs tracking-wide uppercase",
-          isLightModeActive ? "text-gray-700" : "text-gray-300"
-        )}>
-          Grimoire Balance Verification
-        </span>
-        <ChevronDown
-          size={16}
-          className={cn(
-            "ml-auto text-gray-500 transition-transform duration-200",
-            isExpanded && "rotate-180"
-          )}
-        />
-      </button>
+      />
 
       {validationSummary.modifications.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -140,6 +126,6 @@ export default function GrimoireBalanceVerification({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Dices, Upload, Package } from 'lucide-react';
+import { Dices, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import AddPlayerForm from '../shared/ui/AddPlayerForm';
 import AssignmentConfirmationModal from '../shared/modals/AssignmentConfirmationModal';
@@ -11,7 +11,7 @@ import ScriptCharactersModal from '../shared/modals/ScriptCharactersModal';
 import PresetScriptModal from '../shared/modals/PresetScriptModal';
 import type { PresetScript } from '../../utils/presetScripts';
 import SelectCharactersModal from './SelectCharactersModal';
-import ScriptHelpButton from '../shared/ui/ScriptHelpButton';
+import ScriptSelectionPanel from '../shared/ui/ScriptSelectionPanel';
 import CharacterAssignmentCircle from './CharacterAssignmentCircle';
 import GrimoireBalanceVerification from '../shared/grimoire/GrimoireBalanceVerification';
 import GameSetupMods from '../shared/grimoire/GameSetupMods';
@@ -176,81 +176,19 @@ export default function StandardSetupPhase({
       <div id="standard-setup-controls-container" className="md:col-start-2 md:row-start-1 space-y-6 w-full">
         <section className="bg-gray-900/50 p-4 rounded-lg border border-gray-800/80 space-y-4">
           <div className="flex flex-col gap-2">
-            <input
-            id="script-upload-input"
-            type="file"
-            ref={fileInputRef}
-            onChange={handleScriptUpload}
-            accept=".json"
-            className="hidden"
+            <ScriptSelectionPanel
+            scriptName={scriptName}
+            scriptAuthor={scriptAuthor}
+            hasCustomScript={!!customScriptRoles}
+            isLightModeActive={isLightModeActive}
+            fileInputRef={fileInputRef}
+            onUpload={handleScriptUpload}
+            onClear={clearCustomScript}
+            onSelectPreset={() => setIsPresetModalOpen(true)}
+            onViewScript={() => setIsScriptModalOpen(true)}
+            uploadInputId="script-upload-input"
+            uploadButtonId="script-upload-button"
           />
-          <div className="relative">
-            <button
-              id="script-upload-button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "w-full border py-3.5 px-4 rounded-lg transition-all flex flex-col items-center justify-center gap-1 group text-center cursor-pointer",
-                isLightModeActive
-                  ? "bg-gray-100/80 border-gray-300 hover:border-clocktower-blood/60 hover:bg-gray-150"
-                  : "bg-gray-955 border-gray-800 hover:border-clocktower-blood"
-              )}
-              title="Click to upload script JSON"
-            >
-              <span className={cn(
-                "flex items-center gap-1.5 text-base font-extrabold transition-colors text-white group-hover:text-clocktower-blood",
-                isLightModeActive && "text-gray-900"
-              )}>
-                📜 {scriptName}
-              </span>
-              <span className={cn("text-[10px] font-medium flex items-center gap-1", isLightModeActive ? "text-black" : "text-white")}>
-                <Upload size={12} />
-                {customScriptRoles ? `${scriptAuthor ? `by ${scriptAuthor}` : 'Custom script'} — Click to change` : "Click to upload .json"}
-              </span>
-            </button>
-            <ScriptHelpButton isLightModeActive={isLightModeActive} />
-          </div>
-          {customScriptRoles ? (
-            <button
-              type="button"
-              onClick={clearCustomScript}
-              className={cn(
-                "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
-                isLightModeActive
-                  ? "hover:bg-red-50 border-gray-300 text-red-600 hover:text-red-700"
-                  : "hover:bg-gray-800 border-gray-800 text-red-400 hover:text-red-300"
-              )}
-            >
-              Clear Script
-            </button>
-          ) : (
-            <button
-              id="preset-script-button"
-              type="button"
-              onClick={() => setIsPresetModalOpen(true)}
-              className={cn(
-                "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
-                isLightModeActive
-                  ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
-                  : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
-              )}
-            >
-              Select a Preset Script
-            </button>
-          )}
-          <button
-            id="game-script-button"
-            type="button"
-            onClick={() => setIsScriptModalOpen(true)}
-            className={cn(
-              "w-full text-center bg-transparent border py-2.5 rounded text-xs font-semibold transition-all",
-              isLightModeActive
-                ? "hover:bg-gray-200/50 border-gray-300 text-black hover:text-black"
-                : "hover:bg-gray-800 border-gray-800 text-white hover:text-white"
-            )}
-          >
-            {customScriptRoles ? 'View Script' : 'View All Roles'}
-          </button>
           <button
             id="select-characters-button"
             type="button"

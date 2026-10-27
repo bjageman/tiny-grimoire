@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '../../../utils/cn';
+import Card from '../ui/Card';
 import type { RoleDistribution } from '../../../constants';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
@@ -22,14 +23,10 @@ export default function BaseDistributionCard({
   const displayedDist = showCurrent && currentDist ? currentDist : dist;
 
   return (
-    <div
+    <Card
       id={id}
-      className={cn(
-        'rounded-lg border p-3.5 space-y-2.5 transition-colors duration-300 text-left',
-        isLightModeActive
-          ? 'bg-white/50 border-gray-300 text-clocktower-night'
-          : 'bg-gray-900/40 border-gray-800/80'
-      )}
+      isLightModeActive={isLightModeActive}
+      className={cn('text-left', isLightModeActive && 'text-clocktower-night')}
     >
       <div className="flex items-center justify-between gap-3">
         <h4 className={cn(
@@ -77,6 +74,6 @@ export default function BaseDistributionCard({
       ) : (
         <p className={cn("text-xs italic pt-1", isLightModeActive ? "text-gray-500" : "text-gray-500")}>Add at least 5 players to view distribution.</p>
       )}
-    </div>
+    </Card>
   );
 }

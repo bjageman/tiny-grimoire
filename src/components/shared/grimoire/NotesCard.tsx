@@ -1,5 +1,7 @@
-import { ChevronDown, NotebookPen } from 'lucide-react';
+import { NotebookPen } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import Card from '../ui/Card';
+import DisclosureHeader from '../ui/DisclosureHeader';
 import AutoResizeTextarea from '../ui/AutoResizeTextarea';
 
 interface NotesCardProps {
@@ -13,34 +15,20 @@ interface NotesCardProps {
 
 export default function NotesCard({ id, notes, onNotesChange, isLightModeActive, isExpanded, onToggleExpanded }: NotesCardProps) {
   return (
-    <div
+    <Card
       id={id}
-      className={cn(
-        'space-y-2.5 rounded-lg border p-3.5 text-left transition-colors duration-300',
-        isLightModeActive
-          ? 'border-gray-300 bg-white/50 text-clocktower-night'
-          : 'border-gray-800/80 bg-gray-900/40'
-      )}
+      isLightModeActive={isLightModeActive}
+      className={cn('text-left', isLightModeActive && 'text-clocktower-night')}
     >
       <h4>
-        <button
-          type="button"
-          onClick={onToggleExpanded}
-          aria-expanded={isExpanded}
-          aria-controls={`${id}-body`}
-          aria-label="Notes"
-          className={cn(
-            'flex w-full items-center gap-1.5 text-xs font-bold uppercase tracking-wider',
-            isLightModeActive ? 'text-gray-600' : 'text-gray-500'
-          )}
-        >
-          <NotebookPen size={14} />
-          <span>Notes</span>
-          <ChevronDown
-            size={14}
-            className={cn('ml-auto transition-transform duration-200', isExpanded && 'rotate-180')}
-          />
-        </button>
+        <DisclosureHeader
+          label="Notes"
+          isExpanded={isExpanded}
+          onToggle={onToggleExpanded}
+          controlsId={`${id}-body`}
+          isLightModeActive={isLightModeActive}
+          icon={<NotebookPen size={14} />}
+        />
       </h4>
       {isExpanded && (
         <div id={`${id}-body`}>
@@ -52,6 +40,6 @@ export default function NotesCard({ id, notes, onNotesChange, isLightModeActive,
           />
         </div>
       )}
-    </div>
+    </Card>
   );
 }

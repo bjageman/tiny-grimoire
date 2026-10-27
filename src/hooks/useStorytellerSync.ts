@@ -35,6 +35,22 @@ export function useStorytellerSync<T>({
   const sendSyncRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
   const lastAppliedSyncRef = useRef<string | null>(null);
   const syncRequestIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [senderId] = useState(() =>
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).substring(2)
+  );
+  const sequenceRef = useRef(0);
+  const receivedSequencesRef = useRef(new Map<string, number>());
+
+  const publishState = useCallback((state: T) => {
+    sendSyncRef.current?.({
+      type: 'storyteller_state_sync',
+      state,
+      senderId,
+      sequence: ++sequenceRef.current,
+    });
+  }, [senderId]);
 
   const onApplySyncRef = useRef(onApplySync);
   useEffect(() => {
@@ -50,23 +66,29 @@ export function useStorytellerSync<T>({
     const payload = data as {
       type: string;
       state?: T;
+      senderId?: string;
+      sequence?: number;
     };
 
     if (payload.type === 'storyteller_sync_request') {
       if (!isSecondary && sendSyncRef.current) {
-        sendSyncRef.current({
-          type: 'storyteller_state_sync',
-          state: localStateRef.current,
-        });
+        publishState(localStateRef.current);
       }
     } else if (payload.type === 'storyteller_state_sync' && payload.state) {
+      if (payload.senderId === senderId) return;
+      if (typeof payload.senderId === 'string' && typeof payload.sequence === 'number') {
+        const key = `${syncCode}:${payload.senderId}`;
+        const lastSequence = receivedSequencesRef.current.get(key) ?? -1;
+        if (payload.sequence <= lastSequence) return;
+        receivedSequencesRef.current.set(key, payload.sequence);
+      }
       if (syncRequestIntervalRef.current) clearInterval(syncRequestIntervalRef.current);
       const incomingStr = JSON.stringify(payload.state);
       lastAppliedSyncRef.current = incomingStr;
       onApplySyncRef.current(payload.state);
       setHasReceivedSync(true);
     }
-  }, [isSecondary]);
+  }, [isSecondary, senderId, syncCode, publishState]);
 
   const { isConnected, sendMessage: sendSyncMessage } = useGameSocket(syncCode, handleIncomingSyncMessage);
 
@@ -86,17 +108,14 @@ export function useStorytellerSync<T>({
   const localStateStr = JSON.stringify(localState);
 
   useEffect(() => {
-    if (sendSyncMessage && hasReceivedSync) {
+    if (hasReceivedSync) {
       if (localStateStr === lastAppliedSyncRef.current) {
         return;
       }
-      sendSyncMessage({
-        type: 'storyteller_state_sync',
-        state: localState,
-      });
+      publishState(localState);
       lastAppliedSyncRef.current = localStateStr;
     }
-  }, [localStateStr, sendSyncMessage, hasReceivedSync, localState]);
+  }, [localStateStr, sendSyncMessage, hasReceivedSync, localState, publishState]);
 
   return {
     hasReceivedSync,

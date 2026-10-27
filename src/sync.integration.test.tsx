@@ -37,9 +37,102 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('Game sync regressions', () => {
+  it('waits for admission before revealing and hides tokens when resuming an active game', () => {
+    sessionStorage.setItem('joined-code', 'REVW');
+    sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'alice');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));
+    const update = { type: 'game_update', players: [{ id: 'alice', name: 'Alice', roleId: 'imp' }] };
+    receive(update);
+    expect(within(screen.container).queryByText('Your Character Token')).toBeNull();
+    receive({ type: 'code_valid', gameType: 'standard', phase: 'game', playerId: 'alice' });
+    receive(update);
+    expect(within(screen.container).getByText('Game in Progress')).toBeInTheDocument();
+    expect(within(screen.container).queryByText('Your Character Token')).toBeNull();
+    receive({ type: 'game_reset', gameType: 'standard' });
+    receive({ type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'alice' });
+    receive(update);
+    expect(within(screen.container).getByText('Your Character Token')).toBeInTheDocument();
+  });
+
+  it.each(['standard', 'whale-bucket'])('does not reveal a character when joining an active %s game', gameType => {
+    window.location.hash = '#/join?code=REVW';
+    sessionStorage.setItem('botc-player-id', 'alice');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    fireEvent.change(within(screen.container).getByPlaceholderText('Enter your name...'), { target: { value: 'Alice' } });
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'Join Game Room' }));
+    const receive = (message: unknown) => act(() => transport.callbacks.get('REVW')!(message));
+    receive({ type: 'code_valid', gameType, phase: 'game', playerId: 'alice' });
+    for (const type of ['game_update', 'game_started', 'game_update']) {
+      receive({ type, gameType, players: [{ id: 'alice', name: 'Alice', roleId: 'imp' }] });
+      expect(within(screen.container).getByText('Game in Progress')).toBeInTheDocument();
+      expect(within(screen.container).queryByText('Imp')).toBeNull();
+      expect(within(screen.container).queryByText('Show Token')).toBeNull();
+    }
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'View Game Notes' }));
+    expect(window.location.hash).toBe('#/tracker');
+    expect(sessionStorage.getItem('joined-spectator')).toBeNull();
+    expect(JSON.parse(localStorage.getItem('player-tracker-botc-game')!).players[0].roleId).toBe('');
+  });
+
+  it('keeps a stable sender ID and ignores its echoes without crypto.randomUUID', () => {
+    vi.stubGlobal('crypto', {});
+    const onApplySync = vi.fn();
+    const { rerender } = renderHook(({ players }) => useStorytellerSync({
+      isSecondary: false, syncCode: 'SYNC', localState: { players }, onApplySync,
+    }), { initialProps: { players: [] as string[] } });
+    const sender = transport.senders.get('SYNC')!;
+    const first = sender.mock.calls.at(-1)![0];
+    expect(first.senderId).toEqual(expect.any(String));
+    expect(first.senderId.length).toBeGreaterThan(0);
+    rerender({ players: ['Alice'] });
+    expect(sender.mock.calls.at(-1)![0]).toMatchObject({ senderId: first.senderId, sequence: 2 });
+    act(() => transport.callbacks.get('SYNC')!(first));
+    expect(onApplySync).not.toHaveBeenCalled();
+  });
+
+  it.each(modes)('keeps manually added players when delayed sync echoes arrive in %s', (storageKey, Component) => {
+    const syncKey = storageKey === 'standard-botc-game' ? 'standard-botc-sync-code' : 'whale-bucket-sync-code';
+    localStorage.setItem(syncKey, 'SYNC');
+    const screen = render(<Component theme="dark" toggleTheme={vi.fn()} />);
+    const sender = transport.senders.get('SYNC')!;
+    const input = screen.container.querySelector<HTMLInputElement>('#new-player-input')!;
+    const snapshots: unknown[] = [sender.mock.calls.at(-1)![0]];
+    for (const name of ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']) {
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.click(input.nextElementSibling!);
+      snapshots.push(sender.mock.calls.at(-1)![0]);
+    }
+    const publishedCount = sender.mock.calls.length;
+    for (const index of [4, 2, 3, 5, 3, 0]) {
+      act(() => transport.callbacks.get('SYNC')!(snapshots[index]));
+      expect(JSON.parse(localStorage.getItem(storageKey)!).players.map((player: { name: string }) => player.name))
+        .toEqual(['Alice', 'Bob', 'Charlie', 'Diana', 'Eve']);
+    }
+    expect(sender).toHaveBeenCalledTimes(publishedCount);
+  });
+
+  it('ignores duplicate and out-of-order snapshots from a synced storyteller', () => {
+    const onApplySync = vi.fn();
+    renderHook(() => useStorytellerSync({
+      isSecondary: false, syncCode: 'SYNC', localState: { players: [] }, onApplySync,
+    }));
+    const receive = (senderId: string, sequence: number) => act(() => transport.callbacks.get('SYNC')!({
+      type: 'storyteller_state_sync', senderId, sequence, state: { players: [sequence] },
+    }));
+    receive('phone', 4);
+    receive('phone', 2);
+    receive('phone', 4);
+    receive('phone', 5);
+    receive('laptop', 1);
+    expect(onApplySync.mock.calls.map(([state]) => state.players)).toEqual([[4], [5], [1]]);
+  });
+
   for (const phase of ['setup', 'game']) {
     it.each(modes)(`claims manual seats and protects synced names during ${phase} in %s`, (storageKey, Component) => {
       const codeKey = storageKey === 'standard-botc-game' ? 'standard-botc-game-code' : 'whale-bucket-game-code';
@@ -69,6 +162,7 @@ describe('Game sync regressions', () => {
       expect(saved().players[0]).toMatchObject({ id: 'mary-device', name: 'Mary', roleId: 'chef', notes: 'private note' });
       expect(saved().remotePlayerIds).toEqual(['synced-steve', 'mary-device']);
       expect(sender).toHaveBeenCalledWith(expect.objectContaining({ type: 'code_valid', playerId: 'mary-device' }));
+      expect(sender).toHaveBeenCalledWith(expect.objectContaining({ type: 'code_valid', playerId: 'mary-device', phase }));
       if (phase === 'game') {
         const firstGameUpdate = sender.mock.calls.find(([payload]) => payload.type === 'game_update')![0];
         expect(firstGameUpdate.players[0]).toMatchObject({ id: 'mary-device', roleId: 'chef' });
@@ -447,7 +541,7 @@ describe('Game sync regressions', () => {
     expect(saved.players[0].isEvil).toBeUndefined();
   });
 
-  it('reconnects spectator notes, asks about resets, and routes promoted Travelers to their token', () => {
+  it('reconnects spectator notes, asks about resets, and hides promoted Travelers tokens on a late join', () => {
     sessionStorage.setItem('joined-code', 'REVW');
     sessionStorage.setItem('joined-name', 'Vera');
     sessionStorage.setItem('botc-player-id', 'viewer');
@@ -464,10 +558,12 @@ describe('Game sync regressions', () => {
     expect(window.location.hash).toBe('#/join');
     screen.unmount();
     const join = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({ type: 'code_valid', gameType: 'standard', phase: 'game', playerId: 'viewer' }));
     act(() => transport.callbacks.get('REVW')!({ type: 'game_update', players: [{ id: 'viewer', name: 'Vera', roleId: 'beggar', isDead: false }] }));
     expect(join.container.querySelector('#waiting-screen')).toBeNull();
-    expect(within(join.container).getByText('Your Character Token')).toBeInTheDocument();
-    expect(within(join.container).getByRole('img', { name: 'Beggar' })).toBeInTheDocument();
+    expect(within(join.container).getByText('Game in Progress')).toBeInTheDocument();
+    expect(within(join.container).queryByText('Your Character Token')).toBeNull();
+    expect(within(join.container).queryByRole('img', { name: 'Beggar' })).toBeNull();
   });
 
   it.each(['standard', 'whale-bucket'])('lets a spectator join a new %s session explicitly', gameType => {
@@ -508,6 +604,42 @@ describe('Game sync regressions', () => {
     const saved = JSON.parse(localStorage.getItem('player-tracker-botc-game')!);
     expect(saved.players[0].roleId).toBe('');
     expect(saved.players[0].isTheMarionette).not.toBe(true);
+  });
+
+  it.each([false, true])('shows public Travelers in live Game Notes (spectator: %s)', spectator => {
+    sessionStorage.setItem('joined-code', 'REVW');
+    if (spectator) sessionStorage.setItem('joined-spectator', 'true');
+    localStorage.setItem('player-tracker-botc-game', JSON.stringify({ phase: 'game', players: [] }));
+    const screen = render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({
+      type: 'game_update', customScriptRoles: [{ id: 'chef', name: 'Chef', team: 'townsfolk' }],
+      players: [
+        { id: 'traveler', name: 'Terry', roleId: 'beggar', isDead: false, isEvil: true, notes: 'secret' },
+        { id: 'alice', name: 'Alice', roleId: 'imp', isDead: false },
+      ],
+    }));
+    expect(within(screen.container).getAllByText('Beggar').length).toBeGreaterThan(0);
+    const saved = JSON.parse(localStorage.getItem('player-tracker-botc-game')!);
+    expect(saved.players[0]).toMatchObject({ roleId: 'beggar', roleIds: ['beggar'] });
+    expect(saved.players[0].isEvil).toBeUndefined();
+    expect(saved.players[0].notes).toBeUndefined();
+    expect(saved.players[1].roleId).toBe('');
+  });
+
+  it('includes custom Travelers when first opening synced Game Notes', () => {
+    sessionStorage.setItem('botc-player-id', 'viewer');
+    sessionStorage.setItem('joined-code', 'REVW');
+    sessionStorage.setItem('joined-name', 'Vera');
+    const screen = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
+    act(() => transport.callbacks.get('REVW')!({
+      type: 'code_valid', gameType: 'standard', playerId: 'viewer', spectator: true,
+      customScriptRoles: [{ id: 'wanderer', name: 'Wanderer', team: 'traveler' }],
+      players: [{ id: 'traveler', name: 'Terry', roleId: 'wanderer', isDead: false, isEvil: true }],
+    }));
+    fireEvent.click(within(screen.container).getByRole('button', { name: 'View Game Notes' }));
+    const saved = JSON.parse(localStorage.getItem('player-tracker-botc-game')!);
+    expect(saved.players[0]).toMatchObject({ roleId: 'wanderer', roleIds: ['wanderer'] });
+    expect(saved.players[0].isEvil).toBeUndefined();
   });
 
   it.each(modes)('keeps a claimed name protected after the %s storyteller refreshes', (storageKey, Component) => {

@@ -166,7 +166,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
-        setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers));
+        const roles = payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles;
+        setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers, roles));
       }
       if (payload.timeOfDay) {
         setTimeOfDay(payload.timeOfDay);

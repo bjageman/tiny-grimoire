@@ -4,6 +4,7 @@ import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { Search, X, Settings, Link2 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { inPlayRoleIds } from '../../../utils/scriptUtils';
 import { scriptJinxes } from '../../../utils/jinxUtils';
@@ -288,14 +289,11 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
               </h3>
               {scriptAuthor && <p className={cn("text-xs font-medium mt-0.5", isLightModeActive ? "text-black" : "text-white")}>by {scriptAuthor}</p>}
             </div>
-            <button
-              type="button"
+            <CloseButton
               onClick={handleClose}
-              className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-250/50 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
+              isLightModeActive={isLightModeActive}
               aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
+            />
           </div>
 
           <div className="flex flex-row gap-3 mb-4 items-center justify-between">

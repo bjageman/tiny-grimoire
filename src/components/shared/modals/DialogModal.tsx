@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { X } from 'lucide-react';
 import type { DialogChoice } from '../../../hooks/useDialog';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 
 interface DialogModalProps {
   isOpen: boolean;
@@ -72,14 +72,11 @@ export default function DialogModal({
         onClick={e => e.stopPropagation()}
       >
         {choices && (
-          <button
-            type="button"
-            aria-label="Close"
+          <CloseButton
             onClick={onCancel}
-            className="absolute right-2 top-2 rounded p-1 text-gray-500 hover:text-gray-400"
-          >
-            <X size={18} />
-          </button>
+            isLightModeActive={isLightModeActive}
+            className="absolute right-2 top-2"
+          />
         )}
         {title && (
           <h3 className={cn('font-display font-bold text-base text-clocktower-blood text-center tracking-wider uppercase', choices && 'px-5')}>{title}</h3>

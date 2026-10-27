@@ -272,8 +272,10 @@ describe('Storyteller Reset Integration', () => {
     sessionStorage.setItem('botc-player-id', 'p1');
     const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
 
-    // Let the join round-trip complete: Alice announces herself, the
-    // storyteller registers her + broadcasts the game, Alice reveals.
+    // Alice joined before the game began, so she remains eligible for the character reveal.
+    act(() => activeSubscriptions.filter(sub => sub.gameCode === gameCode).at(-1)!.onMessage({
+      type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1',
+    }));
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 200));
     });
@@ -504,6 +506,7 @@ describe('Storyteller Reset Integration', () => {
     });
 
     // Reveal Alice via a game_update carrying her role.
+    deliver({ type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
@@ -555,8 +558,8 @@ describe('Storyteller Reset Integration', () => {
         .forEach(s => s.onMessage(payload));
     });
 
-    // Storyteller adds Alice mid-game as a Gunslinger (traveler) under a custom
-    // script whose role list contains no travelers.
+    // Alice connected during setup and receives a Traveler assignment under a script without Travelers.
+    deliver({ type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'gunslinger' }],
@@ -650,6 +653,7 @@ describe('Storyteller Reset Integration', () => {
     });
 
     // Reveal Zoe, then the storyteller does a keep-connected reset.
+    deliver({ type: 'code_valid', gameType: 'whale-bucket', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Zoe', isDead: false, roleId: 'washerwoman' }],

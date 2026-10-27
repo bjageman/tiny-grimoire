@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import CloseButton from '../shared/ui/CloseButton';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
@@ -104,14 +105,10 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
           <h3 className={cn("font-display font-bold text-xl tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
             Setup Bag
           </h3>
-          <button
-            type="button"
+          <CloseButton
             onClick={onClose}
-            className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
+            isLightModeActive={isLightModeActive}
+          />
         </div>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 space-y-4 pb-4 pt-1">

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { cn } from '../../utils/cn';
+import CloseButton from '../shared/ui/CloseButton';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { TEAM_ORDER } from '../../types';
@@ -186,15 +187,11 @@ export default function WhaleBucketDraftEditModal({
               {player.name}
             </h3>
           </div>
-          <button
+          <CloseButton
             id="close-draft-edit-modal-button"
-            type="button"
             onClick={onClose}
-            className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
+            isLightModeActive={isLightModeActive}
+          />
         </div>
 
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (

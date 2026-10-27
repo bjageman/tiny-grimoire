@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Dices, Upload, Package } from 'lucide-react';
+import { Dices, Upload, Package } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import AddPlayerForm from '../shared/ui/AddPlayerForm';
 import AssignmentConfirmationModal from '../shared/modals/AssignmentConfirmationModal';
 import ToggleSwitch from '../shared/ui/ToggleSwitch';
 import type { LoricRole, Player, Role } from '../../types';
@@ -316,36 +317,14 @@ export default function StandardSetupPhase({
             </div>
           </div>
 
-          <div className="flex gap-2 mb-4">
-            <input
-              id="new-player-input"
-              type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-              disabled={players.length >= 20}
-              placeholder={
-                players.length >= 20 
-                  ? "Maximum players reached (20)" 
-                  : "Enter player name in seating order..."
-              }
-              autoCapitalize="words"
-              className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button 
-              id="add-player-button"
-              onClick={addPlayer} 
-              disabled={players.length >= 20}
-              className={cn(
-                "px-4 py-2 rounded transition-colors text-white",
-                players.length >= 20 
-                  ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
-                  : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
-              )}
-            >
-              <Plus size={20} />
-            </button>
-          </div>
+          <AddPlayerForm
+            value={newPlayerName}
+            onChange={setNewPlayerName}
+            onAdd={addPlayer}
+            playerCount={players.length}
+            maxPlayers={20}
+            addButtonId="add-player-button"
+          />
 
           <CharacterAssignmentCircle
             players={players}

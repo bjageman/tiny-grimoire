@@ -35,7 +35,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
           <p className="text-xs text-gray-500 text-center mt-0.5">Select one character in each category to submit</p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3 sm:space-y-2">
           {WHALE_BUCKET_PREFERENCE_TEAMS.map((team) => {
             const selectedRoleId = prefs[team][0];
             const selectedRole = selectedRoleId ? PLAYABLE_ROLES.find(r => r.id === selectedRoleId) : null;

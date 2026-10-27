@@ -141,7 +141,7 @@ export default function WhaleBucketPlayerPreferenceModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto overscroll-contain flex-1 space-y-2">
+        <div className="overflow-y-auto overscroll-contain flex-1 space-y-3 sm:space-y-2">
           {visibleTeams.map(team => {
             const roleId = player.preferences?.[team]?.[0];
             const roleObj = roleId ? (ALL_ROLES as Role[]).find(r => r.id === roleId) : undefined;

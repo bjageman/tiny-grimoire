@@ -26,9 +26,9 @@ export function PreferenceSelectButton({ team, selectedRole, onClick }: Preferen
       type="button"
       aria-label={`Select ${team} preference`}
       onClick={onClick}
-      className="w-full flex items-center justify-between bg-gray-955/40 px-3 py-2 rounded border border-gray-855 hover:bg-gray-900/40 hover:border-gray-800 transition-all"
+      className="w-full flex items-center justify-between bg-gray-955/40 px-4 py-3 sm:px-3 sm:py-2 rounded border border-gray-855 hover:bg-gray-900/40 hover:border-gray-800 transition-all"
     >
-      <span className={cn('text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border border-current/30', TEAM_COLORS[team])}>
+      <span className={cn('text-[10px] sm:text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded border border-current/30', TEAM_COLORS[team])}>
         {TEAM_LABELS[team]}
       </span>
       <span className="flex items-center gap-1.5 min-w-0 ml-2">
@@ -37,12 +37,12 @@ export function PreferenceSelectButton({ team, selectedRole, onClick }: Preferen
             <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
               <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-3.5 h-3.5 object-contain" onError={roleIconFallback(selectedRole)} />
             </span>
-            <span className={cn('text-xs font-semibold truncate', TEAM_COLORS[selectedRole.team])}>{selectedRole.name}</span>
+            <span className={cn('text-sm sm:text-xs font-semibold truncate', TEAM_COLORS[selectedRole.team])}>{selectedRole.name}</span>
           </>
         ) : (
-          <span className="text-xs text-gray-500 italic">No preference</span>
+          <span className="text-sm sm:text-xs text-gray-500 italic">No preference</span>
         )}
-        <span className="text-gray-550 text-[10px] underline ml-1 shrink-0">Change</span>
+        <span className="text-xs sm:text-[10px] text-gray-550 underline ml-1 shrink-0">Change</span>
       </span>
     </button>
   );

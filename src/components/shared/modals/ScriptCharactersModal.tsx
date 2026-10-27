@@ -2,8 +2,9 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
-import { Search, X, Settings, Link2 } from 'lucide-react';
+import { X, Settings, Link2 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import SearchInput from '../ui/SearchInput';
 import CloseButton from '../ui/CloseButton';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { inPlayRoleIds } from '../../../utils/scriptUtils';
@@ -297,22 +298,22 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
           </div>
 
           <div className="flex flex-row gap-3 mb-4 items-center justify-between">
-            <div className="flex-1 flex items-center rounded-lg px-3 py-2 text-sm border bg-white border-gray-300 focus-within:border-clocktower-blood">
-              <Search size={16} className="text-gray-500 mr-2 flex-shrink-0" />
-              <input
-                id="script-search-input"
-                type="text"
-                placeholder="Search by name or type"
-                className="bg-transparent flex-1 outline-none text-xs text-gray-900 placeholder-gray-400 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <SearchInput
+              id="script-search-input"
+              label="Search by name or type"
+              placeholder="Search by name or type"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              iconSize={16}
+              containerClassName="flex-1 rounded-lg"
+              className="w-full"
+            >
               {searchTerm && (
-                <button type="button" onClick={() => setSearchTerm('')} className="text-gray-500 hover:text-gray-700">
+                <button type="button" aria-label="Clear search" onClick={() => setSearchTerm('')} className="text-gray-500 hover:text-gray-700">
                   <X size={14} />
                 </button>
               )}
-            </div>
+            </SearchInput>
             <div className="relative shrink-0" ref={settingsRef}>
               <button
                 type="button"

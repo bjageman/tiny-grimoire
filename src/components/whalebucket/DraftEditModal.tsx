@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { cn } from '../../utils/cn';
+import SearchInput from '../shared/ui/SearchInput';
 import CloseButton from '../shared/ui/CloseButton';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
@@ -292,17 +292,13 @@ export default function WhaleBucketDraftEditModal({
 
         <div className="border-t border-gray-800/80" />
 
-        <div className="flex items-center bg-white border border-gray-300 rounded px-3 py-2 text-sm shrink-0">
-          <Search size={14} className="text-gray-400 mr-2" />
-          <input
-            type="text"
-            autoFocus={!isMobile}
-            placeholder="Search character name..."
-            className="bg-transparent flex-1 outline-none text-xs text-gray-900 placeholder-gray-400"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          label="Search characters"
+          placeholder="Search character name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          autoFocus={!isMobile}
+        />
 
         <div className="overflow-y-auto overscroll-contain flex-1 border border-gray-800 rounded bg-gray-955/40 divide-y divide-gray-800/60 pr-1">
           {preferredRoles.map(role => renderRoleButton(role, true))}

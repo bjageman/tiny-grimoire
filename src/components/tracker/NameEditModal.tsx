@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
-import CloseButton from '../shared/ui/CloseButton';
+import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
 import type { Player } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
 
@@ -62,32 +61,13 @@ export default function PlayerTrackerNameEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-display font-bold text-lg text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
-            <button
-              id="remove-tracker-player-button"
-              type="button"
-              onClick={() => { removePlayer(player.id); onClose(); }}
-              className={cn(
-                "shrink-0 p-1.5 rounded border transition-colors",
-                isLightModeActive
-                  ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
-                  : "text-red-400 border-red-500/40 hover:text-red-300"
-              )}
-              title="Remove player"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-          <CloseButton
-            id="close-tracker-edit-modal-button"
-            onClick={onClose}
-            isLightModeActive={isLightModeActive}
-          />
-        </div>
+        <PlayerEditHeader
+          isLightModeActive={isLightModeActive}
+          onRemove={() => removePlayer(player.id)}
+          onClose={onClose}
+          removeButtonId="remove-tracker-player-button"
+          closeButtonId="close-tracker-edit-modal-button"
+        />
 
         <div className="flex items-center gap-2">
           {onUpdatePronouns && (

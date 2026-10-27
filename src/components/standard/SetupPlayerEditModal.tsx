@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { cn } from '../../utils/cn';
+import CharacterModifierButton from '../shared/ui/CharacterModifierButton';
 import SearchInput from '../shared/ui/SearchInput';
 import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
+import PlayerNameField from '../shared/ui/PlayerNameField';
 import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
@@ -66,7 +67,6 @@ export default function SetupPlayerEditModal({
   isSecondary,
 }: SetupPlayerEditModalProps) {
   useScrollLock();
-  const isMobile = useIsMobile();
   const [pronounsOpen, setPronounsOpen] = useState(false);
 
   // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
@@ -155,17 +155,11 @@ export default function SetupPlayerEditModal({
               onOpenChange={setPronounsOpen}
             />
           )}
-          <input
+          <PlayerNameField
             id="edit-player-name-input"
-            type="text"
             value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+            onChange={setEditedName}
+            onClose={onClose}
           />
         </div>
 
@@ -191,99 +185,39 @@ export default function SetupPlayerEditModal({
               </label>
             )}
             {canBeDrunk && (
-              <button
-                id={`toggle-drunk-button-${player.id}`}
-                type="button"
-                disabled={isDrunkSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="drunk"
+                active={!!player.isTheDrunk}
                 onClick={() => togglePlayerTheDrunk(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheDrunk
-                    ? "bg-yellow-600 border-yellow-755 text-black font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/drunk.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Drunk
-              </button>
+                disabled={isDrunkSelectedElsewhere}
+                id={`toggle-drunk-button-${player.id}`}
+              />
             )}
             {canBeMarionette && (
-              <button
-                id={`toggle-marionette-button-${player.id}`}
-                type="button"
-                disabled={isMarionetteSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="marionette"
+                active={!!player.isTheMarionette}
                 onClick={() => togglePlayerTheMarionette(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheMarionette
-                    ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/marionette.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Marionette
-              </button>
+                disabled={isMarionetteSelectedElsewhere}
+                id={`toggle-marionette-button-${player.id}`}
+              />
             )}
             {canBeLunatic && (
-              <button
-                id={`toggle-lunatic-button-${player.id}`}
-                type="button"
-                disabled={isLunaticSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="lunatic"
+                active={!!player.isTheLunatic}
                 onClick={() => togglePlayerTheLunatic(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheLunatic
-                    ? "bg-clocktower-outsider border-clocktower-outsider/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lunatic.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lunatic
-              </button>
+                disabled={isLunaticSelectedElsewhere}
+                id={`toggle-lunatic-button-${player.id}`}
+              />
             )}
             {canBeLilMonsta && (
-              <button
-                id={`toggle-lilmonsta-button-${player.id}`}
-                type="button"
+              <CharacterModifierButton
+                modifier="lilmonsta"
+                active={!!player.isTheLilMonsta}
                 onClick={() => togglePlayerTheLilMonsta(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1",
-                  player.isTheLilMonsta
-                    ? "bg-clocktower-demon border-clocktower-demon/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lilmonsta.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lil' Monsta
-              </button>
+                id={`toggle-lilmonsta-button-${player.id}`}
+              />
             )}
           </div>
         )}

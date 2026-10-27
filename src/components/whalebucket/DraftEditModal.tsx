@@ -3,6 +3,7 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { cn } from '../../utils/cn';
+import CharacterModifierButton from '../shared/ui/CharacterModifierButton';
 import SearchInput from '../shared/ui/SearchInput';
 import CloseButton from '../shared/ui/CloseButton';
 import type { Player } from '../../WhaleBucket';
@@ -197,95 +198,39 @@ export default function WhaleBucketDraftEditModal({
         {(canBeDrunk || canBeMarionette || canBeLunatic || canBeLilMonsta) && (
           <div className="flex flex-wrap gap-1.5">
             {canBeDrunk && (
-              <button
-                type="button"
-                disabled={isDrunkSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="drunk"
+                active={!!player.isTheDrunk}
                 onClick={() => togglePlayerTheDrunk(player.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheDrunk
-                    ? "bg-yellow-600 border-yellow-755 text-black font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/drunk.svg"
-                    alt=""
-                    className="w-3 h-3 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Drunk
-              </button>
+                disabled={isDrunkSelectedElsewhere}
+                size="regular"
+              />
             )}
             {canBeMarionette && (
-              <button
-                type="button"
-                disabled={isMarionetteSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="marionette"
+                active={!!player.isTheMarionette}
                 onClick={() => togglePlayerTheMarionette(player.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheMarionette
-                    ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/marionette.svg"
-                    alt=""
-                    className="w-3 h-3 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Marionette
-              </button>
+                disabled={isMarionetteSelectedElsewhere}
+                size="regular"
+              />
             )}
             {canBeLunatic && (
-              <button
-                type="button"
-                disabled={isLunaticSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="lunatic"
+                active={!!player.isTheLunatic}
                 onClick={() => togglePlayerTheLunatic(player.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheLunatic
-                    ? "bg-clocktower-outsider border-clocktower-outsider/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lunatic.svg"
-                    alt=""
-                    className="w-3 h-3 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lunatic
-              </button>
+                disabled={isLunaticSelectedElsewhere}
+                size="regular"
+              />
             )}
             {canBeLilMonsta && (
-              <button
-                type="button"
+              <CharacterModifierButton
+                modifier="lilmonsta"
+                active={!!player.isTheLilMonsta}
                 onClick={() => togglePlayerTheLilMonsta(player.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5",
-                  player.isTheLilMonsta
-                    ? "bg-clocktower-demon border-clocktower-demon/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lilmonsta.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lil' Monsta
-              </button>
+                size="regular"
+              />
             )}
           </div>
         )}

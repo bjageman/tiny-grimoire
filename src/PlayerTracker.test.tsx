@@ -72,7 +72,7 @@ describe('PlayerTracker', () => {
 
     // Add a player
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
-    const addButton = screen.getByRole('button', { name: '' }); // the Plus icon button
+    const addButton = screen.getByRole('button', { name: 'Add player' });
     
     fireEvent.change(input, { target: { value: 'Alice' } });
     fireEvent.click(addButton);
@@ -85,7 +85,7 @@ describe('PlayerTracker', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
-    const addButton = screen.getByRole('button', { name: '' });
+    const addButton = screen.getByRole('button', { name: 'Add player' });
 
     // Add 5 players
     const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve'];
@@ -251,7 +251,7 @@ describe('PlayerTracker', () => {
 
     // Add players and transition to game phase
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
-    const addButton = screen.getByRole('button', { name: '' });
+    const addButton = screen.getByRole('button', { name: 'Add player' });
 
     const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve'];
     names.forEach(name => {
@@ -296,7 +296,7 @@ describe('PlayerTracker', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
-    const addButton = screen.getByRole('button', { name: '' });
+    const addButton = screen.getByRole('button', { name: 'Add player' });
 
     const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve'];
     names.forEach(name => {
@@ -332,7 +332,7 @@ describe('PlayerTracker', () => {
     render(<PlayerTracker theme="dark" toggleTheme={vi.fn()} />);
 
     const input = screen.getByPlaceholderText('Enter player name in seating order...');
-    const addButton = screen.getByRole('button', { name: '' });
+    const addButton = screen.getByRole('button', { name: 'Add player' });
 
     ['Alice', 'Bob'].forEach(name => {
       fireEvent.change(input, { target: { value: name } });

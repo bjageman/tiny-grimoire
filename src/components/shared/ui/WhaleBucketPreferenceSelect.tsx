@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { Role } from '../../../types';
 import { cn } from '../../../utils/cn';
-import { roleIconFallback } from '../../../utils/roleIcon';
 import { getWhaleBucketPreferenceTeam } from '../../../utils/whaleBucketPreferences';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import CloseButton from './CloseButton';
+import CharacterOptionRow from './CharacterOptionRow';
+import RoleIcon from './RoleIcon';
 import SearchInput from './SearchInput';
 
 const TEAM_LABELS: Record<Role['team'], string> = {
@@ -35,7 +36,7 @@ export function PreferenceSelectButton({ team, selectedRole, onClick }: Preferen
         {selectedRole ? (
           <>
             <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
-              <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-3.5 h-3.5 object-contain" onError={roleIconFallback(selectedRole)} />
+              <RoleIcon role={selectedRole} className="w-3.5 h-3.5" />
             </span>
             <span className={cn('text-sm sm:text-xs font-semibold truncate', TEAM_COLORS[selectedRole.team])}>{selectedRole.name}</span>
           </>
@@ -92,24 +93,19 @@ export default function WhaleBucketPreferencePicker({ team, currentRoleId, roles
           {filteredRoles.map(role => {
             const selected = role.id === currentRoleId;
             return (
-              <button
+              <CharacterOptionRow
                 key={role.id}
-                type="button"
-                aria-pressed={selected}
+                role={role}
+                selected={selected}
+                isLightModeActive={isLightModeActive}
+                variant="preference"
                 onClick={() => { onSelect(role.id); onBack(); }}
                 className={cn(
-                  'w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center',
+                  'transition-colors',
                   isLightModeActive ? 'hover:bg-amber-50' : 'hover:bg-gray-800',
                   selected && (isLightModeActive ? 'bg-amber-50' : 'bg-gray-800/30')
                 )}
-              >
-                <div className="flex items-center gap-1.5 min-w-0 mr-2">
-                  <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
-                    <img src={`/icons/${role.id}.svg`} alt={role.name} className="w-3.5 h-3.5 object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
-                  </span>
-                  <span className={cn('font-semibold text-xs truncate', TEAM_COLORS[role.team])}>{role.name}</span>
-                </div>
-                {selected ? (
+                trailing={selected ? (
                   <span className={cn(
                     'text-xs px-1.5 py-0.5 rounded font-black border shrink-0',
                     isLightModeActive ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
@@ -117,7 +113,8 @@ export default function WhaleBucketPreferencePicker({ team, currentRoleId, roles
                 ) : (
                   <span className="text-[9px] text-gray-650 font-mono shrink-0">+ ADD</span>
                 )}
-              </button>
+              >
+              </CharacterOptionRow>
             );
           })}
           {filteredRoles.length === 0 && <div className="p-4 text-xs text-gray-500 italic text-center">No characters found.</div>}

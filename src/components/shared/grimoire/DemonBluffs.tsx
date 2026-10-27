@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import RoleIcon from '../ui/RoleIcon';
 import SearchInput from '../ui/SearchInput';
-import { roleIconFallback } from '../../../utils/roleIcon';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import ToggleSwitch from '../ui/ToggleSwitch';
@@ -157,7 +157,7 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
                       {role ? (
                         <span className="flex items-center gap-1.5">
                           <div className="w-5 h-5 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
-                            <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
+                            <RoleIcon key={role.id} role={role} className="w-full h-full" />
                           </div>
                           <span>{role.name}</span>
                           <span className={cn('text-[10px] font-semibold', TEAM_TEXT[role.team])}>
@@ -217,12 +217,10 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
                   {role ? (
                     <>
                       <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-1">
-                        <img
+                        <RoleIcon
                           key={role.id}
-                          src={`/icons/${role.id}.svg`}
-                          alt={role.name}
-                          className="w-full h-full object-contain"
-                          onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                          role={role}
+                          className="w-full h-full"
                         />
                       </div>
                       <div className="flex-1 min-w-0">

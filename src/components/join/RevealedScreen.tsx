@@ -1,6 +1,6 @@
 import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
+import RoleIcon from '../shared/ui/RoleIcon';
 import { ALL_ROLES } from '../../utils/roleData';
 import type { AnyRole } from '../../types';
 
@@ -50,7 +50,7 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             assignedRole.team === 'fabled' && "border-yellow-700",
             assignedRole.team === 'loric' && "border-green-700"
           )}>
-            <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className={cn("w-20 h-20 object-contain", assignedRole.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : assignedRole.team === 'loric' && "brightness-[0.65] saturate-[0.85]")} onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
+            <RoleIcon key={assignedRole.id} role={assignedRole} className={cn("w-20 h-20", assignedRole.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : assignedRole.team === 'loric' && "brightness-[0.65] saturate-[0.85]")} />
           </div>
 
           <div className="flex gap-2 justify-center items-center mb-3">

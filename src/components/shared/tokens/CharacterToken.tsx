@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../../utils/cn';
+import RoleIcon from '../ui/RoleIcon';
 import { Skull } from 'lucide-react';
-import { roleIconFallback } from '../../../utils/roleIcon';
 import { deadSeatStyle } from '../../../utils/playerSeat';
 import type { AnyRole } from '../../../types';
 
@@ -88,12 +88,11 @@ export default function CharacterToken({ role, isEvil, size, idPrefix, className
         <div className="absolute inset-0 flex items-center justify-center z-10 rounded-full overflow-hidden pointer-events-none select-none">
           <div style={{ width: `${iconSizePct}%`, height: `${iconSizePct}%` }} className="flex items-center justify-center">
             {role ? (
-              <img
+              <RoleIcon
                 key={role.id}
-                src={`/icons/${role.id}.svg`}
-                alt={role.name}
-                className={cn('w-full h-full object-contain', !solidIcon && (isDead ? dead.iconOpacity : role.team === 'fabled' ? 'opacity-50' : 'opacity-35'), isDead && 'grayscale', role.team === 'fabled' ? 'brightness-[0.45] saturate-[0.85]' : role.team === 'loric' && 'brightness-[0.65] saturate-[0.85]')}
-                onError={roleIconFallback(role, evil)}
+                role={role}
+                className={cn('w-full h-full', !solidIcon && (isDead ? dead.iconOpacity : role.team === 'fabled' ? 'opacity-50' : 'opacity-35'), isDead && 'grayscale', role.team === 'fabled' ? 'brightness-[0.45] saturate-[0.85]' : role.team === 'loric' && 'brightness-[0.65] saturate-[0.85]')}
+                isEvil={evil}
               />
             ) : (
               <Skull

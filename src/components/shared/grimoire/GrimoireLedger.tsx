@@ -1,6 +1,6 @@
 import { ChevronDown, GripVertical } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import { roleIconFallback } from '../../../utils/roleIcon';
+import RoleIcon from '../ui/RoleIcon';
 import { seatIsEvil } from '../../../utils/playerSeat';
 import { displayRoleIds } from '../../../utils/discordRecap';
 import type { Player, Role } from '../../../types';
@@ -159,8 +159,7 @@ export default function GrimoireLedger({ isLightModeActive, isSynced, players, r
                         )}
                       >
                         <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                          <img key={roleObj.id} src={`/icons/${roleObj.id}.svg`} alt={roleObj.name} className="w-3.5 h-3.5 object-contain"
-                            onError={roleIconFallback(roleObj, roleObj.team === 'minion' || roleObj.team === 'demon')} />
+                          <RoleIcon key={roleObj.id} role={roleObj} className="w-3.5 h-3.5" />
                         </span>
                         <span className="truncate">{roleObj.name}</span>
                       </span>

@@ -3,6 +3,7 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { cn } from '../../utils/cn';
+import CharacterOptionRow from '../shared/ui/CharacterOptionRow';
 import CharacterModifierButton from '../shared/ui/CharacterModifierButton';
 import SearchInput from '../shared/ui/SearchInput';
 import CloseButton from '../shared/ui/CloseButton';
@@ -104,59 +105,35 @@ export default function WhaleBucketDraftEditModal({
     const selectedByPlayer = players.find(pl => pl.roleId === role.id && pl.id !== activeDraftPlayerId);
     const isCurrent = role.id === player.roleId;
     return (
-      <button
+      <CharacterOptionRow
         key={role.id}
         id={`role-option-${role.id}`}
+        role={role}
+        selected={isCurrent}
+        isLightModeActive={isLightModeActive}
         onClick={() => {
           updatePlayerRole(activeDraftPlayerId, isCurrent ? '' : role.id);
           onClose();
         }}
-        className={cn(
-          "w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center",
-          isPreferred ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-gray-800",
-          isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
-        )}
+        className={isPreferred ? "bg-amber-500/5 hover:bg-amber-500/10" : undefined}
+        trailing={<span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>}
       >
-        <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
-          <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
-            <img
-              src={`/icons/${role.id}.svg`}
-              alt={role.name}
-              className="w-3.5 h-3.5 object-contain"
-              onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-            />
+        {isPreferred && (
+          <span className="text-[8px] bg-amber-500/25 text-amber-400 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
+            ★ Pick
           </span>
+        )}
+        {selectedByPlayer && (
           <span className={cn(
-            "font-semibold text-xs truncate",
-            isCurrent
-              ? (isLightModeActive ? "text-gray-950 font-bold" : "text-white font-bold")
-              : (
-                (role.team === 'townsfolk' && "text-clocktower-townsfolk") ||
-                (role.team === 'outsider' && "text-clocktower-outsider") ||
-                (role.team === 'minion' && "text-clocktower-minion") ||
-                (role.team === 'demon' && "text-clocktower-demon")
-              )
+            "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
+            isLightModeActive
+              ? "bg-gray-100 border-gray-200 text-gray-655"
+              : "bg-gray-800/40 border-gray-700/30 text-gray-400"
           )}>
-            {role.name} {isCurrent && "✓"}
+            Taken: {selectedByPlayer.name}
           </span>
-          {isPreferred && (
-            <span className="text-[8px] bg-amber-500/25 text-amber-400 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
-              ★ Pick
-            </span>
-          )}
-          {selectedByPlayer && (
-            <span className={cn(
-              "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
-              isLightModeActive
-                ? "bg-gray-100 border-gray-200 text-gray-655"
-                : "bg-gray-800/40 border-gray-700/30 text-gray-400"
-            )}>
-              Taken: {selectedByPlayer.name}
-            </span>
-          )}
-        </div>
-        <span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>
-      </button>
+        )}
+      </CharacterOptionRow>
     );
   };
 

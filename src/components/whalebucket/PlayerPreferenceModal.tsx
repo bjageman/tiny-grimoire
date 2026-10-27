@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Dices, Trash2 } from 'lucide-react';
+import { Search, Dices, Trash2, X } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -238,8 +238,20 @@ export default function WhaleBucketPlayerPreferenceModal({
               <Trash2 size={16} />
             </button>
           </div>
-          <button id="close-preference-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
-            Close
+          <button
+            id="close-preference-modal-button"
+            type="button"
+            onClick={onClose}
+            className={cn(
+              "shrink-0 p-1.5 rounded-full transition-colors",
+              isLightModeActive
+                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+                : "text-gray-400 hover:bg-gray-800 hover:text-white"
+            )}
+            aria-label="Close"
+            title="Close"
+          >
+            <X size={18} />
           </button>
         </div>
 

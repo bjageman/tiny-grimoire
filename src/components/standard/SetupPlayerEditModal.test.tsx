@@ -72,7 +72,7 @@ describe('SetupPlayerEditModal', () => {
 
   it('calls onClose when Close is clicked', () => {
     render(<SetupPlayerEditModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('Close'));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 

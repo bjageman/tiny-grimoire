@@ -3,7 +3,7 @@ import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, X } from 'lucide-react';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { cn } from '../../utils/cn';
 import { roleIconFallback } from '../../utils/roleIcon';
@@ -157,8 +157,20 @@ export default function SetupPlayerEditModal({
               <Trash2 size={16} />
             </button>
           </div>
-          <button id="close-player-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
-            Close
+          <button
+            id="close-player-edit-modal-button"
+            type="button"
+            onClick={onClose}
+            className={cn(
+              "shrink-0 p-1.5 rounded-full transition-colors",
+              isLightModeActive
+                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+                : "text-gray-400 hover:bg-gray-800 hover:text-white"
+            )}
+            aria-label="Close"
+            title="Close"
+          >
+            <X size={18} />
           </button>
         </div>
 

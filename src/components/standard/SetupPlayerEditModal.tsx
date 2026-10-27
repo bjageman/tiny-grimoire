@@ -136,6 +136,9 @@ export default function SetupPlayerEditModal({
       >
         <div className="flex justify-between items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
+            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
+              Edit Player
+            </h3>
             <button
               id="remove-player-button"
               type="button"
@@ -153,9 +156,6 @@ export default function SetupPlayerEditModal({
             >
               <Trash2 size={16} />
             </button>
-            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
           </div>
           <button id="close-player-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
             Close

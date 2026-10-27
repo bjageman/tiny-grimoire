@@ -56,7 +56,7 @@ describe('Game sync regressions', () => {
     expect(sender.mock.calls.some(([payload]) => payload.preferences)).toBe(false);
 
     for (const [team, character] of [['townsfolk', 'Chef'], ['outsider', 'Drunk'], ['minion', 'Poisoner']]) {
-      fireEvent.click(view.getByText(`Select ${team} preference...`));
+      fireEvent.click(view.getByRole('button', { name: `Select ${team} preference` }));
       fireEvent.click(view.getByText(character));
     }
     expect(submit).toBeDisabled();
@@ -64,7 +64,7 @@ describe('Game sync regressions', () => {
     expect(sender.mock.calls.some(([payload]) => payload.preferences)).toBe(false);
     expect(view.getByText('Submit Your Preferences')).toBeInTheDocument();
 
-    fireEvent.click(view.getByText('Select demon preference...'));
+    fireEvent.click(view.getByRole('button', { name: 'Select demon preference' }));
     fireEvent.click(view.getByText('Summoner'));
     expect(submit).toBeEnabled();
     fireEvent.click(submit);

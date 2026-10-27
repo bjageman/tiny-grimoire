@@ -16,7 +16,7 @@ describe('PreferencesScreen', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Select demon preference...'));
+    fireEvent.click(screen.getByRole('button', { name: 'Select demon preference' }));
 
     expect(screen.getByText('Atheist')).toBeInTheDocument();
     expect(screen.getByText('Summoner')).toBeInTheDocument();

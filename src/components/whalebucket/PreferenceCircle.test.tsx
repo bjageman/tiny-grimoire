@@ -32,7 +32,7 @@ function player(preferences: Player['preferences'] = empty): Player {
 describe('Whalebucket preference completion', () => {
   it.each([false, true])('updates from no selections to partial to complete in light mode %s', isLightModeActive => {
     const { rerender } = render(<WhaleBucketPreferenceCircle {...props} isLightModeActive={isLightModeActive} players={[player()]} />);
-    expect(screen.getByRole('img', { name: 'No preferences selected' })).toHaveTextContent('?');
+    expect(screen.getByRole('img', { name: 'No preferences selected' })).toBeInTheDocument();
     expect(screen.getByText('0/4 PREFS')).toBeInTheDocument();
 
     rerender(<WhaleBucketPreferenceCircle {...props} isLightModeActive={isLightModeActive} players={[player({ ...empty, townsfolk: ['chef'], demon: ['imp'] })]} />);

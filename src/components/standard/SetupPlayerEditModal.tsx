@@ -142,10 +142,12 @@ export default function SetupPlayerEditModal({
               disabled={!!isSecondary}
               onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
               className={cn(
-                "shrink-0 p-1.5 rounded border border-gray-800 transition-colors",
+                "shrink-0 p-1.5 rounded border transition-colors",
                 isSecondary
                   ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
-                  : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+                  : isLightModeActive
+                    ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
+                    : "text-red-400 border-red-500/40 bg-red-950/40 hover:text-red-300 hover:bg-red-950/60"
               )}
               title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
             >

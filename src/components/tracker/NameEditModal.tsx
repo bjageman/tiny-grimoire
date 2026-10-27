@@ -67,7 +67,12 @@ export default function PlayerTrackerNameEditModal({
               id="remove-tracker-player-button"
               type="button"
               onClick={() => { removePlayer(player.id); onClose(); }}
-              className="shrink-0 p-1.5 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
+              className={cn(
+                "shrink-0 p-1.5 rounded border transition-colors",
+                isLightModeActive
+                  ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
+                  : "text-red-400 border-red-500/40 bg-red-950/40 hover:text-red-300 hover:bg-red-950/60"
+              )}
               title="Remove player"
             >
               <Trash2 size={16} />

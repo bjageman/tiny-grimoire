@@ -146,8 +146,8 @@ export default function SetupPlayerEditModal({
                 isSecondary
                   ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
                   : isLightModeActive
-                    ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
-                    : "text-red-400 border-red-500/40 bg-red-950/40 hover:text-red-300 hover:bg-red-950/60"
+                    ? "text-red-700 border-red-700/40 hover:text-red-800"
+                    : "text-red-400 border-red-500/40 hover:text-red-300"
               )}
               title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
             >

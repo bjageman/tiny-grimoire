@@ -5,6 +5,7 @@ import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
+import CloseButton from '../shared/ui/CloseButton';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { ALL_ROLES } from '../../utils/roleData';
@@ -217,28 +218,32 @@ export default function WhaleBucketPlayerPreferenceModal({
       >
         <div className="flex justify-between items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
+            <h3 className="font-display font-bold text-lg text-gray-200 tracking-wider uppercase truncate">
+              Edit Player
+            </h3>
             <button
               id="remove-preference-player-button"
               type="button"
               disabled={!!isSecondary}
               onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
               className={cn(
-                "shrink-0 p-1.5 rounded border border-gray-800 transition-colors",
+                "shrink-0 p-1.5 rounded border transition-colors",
                 isSecondary
                   ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
-                  : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
+                  : isLightModeActive
+                    ? "text-red-700 border-red-700/40 bg-red-50 hover:text-red-800 hover:bg-red-100"
+                    : "text-red-400 border-red-500/40 hover:text-red-300"
               )}
               title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
             >
               <Trash2 size={16} />
             </button>
-            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
           </div>
-          <button id="close-preference-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
-            Close
-          </button>
+          <CloseButton
+            id="close-preference-modal-button"
+            onClick={onClose}
+            isLightModeActive={isLightModeActive}
+          />
         </div>
 
         <div className="flex items-center gap-2">

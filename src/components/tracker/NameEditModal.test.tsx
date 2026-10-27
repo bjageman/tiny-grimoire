@@ -83,7 +83,7 @@ describe('PlayerTrackerNameEditModal', () => {
 
   it('calls onClose when Close is clicked', () => {
     render(<PlayerTrackerNameEditModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('Close'));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 

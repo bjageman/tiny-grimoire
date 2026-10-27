@@ -5,6 +5,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
 import { ChevronLeft, ChevronRight, X, Search, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import { TEAM_ORDER, type Role } from '../../../types';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
@@ -321,20 +322,13 @@ export default function PlayerDetailsModal({
               )}
             </div>
           </div>
-          <button
+          <CloseButton
             id="detail-close-button"
-            type="button"
             onClick={onClose}
-            className={cn(
-              'p-2 ml-2 rounded-lg border transition-colors shrink-0 shadow-sm',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                : 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700'
-            )}
-            title="Close"
-          >
-            <X size={20} />
-          </button>
+            isLightModeActive={isLightModeActive}
+            className="p-2 ml-2 rounded-lg shadow-sm"
+            iconSize={20}
+          />
         </div>
 
         {/* Status toggles */}

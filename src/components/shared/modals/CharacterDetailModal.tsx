@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Trash2, NotebookPen, Plus } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import CharacterToken from '../tokens/CharacterToken';
 import type { AnyRole } from '../../../types';
@@ -234,9 +235,12 @@ export default function CharacterDetailModal({
             </div>
           )}
         </div>
-        <button type="button" onClick={onClose} className={cn("absolute top-4 right-4 p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")} aria-label="Close details">
-          <X size={18} />
-        </button>
+        <CloseButton
+          onClick={onClose}
+          isLightModeActive={isLightModeActive}
+          aria-label="Close details"
+          className="absolute top-4 right-4"
+        />
         <div className={cn("mx-auto mt-6", hasLongBootleggerRules ? "w-24 h-24 sm:w-32 sm:h-32 shrink-0" : "w-44 h-44")}>
           <CharacterToken role={role} idPrefix={`detail-${role.id}`} />
         </div>

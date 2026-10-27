@@ -4,9 +4,9 @@ import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { X, Settings, Link2 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import RoleIcon from '../ui/RoleIcon';
 import SearchInput from '../ui/SearchInput';
 import CloseButton from '../ui/CloseButton';
-import { roleIconFallback } from '../../../utils/roleIcon';
 import { inPlayRoleIds } from '../../../utils/scriptUtils';
 import { scriptJinxes } from '../../../utils/jinxUtils';
 import ToggleSwitch from '../ui/ToggleSwitch';
@@ -236,8 +236,7 @@ export default function ScriptCharactersModal({ isOpen, onClose, scriptName, rol
 
   const renderRoleIcon = (role: AnyRole, alt: string) => (
     <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-      <img key={role.id} src={`/icons/${role.id}.svg`} alt={alt} className={cn("w-[92%] h-[92%] object-contain", role.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : role.team === 'loric' && "brightness-[0.65] saturate-[0.85]")}
-        onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
+      <RoleIcon key={role.id} role={role} alt={alt} className={cn("w-[92%] h-[92%]", role.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : role.team === 'loric' && "brightness-[0.65] saturate-[0.85]")} />
     </span>
   );
 

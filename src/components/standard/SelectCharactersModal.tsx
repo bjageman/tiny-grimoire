@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import RoleIcon from '../shared/ui/RoleIcon';
 import CloseButton from '../shared/ui/CloseButton';
-import { roleIconFallback } from '../../utils/roleIcon';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -215,12 +215,11 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                             className="shrink-0 w-3.5 h-3.5"
                           />
                           <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                            <img
+                            <RoleIcon
                               key={role.id}
-                              src={`/icons/${role.id}.svg`}
+                              role={role}
                               alt=""
-                              className="w-3.5 h-3.5 object-contain"
-                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                              className="w-3.5 h-3.5"
                             />
                           </span>
                           <span className={cn("font-semibold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>

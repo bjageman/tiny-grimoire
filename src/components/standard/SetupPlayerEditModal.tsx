@@ -4,11 +4,11 @@ import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { cn } from '../../utils/cn';
+import CharacterOptionRow from '../shared/ui/CharacterOptionRow';
 import CharacterModifierButton from '../shared/ui/CharacterModifierButton';
 import SearchInput from '../shared/ui/SearchInput';
 import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
 import PlayerNameField from '../shared/ui/PlayerNameField';
-import { roleIconFallback } from '../../utils/roleIcon';
 import type { Player, Role } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
 import { isMarionetteEligible } from '../../utils/marionetteEligibility';
@@ -238,51 +238,26 @@ export default function SetupPlayerEditModal({
             const selectedByPlayer = players.find(pl => pl.roleId === role.id && pl.id !== activePlayerId);
             const isCurrent = role.id === player.roleId;
             return (
-              <button
-                id={`role-option-${role.id}`}
+              <CharacterOptionRow
                 key={role.id}
+                id={`role-option-${role.id}`}
+                role={role}
+                selected={isCurrent}
+                isLightModeActive={isLightModeActive}
                 onClick={() => { updatePlayerRole(activePlayerId, isCurrent ? '' : role.id); onClose(); }}
-                className={cn(
-                  "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
-                  isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
-                )}
+                trailing={<span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>}
               >
-                <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
-                  <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                    <img
-                      key={role.id}
-                      src={`/icons/${role.id}.svg`}
-                      alt={role.name}
-                      className="w-3.5 h-3.5 object-contain"
-                      onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
-                    />
-                  </span>
+                {selectedByPlayer && (
                   <span className={cn(
-                    "font-semibold text-xs truncate",
-                    isCurrent
-                      ? (isLightModeActive ? "text-gray-950 font-bold" : "text-white font-bold")
-                      : (
-                        (role.team === 'townsfolk' && "text-clocktower-townsfolk") ||
-                        (role.team === 'outsider' && "text-clocktower-outsider") ||
-                        (role.team === 'minion' && "text-clocktower-minion") ||
-                        (role.team === 'demon' && "text-clocktower-demon")
-                      )
+                    "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
+                    isLightModeActive
+                      ? "bg-gray-100 border-gray-200 text-gray-655"
+                      : "bg-gray-800/40 border-gray-700/30 text-gray-400"
                   )}>
-                    {role.name} {isCurrent && "✓"}
+                    {selectedByPlayer.name}
                   </span>
-                  {selectedByPlayer && (
-                    <span className={cn(
-                      "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
-                      isLightModeActive
-                        ? "bg-gray-100 border-gray-200 text-gray-655"
-                        : "bg-gray-800/40 border-gray-700/30 text-gray-400"
-                    )}>
-                      {selectedByPlayer.name}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>
-              </button>
+                )}
+              </CharacterOptionRow>
             );
           })}
           {filteredRoles.length === 0 && (

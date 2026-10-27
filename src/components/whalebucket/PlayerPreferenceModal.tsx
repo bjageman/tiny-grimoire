@@ -5,6 +5,8 @@ import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
+import RoleIcon from '../shared/ui/RoleIcon';
+import CharacterOptionRow from '../shared/ui/CharacterOptionRow';
 import CloseButton from '../shared/ui/CloseButton';
 import SearchInput from '../shared/ui/SearchInput';
 import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
@@ -130,38 +132,25 @@ export default function WhaleBucketPlayerPreferenceModal({
             {filteredRoles.map(role => {
               const isSelected = role.id === currentRoleId;
               return (
-                <button
+                <CharacterOptionRow
                   key={role.id}
+                  role={role}
+                  selected={isSelected}
+                  variant="preference"
+                  isLightModeActive={isLightModeActive}
                   onClick={() => {
                     togglePreference(player.id, pickingTeam, role.id);
                     setPickingTeam(null);
                   }}
-                  className={cn(
-                    "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
-                    isSelected && "bg-gray-800/30"
-                  )}
-                >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
-                      <img
-                        src={`/icons/${role.id}.svg`}
-                        alt={role.name}
-                        className="w-3.5 h-3.5 object-contain"
-                        onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                      />
-                    </span>
-                    <span className={cn("font-semibold text-xs truncate", teamTextClass(role.team))}>
-                      {role.name}
-                    </span>
-                  </div>
-                  {isSelected ? (
+                  className={cn('hover:bg-gray-800', isSelected && 'bg-gray-800/30')}
+                  trailing={isSelected ? (
                     <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-550/20 px-1.5 py-0.5 rounded font-black">
                       ✓ ACTIVE
                     </span>
                   ) : (
                     <span className="text-[9px] text-gray-650 font-mono">+ ADD</span>
                   )}
-                </button>
+                />
               );
             })}
             {filteredRoles.length === 0 && (
@@ -272,11 +261,9 @@ export default function WhaleBucketPlayerPreferenceModal({
                   {roleObj ? (
                     <>
                       <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
-                        <img
-                          src={`/icons/${roleObj.id}.svg`}
-                          alt={roleObj.name}
-                          className="w-3.5 h-3.5 object-contain"
-                          onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                        <RoleIcon
+                          role={roleObj}
+                          className="w-3.5 h-3.5"
                         />
                       </span>
                       <span className={cn("text-xs font-semibold truncate", teamTextClass(team))}>{roleObj.name}</span>

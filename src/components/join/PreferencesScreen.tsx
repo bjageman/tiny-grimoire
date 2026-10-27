@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Plus, Search, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import RoleIcon from '../shared/ui/RoleIcon';
+import CharacterOptionRow from '../shared/ui/CharacterOptionRow';
 import SearchInput from '../shared/ui/SearchInput';
 import { useScrollLock } from '../../hooks/useScrollLock';
-import { roleIconFallback } from '../../utils/roleIcon';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { getWhaleBucketPreferenceTeam } from '../../utils/whaleBucketPreferences';
 
@@ -74,7 +75,7 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
                     {selectedRole ? (
                       <>
                         <span className="w-6 h-6 bg-white rounded-full flex items-center justify-center shrink-0 border border-gray-200 shadow-sm">
-                          <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-4 h-4 object-contain" />
+                          <RoleIcon role={selectedRole} className="w-4 h-4" />
                         </span>
                         <span className={cn(
                           "font-bold text-sm truncate",
@@ -159,47 +160,31 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
                 .map(role => {
                   const isSelected = prefs[activePrefSelect.team].includes(role.id);
                   return (
-                    <button
+                    <CharacterOptionRow
                       key={role.id}
-                      type="button"
+                      role={role}
+                      selected={isSelected}
+                      variant="preference"
+                      isLightModeActive={isLight}
                       onClick={() => {
                         togglePreference(activePrefSelect.team, role.id);
                         setActivePrefSelect(null);
                       }}
-                      className={cn(
-                        "w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center",
-                        isSelected
-                          ? isLight ? "bg-red-50/50" : "bg-clocktower-blood/10"
-                          : isLight ? "hover:bg-gray-50" : "hover:bg-gray-850"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0 border border-gray-100 shadow-sm">
-                          <img
-                            src={`/icons/${role.id}.svg`}
-                            alt={role.name}
-                            className="w-3.5 h-3.5 object-contain"
-                            onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
-                          />
-                        </span>
-                        <span className={cn(
-                          "font-bold text-xs truncate",
-                          role.team === 'townsfolk' && "text-clocktower-townsfolk",
-                          role.team === 'outsider' && "text-clocktower-outsider",
-                          role.team === 'minion' && "text-clocktower-minion",
-                          role.team === 'demon' && "text-clocktower-demon",
-                        )}>
-                          {role.name}
-                        </span>
-                      </div>
-                      {isSelected ? (
+                      className={isSelected
+                        ? isLight ? 'bg-red-50/50' : 'bg-clocktower-blood/10'
+                        : isLight ? 'hover:bg-gray-50' : 'hover:bg-gray-850'
+                      }
+                      trailing={isSelected ? (
                         <span className="text-[9px] bg-clocktower-blood/10 text-clocktower-blood border border-clocktower-blood/20 px-1.5 py-0.5 rounded font-black">
                           ✓ SELECTED
                         </span>
                       ) : (
                         <span className="text-[9px] text-gray-400 font-bold">+ SELECT</span>
                       )}
-                    </button>
+                      nameClassName="font-bold"
+                      contentClassName="gap-2"
+                      iconWrapperClassName="border border-gray-100 shadow-sm"
+                    />
                   );
                 })}
             </div>

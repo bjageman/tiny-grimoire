@@ -15,6 +15,15 @@ function makeProps() {
 }
 
 describe('Whalebucket shared preference controls', () => {
+  it.each([
+    { id: 'atheist', name: 'Atheist', team: 'townsfolk' as const, color: 'text-clocktower-townsfolk' },
+    { id: 'summoner', name: 'Summoner', team: 'minion' as const, color: 'text-clocktower-minion' },
+  ])('keeps $name in its character color inside the Demon preference slot', role => {
+    render(<PreferenceSelectButton team="demon" selectedRole={role} onClick={vi.fn()} />);
+    expect(screen.getByText(role.name)).toHaveClass(role.color);
+    expect(screen.getByText('Demon')).toHaveClass('text-clocktower-demon');
+  });
+
   it('shows the category and selected character in the shared overview row', () => {
     const onClick = vi.fn();
     const { rerender } = render(<PreferenceSelectButton team="townsfolk" onClick={onClick} />);

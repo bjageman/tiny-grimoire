@@ -37,7 +37,7 @@ export function PreferenceSelectButton({ team, selectedRole, onClick }: Preferen
             <span className="w-5 h-5 bg-white rounded-full flex items-center justify-center shrink-0">
               <img src={`/icons/${selectedRole.id}.svg`} alt={selectedRole.name} className="w-3.5 h-3.5 object-contain" onError={roleIconFallback(selectedRole)} />
             </span>
-            <span className={cn('text-xs font-semibold truncate', TEAM_COLORS[team])}>{selectedRole.name}</span>
+            <span className={cn('text-xs font-semibold truncate', TEAM_COLORS[selectedRole.team])}>{selectedRole.name}</span>
           </>
         ) : (
           <span className="text-xs text-gray-500 italic">No preference</span>

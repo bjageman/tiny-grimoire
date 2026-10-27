@@ -24,7 +24,6 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
   const [activePrefSelect, setActivePrefSelect] = useState<{ team: PrefTeam } | null>(null);
   useScrollLock(!!activePrefSelect);
   const isComplete = hasCompleteWhaleBucketPreferences(prefs);
-  const missingTeams = WHALE_BUCKET_PREFERENCE_TEAMS.filter(team => prefs[team].length !== 1 || !prefs[team][0]?.trim());
 
   return (
     <>
@@ -52,15 +51,9 @@ export default function PreferencesScreen({ isLight, isMobile, prefs, setPrefs, 
           })}
         </div>
 
-        {!isComplete && (
-          <p id="preference-completion-hint" role="status" className="text-xs text-gray-500 text-center">
-            Choose a character for: {missingTeams.map(team => team[0].toUpperCase() + team.slice(1)).join(', ')}.
-          </p>
-        )}
         <button
           type="button"
           disabled={!isComplete}
-          aria-describedby={isComplete ? undefined : 'preference-completion-hint'}
           onClick={() => { if (isComplete) onSubmit(); }}
           className="w-full bg-clocktower-blood text-white rounded-lg py-3 font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >

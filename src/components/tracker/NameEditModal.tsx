@@ -64,7 +64,7 @@ export default function PlayerTrackerNameEditModal({
       >
         <div className="flex justify-between items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
+            <h3 className="font-display font-bold text-lg text-gray-200 tracking-wider uppercase truncate">
               Edit Player
             </h3>
             <button

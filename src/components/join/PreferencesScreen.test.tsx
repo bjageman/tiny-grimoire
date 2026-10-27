@@ -16,7 +16,7 @@ describe('PreferencesScreen', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Select demon preference...'));
+    fireEvent.click(screen.getByRole('button', { name: 'Select demon preference' }));
 
     expect(screen.getByText('Atheist')).toBeInTheDocument();
     expect(screen.getByText('Summoner')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('Whalebucket preference submission', () => {
     render(<PreferencesScreen {...props} prefs={{ ...complete, [team]: [] }} onSubmit={onSubmit} />);
     const submit = screen.getByRole('button', { name: 'Submit Character Preferences' });
     expect(submit).toBeDisabled();
-    expect(submit).toHaveAccessibleDescription(`Choose a character for: ${team[0].toUpperCase() + team.slice(1)}.`);
+    expect(screen.queryByText(/Choose a character for:/)).toBeNull();
     fireEvent.click(submit);
     expect(onSubmit).not.toHaveBeenCalled();
   });

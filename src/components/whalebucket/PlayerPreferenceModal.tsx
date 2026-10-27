@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Search, Dices, Trash2, X } from 'lucide-react';
+import { Search, Dices, Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
+import CloseButton from '../shared/ui/CloseButton';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { ALL_ROLES } from '../../utils/roleData';
@@ -238,21 +239,11 @@ export default function WhaleBucketPlayerPreferenceModal({
               <Trash2 size={16} />
             </button>
           </div>
-          <button
+          <CloseButton
             id="close-preference-modal-button"
-            type="button"
             onClick={onClose}
-            className={cn(
-              "shrink-0 p-1.5 rounded-full transition-colors",
-              isLightModeActive
-                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800"
-                : "text-gray-400 hover:bg-gray-800 hover:text-white"
-            )}
-            aria-label="Close"
-            title="Close"
-          >
-            <X size={18} />
-          </button>
+            isLightModeActive={isLightModeActive}
+          />
         </div>
 
         <div className="flex items-center gap-2">

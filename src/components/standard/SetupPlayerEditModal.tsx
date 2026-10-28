@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
-import { Search, Trash2 } from 'lucide-react';
 import { PLAYABLE_ROLES } from '../../utils/roleData';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
+import CharacterOptionRow from '../shared/ui/CharacterOptionRow';
+import CharacterModifierButton from '../shared/ui/CharacterModifierButton';
+import SearchInput from '../shared/ui/SearchInput';
+import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
+import PlayerNameField from '../shared/ui/PlayerNameField';
 import type { Player, Role } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
 import { isMarionetteEligible } from '../../utils/marionetteEligibility';
@@ -65,7 +67,6 @@ export default function SetupPlayerEditModal({
   isSecondary,
 }: SetupPlayerEditModalProps) {
   useScrollLock();
-  const isMobile = useIsMobile();
   const [pronounsOpen, setPronounsOpen] = useState(false);
 
   // Close the pronoun dropdown first, so Escape doesn't discard the whole modal out from under it.
@@ -134,31 +135,14 @@ export default function SetupPlayerEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              id="remove-player-button"
-              type="button"
-              disabled={!!isSecondary}
-              onClick={() => { if (!isSecondary) { removePlayer(player.id); onClose(); } }}
-              className={cn(
-                "shrink-0 p-1.5 rounded border border-gray-800 transition-colors",
-                isSecondary
-                  ? "text-gray-700 border-gray-800/45 cursor-not-allowed opacity-40"
-                  : "text-gray-500 hover:text-red-500 hover:border-red-500/40"
-              )}
-              title={isSecondary ? "This action is disabled on secondary devices." : "Remove player"}
-            >
-              <Trash2 size={16} />
-            </button>
-            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
-          </div>
-          <button id="close-player-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
-            Close
-          </button>
-        </div>
+        <PlayerEditHeader
+          isLightModeActive={isLightModeActive}
+          isSecondary={isSecondary}
+          onRemove={() => removePlayer(player.id)}
+          onClose={onClose}
+          removeButtonId="remove-player-button"
+          closeButtonId="close-player-edit-modal-button"
+        />
 
         <div className="flex items-center gap-2">
           {onUpdatePronouns && (
@@ -171,17 +155,11 @@ export default function SetupPlayerEditModal({
               onOpenChange={setPronounsOpen}
             />
           )}
-          <input
+          <PlayerNameField
             id="edit-player-name-input"
-            type="text"
             value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+            onChange={setEditedName}
+            onClose={onClose}
           />
         </div>
 
@@ -207,167 +185,79 @@ export default function SetupPlayerEditModal({
               </label>
             )}
             {canBeDrunk && (
-              <button
-                id={`toggle-drunk-button-${player.id}`}
-                type="button"
-                disabled={isDrunkSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="drunk"
+                active={!!player.isTheDrunk}
                 onClick={() => togglePlayerTheDrunk(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheDrunk
-                    ? "bg-yellow-600 border-yellow-755 text-black font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/drunk.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Drunk
-              </button>
+                disabled={isDrunkSelectedElsewhere}
+                id={`toggle-drunk-button-${player.id}`}
+              />
             )}
             {canBeMarionette && (
-              <button
-                id={`toggle-marionette-button-${player.id}`}
-                type="button"
-                disabled={isMarionetteSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="marionette"
+                active={!!player.isTheMarionette}
                 onClick={() => togglePlayerTheMarionette(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheMarionette
-                    ? "bg-clocktower-minion border-clocktower-minion/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/marionette.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Marionette
-              </button>
+                disabled={isMarionetteSelectedElsewhere}
+                id={`toggle-marionette-button-${player.id}`}
+              />
             )}
             {canBeLunatic && (
-              <button
-                id={`toggle-lunatic-button-${player.id}`}
-                type="button"
-                disabled={isLunaticSelectedElsewhere}
+              <CharacterModifierButton
+                modifier="lunatic"
+                active={!!player.isTheLunatic}
                 onClick={() => togglePlayerTheLunatic(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed",
-                  player.isTheLunatic
-                    ? "bg-clocktower-outsider border-clocktower-outsider/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lunatic.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lunatic
-              </button>
+                disabled={isLunaticSelectedElsewhere}
+                id={`toggle-lunatic-button-${player.id}`}
+              />
             )}
             {canBeLilMonsta && (
-              <button
-                id={`toggle-lilmonsta-button-${player.id}`}
-                type="button"
+              <CharacterModifierButton
+                modifier="lilmonsta"
+                active={!!player.isTheLilMonsta}
                 onClick={() => togglePlayerTheLilMonsta(player.id)}
-                className={cn(
-                  "px-2.5 py-1 rounded text-[14px] font-bold border transition-all flex items-center gap-1",
-                  player.isTheLilMonsta
-                    ? "bg-clocktower-demon border-clocktower-demon/40 text-white font-black"
-                    : "bg-gray-955 border-gray-855 text-gray-500 hover:text-gray-400"
-                )}
-              >
-                <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                  <img
-                    src="/icons/lilmonsta.svg"
-                    alt=""
-                    className="w-3.5 h-3.5 object-contain"
-                    onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-                  />
-                </span>
-                Lil' Monsta
-              </button>
+                id={`toggle-lilmonsta-button-${player.id}`}
+              />
             )}
           </div>
         )}
 
         <div className="border-t border-gray-800/80" />
 
-        <div id="role-search-wrapper" className="flex items-center bg-white border border-gray-300 rounded px-3 py-2 text-sm shrink-0">
-          <Search size={14} className="text-gray-400 mr-2" />
-          <input
-            id="role-search-input"
-            type="text"
-            placeholder="Search character name..."
-            className="bg-transparent flex-1 outline-none text-xs text-gray-900 placeholder-gray-400"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          id="role-search-input"
+          label="Search characters"
+          placeholder="Search character name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          containerId="role-search-wrapper"
+        />
 
         <div id="role-list" className="overflow-y-auto overscroll-contain flex-1 border border-gray-800 rounded bg-gray-955/40 divide-y divide-gray-800/60 pr-1">
           {filteredRoles.map(role => {
             const selectedByPlayer = players.find(pl => pl.roleId === role.id && pl.id !== activePlayerId);
             const isCurrent = role.id === player.roleId;
             return (
-              <button
-                id={`role-option-${role.id}`}
+              <CharacterOptionRow
                 key={role.id}
+                id={`role-option-${role.id}`}
+                role={role}
+                selected={isCurrent}
+                isLightModeActive={isLightModeActive}
                 onClick={() => { updatePlayerRole(activePlayerId, isCurrent ? '' : role.id); onClose(); }}
-                className={cn(
-                  "w-full text-left px-3 py-2.5 hover:bg-gray-800 text-xs transition-colors flex justify-between items-center",
-                  isCurrent && (isLightModeActive ? "bg-amber-100/80 border-l-2 border-l-amber-600" : "bg-amber-500/10 border-l-2 border-l-amber-500")
-                )}
+                trailing={<span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>}
               >
-                <div className="flex items-center min-w-0 flex-1 gap-1.5 mr-2">
-                  <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                    <img
-                      key={role.id}
-                      src={`/icons/${role.id}.svg`}
-                      alt={role.name}
-                      className="w-3.5 h-3.5 object-contain"
-                      onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
-                    />
-                  </span>
+                {selectedByPlayer && (
                   <span className={cn(
-                    "font-semibold text-xs truncate",
-                    isCurrent
-                      ? (isLightModeActive ? "text-gray-950 font-bold" : "text-white font-bold")
-                      : (
-                        (role.team === 'townsfolk' && "text-clocktower-townsfolk") ||
-                        (role.team === 'outsider' && "text-clocktower-outsider") ||
-                        (role.team === 'minion' && "text-clocktower-minion") ||
-                        (role.team === 'demon' && "text-clocktower-demon")
-                      )
+                    "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
+                    isLightModeActive
+                      ? "bg-gray-100 border-gray-200 text-gray-655"
+                      : "bg-gray-800/40 border-gray-700/30 text-gray-400"
                   )}>
-                    {role.name} {isCurrent && "✓"}
+                    {selectedByPlayer.name}
                   </span>
-                  {selectedByPlayer && (
-                    <span className={cn(
-                      "text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border",
-                      isLightModeActive
-                        ? "bg-gray-100 border-gray-200 text-gray-655"
-                        : "bg-gray-800/40 border-gray-700/30 text-gray-400"
-                    )}>
-                      {selectedByPlayer.name}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] uppercase font-mono text-gray-650">{role.team[0]}</span>
-              </button>
+                )}
+              </CharacterOptionRow>
             );
           })}
           {filteredRoles.length === 0 && (

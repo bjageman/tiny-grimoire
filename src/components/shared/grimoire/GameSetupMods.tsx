@@ -1,5 +1,7 @@
-import { Settings, ChevronDown } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import GrimoireCard from '../ui/GrimoireCard';
+import DisclosureHeader from '../ui/DisclosureHeader';
 import { usePersistedDisclosure } from '../../../hooks/usePersistedDisclosure';
 import ToggleSwitch from '../ui/ToggleSwitch';
 
@@ -8,6 +10,8 @@ interface GameSetupModsProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled?: boolean;
+  setTorEnabled?: (enabled: boolean) => void;
   isLightModeActive?: boolean;
   persistenceKey?: string;
 }
@@ -23,38 +27,33 @@ export default function GameSetupMods({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled = false,
+  setTorEnabled = () => {},
   isLightModeActive = false,
   persistenceKey,
 }: GameSetupModsProps) {
   const { isExpanded, toggleExpanded } = usePersistedDisclosure(persistenceKey);
 
   // Surface active modifiers in the header so a collapsed widget still shows something is set.
-  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0);
+  const activeCount = (sentinelOutsiderDelta !== 0 ? 1 : 0) + (popeEnabled ? 1 : 0) + (torEnabled ? 1 : 0);
 
   return (
-    <div
+    <GrimoireCard
       id="game-setup-mods"
-      className={cn(
-        "border rounded-lg transition-colors duration-300 text-left",
-        isLightModeActive
-          ? "bg-white border-gray-250 text-clocktower-night shadow-sm"
-          : "bg-gray-900/90 border-gray-800"
-      )}
+      isLightModeActive={isLightModeActive}
+      variant="solid"
+      className="p-0 space-y-0 text-left"
     >
-      <button
-        type="button"
-        onClick={toggleExpanded}
-        aria-expanded={isExpanded}
-        aria-controls="game-setup-mods-body"
-        className="w-full flex items-center gap-1.5 p-3"
+      <DisclosureHeader
+        label="Setup Modifiers"
+        isExpanded={isExpanded}
+        onToggle={toggleExpanded}
+        controlsId="game-setup-mods-body"
+        isLightModeActive={isLightModeActive}
+        variant="prominent"
+        className="p-3"
+        icon={<Settings size={16} className="text-clocktower-traveler" />}
       >
-        <Settings size={16} className="text-clocktower-traveler" />
-        <span className={cn(
-          "font-semibold text-xs tracking-wide uppercase",
-          isLightModeActive ? "text-gray-700" : "text-gray-300"
-        )}>
-          Setup Modifiers
-        </span>
         {!isExpanded && activeCount > 0 && (
           <span className={cn(
             "text-[9px] border px-1.5 py-0.5 rounded font-medium",
@@ -65,14 +64,7 @@ export default function GameSetupMods({
             {activeCount} active
           </span>
         )}
-        <ChevronDown
-          size={16}
-          className={cn(
-            "ml-auto text-gray-500 transition-transform duration-200",
-            isExpanded && "rotate-180"
-          )}
-        />
-      </button>
+      </DisclosureHeader>
 
       {isExpanded && (
         <div id="game-setup-mods-body" className="px-3 pb-3">
@@ -141,8 +133,24 @@ export default function GameSetupMods({
               icon={<img src="/icons/pope.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
             />
           </label>
+          <label htmlFor="tor-mode-checkbox" className={cn(
+            "flex items-center justify-between gap-3 border-t mt-2.5 pt-2.5 cursor-pointer",
+            isLightModeActive ? "border-gray-200" : "border-gray-800"
+          )}>
+            <div>
+              <div className={cn("text-[11px] font-bold", isLightModeActive ? "text-gray-800" : "text-gray-200")}>Tor</div>
+              <div className="text-[9px] text-gray-500 leading-tight">Synced players will not be shown their character</div>
+            </div>
+            <ToggleSwitch
+              id="tor-mode-checkbox"
+              checked={torEnabled}
+              onChange={setTorEnabled}
+              isLightModeActive={isLightModeActive}
+              icon={<img src="/icons/tor.svg" alt="" className="w-3 h-3 object-contain brightness-[0.45] saturate-150" />}
+            />
+          </label>
         </div>
       )}
-    </div>
+    </GrimoireCard>
   );
 }

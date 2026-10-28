@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act, within, waitFor } from '@testing-library/react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import StandardSetup from './StandardSetup';
 import WhaleBucket from './WhaleBucket';
 import PlayerTracker from './PlayerTracker';
@@ -8,6 +8,7 @@ import JoinPage from './JoinPage';
 import type { PlacedReminder } from './types';
 
 interface SocketSubscription {
+  token: symbol;
   gameCode: string;
   onMessage: (data: unknown) => void;
 }
@@ -20,24 +21,28 @@ function enableSetupModifiers(container: HTMLElement) {
   fireEvent.click(view.getByRole('button', { name: /setup modifiers/i }));
   fireEvent.click(view.getByRole('button', { name: '+1' }));
   fireEvent.click(view.getByLabelText(/Pope/));
+  fireEvent.click(view.getByLabelText(/Tor/));
   expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'true');
   expect(view.getByLabelText(/Pope/)).toBeChecked();
+  expect(view.getByLabelText(/Tor/)).toBeChecked();
 }
 
-function expectSetupModifiersReset(container: HTMLElement) {
+function expectResetPreservesPopeAndTor(container: HTMLElement) {
   const view = within(container);
   expect(view.getByRole('button', { name: '0' })).toHaveAttribute('aria-pressed', 'true');
   expect(view.getByRole('button', { name: '+1' })).toHaveAttribute('aria-pressed', 'false');
-  expect(view.getByLabelText(/Pope/)).not.toBeChecked();
+  expect(view.getByLabelText(/Pope/)).toBeChecked();
+  expect(view.getByLabelText(/Tor/)).toBeChecked();
 }
 
 // Mock useGameSocket to route messages between components sharing the same game code
 vi.mock('./hooks/useGameSocket', () => {
   return {
     useGameSocket: vi.fn((gameCode: string, onMessage: (data: unknown) => void) => {
+      const token = useRef(Symbol());
       useEffect(() => {
         if (!gameCode) return;
-        const sub = { gameCode, onMessage };
+        const sub = { gameCode, onMessage, token: token.current };
         activeSubscriptions.push(sub);
         return () => {
           const idx = activeSubscriptions.indexOf(sub);
@@ -47,19 +52,19 @@ vi.mock('./hooks/useGameSocket', () => {
         };
       }, [gameCode, onMessage]);
 
-      const sendMessage = vi.fn(async (payload: unknown) => {
+      const sendMessage = useCallback(async (payload: unknown) => {
         sentPayloads.push({ gameCode, payload });
         // Simulate network latency
         await new Promise((resolve) => setTimeout(resolve, 10));
         // Run callbacks in act since they update component state
         act(() => {
           activeSubscriptions.forEach((sub) => {
-            if (sub.gameCode.toLowerCase() === gameCode.toLowerCase() && sub.onMessage !== onMessage) {
+            if (sub.gameCode.toLowerCase() === gameCode.toLowerCase() && sub.token !== token.current) {
               sub.onMessage(payload);
             }
           });
         });
-      });
+      }, [gameCode]);
 
       return {
         isConnected: !!gameCode,
@@ -190,7 +195,7 @@ describe('Storyteller Reset Integration', () => {
     unmountJoinPage();
   });
 
-  it('resets all Standard setup modifiers', async () => {
+  it('resets Sentinel but preserves Pope and Tor in Standard mode', async () => {
     window.location.hash = '#/standard';
     const storyteller = render(<StandardSetup theme="dark" toggleTheme={vi.fn()} />);
     enableSetupModifiers(storyteller.container);
@@ -201,11 +206,11 @@ describe('Storyteller Reset Integration', () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
     });
 
-    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    await waitFor(() => expectResetPreservesPopeAndTor(storyteller.container));
     storyteller.unmount();
   });
 
-  it('resets all Whale Bucket setup modifiers', async () => {
+  it('resets Sentinel but preserves Pope and Tor in Whale Bucket mode', async () => {
     window.location.hash = '#/whale-bucket';
     const storyteller = render(<WhaleBucket theme="dark" toggleTheme={vi.fn()} />);
     const pageTitle = storyteller.container.querySelector('#whale-bucket-page-title')!;
@@ -219,7 +224,7 @@ describe('Storyteller Reset Integration', () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
     });
 
-    await waitFor(() => expectSetupModifiersReset(storyteller.container));
+    await waitFor(() => expectResetPreservesPopeAndTor(storyteller.container));
     storyteller.unmount();
   });
 
@@ -264,10 +269,13 @@ describe('Storyteller Reset Integration', () => {
 
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'p1');
     const joinPage = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
 
-    // Let the join round-trip complete: Alice announces herself, the
-    // storyteller registers her + broadcasts the game, Alice reveals.
+    // Alice joined before the game began, so she remains eligible for the character reveal.
+    act(() => activeSubscriptions.filter(sub => sub.gameCode === gameCode).at(-1)!.onMessage({
+      type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1',
+    }));
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 200));
     });
@@ -481,6 +489,7 @@ describe('Storyteller Reset Integration', () => {
     // setup_update — e.g. the storyteller tapped back to setup to tweak
     // something — must stay on their character. Only game_reset moves them.
     const gameCode = 'SHLF';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
     window.location.hash = '#/join';
@@ -497,6 +506,7 @@ describe('Storyteller Reset Integration', () => {
     });
 
     // Reveal Alice via a game_update carrying her role.
+    deliver({ type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'washerwoman' }],
@@ -532,6 +542,7 @@ describe('Storyteller Reset Integration', () => {
     // A player assigned a traveler must still reveal, by falling back to the
     // full official role list rather than staying stuck in the waiting room.
     const gameCode = 'TRVL';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Alice');
     window.location.hash = '#/join';
@@ -547,8 +558,8 @@ describe('Storyteller Reset Integration', () => {
         .forEach(s => s.onMessage(payload));
     });
 
-    // Storyteller adds Alice mid-game as a Gunslinger (traveler) under a custom
-    // script whose role list contains no travelers.
+    // Alice connected during setup and receives a Traveler assignment under a script without Travelers.
+    deliver({ type: 'code_valid', gameType: 'standard', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Alice', isDead: false, roleId: 'gunslinger' }],
@@ -625,6 +636,7 @@ describe('Storyteller Reset Integration', () => {
 
   it('Whale Bucket: game_reset sends a revealed player to the (empty) preferences picker', async () => {
     const gameCode = 'WBRS';
+    sessionStorage.setItem('botc-player-id', 'p1');
     sessionStorage.setItem('joined-code', gameCode);
     sessionStorage.setItem('joined-name', 'Zoe');
     window.location.hash = '#/join';
@@ -641,6 +653,7 @@ describe('Storyteller Reset Integration', () => {
     });
 
     // Reveal Zoe, then the storyteller does a keep-connected reset.
+    deliver({ type: 'code_valid', gameType: 'whale-bucket', phase: 'setup', playerId: 'p1' });
     deliver({
       type: 'game_update',
       players: [{ id: 'p1', name: 'Zoe', isDead: false, roleId: 'washerwoman' }],
@@ -725,7 +738,12 @@ describe('Standard and Game Notes transfers', () => {
     vi.clearAllMocks();
   });
 
-  it('transfers Standard player identities and script into the Game Notes grimoire', async () => {
+  const loricRoles = [
+    { id: 'angel', name: 'Angel', team: 'fabled' },
+    { id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A transferred custom rule.' },
+  ];
+
+  it.each(['scriptLoricRoles', 'scriptLoreRoles'])('transfers Standard identities and script into Game Notes from %s storage', async (field) => {
     localStorage.setItem('standard-botc-game', JSON.stringify({
       players: [{
         id: 'alice-id',
@@ -738,6 +756,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Transfer Script',
       scriptAuthor: 'Author',
+      [field]: loricRoles,
       customScriptRoles: [{ id: 'custom-role', name: 'Custom Role', team: 'townsfolk' }],
       dayNumber: 4,
       timeOfDay: 'day',
@@ -757,6 +776,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Transfer Script',
       scriptAuthor: 'Author',
+      scriptLoricRoles: loricRoles,
       dayNumber: 1,
       timeOfDay: 'night',
     });
@@ -766,7 +786,7 @@ describe('Standard and Game Notes transfers', () => {
     storyteller.unmount();
   });
 
-  it('confirms replacement and transfers Game Notes into a fresh Standard setup', () => {
+  it.each(['scriptLoricRoles', 'scriptLoreRoles'])('transfers Game Notes into Standard from %s storage', (field) => {
     localStorage.setItem('player-tracker-botc-game', JSON.stringify({
       players: [{
         id: 'avery-id',
@@ -779,6 +799,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'game',
       scriptName: 'Notes Script',
       scriptAuthor: 'Another Author',
+      [field]: loricRoles,
       customScriptRoles: null,
       gameNotes: 'Do not copy this',
       dayNumber: 3,
@@ -809,6 +830,7 @@ describe('Standard and Game Notes transfers', () => {
       phase: 'setup',
       scriptName: 'Notes Script',
       scriptAuthor: 'Another Author',
+      scriptLoricRoles: loricRoles,
       dayNumber: 1,
       timeOfDay: 'night',
     });
@@ -831,6 +853,7 @@ describe('Standard and Game Notes transfers', () => {
 
     sessionStorage.setItem('joined-code', 'LIVE');
     sessionStorage.setItem('joined-name', 'Alice');
+    sessionStorage.setItem('botc-player-id', 'alice-id');
     const player = render(<JoinPage theme="dark" toggleTheme={vi.fn()} />);
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -838,7 +861,7 @@ describe('Standard and Game Notes transfers', () => {
 
     fireEvent.click(storyteller.container.querySelector('#header-menu-button')!);
     fireEvent.click(storyteller.container.querySelector('#transfer-game-button')!);
-    expect(within(storyteller.container).getByText(/1 connected player will be disconnected/i)).toBeInTheDocument();
+    expect(within(storyteller.container).getByText(/1 connected viewer will be disconnected/i)).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(storyteller.container.querySelector('#dialog-confirm-button')!);
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -972,6 +995,22 @@ describe('Storyteller Device Sync', () => {
     activeSubscriptions.length = 0;
     sentPayloads.length = 0;
     vi.clearAllMocks();
+  });
+
+  it('syncs script Fabled and Lorics and custom Bootlegger rules to the secondary device', async () => {
+    seedPrimary();
+    const saved = JSON.parse(localStorage.getItem('standard-botc-game')!);
+    const loricRoles = [{ id: 'bootlegger', name: 'Bootlegger', team: 'loric', ability: 'A custom rule from the script.' }];
+    localStorage.setItem('standard-botc-game', JSON.stringify({ ...saved, scriptLoricRoles: loricRoles }));
+    localStorage.setItem('botc-script-show-fabled-lorics', 'true');
+    const { primary, secondary } = await renderSyncedPair();
+    expect(lastSyncState()?.scriptLoricRoles).toEqual(loricRoles);
+    fireEvent.click(secondary.container.querySelector('#game-script-button')!);
+    const section = within(document.getElementById('script-fabled-lorics-section')!);
+    fireEvent.click(section.getByText('Bootlegger'));
+    expect(within(document.getElementById('script-character-details-modal')!).getByText(loricRoles[0].ability)).toBeInTheDocument();
+    primary.unmount();
+    secondary.unmount();
   });
 
   it('transfers all 10 reminder tokens to the secondary on initial sync', async () => {
@@ -1432,14 +1471,14 @@ describe('Storyteller Grimoire Bug Fixes', () => {
     storyteller.unmount();
   });
 
-  it('Whale Bucket: reveals Atheist when random assignment activates Atheist mode', async () => {
+  it.each([true, false])('Whale Bucket: reveals Atheist only when picked (picked: %s)', async (picked) => {
     const preferences = { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
     localStorage.setItem('whale-bucket-game', JSON.stringify({
       players: Array.from({ length: 5 }, (_, index) => ({
         id: `p${index + 1}`,
         name: `Player ${index + 1}`,
         isDead: false,
-        preferences,
+        preferences: { ...preferences, demon: picked && index === 0 ? ['atheist'] : [] },
       })),
       phase: 'draft',
     }));
@@ -1449,7 +1488,9 @@ describe('Storyteller Grimoire Bug Fixes', () => {
 
     fireEvent.click(storyteller.container.querySelector('#reassign-characters-button')!);
 
-    expect(storyteller.container.querySelector('img[alt="Atheist"]')).toBeInTheDocument();
+    const atheist = storyteller.container.querySelector('img[alt="Atheist"]');
+    if (picked) expect(atheist).toBeInTheDocument();
+    else expect(atheist).not.toBeInTheDocument();
     randomSpy.mockRestore();
     storyteller.unmount();
   });

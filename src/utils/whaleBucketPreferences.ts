@@ -3,6 +3,15 @@ import { isEligibleHiddenRole } from './hiddenRoleEligibility';
 
 const DEMON_SLOT_ROLE_IDS = new Set(['atheist', 'summoner']);
 
+export const WHALE_BUCKET_PREFERENCE_TEAMS = ['townsfolk', 'outsider', 'minion', 'demon'] as const;
+
+export function hasCompleteWhaleBucketPreferences(preferences: Partial<PlayerPreferences> | undefined): boolean {
+  return WHALE_BUCKET_PREFERENCE_TEAMS.every(team => {
+    const selections = preferences?.[team];
+    return selections?.length === 1 && !!selections[0]?.trim();
+  });
+}
+
 export function getWhaleBucketPreferenceTeam(role: Pick<Role, 'id' | 'team'>): Role['team'] {
   return DEMON_SLOT_ROLE_IDS.has(role.id) ? 'demon' : role.team;
 }

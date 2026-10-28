@@ -1,4 +1,4 @@
-import type { Player, Role } from '../types';
+import type { LoricRole, Player, Role } from '../types';
 
 export const STANDARD_GAME_STORAGE_KEY = 'standard-botc-game';
 export const PLAYER_TRACKER_STORAGE_KEY = 'player-tracker-botc-game';
@@ -8,6 +8,8 @@ interface TransferSource {
   scriptName: string;
   scriptAuthor: string;
   customScriptRoles: Role[] | null;
+  scriptLoricRoles?: LoricRole[];
+  torEnabled?: boolean;
 }
 
 function transferPlayers(players: Player[]): Player[] {
@@ -26,6 +28,8 @@ export function buildPlayerTrackerTransfer(source: TransferSource) {
     timeOfDay: 'night' as const,
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
+    scriptLoricRoles: source.scriptLoricRoles ?? [],
+    torEnabled: source.torEnabled ?? false,
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     gameNotes: '',
@@ -42,6 +46,8 @@ export function buildStandardTransfer(source: TransferSource) {
     timeOfDay: 'night' as const,
     dayNumber: 1,
     customScriptRoles: source.customScriptRoles,
+    scriptLoricRoles: source.scriptLoricRoles ?? [],
+    torEnabled: source.torEnabled ?? false,
     scriptName: source.scriptName,
     scriptAuthor: source.scriptAuthor,
     isLilMonstaGame: false,

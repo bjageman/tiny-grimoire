@@ -7,12 +7,14 @@ interface JoinFormProps {
   onCodeChange: (value: string) => void;
   name: string;
   onNameChange: (value: string) => void;
+  isSpectator: boolean;
+  onSpectatorChange: (value: boolean) => void;
   errorMsg: string | null;
   onSubmit: (e: React.FormEvent) => void;
 }
 
 // The room-code + name entry form that starts a join.
-export default function JoinForm({ isLight, code, onCodeChange, name, onNameChange, errorMsg, onSubmit }: JoinFormProps) {
+export default function JoinForm({ isLight, code, onCodeChange, name, onNameChange, isSpectator, onSpectatorChange, errorMsg, onSubmit }: JoinFormProps) {
   return (
     <form onSubmit={onSubmit} className={cn(
       "border rounded-lg p-6 space-y-4 shadow-xl transition-all duration-300",
@@ -56,6 +58,18 @@ export default function JoinForm({ isLight, code, onCodeChange, name, onNameChan
           required
         />
       </div>
+
+      <label className="flex items-center gap-3 cursor-pointer text-sm font-semibold">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={isSpectator}
+          onChange={event => onSpectatorChange(event.target.checked)}
+          className="sr-only peer"
+        />
+        <span aria-hidden="true" className="relative h-5 w-9 shrink-0 rounded-full bg-gray-500 transition-colors peer-checked:bg-clocktower-blood peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4" />
+        Join as a Spectator
+      </label>
 
       <button
         type="submit"

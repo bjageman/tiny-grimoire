@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '../../../utils/cn';
-import { sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
+import { inPlayRoleIds, sortByScriptOrder, withInPlayTravelers } from '../../../utils/scriptUtils';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { getDistribution } from '../../../constants';
-import type { Player, Role, PlacedReminder } from '../../../types';
+import type { LoricRole, Player, Role, PlacedReminder } from '../../../types';
 import { ALL_ROLES, PLAYABLE_ROLES } from '../../../utils/roleData';
 import GrimoireBoard from './GrimoireBoard';
 import NightOrderWidget from './NightOrderWidget';
@@ -34,7 +34,7 @@ interface Props {
   hoverSide: 'before' | 'after' | null;
   setSelectedPlayerId: (id: string | null) => void;
   toggleTimeOfDay: () => void;
-  addTravelerGamePhase: () => void;
+  addTravelerGamePhase: (spectatorId?: string) => void;
   setNewTravelerName: (v: string) => void;
   setNewTravelerRoleId: (v: string) => void;
   handleMouseDown: (e: React.MouseEvent) => void;
@@ -48,13 +48,16 @@ interface Props {
   handleTouchEnd: () => void;
   onResetDead?: () => void;
   onResetTime?: () => void;
+  onResetDroison?: () => void;
   remotePlayerIds?: Set<string>;
+  spectatorPlayers?: Pick<Player, 'id' | 'name'>[];
   // Optional / mode-specific
   selectionRoles?: Role[];
   showNightOrder?: boolean;
   scriptName?: string;
   scriptAuthor?: string;
   customScriptRoles?: Role[] | null;
+  scriptLoricRoles?: LoricRole[];
   isSynced?: boolean;
   isSecondary?: boolean;
   enableReminders?: boolean;
@@ -77,6 +80,8 @@ interface Props {
   isStoryteller?: boolean;
   alwaysShowNotes?: boolean;
   fullNightOrder?: boolean;
+  allowFullscreen?: boolean;
+  joinCode?: string;
 }
 
 export default function GamePhase({
@@ -86,13 +91,15 @@ export default function GamePhase({
   setNewTravelerName, setNewTravelerRoleId,
   handleMouseDown, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   handleTouchStart, handleTouchMove, handleTouchEnd,
-  onResetDead, onResetTime,
+  onResetDead, onResetTime, onResetDroison,
   remotePlayerIds,
+  spectatorPlayers,
   selectionRoles,
   showNightOrder = true,
   scriptName = 'All Roles',
   scriptAuthor = '',
   customScriptRoles = null,
+  scriptLoricRoles,
   isSynced = false,
   isSecondary = false,
   enableReminders = true,
@@ -115,6 +122,8 @@ export default function GamePhase({
   isStoryteller = false,
   alwaysShowNotes = false,
   fullNightOrder = false,
+  allowFullscreen = false,
+  joinCode,
 }: Props) {
 
   const [isScriptModalOpen, setIsScriptModalOpen] = useState(false);
@@ -148,14 +157,20 @@ export default function GamePhase({
 
   const handleRemoveAllReminders = () => {
     showConfirm('Remove all reminder tokens?', () => {
-      if (reminderTokens.length > 0) onLogEvent?.(`All reminders cleared`);
+      if (reminderTokens.length > 0 || players.some(p => p.isDrunkOrPoisoned)) onLogEvent?.(`All reminders cleared`);
       setReminderTokens([]);
+      onResetDroison?.();
     }, 'Reset Reminders');
   };
 
   const sortedRoles = useMemo(() => {
     const baseRoles = customScriptRoles || PLAYABLE_ROLES;
     return sortByScriptOrder(withInPlayTravelers(baseRoles, players), baseRoles);
+  }, [customScriptRoles, players]);
+
+  const hermitOutsiders = useMemo(() => {
+    if (!customScriptRoles || !inPlayRoleIds(players).has('hermit')) return [];
+    return customScriptRoles.filter(role => role.team === 'outsider' && role.id !== 'hermit');
   }, [customScriptRoles, players]);
 
   const grimoireRolesData = selectionRoles ?? (ALL_ROLES as Role[]);
@@ -212,7 +227,7 @@ export default function GamePhase({
         📜 {scriptName}
       </span>
       {scriptAuthor && (
-        <span className="text-[10px] text-gray-500 font-medium">
+        <span className={cn("text-[10px] font-medium", isLightModeActive ? "text-black" : "text-white")}>
           by {scriptAuthor}
         </span>
       )}
@@ -228,6 +243,7 @@ export default function GamePhase({
         <div id="grimoire-board-container" className="space-y-4">
           <GrimoireBoard
             players={players}
+            hermitOutsiders={hermitOutsiders}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
             toggleTimeOfDay={!isSynced && !showNightOrder ? toggleTimeOfDay : undefined}
@@ -246,12 +262,15 @@ export default function GamePhase({
             rotationOffset={rotationOffset}
             onRotationChange={onRotationChange}
             alwaysShowNotes={alwaysShowNotes}
+            allowFullscreen={allowFullscreen}
+            joinCode={joinCode}
           />
         </div>
         {renderScriptButton('game-script-button-mobile', 'flex md:hidden')}
         {showNightOrder && (
           <NightOrderWidget
             players={players}
+            hermitOutsiders={hermitOutsiders}
             timeOfDay={timeOfDay}
             dayNumber={dayNumber}
             isLightModeActive={isLightModeActive}
@@ -380,6 +399,7 @@ export default function GamePhase({
             onNameChange={setNewTravelerName}
             roleId={newTravelerRoleId}
             onRoleIdChange={setNewTravelerRoleId}
+            spectators={spectatorPlayers}
             disabled={players.length >= 20}
             onAdd={addTravelerGamePhase}
           />
@@ -428,6 +448,7 @@ export default function GamePhase({
         onClose={() => setIsScriptModalOpen(false)}
         scriptName={scriptName}
         roles={sortedRoles}
+        scriptLoricRoles={scriptLoricRoles}
         scriptAuthor={scriptAuthor || undefined}
         isLightModeActive={isLightModeActive}
         isStoryteller={isStoryteller}

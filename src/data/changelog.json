@@ -1,5 +1,59 @@
 [
   {
+    "date": "Week of October 19, 2026",
+    "dateTime": "2026-10-19",
+    "changes": [
+      {
+        "description": "Fixed Atheist preference handling and selection odds.",
+        "pullRequests": [451]
+      },
+      {
+        "description": "Added a script-viewer category for Fabled and Lorics, with readable Bootlegger rules.",
+        "pullRequests": [453]
+      },
+      {
+        "description": "Added Tor mode for synced players: they see Tor while the storyteller reveals their character manually. Pope and Tor settings persist through resets.",
+        "pullRequests": [454]
+      },
+      {
+        "description": "Clearing reminders now also clears Drunk/Poisoned status in Standard, Whale Bucket, and Game Notes.",
+        "pullRequests": [458]
+      },
+      {
+        "description": "Added the active script's Outsider reminders and night actions for players assigned the Hermit.",
+        "pullRequests": [459]
+      },
+      {
+        "description": "Added Cacklejack's Not Me reminder and clarified Alchemist, Boffin, Philosopher, and Pixie markers for tracking character changes.",
+        "pullRequests": [460]
+      },
+      {
+        "description": "Added synced spectator Game Notes, late-join spectating, and promotion from spectator to Traveler. Spectators can choose whether to join the next game after a reset.",
+        "pullRequests": [461]
+      },
+      {
+        "description": "Added storyteller controls to kick, ban, or move connected players to spectators, with room bans preserved through reloads and resets.",
+        "pullRequests": [461]
+      },
+      {
+        "description": "Improved sync reconnects and preserved local notes and character guesses. Protected synced player names while allowing players to claim manually added seats.",
+        "pullRequests": [462, 463, 466]
+      },
+      {
+        "description": "Added fullscreen Game Notes with live player updates, larger rotation controls, and responsive day and alive-player badges.",
+        "pullRequests": [464, 461]
+      },
+      {
+        "description": "Added a toggleable join code, QR code, and join link to fullscreen synced Game Notes.",
+        "pullRequests": [465]
+      },
+      {
+        "description": "Improved character-exclusion search and Traveler name suggestions, showed skulls for dead Game Notes players without assigned characters, and simplified Join Game script labels.",
+        "pullRequests": [461, 465]
+      }
+    ]
+  },
+  {
     "date": "Week of October 12, 2026",
     "dateTime": "2026-10-12",
     "changes": [
@@ -12,7 +66,7 @@
         "pullRequests": [401, 402]
       },
       {
-        "description": "Added Pope, Sentinel, and other setup modifier controls, which now clear when the game is reset.",
+        "description": "Added Pope, Sentinel, and other setup modifier controls for customizing game setup.",
         "pullRequests": [405, 409]
       },
       {
@@ -42,6 +96,18 @@
       {
         "description": "Simplified Whale Bucket assignment with clearer Auto-Assign and Clear Roles actions.",
         "pullRequests": [433]
+      },
+      {
+        "description": "Made the grimoire ledger collapsible on desktop and clarified hidden-role terminology.",
+        "pullRequests": [436, 438]
+      },
+      {
+        "description": "Improved Whale Bucket's mobile setup and Setup Bag flow, and fixed Atheist counts plus Legion and Kazali assignment edge cases.",
+        "pullRequests": [439, 443, 446]
+      },
+      {
+        "description": "Fixed flexible-count assignments and followed BOTC ordering in two-column script views.",
+        "pullRequests": [441, 447]
       }
     ]
   },

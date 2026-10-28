@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Edit } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import AddPlayerForm from '../shared/ui/AddPlayerForm';
 import type { Player } from '../../WhaleBucket';
 import type { Role } from '../../types';
 import { getDistribution } from '../../constants';
@@ -8,6 +9,7 @@ import WhaleBucketPreferenceCircle from './PreferenceCircle';
 import BaseDistributionCard from '../shared/grimoire/BaseDistributionCard';
 import { ALL_ROLES } from '../../utils/roleData';
 import GameSetupMods from '../shared/grimoire/GameSetupMods';
+import SearchSuggestionInput from '../shared/ui/SearchSuggestionInput';
 
 
 
@@ -41,6 +43,8 @@ interface WhaleBucketSetupPhaseProps {
   setSentinelOutsiderDelta: (delta: number) => void;
   popeEnabled: boolean;
   setPopeEnabled: (enabled: boolean) => void;
+  torEnabled: boolean;
+  setTorEnabled: (enabled: boolean) => void;
   remotePlayerIds?: Set<string>;
   isSecondary?: boolean;
 }
@@ -75,20 +79,12 @@ export default function WhaleBucketSetupPhase({
   setSentinelOutsiderDelta,
   popeEnabled,
   setPopeEnabled,
+  torEnabled,
+  setTorEnabled,
   remotePlayerIds,
   isSecondary,
 }: WhaleBucketSetupPhaseProps) {
   const [excludeSearchTerm, setExcludeSearchTerm] = useState('');
-  const [isExcludeFocused, setIsExcludeFocused] = useState(false);
-
-  const excludeSuggestions = (ALL_ROLES as Role[]).filter(r =>
-    !excludedRoleIds.includes(r.id) &&
-    (excludeSearchTerm
-      ? (r.name.toLowerCase().includes(excludeSearchTerm.toLowerCase()) ||
-         r.team.toLowerCase().includes(excludeSearchTerm.toLowerCase()))
-      : true)
-  );
-
   const handleExcludeRole = (roleId: string) => {
     if (!excludedRoleIds.includes(roleId)) {
       setExcludedRoleIds(prev => [...prev, roleId]);
@@ -140,35 +136,13 @@ export default function WhaleBucketSetupPhase({
             </div>
           </div>
 
-          <div className="flex gap-2 mb-4">
-            <input
-              id="new-player-input"
-              type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-              disabled={players.length >= 15}
-              placeholder={
-                players.length >= 15 
-                  ? "Maximum players reached (15)" 
-                  : "Enter player name in seating order..."
-              }
-              autoCapitalize="words"
-              className="flex-1 bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button
-              onClick={addPlayer}
-              disabled={players.length >= 15}
-              className={cn(
-                "px-4 py-2 rounded transition-colors text-white",
-                players.length >= 15
-                  ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50 border border-gray-800" 
-                  : "bg-clocktower-blood hover:bg-red-800 border border-clocktower-blood"
-              )}
-            >
-              <Plus size={20} />
-            </button>
-          </div>
+          <AddPlayerForm
+            value={newPlayerName}
+            onChange={setNewPlayerName}
+            onAdd={addPlayer}
+            playerCount={players.length}
+            maxPlayers={15}
+          />
 
           <WhaleBucketPreferenceCircle
             players={players}
@@ -199,6 +173,8 @@ export default function WhaleBucketSetupPhase({
           setSentinelOutsiderDelta={setSentinelOutsiderDelta}
           popeEnabled={popeEnabled}
           setPopeEnabled={setPopeEnabled}
+          torEnabled={torEnabled}
+          setTorEnabled={setTorEnabled}
           isLightModeActive={isLightModeActive}
           persistenceKey="whale-bucket-setup-modifiers-expanded"
         />
@@ -214,59 +190,24 @@ export default function WhaleBucketSetupPhase({
             <span className="text-[10px] text-gray-500 block text-left">These characters will be hidden in selection screens</span>
           </div>
 
-          {/* Search Input */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search to exclude..."
-              value={excludeSearchTerm}
-              onChange={(e) => setExcludeSearchTerm(e.target.value)}
-              onFocus={() => setIsExcludeFocused(true)}
-              onBlur={() => setTimeout(() => setIsExcludeFocused(false), 200)}
-              className={cn(
-                "w-full rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-clocktower-blood border",
-                isLightModeActive
-                  ? "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400"
-                  : "bg-gray-955 border-gray-800 text-white placeholder-gray-650"
-              )}
-            />
-            {isExcludeFocused && (
-              <div className={cn(
-                "absolute left-0 right-0 mt-1 border rounded-md shadow-xl z-20 max-h-48 overflow-y-auto",
-                isLightModeActive ? "bg-white border-gray-200" : "bg-gray-900 border-gray-800"
-              )}>
-                {excludeSuggestions.length === 0 ? (
-                  <div className="p-2 text-xs text-gray-500 italic">No matching characters</div>
-                ) : (
-                  excludeSuggestions.map(r => (
-                    <button
-                      key={r.id}
-                      onClick={() => {
-                        handleExcludeRole(r.id);
-                        setExcludeSearchTerm('');
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors",
-                        isLightModeActive 
-                          ? "text-gray-700 hover:bg-gray-100 hover:text-gray-950" 
-                          : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
-                      )}
-                    >
-                      <span>{r.name}</span>
-                      <span className={cn(
-                        "text-[8px] font-bold px-1 py-0.5 rounded border uppercase tracking-wider",
-                        isLightModeActive
-                          ? "bg-gray-100 text-gray-500 border-gray-200"
-                          : "bg-gray-955 text-gray-500 border-gray-800"
-                      )}>
-                        {r.team}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+          <SearchSuggestionInput
+            id="exclude-characters-search"
+            label="Exclude characters"
+            placeholder="Search to exclude..."
+            value={excludeSearchTerm}
+            onChange={setExcludeSearchTerm}
+            options={(ALL_ROLES as Role[])
+              .filter(role => !excludedRoleIds.includes(role.id))
+              .map(role => ({ id: role.id, label: role.name, description: role.team }))}
+            onSelect={id => {
+              handleExcludeRole(id);
+              setExcludeSearchTerm('');
+            }}
+            closeOnSelect={false}
+            showAllOnFocus={false}
+            emptyMessage="No matching characters"
+            isLightModeActive={isLightModeActive}
+          />
 
           {/* Excluded Pills list */}
           {excludedRoleIds.length > 0 && (
@@ -286,6 +227,7 @@ export default function WhaleBucketSetupPhase({
                   >
                     <span className="min-w-0 truncate">{r.name}</span>
                     <button
+                      aria-label={`Stop excluding ${r.name}`}
                       onClick={() => handleRemoveExcludedRole(id)}
                       className="shrink-0 hover:text-red-500 p-0.5 transition-colors"
                     >

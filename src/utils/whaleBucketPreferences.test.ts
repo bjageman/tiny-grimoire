@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerPreferences, Role } from '../types';
-import { chooseLilMonstaMinion } from './whaleBucketPreferences';
+import { chooseLilMonstaMinion, hasCompleteWhaleBucketPreferences } from './whaleBucketPreferences';
 
 describe('chooseLilMonstaMinion', () => {
   it("uses the Lil' Monsta player's eligible Minion preference", () => {
@@ -55,5 +55,18 @@ describe('chooseLilMonstaMinion', () => {
     const chosenRole = chooseLilMonstaMinion(preferences, new Set(), roles, []);
 
     expect(chosenRole?.id).toBe('poisoner');
+  });
+});
+
+describe('hasCompleteWhaleBucketPreferences', () => {
+  const complete = { townsfolk: ['chef'], outsider: ['drunk'], minion: ['poisoner'], demon: ['imp'] };
+
+  it('requires exactly one selection per core category and does not require Traveler', () => {
+    expect(hasCompleteWhaleBucketPreferences(complete)).toBe(true);
+    expect(hasCompleteWhaleBucketPreferences(undefined)).toBe(false);
+    expect(hasCompleteWhaleBucketPreferences({})).toBe(false);
+    expect(hasCompleteWhaleBucketPreferences({ ...complete, demon: [] })).toBe(false);
+    expect(hasCompleteWhaleBucketPreferences({ ...complete, demon: [''] })).toBe(false);
+    expect(hasCompleteWhaleBucketPreferences({ ...complete, townsfolk: ['chef', 'empath'] })).toBe(false);
   });
 });

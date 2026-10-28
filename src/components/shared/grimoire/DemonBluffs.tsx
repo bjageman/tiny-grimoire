@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import { roleIconFallback } from '../../../utils/roleIcon';
+import RoleIcon from '../ui/RoleIcon';
+import SearchInput from '../ui/SearchInput';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import ToggleSwitch from '../ui/ToggleSwitch';
@@ -108,20 +109,20 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
               <div key={slot} className="relative">
                 {pickerSlot === slot ? (
                   <div className="rounded border p-2 space-y-1.5 bg-gray-950 border-gray-700">
-                    <div className="flex items-center gap-1.5">
-                      <Search size={11} className="text-gray-400 shrink-0" />
-                      <input
-                        ref={searchRef}
-                        type="text"
-                        placeholder="Search roles..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="flex-1 text-xs bg-transparent focus:outline-none text-white placeholder-gray-500"
-                      />
-                      <button type="button" onClick={() => { setPickerSlot(null); setSearch(''); }}>
+                    <SearchInput
+                      label="Search roles"
+                      placeholder="Search roles..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      ref={searchRef}
+                      iconSize={11}
+                      containerClassName="gap-1.5 border-0 bg-transparent p-0 focus-within:border-transparent"
+                      className="text-white placeholder-gray-500"
+                    >
+                      <button type="button" aria-label="Cancel bluff search" onClick={() => { setPickerSlot(null); setSearch(''); }}>
                         <X size={12} className="text-gray-400 hover:text-gray-200" />
                       </button>
-                    </div>
+                    </SearchInput>
                     <div className="max-h-32 overflow-y-auto space-y-0.5">
                       {filtered.map(r => (
                         <button
@@ -156,7 +157,7 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
                       {role ? (
                         <span className="flex items-center gap-1.5">
                           <div className="w-5 h-5 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-0.5">
-                            <img key={role.id} src={`/icons/${role.id}.svg`} alt={role.name} className="w-full h-full object-contain" onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')} />
+                            <RoleIcon key={role.id} role={role} className="w-full h-full" />
                           </div>
                           <span>{role.name}</span>
                           <span className={cn('text-[10px] font-semibold', TEAM_TEXT[role.team])}>
@@ -216,12 +217,10 @@ export default function DemonBluffs({ demonBluffs, onUpdateDemonBluffs, players,
                   {role ? (
                     <>
                       <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-white flex items-center justify-center p-1">
-                        <img
+                        <RoleIcon
                           key={role.id}
-                          src={`/icons/${role.id}.svg`}
-                          alt={role.name}
-                          className="w-full h-full object-contain"
-                          onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                          role={role}
+                          className="w-full h-full"
                         />
                       </div>
                       <div className="flex-1 min-w-0">

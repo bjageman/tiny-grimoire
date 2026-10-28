@@ -1,13 +1,21 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
+
+export interface DialogChoice {
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
+}
 
 interface DialogState {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   type: 'alert' | 'confirm';
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
+  choices?: DialogChoice[];
 }
 
 const CLOSED: DialogState = {
@@ -36,5 +44,12 @@ export function useDialog() {
     });
   };
 
-  return { dialogProps: { ...state, onCancel: close }, showAlert, showConfirm };
+  const showChoice = (message: ReactNode, choices: DialogChoice[], title = '') => {
+    setState({
+      ...CLOSED, isOpen: true, title, message, type: 'confirm', onConfirm: close,
+      choices: choices.map(choice => ({ ...choice, onClick: () => { close(); choice.onClick(); } })),
+    });
+  };
+
+  return { dialogProps: { ...state, onCancel: close }, showAlert, showConfirm, showChoice };
 }

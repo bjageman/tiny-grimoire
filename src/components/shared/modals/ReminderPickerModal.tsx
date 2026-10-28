@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 import { roleIconFallback } from '../../../utils/roleIcon';
 import type { Role } from '../../../types';
 import remindersData from '../../../reminders.json';
@@ -82,12 +83,7 @@ export default function ReminderPickerModal({
               for {targetPlayerName}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className={cn('text-lg leading-none px-1', isLightModeActive ? 'text-gray-400 hover:text-gray-700' : 'text-gray-500 hover:text-gray-200')}
-          >
-            ×
-          </button>
+          <CloseButton onClick={onClose} isLightModeActive={isLightModeActive} />
         </div>
 
         {/* Search */}

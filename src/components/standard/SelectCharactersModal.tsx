@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
+import RoleIcon from '../shared/ui/RoleIcon';
+import CloseButton from '../shared/ui/CloseButton';
 import type { Role } from '../../types';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -104,14 +105,10 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
           <h3 className={cn("font-display font-bold text-xl tracking-wider", isLightModeActive ? "text-clocktower-blood" : "text-white")}>
             Setup Bag
           </h3>
-          <button
-            type="button"
+          <CloseButton
             onClick={onClose}
-            className={cn("p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")}
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
+            isLightModeActive={isLightModeActive}
+          />
         </div>
 
         <div className="overflow-y-auto overscroll-contain flex-1 px-5 space-y-4 pb-4 pt-1">
@@ -218,12 +215,11 @@ export default function SelectCharactersModal({ isOpen, onClose, roles, playerCo
                             className="shrink-0 w-3.5 h-3.5"
                           />
                           <span className="w-5 h-5 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-sm border border-gray-100">
-                            <img
+                            <RoleIcon
                               key={role.id}
-                              src={`/icons/${role.id}.svg`}
+                              role={role}
                               alt=""
-                              className="w-3.5 h-3.5 object-contain"
-                              onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
+                              className="w-3.5 h-3.5"
                             />
                           </span>
                           <span className={cn("font-semibold text-xs truncate", isLightModeActive ? "text-gray-900" : "text-gray-100")}>

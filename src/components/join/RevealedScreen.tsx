@@ -1,12 +1,12 @@
 import { Moon, Eye, EyeOff, Settings } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { roleIconFallback } from '../../utils/roleIcon';
+import RoleIcon from '../shared/ui/RoleIcon';
 import { ALL_ROLES } from '../../utils/roleData';
-import type { Role } from '../../types';
+import type { AnyRole } from '../../types';
 
 interface RevealedScreenProps {
   isLight: boolean;
-  assignedRole: Role;
+  assignedRole: AnyRole;
   revealed: boolean;
   onOpenTracker: () => void;
 }
@@ -46,9 +46,11 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             assignedRole.team === 'outsider' && "border-clocktower-outsider",
             assignedRole.team === 'minion' && "border-clocktower-minion",
             assignedRole.team === 'demon' && "border-clocktower-demon",
-            assignedRole.team === 'traveler' && "border-clocktower-traveler"
+            assignedRole.team === 'traveler' && "border-clocktower-traveler",
+            assignedRole.team === 'fabled' && "border-yellow-700",
+            assignedRole.team === 'loric' && "border-green-700"
           )}>
-            <img key={assignedRole.id} src={`/icons/${assignedRole.id}.svg`} alt={assignedRole.name} className="w-20 h-20 object-contain" onError={roleIconFallback(assignedRole, assignedRole.team === 'minion' || assignedRole.team === 'demon')} />
+            <RoleIcon key={assignedRole.id} role={assignedRole} className={cn("w-20 h-20", assignedRole.team === 'fabled' ? "brightness-[0.45] saturate-[0.85]" : assignedRole.team === 'loric' && "brightness-[0.65] saturate-[0.85]")} />
           </div>
 
           <div className="flex gap-2 justify-center items-center mb-3">
@@ -58,7 +60,9 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
               assignedRole.team === 'outsider' && "text-clocktower-outsider border-clocktower-outsider/40 bg-clocktower-outsider/5",
               assignedRole.team === 'minion' && "text-clocktower-minion border-clocktower-minion/40 bg-clocktower-minion/5",
               assignedRole.team === 'demon' && "text-clocktower-demon border-clocktower-demon/40 bg-clocktower-demon/5",
-              assignedRole.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5"
+              assignedRole.team === 'traveler' && "text-clocktower-traveler border-clocktower-traveler/40 bg-clocktower-traveler/5",
+              assignedRole.team === 'fabled' && "text-yellow-700 border-yellow-700/40 bg-yellow-700/5",
+              assignedRole.team === 'loric' && "text-green-700 border-green-700/40 bg-green-700/5"
             )}>
               {assignedRole.team}
             </span>
@@ -70,7 +74,9 @@ export default function RevealedScreen({ isLight, assignedRole, revealed, onOpen
             assignedRole.team === 'outsider' && "text-clocktower-outsider",
             assignedRole.team === 'minion' && "text-clocktower-minion",
             assignedRole.team === 'demon' && "text-clocktower-demon",
-            assignedRole.team === 'traveler' && "text-clocktower-traveler"
+            assignedRole.team === 'traveler' && "text-clocktower-traveler",
+            assignedRole.team === 'fabled' && "text-yellow-700",
+            assignedRole.team === 'loric' && "text-green-700"
           )}>
             {assignedRole.name}
           </h3>

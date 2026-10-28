@@ -1,16 +1,17 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Trash2, NotebookPen, Plus } from 'lucide-react';
 import { cn } from '../../../utils/cn';
+import CloseButton from '../ui/CloseButton';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import CharacterToken from '../tokens/CharacterToken';
-import type { Role } from '../../../types';
+import type { AnyRole } from '../../../types';
 import { readCustomNotePrompts, saveCustomNotePrompts } from '../../../utils/customNotePrompts';
 import { ABILITY_BY_ID } from '../../../utils/roleData';
 
 const NOTE_PROMPTS = ['You Are', 'This Character Selected You', 'You Have This Ability', 'This Character Is In Play', 'This Character Is NOT In Play', 'Do You Want To Use This Ability?'] as const;
 
 interface CharacterDetailModalProps {
-  role: Role;
+  role: AnyRole;
   isLightModeActive: boolean;
   onClose: () => void;
   /** When provided, shows a remove (Trash2) button in the top-left corner. */
@@ -36,6 +37,7 @@ export default function CharacterDetailModal({
     ?? ABILITY_BY_ID.get(role.id)
     ?? "Ability description not found.";
   const t = role.team;
+  const hasLongBootleggerRules = role.id === 'bootlegger' && abilityText.length > 400;
 
   const [noteOpen, setNoteOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
@@ -122,7 +124,8 @@ export default function CharacterDetailModal({
       <div
         id={modalId}
         className={cn(
-          "w-full max-w-sm rounded-2xl p-6 text-center relative shadow-2xl",
+          "w-full rounded-2xl p-6 text-center relative shadow-2xl",
+          hasLongBootleggerRules ? "max-w-3xl max-h-[calc(100dvh-2rem)] flex flex-col" : "max-w-sm",
           animate && "animate-scaleIn",
           isLightModeActive ? "bg-[#fdfaf2] border-2 border-amber-900/15 text-gray-800" : "bg-gray-900 border border-gray-800 text-gray-150"
         )}
@@ -153,6 +156,8 @@ export default function CharacterDetailModal({
               t === 'outsider'  && "bg-clocktower-outsider/10 text-clocktower-outsider border border-clocktower-outsider/20",
               t === 'minion'    && "bg-clocktower-minion/10 text-clocktower-minion border border-clocktower-minion/20",
               t === 'demon'     && "bg-clocktower-demon/10 text-clocktower-demon border border-clocktower-demon/20",
+              t === 'fabled' && "bg-yellow-700/10 text-yellow-700 border border-yellow-700/20",
+              t === 'loric' && "bg-green-700/10 text-green-700 border border-green-700/20",
               t === 'traveler'  && "bg-clocktower-traveler/10 text-clocktower-traveler border border-clocktower-traveler/20",
             )}>{role.team}</span>
           </div>
@@ -230,28 +235,46 @@ export default function CharacterDetailModal({
             </div>
           )}
         </div>
-        <button type="button" onClick={onClose} className={cn("absolute top-4 right-4 p-1.5 rounded-full transition-colors", isLightModeActive ? "text-gray-500 hover:bg-gray-200 hover:text-gray-800" : "text-gray-400 hover:bg-gray-800 hover:text-white")} aria-label="Close details">
-          <X size={18} />
-        </button>
-        <div className="w-44 h-44 mx-auto mt-6">
+        <CloseButton
+          onClick={onClose}
+          isLightModeActive={isLightModeActive}
+          aria-label="Close details"
+          className="absolute top-4 right-4"
+        />
+        <div className={cn("mx-auto mt-6", hasLongBootleggerRules ? "w-24 h-24 sm:w-32 sm:h-32 shrink-0" : "w-44 h-44")}>
           <CharacterToken role={role} idPrefix={`detail-${role.id}`} />
         </div>
         <h4 className={cn(
           "text-2xl font-black mt-2 tracking-wide",
+          hasLongBootleggerRules && "shrink-0",
           t === 'townsfolk' && "text-clocktower-townsfolk",
           t === 'outsider'  && "text-clocktower-outsider",
           t === 'minion'    && "text-clocktower-minion",
           t === 'demon'     && "text-clocktower-demon",
           t === 'traveler'  && "text-clocktower-traveler",
+          t === 'fabled' && "text-yellow-700",
+          t === 'loric' && "text-green-700",
         )}>{role.name}</h4>
-        <div className={cn("mt-3 p-4 rounded-xl border leading-relaxed text-sm select-text text-center font-medium", isLightModeActive ? "bg-white border-amber-900/10 text-gray-700 shadow-sm" : "bg-gray-955/60 border-gray-800 text-gray-300")}>{abilityText}</div>
+        <div
+          role={hasLongBootleggerRules ? 'region' : undefined}
+          aria-label={hasLongBootleggerRules ? 'Bootlegger rules' : undefined}
+          tabIndex={hasLongBootleggerRules ? 0 : undefined}
+          className={cn(
+            "mt-3 p-4 rounded-xl border leading-relaxed text-sm select-text font-medium whitespace-pre-line",
+            hasLongBootleggerRules ? "min-h-0 overflow-y-auto overscroll-contain text-left break-words" : "text-center",
+            isLightModeActive ? "bg-white border-amber-900/10 text-gray-700 shadow-sm" : "bg-gray-955/60 border-gray-800 text-gray-300"
+          )}
+        >{abilityText}</div>
         <button type="button" onClick={onClose} className={cn(
           "w-full mt-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all duration-200 hover:opacity-90 active:scale-[0.98]",
+          hasLongBootleggerRules && "shrink-0",
           t === 'townsfolk' && "bg-clocktower-townsfolk shadow-clocktower-townsfolk/20",
           t === 'outsider'  && "bg-clocktower-outsider shadow-clocktower-outsider/20",
           t === 'minion'    && "bg-clocktower-minion shadow-clocktower-minion/20",
           t === 'demon'     && "bg-clocktower-demon shadow-clocktower-demon/20",
           t === 'traveler'  && "bg-clocktower-traveler shadow-clocktower-traveler/20",
+          t === 'fabled' && "bg-yellow-700 shadow-yellow-700/20",
+          t === 'loric' && "bg-green-700 shadow-green-700/20",
         )}>Close Details</button>
       </div>
       {addingPrompt && (

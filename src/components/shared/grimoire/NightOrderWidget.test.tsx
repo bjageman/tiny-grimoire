@@ -430,6 +430,32 @@ describe('NightOrderWidget', () => {
     expect(screen.queryByText('Daydreamer', { selector: '.font-serif' })).toBeNull();
   });
 
+  it.each([1, 2])('assigns inherited Outsider actions to the Hermit on night %s', dayNumber => {
+    const outsiders: Role[] = [
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'sleepwalker', name: 'Sleepwalker', team: 'outsider', firstNight: 15, otherNight: 15, firstNightReminder: 'Choose a dream.', otherNightReminder: 'Choose another dream.' },
+    ];
+    render(
+      <NightOrderWidget
+        players={[
+          { id: 'h', name: 'Hermit player', roleId: 'hermit', isDead: false },
+          { id: 'b', name: 'Butler player', roleId: 'butler', isDead: false },
+        ]}
+        timeOfDay="night"
+        dayNumber={dayNumber}
+        isLightModeActive={false}
+        scriptRoles={outsiders}
+        hermitOutsiders={outsiders}
+      />
+    );
+    expect(screen.getAllByText('Butler', { selector: '.font-serif' })).toHaveLength(2);
+    expect(screen.getByText('Sleepwalker', { selector: '.font-serif' })).toBeInTheDocument();
+    expect(screen.getAllByText('Hermit player')).toHaveLength(2);
+    expect(screen.getByText('Butler player')).toBeInTheDocument();
+    expect(screen.getByText(dayNumber === 1 ? 'Choose a dream.' : 'Choose another dream.')).toBeInTheDocument();
+    expect(screen.queryByText('Not in play')).toBeNull();
+  });
+
   describe('fullNightOrder', () => {
     // Poisoner and Fortune Teller both wake on night 1 but nobody here is playing them.
     const scriptRoles: Role[] = [

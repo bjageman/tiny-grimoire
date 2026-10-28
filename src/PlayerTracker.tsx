@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { PLAYABLE_ROLES } from './utils/roleData';
 import { cn } from './utils/cn';
-import type { Player, Role, PlacedReminder } from './types';
+import type { LoricRole, Player, Role, PlacedReminder } from './types';
 import { usePlayerDetailsNav } from './hooks/usePlayerDetailsNav';
 import { useScriptUpload } from './hooks/useScriptUpload';
 import { withInPlayTravelers } from './utils/scriptUtils';
+import { syncTrackerPlayers } from './utils/syncTrackerPlayers';
 
 import PlayerDetailsModal from './components/shared/modals/PlayerDetailsModal';
 import GamePhase from './components/shared/grimoire/GamePhase';
@@ -19,6 +20,7 @@ import DialogModal from './components/shared/modals/DialogModal';
 import HeaderCodeBadge from './components/shared/ui/HeaderCodeBadge';
 import RoomCodeModal from './components/shared/modals/RoomCodeModal';
 import LoadingScreen from './components/shared/ui/LoadingScreen';
+import SpectatorResetModal from './components/shared/modals/SpectatorResetModal';
 import { useDialog } from './hooks/useDialog';
 import { buildStandardTransfer, PLAYER_TRACKER_STORAGE_KEY, STANDARD_GAME_STORAGE_KEY } from './utils/gameTransfer';
 
@@ -40,6 +42,7 @@ interface SetupProps {
 export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [players, setPlayers] = usePersistedField<Player[]>(STORAGE_KEY, 'players', []);
   const [phase, setPhase] = usePersistedField<Phase>(STORAGE_KEY, 'phase', 'setup');
+  const [torEnabled, setTorEnabled] = usePersistedField<boolean>(STORAGE_KEY, 'torEnabled', false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [timeOfDay, setTimeOfDay] = usePersistedField<'night' | 'day'>(STORAGE_KEY, 'timeOfDay', 'night');
   const [dayNumber, setDayNumber] = usePersistedField<number>(STORAGE_KEY, 'dayNumber', 1);
@@ -58,6 +61,9 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [scriptName, setScriptName] = usePersistedField<string>(STORAGE_KEY, 'scriptName', "All Roles");
   const [scriptAuthor, setScriptAuthor] = usePersistedField<string>(STORAGE_KEY, 'scriptAuthor', "");
   const [customScriptRoles, setCustomScriptRoles] = usePersistedField<Role[] | null>(STORAGE_KEY, 'customScriptRoles', null);
+  const [scriptLoricRoles, setScriptLoricRoles] = usePersistedField<LoricRole[]>(
+    STORAGE_KEY, 'scriptLoricRoles', readPersistedField<LoricRole[]>(STORAGE_KEY, 'scriptLoreRoles', [])
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentScriptRoles = customScriptRoles || PLAYABLE_ROLES;
@@ -102,6 +108,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const [alwaysShowNotes, setAlwaysShowNotes] = usePersistedField<boolean>(STORAGE_KEY, 'alwaysShowNotes', false);
 
   const [winnerTeam, setWinnerTeam] = useState<'good' | 'evil' | null>(null);
+  const [showSpectatorReset, setShowSpectatorReset] = useState(false);
+  const [spectatorResetGameType, setSpectatorResetGameType] = useState<'standard' | 'whale-bucket'>('standard');
 
   const [userRotation, setUserRotation] = useState<number | null>(null);
 
@@ -123,43 +131,43 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
+      scriptLoricRoles?: LoricRole[];
+      torEnabled?: boolean;
       playerId?: string;
+      spectator?: boolean;
     };
     // Only an explicit reset returns a joined tracker player to the JoinPage lobby; a plain setup_update is not a reset and leaves players untouched.
     const joinedFromLobby = !!sessionStorage.getItem('joined-code') && !!sessionStorage.getItem('joined-name');
     if (payload.type === 'game_reset') {
       if (joinedFromLobby) {
-        window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        if (sessionStorage.getItem('joined-spectator') === 'true') {
+          setSpectatorResetGameType(payload.gameType || 'standard');
+          setShowSpectatorReset(true);
+        } else {
+          window.location.hash = payload.gameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+        }
       }
       return;
     }
-    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update') {
+    if (payload.type === 'setup_update' || payload.type === 'game_started' || payload.type === 'game_update' || payload.type === 'code_valid') {
+      if (payload.type === 'code_valid' && payload.playerId !== sessionStorage.getItem('botc-player-id')) return;
+      if (payload.type === 'code_valid' && payload.spectator) {
+        if (sessionStorage.getItem('joined-spectator') !== 'true') {
+          showAlert('The storyteller made you a spectator. You can keep following the game in Game Notes.', 'You Are Now a Spectator');
+        }
+        sessionStorage.setItem('joined-spectator', 'true');
+        sessionStorage.removeItem('joined-spectator-pending');
+      }
+      if (sessionStorage.getItem('joined-spectator') === 'true'
+        && payload.players?.some(player => player.id === sessionStorage.getItem('botc-player-id'))) {
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
+        window.location.hash = '#/join';
+      }
+      if (payload.torEnabled !== undefined) setTorEnabled(payload.torEnabled);
       if (payload.players) {
-        setPlayers((currentPlayers) => {
-          return payload.players!.map((sp) => {
-            const lp = currentPlayers.find(
-              (p) => p.id === sp.id || p.name.trim().toLowerCase() === sp.name.trim().toLowerCase()
-            );
-            if (lp) {
-              return {
-                ...sp,
-                // Preserve local guesses
-                roleId: lp.roleId,
-                roleIds: lp.roleIds,
-                isEvil: lp.isEvil,
-                isDrunkOrPoisoned: lp.isDrunkOrPoisoned,
-                isTheDrunk: lp.isTheDrunk,
-                isTheMarionette: lp.isTheMarionette,
-                isTheLunatic: lp.isTheLunatic,
-                isTheLilMonsta: lp.isTheLilMonsta,
-              };
-            }
-            return {
-              ...sp,
-              roleId: sp.roleId || '',
-            };
-          });
-        });
+        const roles = payload.customScriptRoles !== undefined ? payload.customScriptRoles : customScriptRoles;
+        setPlayers(currentPlayers => syncTrackerPlayers(payload.players!, currentPlayers, roles));
       }
       if (payload.timeOfDay) {
         setTimeOfDay(payload.timeOfDay);
@@ -175,6 +183,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       if (payload.customScriptRoles !== undefined) {
         setCustomScriptRoles(payload.customScriptRoles);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
       }
     } else if (payload.type === 'game_winner') {
       const team = (payload as { type: string; team: string }).team;
@@ -183,6 +192,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       showAlert('The Storyteller has quit the session. Reverting to local tracker.');
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
@@ -194,12 +205,14 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         }
       }
       setGameCode(null);
-    } else if (payload.type === 'booted') {
+    } else if (payload.type === 'booted' || payload.type === 'banned') {
       const myPlayerId = sessionStorage.getItem('botc-player-id');
       if (payload.playerId === myPlayerId) {
-        showAlert('You have been booted from the game room. Reverting to local tracker.');
+        showAlert('You have been removed from the game by the storyteller');
         sessionStorage.removeItem('joined-code');
         sessionStorage.removeItem('joined-name');
+        sessionStorage.removeItem('joined-spectator');
+        sessionStorage.removeItem('joined-spectator-pending');
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
@@ -215,7 +228,16 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
     }
   };
 
-  useGameSocket(gameCode || '', handleIncomingMessage);
+  const { isConnected, sendMessage } = useGameSocket(gameCode || '', handleIncomingMessage);
+  useEffect(() => {
+    const name = sessionStorage.getItem('joined-name');
+    const id = sessionStorage.getItem('botc-player-id');
+    if (!isConnected || !gameCode || !name || !id) return;
+    sendMessage({
+      type: sessionStorage.getItem('joined-spectator') === 'true' ? 'spectator_join' : 'player_join',
+      id, name, pronouns: localStorage.getItem('joined-pronouns') || undefined,
+    });
+  }, [gameCode, isConnected, sendMessage]);
 
   // Hand a one-time copy of the initial setup (names + script) to anyone opening the share link — an independent editable tracker, not a live sync; no characters/status/notes.
   const sendShareMessageRef = useRef<((payload: unknown) => Promise<boolean>) | null>(null);
@@ -229,6 +251,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
         scriptName,
         scriptAuthor,
         customScriptRoles,
+        scriptLoricRoles,
       });
     }
   };
@@ -262,6 +285,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName?: string;
       scriptAuthor?: string;
       customScriptRoles?: Role[] | null;
+      scriptLoricRoles?: LoricRole[];
     };
     if (payload.type === 'notes_share_state' && !hasAppliedIncomingShare.current) {
       hasAppliedIncomingShare.current = true;
@@ -271,7 +295,10 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       }
       if (payload.scriptName) setScriptName(payload.scriptName);
       if (payload.scriptAuthor !== undefined) setScriptAuthor(payload.scriptAuthor);
-      if (payload.customScriptRoles !== undefined) setCustomScriptRoles(payload.customScriptRoles);
+      if (payload.customScriptRoles !== undefined) {
+        setCustomScriptRoles(payload.customScriptRoles);
+        setScriptLoricRoles(payload.scriptLoricRoles ?? []);
+      }
       window.history.replaceState(null, '', '#/tracker');
       setIncomingShareCode(null);
     }
@@ -297,6 +324,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const clearSyncSession = () => {
     sessionStorage.removeItem('joined-code');
     sessionStorage.removeItem('joined-name');
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -314,6 +343,15 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   const disconnectSync = () => {
     showConfirm('Disconnect from this synced session? You\'ll keep your current players and notes locally, but stop receiving updates from the Storyteller.', clearSyncSession, 'Disconnect Sync');
   };
+
+  const joinNextSpectatorSession = () => {
+    sessionStorage.removeItem('joined-spectator');
+    sessionStorage.removeItem('joined-spectator-pending');
+    setShowSpectatorReset(false);
+    window.location.hash = spectatorResetGameType === 'whale-bucket' ? '#/join?returnTo=preferences' : '#/join';
+  };
+
+  const keepSpectating = () => setShowSpectatorReset(false);
 
   // Back-button guard: a synced player leaving to the main menu is asked to confirm first (cancel keeps them in the session).
   const confirmDisconnectAndLeave = () => {
@@ -334,6 +372,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('joined-code');
       sessionStorage.removeItem('joined-name');
+      sessionStorage.removeItem('joined-spectator');
+      sessionStorage.removeItem('joined-spectator-pending');
       setGameNotes('');
       setGameCode(null);
       const newShareCode = Array.from({ length: 4 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('');
@@ -350,6 +390,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       scriptName,
       scriptAuthor,
       customScriptRoles,
+      scriptLoricRoles,
+      torEnabled,
     })));
     localStorage.removeItem('standard-botc-game-code');
     localStorage.removeItem('standard-botc-sync-code');
@@ -409,6 +451,8 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       timeOfDay,
       dayNumber,
       customScriptRoles,
+      scriptLoricRoles,
+      torEnabled,
       scriptName,
       scriptAuthor,
       gameNotes,
@@ -417,7 +461,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       reminderTokens,
       alwaysShowNotes,
     }));
-  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
+  }, [players, phase, timeOfDay, dayNumber, customScriptRoles, scriptLoricRoles, torEnabled, scriptName, scriptAuthor, gameNotes, gameCode, enableReminders, reminderTokens, alwaysShowNotes]);
 
   const toggleTimeOfDay = () => {
     if (timeOfDay === 'night') {
@@ -549,7 +593,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
   };
 
   const { handleScriptUpload, selectPresetScript, clearCustomScript } = useScriptUpload({
-    setCustomScriptRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
+    setCustomScriptRoles, setScriptLoricRoles, setScriptName, setScriptAuthor, showAlert, fileInputRef,
   });
 
   const isLightModeActive = theme === 'light';
@@ -639,6 +683,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           isLightModeActive={theme === 'light'}
           players={players}
           customScriptRoles={customScriptRoles}
+          scriptLoricRoles={scriptLoricRoles}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           newPlayerName={newPlayerName}
@@ -682,6 +727,7 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
 
       {phase === 'game' && (
         <GamePhase
+          onResetDroison={() => setPlayers(prev => prev.map(p => ({ ...p, isDrunkOrPoisoned: false })))}
           players={players}
           timeOfDay={timeOfDay}
           dayNumber={dayNumber}
@@ -709,9 +755,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
           onResetDead={isSynced ? undefined : resetDead}
           onResetTime={isSynced ? undefined : resetTime}
           showNightOrder={false}
+          allowFullscreen
+          joinCode={gameCode || undefined}
           scriptName={scriptName}
           scriptAuthor={scriptAuthor}
           customScriptRoles={customScriptRoles}
+          scriptLoricRoles={scriptLoricRoles}
           isSynced={isSynced}
           enableReminders={enableReminders}
           includeAllScriptReminders={true}
@@ -758,6 +807,12 @@ export default function PlayerTracker({ theme, toggleTheme }: SetupProps) {
       )}
     </PageLayout>
     <DialogModal {...dialogProps} isLightModeActive={isLightModeActive} />
+    <SpectatorResetModal
+      isOpen={showSpectatorReset}
+      isLightModeActive={isLightModeActive}
+      onJoin={joinNextSpectatorSession}
+      onKeepWatching={keepSpectating}
+    />
     {showShareModal && (
       <RoomCodeModal
         gameCode={shareCode}

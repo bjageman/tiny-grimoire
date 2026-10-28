@@ -455,7 +455,7 @@ describe('assignCharacters', () => {
     expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
   });
 
-  it('assigns at least one Outsider in Atheist mode when the base count is zero', () => {
+  it.each(['demon', 'townsfolk'] as const)('assigns Atheist only to a player who picked it in %s preferences', (preferenceTeam) => {
     const roles: Role[] = [
       { id: 'atheist', name: 'Atheist', team: 'townsfolk' },
       { id: 'chef', name: 'Chef', team: 'townsfolk' },
@@ -471,14 +471,93 @@ describe('assignCharacters', () => {
       isDead: false,
       preferences: { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] },
     }));
+    players[0].preferences![preferenceTeam] = ['atheist'];
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
 
     const result = assignCharacters(players, roles);
 
     randomSpy.mockRestore();
     expect(result).not.toBeNull();
-    expect(result!.some(assignment => assignment.role.id === 'atheist')).toBe(true);
+    const atheist = result!.find(assignment => assignment.role.id === 'atheist');
+    expect(atheist?.player.id).toBe(players[0].id);
+    expect(atheist?.fromPref).toBe(true);
+    expect(new Set(result!.map(assignment => assignment.player.id)).size).toBe(players.length);
     expect(result!.filter(assignment => assignment.role.team === 'outsider')).toHaveLength(1);
+  });
+
+  it.each([
+    { playerCount: 5, alsoPicksImp: false },
+    { playerCount: 5, alsoPicksImp: true },
+    { playerCount: 12, alsoPicksImp: false },
+    { playerCount: 12, alsoPicksImp: true },
+  ])('draws Atheist fairly for $playerCount players (also picks Imp: $alsoPicksImp)', ({ playerCount, alsoPicksImp }) => {
+    const roles: Role[] = [
+      { id: 'atheist', name: 'Atheist', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+      { id: 'recluse', name: 'Recluse', team: 'outsider' },
+      { id: 'spy', name: 'Spy', team: 'minion' },
+      ...Array.from({ length: 7 }, (_, index) => ({ id: `townsfolk-${index}`, name: `Townsfolk ${index}`, team: 'townsfolk' as const })),
+    ];
+    const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
+      id: String(index),
+      name: `Player ${index}`,
+      isDead: false,
+      preferences: { townsfolk: [], outsider: [], minion: [], demon: index === 0 ? (alsoPicksImp ? ['atheist', 'imp'] : ['atheist']) : ['imp'], traveler: [] },
+    }));
+    let seed = 12345;
+    const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    });
+    let atheistCount = 0;
+    try {
+      for (let trial = 0; trial < 2000; trial++) {
+        const result = assignCharacters(players, roles);
+        expect(result).not.toBeNull();
+        const atheist = result!.find(assignment => assignment.role.id === 'atheist');
+        if (atheist) {
+          atheistCount++;
+          expect(atheist.player.id).toBe('0');
+          expect(atheist.fromPref).toBe(true);
+        }
+      }
+    } finally {
+      randomSpy.mockRestore();
+    }
+    const expectedRate = 1 / playerCount / (alsoPicksImp ? 2 : 1);
+    expect(atheistCount / 2000).toBeGreaterThan(expectedRate - 0.03);
+    expect(atheistCount / 2000).toBeLessThan(expectedRate + 0.03);
+  });
+
+  it('never assigns Atheist when no player picked it', () => {
+    const roles: Role[] = [
+      { id: 'atheist', name: 'Atheist', team: 'townsfolk' },
+      { id: 'chef', name: 'Chef', team: 'townsfolk' },
+      { id: 'empath', name: 'Empath', team: 'townsfolk' },
+      { id: 'monk', name: 'Monk', team: 'townsfolk' },
+      { id: 'butler', name: 'Butler', team: 'outsider' },
+      { id: 'poisoner', name: 'Poisoner', team: 'minion' },
+      { id: 'imp', name: 'Imp', team: 'demon' },
+    ];
+    const players: Player[] = Array.from({ length: 5 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Player ${index + 1}`,
+      isDead: false,
+      preferences: index === 0 ? undefined : { townsfolk: ['chef'], outsider: [], minion: [], demon: ['imp'], traveler: [] },
+    }));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const result = assignCharacters(players, roles);
+
+    randomSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.some(assignment => assignment.role.id === 'atheist')).toBe(false);
+    expect(result!.some(assignment => assignment.role.id === 'imp')).toBe(true);
   });
 
   it('honors a Summoner preference submitted in the Demon slot', () => {
@@ -559,7 +638,7 @@ describe('assignCharacters', () => {
         traveler: [],
       },
     }));
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5).mockReturnValueOnce(0);
 
     try {
       const result = assignCharacters(players, roles);

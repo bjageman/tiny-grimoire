@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi } from 'lucide-react';
+import { AlarmClock, BadgeQuestionMark, Check, Wifi } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import type { Player } from '../../WhaleBucket';
 import CharacterToken from '../shared/tokens/CharacterToken';
@@ -68,13 +68,18 @@ export default function WhaleBucketPreferenceCircle({
           const pos = positions[index] ?? { left: 50, top: 50 };
           const isDropTarget = dragOverIndex === index && draggedIndex !== index;
           const prefs = p.preferences || { townsfolk: [], outsider: [], minion: [], demon: [], traveler: [] };
-          const filledCount = [
+          const coreFilledCount = [
             prefs.townsfolk,
             prefs.outsider,
             prefs.minion,
             prefs.demon,
-            ...(allowTravelers ? [prefs.traveler || []] : []),
-          ].filter(arr => arr.length > 0).length;
+          ].filter(arr => (arr?.length ?? 0) > 0).length;
+          const filledCount = coreFilledCount + (allowTravelers && prefs.traveler?.length ? 1 : 0);
+          const isComplete = coreFilledCount === 4;
+          const hasPreferences = filledCount > 0;
+          const statusLabel = isComplete
+            ? 'All 4 character preferences selected'
+            : hasPreferences ? `${coreFilledCount} of 4 character preferences selected` : 'No preferences selected';
 
           let rotateDeg = 0;
           if (isDropTarget && hoverSide) {
@@ -176,7 +181,18 @@ export default function WhaleBucketPreferenceCircle({
                     }}
                   />
                 )}
-                <CharacterToken role={null} idPrefix={p.id} className="absolute inset-0" />
+                <CharacterToken
+                  role={null}
+                  idPrefix={p.id}
+                  className="absolute inset-0"
+                  emptyContent={isComplete ? (
+                    <Check role="img" aria-label="Preferences complete" className="w-[80%] h-[80%] text-green-600" strokeWidth={3} />
+                  ) : hasPreferences ? (
+                    <AlarmClock role="img" aria-label="Preferences incomplete" className="w-[80%] h-[80%] text-amber-600" strokeWidth={2.5} />
+                  ) : (
+                    <BadgeQuestionMark role="img" aria-label="No preferences selected" className="w-[80%] h-[80%]" strokeWidth={2.5} />
+                  )}
+                />
 
                 <span
                   style={{
@@ -208,9 +224,10 @@ export default function WhaleBucketPreferenceCircle({
                   className={cn(
                     "absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 px-1.5 py-0.5 rounded text-[9px] font-black border shadow-sm leading-none whitespace-nowrap",
                     filledCount === 0 && "bg-gray-800 border-gray-700 text-gray-400",
-                    filledCount > 0 && filledCount < totalTeams && "bg-amber-600 border-amber-700 text-black",
-                    filledCount === totalTeams && "bg-clocktower-townsfolk border-clocktower-townsfolk/40 text-white"
+                    hasPreferences && !isComplete && "bg-amber-600 border-amber-700 text-black",
+                    isComplete && "bg-green-600 border-green-700 text-white"
                   )}
+                  title={statusLabel}
                 >
                   {filledCount}/{totalTeams} PREFS
                 </span>

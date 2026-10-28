@@ -1,5 +1,5 @@
 import { parseScriptJson } from './scriptUtils';
-import { TEAM_ORDER, type Role } from '../types';
+import { TEAM_ORDER, type LoricRole, type Role } from '../types';
 import troubleBrewing from '../scripts/trouble-brewing.json';
 import badMoonRising from '../scripts/bad-moon-rising.json';
 import sectsAndViolets from '../scripts/sects-and-violets.json';
@@ -9,6 +9,7 @@ export interface PresetScript {
   name: string;
   author: string;
   roles: Role[];
+  loricRoles?: LoricRole[];
 }
 
 // Built-in scripts are ordinary script files, parsed through the same path as an upload.
@@ -19,8 +20,8 @@ const BUNDLED = [
 ];
 
 const baseScripts: PresetScript[] = BUNDLED.map(({ id, file }) => {
-  const { name, author, roles } = parseScriptJson(file, id);
-  return { id, name, author, roles };
+  const { name, author, roles, loricRoles } = parseScriptJson(file, id);
+  return { id, name, author, roles, loricRoles };
 });
 
 const base3Roles = new Map<string, Role>();

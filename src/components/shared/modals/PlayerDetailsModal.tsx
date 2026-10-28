@@ -3,9 +3,11 @@ import { useScrollLock } from '../../../hooks/useScrollLock';
 import { useEscapeKey } from '../../../hooks/useEscapeKey';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useBufferedField } from '../../../hooks/useBufferedField';
-import { ChevronLeft, ChevronRight, X, Search, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import { roleIconFallback } from '../../../utils/roleIcon';
+import CharacterOptionRow from '../ui/CharacterOptionRow';
+import SearchInput from '../ui/SearchInput';
+import CloseButton from '../ui/CloseButton';
 import { TEAM_ORDER, type Role } from '../../../types';
 import { PLAYER_LABEL_MAX_LENGTH } from '../../../constants';
 import PronounSelect from '../ui/PronounSelect';
@@ -321,20 +323,13 @@ export default function PlayerDetailsModal({
               )}
             </div>
           </div>
-          <button
+          <CloseButton
             id="detail-close-button"
-            type="button"
             onClick={onClose}
-            className={cn(
-              'p-2 ml-2 rounded-lg border transition-colors shrink-0 shadow-sm',
-              isLightModeActive
-                ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                : 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700'
-            )}
-            title="Close"
-          >
-            <X size={20} />
-          </button>
+            isLightModeActive={isLightModeActive}
+            className="p-2 ml-2 rounded-lg shadow-sm"
+            iconSize={20}
+          />
         </div>
 
         {/* Status toggles */}
@@ -452,24 +447,16 @@ export default function PlayerDetailsModal({
             <div className="space-y-3 animate-fadeIn">
               {/* Search bar + cancel */}
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  'flex items-center border rounded px-2.5 py-1.5 text-sm flex-1',
-                  isLightModeActive ? 'bg-white border-gray-300' : 'bg-white border-gray-300'
-                )}>
-                  <Search size={14} className="text-gray-500 mr-2 shrink-0" />
-                  <input
-                    id="detail-role-search-input"
-                    type="text"
-                    placeholder="Search character name..."
-                    className={cn(
-                      'bg-transparent flex-1 outline-none text-sm',
-                      isLightModeActive ? 'text-clocktower-night' : 'text-gray-900'
-                    )}
-                    value={modalRoleSearch}
-                    onChange={(e) => onSetModalRoleSearch(e.target.value)}
-                    autoFocus={!isMobile}
-                  />
-                </div>
+                <SearchInput
+                  id="detail-role-search-input"
+                  label="Search characters"
+                  placeholder="Search character name..."
+                  value={modalRoleSearch}
+                  onChange={(e) => onSetModalRoleSearch(e.target.value)}
+                  autoFocus={!isMobile}
+                  containerClassName="px-2.5 py-1.5 flex-1"
+                  className={cn('text-sm', isLightModeActive && 'text-clocktower-night')}
+                />
                 {allowMultipleRoles ? (
                   <div className="relative shrink-0" ref={settingsRef}>
                     <button
@@ -770,13 +757,6 @@ function RoleList({
   roleIds = [],
   preferredRoleIds = [],
 }: RoleListProps) {
-  const teamColor = (team: Role['team']) => ({
-    townsfolk: 'text-clocktower-townsfolk',
-    outsider: 'text-clocktower-outsider',
-    minion: 'text-clocktower-minion',
-    demon: 'text-clocktower-demon',
-    traveler: 'text-clocktower-traveler',
-  }[team] ?? '');
 
   return (
     <div className={cn(
@@ -796,54 +776,35 @@ function RoleList({
           : role.id === currentPlayer?.roleId;
 
         return (
-          <button
+          <CharacterOptionRow
             id={`detail-role-option-${role.id}`}
             key={role.id}
-            type="button"
+            role={role}
+            selected={isCurrent}
+            isLightModeActive={isLightModeActive}
             onClick={() => onSelect(role.id)}
-            className={cn(
-              'w-full text-left px-3 py-2 text-xs transition-colors flex justify-between items-center',
-              isCurrent
-                ? (isLightModeActive ? 'bg-amber-100/80 border-l-2 border-l-amber-600' : 'bg-amber-500/10 border-l-2 border-l-amber-500')
-                : (isLightModeActive ? 'hover:bg-gray-100 text-clocktower-night' : 'hover:bg-gray-800 text-gray-200')
-            )}
+            className={cn('py-2', !isCurrent && (isLightModeActive ? 'hover:bg-gray-100 text-clocktower-night' : 'hover:bg-gray-800 text-gray-200'))}
+            contentClassName="gap-2"
+            iconWrapperClassName="w-6 h-6"
+            iconClassName="w-4 h-4"
+            trailing={<span className="text-[9px] uppercase font-mono opacity-50">{role.team[0]}</span>}
           >
-            <div className="flex items-center min-w-0 flex-1 gap-2 mr-2">
-              <span className="w-6 h-6 bg-white rounded-full overflow-hidden flex items-center justify-center shrink-0">
-                <img
-                  key={role.id}
-                  src={`/icons/${role.id}.svg`}
-                  alt={role.name}
-                  className="w-4 h-4 object-contain"
-                  onError={roleIconFallback(role, role.team === 'minion' || role.team === 'demon')}
-                />
+            {preferredRoleIds.includes(role.id) && (
+              <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
+                ★ Pick
               </span>
+            )}
+            {takenBy && (
               <span className={cn(
-                'font-semibold text-xs truncate',
-                isCurrent
-                  ? (isLightModeActive ? 'text-gray-950 font-bold' : 'text-white font-bold')
-                  : teamColor(role.team)
+                'text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border',
+                isLightModeActive
+                  ? 'bg-gray-100 border-gray-200 text-gray-500'
+                  : 'bg-gray-800/40 border-gray-700 text-gray-400'
               )}>
-                {role.name} {isCurrent && '✓'}
+                Taken: {takenBy.name}
               </span>
-              {preferredRoleIds.includes(role.id) && (
-                <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded-sm uppercase font-extrabold tracking-wider leading-none shrink-0">
-                  ★ Pick
-                </span>
-              )}
-              {takenBy && (
-                <span className={cn(
-                  'text-[8px] px-1 py-0.5 rounded shrink-0 font-medium border',
-                  isLightModeActive
-                    ? 'bg-gray-100 border-gray-200 text-gray-500'
-                    : 'bg-gray-800/40 border-gray-700 text-gray-400'
-                )}>
-                  Taken: {takenBy.name}
-                </span>
-              )}
-            </div>
-            <span className="text-[9px] uppercase font-mono opacity-50">{role.team[0]}</span>
-          </button>
+            )}
+          </CharacterOptionRow>
         );
       })}
       {roles.length === 0 && (

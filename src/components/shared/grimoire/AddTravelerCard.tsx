@@ -1,5 +1,9 @@
+import { useState } from 'react';
+import type { Player } from '../../../types';
 import { cn } from '../../../utils/cn';
+import GrimoireCard from '../ui/GrimoireCard';
 import { PLAYABLE_ROLES } from '../../../utils/roleData';
+import SearchSuggestionInput from '../ui/SearchSuggestionInput';
 
 interface AddTravelerCardProps {
   isLightModeActive: boolean;
@@ -9,58 +13,62 @@ interface AddTravelerCardProps {
   roleId: string;
   onRoleIdChange: (value: string) => void;
   disabled: boolean;
-  onAdd: () => void;
+  spectators?: Pick<Player, 'id' | 'name'>[];
+  onAdd: (spectatorId?: string) => void;
 }
 
 // Traveler name + role picker shown to the storyteller during a game.
-export default function AddTravelerCard({ isLightModeActive, title, name, onNameChange, roleId, onRoleIdChange, disabled, onAdd }: AddTravelerCardProps) {
+export default function AddTravelerCard({ isLightModeActive, title, name, onNameChange, roleId, onRoleIdChange, disabled, spectators = [], onAdd }: AddTravelerCardProps) {
+  const [selectedSpectatorId, setSelectedSpectatorId] = useState('');
+  const travelerRoles = PLAYABLE_ROLES.filter(role => role.team === 'traveler');
+  const selectedSpectator = spectators.find(spectator => spectator.id === selectedSpectatorId && spectator.name === name);
+
   return (
-    <div className={cn(
-      'rounded-lg border p-3.5 space-y-3 transition-colors duration-300',
-      isLightModeActive
-        ? 'bg-white/50 border-gray-300 text-clocktower-night'
-        : 'bg-gray-900/40 border-gray-800/80'
-    )}>
+    <GrimoireCard
+      isLightModeActive={isLightModeActive}
+      className={cn('space-y-3', isLightModeActive && 'text-clocktower-night')}
+    >
       <h4 className={cn(
         'text-xs uppercase font-bold tracking-wider',
         isLightModeActive ? 'text-gray-600' : 'text-gray-500'
       )}>{title}</h4>
       <div className="flex flex-col gap-2">
-        <input
+        <SearchSuggestionInput
           id="game-traveler-name-input"
-          type="text"
+          label="Traveler name"
           placeholder="Traveler name..."
           value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          autoCapitalize="words"
-          className={cn(
-            'w-full rounded px-2.5 py-1.5 text-xs focus:outline-none border transition-colors',
-            isLightModeActive
-              ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
-              : 'bg-gray-955 border-gray-800 text-gray-200 focus:border-clocktower-blood'
-          )}
+          options={spectators.map(spectator => ({ id: spectator.id, label: spectator.name, description: 'Spectator' }))}
+          emptyMessage="No matching spectators"
+          isLightModeActive={isLightModeActive}
+          onChange={value => {
+            onNameChange(value);
+            setSelectedSpectatorId('');
+          }}
+          onSelect={id => {
+            const spectator = spectators.find(candidate => candidate.id === id);
+            setSelectedSpectatorId(spectator?.id || '');
+            onNameChange(spectator?.name || '');
+          }}
         />
         <div className="flex gap-2">
           <select
             id="game-traveler-role-select"
+            aria-label="Traveler character"
             value={roleId}
-            onChange={(e) => onRoleIdChange(e.target.value)}
+            onChange={event => onRoleIdChange(event.target.value)}
             className={cn(
-              'flex-1 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
+              'flex-1 min-w-0 rounded px-2 py-1.5 text-xs focus:outline-none border transition-colors',
               isLightModeActive
                 ? 'bg-white border-gray-300 text-clocktower-night focus:border-clocktower-blood'
                 : 'bg-gray-950 border-gray-800 text-gray-200 focus:border-clocktower-blood'
             )}
           >
-            {PLAYABLE_ROLES.filter(r => r.team === 'traveler').map(r => (
-              <option key={r.id} value={r.id} className={isLightModeActive ? 'bg-white text-clocktower-night' : 'bg-gray-955 text-gray-200'}>
-                {r.name}
-              </option>
-            ))}
+            {travelerRoles.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}
           </select>
           <button
             id="game-add-traveler-button"
-            onClick={onAdd}
+            onClick={() => onAdd(selectedSpectator?.id)}
             disabled={disabled}
             className={cn(
               'px-3 py-1.5 rounded text-xs font-bold transition-all disabled:opacity-40 text-white shadow-sm',
@@ -73,6 +81,6 @@ export default function AddTravelerCard({ isLightModeActive, title, name, onName
           </button>
         </div>
       </div>
-    </div>
+    </GrimoireCard>
   );
 }

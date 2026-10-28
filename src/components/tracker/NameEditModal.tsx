@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useBufferedField } from '../../hooks/useBufferedField';
 import { cn } from '../../utils/cn';
+import PlayerEditHeader from '../shared/ui/PlayerEditHeader';
+import PlayerNameField from '../shared/ui/PlayerNameField';
 import type { Player } from '../../types';
 import PronounSelect from '../shared/ui/PronounSelect';
 
@@ -61,25 +62,13 @@ export default function PlayerTrackerNameEditModal({
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              id="remove-tracker-player-button"
-              type="button"
-              onClick={() => { removePlayer(player.id); onClose(); }}
-              className="shrink-0 p-1.5 rounded border border-gray-800 text-gray-500 hover:text-red-500 hover:border-red-500/40 transition-colors"
-              title="Remove player"
-            >
-              <Trash2 size={16} />
-            </button>
-            <h3 className="font-display font-bold text-sm text-gray-200 tracking-wider uppercase truncate">
-              Edit Player
-            </h3>
-          </div>
-          <button id="close-tracker-edit-modal-button" onClick={onClose} className="shrink-0 text-xs text-gray-500 underline">
-            Close
-          </button>
-        </div>
+        <PlayerEditHeader
+          isLightModeActive={isLightModeActive}
+          onRemove={() => removePlayer(player.id)}
+          onClose={onClose}
+          removeButtonId="remove-tracker-player-button"
+          closeButtonId="close-tracker-edit-modal-button"
+        />
 
         <div className="flex items-center gap-2">
           {onUpdatePronouns && (
@@ -92,17 +81,11 @@ export default function PlayerTrackerNameEditModal({
               onOpenChange={setPronounsOpen}
             />
           )}
-          <input
+          <PlayerNameField
             id="edit-tracker-player-name-input"
-            type="text"
             value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); onClose(); } }}
-            autoFocus={!isMobile}
-            autoCapitalize="words"
-            placeholder="Player name"
-            className="flex-1 min-w-0 bg-gray-955 border border-gray-800 rounded px-3 py-2 text-white focus:outline-none focus:border-clocktower-blood text-sm font-semibold"
+            onChange={setEditedName}
+            onClose={onClose}
           />
         </div>
       </div>

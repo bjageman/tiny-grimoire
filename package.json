@@ -17,11 +17,11 @@
     "simulate": "node scripts/simulate-players.js"
   },
   "dependencies": {
-    "@lucide/lab": "^0.7.0",
+    "@lucide/lab": "^0.12.0",
     "antigravity-usage": "^0.2.9",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
-    "lucide-react": "^1.61.0",
+    "lucide-react": "^1.69.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-qr-code": "^2.2.0",
